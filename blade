@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# SCRIPT: blade
+# AUTHOR: Michaelpeng <michaelpeng@tencent.com>
+#         Phongchen <phongchen@tencent.com>
+# DATE:   Dec 17 2011
+# REV:    1.0.P (Valid are A, B, D, T and P)
+#               (For Alpha, Beta, Dev, Test and Production)
+#
+# PLATFORM: Linux
+# PURPOSE : A bash wrapper for blade, always run blade of
+#           corresponding version in for given source dir
+#           tree.
+# REV LIST:
+#        DATE:    Dec 17 2011
+#        BY  :    Michaelpeng
+#        MODIFICATION: Created
+
+function _info()
+{
+    if [ -t 1 ]; then
+        echo -e "\e[1;36mBlade(info): $@\e[m"
+    else
+        echo -e "Blade(info): $@"
+    fi
+}
+
+function _warning()
+{
+    if [ -t 2 ]; then
+        echo -e "\e[1;33mBlade(warning): $@\e[m" >&2
+    else
+        echo -e "Blade(warning): $@" >&2
+    fi
+}
+
+function _error_exit()
+{
+    if [ -t 2 ]; then
+        echo -e "\e[1;31mBlade(error): $@\nBlade (error): Blade will exit...\e[m" >&2
+    else
+        echo -e "Blade(error): $@\nBlade (error): Blade will exit..." >&2
+    fi
+    exit 1
+}
+
+blade_path=''
+
+if [ -L "$0" ]; then
+    blade_path=`readlink -f $0`
+else
+    blade_path=$0
+fi
+
+blade_dir=$(cd $(dirname $blade_path) && pwd)
+
+blade_file="$blade_dir/blade.zip"
+
+# Check the python version at first, exit blade when python
+# version is under 2.6
+no_python=$(which python 2>&1 | grep 'which: no')
+if [[ -n "$no_python" ]]; then
+    _error_exit "Please install python 2.6 or above in your system"
+fi
+
+python_ver=$(python -V 2>&1 | sed 's/Python //g')
+
+if [[ "$python_ver" < "2.6" ]]; then
+    _info "Python version in your machine: $python_ver"
+    _error_exit "Please upgrade your python version to 2.6 or above"
+fi
+
+# Check scons environment
+no_scons=$(which scons 2>&1 | grep 'which: no scons in')
+if [[ -n "$no_scons" ]]; then
+    _error_exit "Please install scons v2.0 or above on your machine"
+fi
+
+# blade now
+if [[ ! -f "$blade_file" ]]; then
+    _error_exit "Cannot find the core file $blade_file"
+fi
+
+python $blade_file "$@"

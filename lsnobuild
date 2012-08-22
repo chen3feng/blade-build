@@ -1,0 +1,9 @@
+#!/bin/bash
+# list Makefiles without corresponding BUILD
+
+find -name Makefile |  \
+while read f; do
+    if [ ! -f "`dirname $f`/BUILD" ] ; then
+        echo $f;
+    fi
+done
