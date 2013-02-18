@@ -47,7 +47,7 @@ function _error_exit()
 blade_path=''
 
 if [ -L "$0" ]; then
-    blade_path=`readlink -f $0`
+    blade_path=`readlink $0`
 else
     blade_path=$0
 fi
