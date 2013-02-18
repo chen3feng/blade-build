@@ -19,7 +19,7 @@
 function _info()
 {
     if [ -t 1 ]; then
-        echo -e "\e[1;36mBlade(info): $@\e[m"
+        echo -e "\033[1;36mBlade(info): $@\033[m"
     else
         echo -e "Blade(info): $@"
     fi
