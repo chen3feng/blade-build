@@ -1,5 +1,16 @@
 Tue Aug 21 21:09:14 2012  Tencent Inc. <chen3feng@gmail.com>
 
-	* blade: version 1.0
-	* initialize opensource release
+    * blade: version 1.0
+    * initialize opensource release
+
+Tue Dec 25 11:21:00 2012  Tencent Inc. <chen3feng@gmail.com>
+
+    * Add is_debug for build_target
+    * Add prompt message to source bashrc after install blade
+    * Skip making duplicate prebuit lib symlink and remove useless warning
+    * Add graphviz output to blade query command.
+    * Do not exit when symlink existed
+    * Fixed loop dependency detecting in recursive method
+    * Updated user manual-config part of blade_user_manual.pdf
+    * Allow libs in global config files starts with '//'
 

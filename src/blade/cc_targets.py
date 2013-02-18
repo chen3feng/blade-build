@@ -1037,15 +1037,12 @@ class CcTest(CcTarget):
         self.data['options']['testdata'] = testdata
 
         cc_test_config = configparse.blade_config.get_config('cc_test_config')
-        gtest_lib = cc_test_config['gtest_lib']
-        gtest_main_lib = cc_test_config['gtest_main_lib']
+        gtest_lib = var_to_list(cc_test_config['gtest_libs'])
+        gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
+
         # Hardcode deps rule to thirdparty gtest main lib.
-        dkey = self._convert_string_to_target_helper(gtest_main_lib)
-        if dkey not in self.target_database[self.key]['deps']:
-            self.target_database[self.key]['deps'].append(dkey)
-        dkey = self._convert_string_to_target_helper(gtest_lib)
-        if dkey not in self.target_database[self.key]['deps']:
-            self.target_database[self.key]['deps'].append(dkey)
+        self._add_hardcode_library(gtest_lib)
+        self._add_hardcode_library(gtest_main_lib)
 
         # dynamic link by default
         if dynamic_link is None:
@@ -1069,19 +1066,17 @@ class CcTest(CcTarget):
                 error_exit("//%s:%s: heap_check can only be in %s" % (
                     self.data['path'], self.data['name'], HEAP_CHECK_VALUES))
 
-        perftools_lib = cc_test_config['gperftools_lib']
-        perftools_debug_lib = cc_test_config['gperftools_debug_lib']
+        perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
+        perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])
         if heap_check:
             self.data['options']['heap_check'] = heap_check
 
             if heap_check_debug:
-                dkey = self._convert_string_to_target_helper(
-                                perftools_debug_lib)
+                perftools_lib_list = perftools_debug_lib
             else:
-                dkey = self._convert_string_to_target_helper(perftools_lib)
+                perftools_lib_list = perftools_lib
 
-            if dkey not in self.target_database[self.key]['deps']:
-                self.target_database[self.key]['deps'].append(dkey)
+            self._add_hardcode_library(perftools_lib_list)
 
     def _clone_env(self):
         """override this method. """
@@ -1293,12 +1288,10 @@ class ProtoLibrary(CcTarget):
                           kwargs)
 
         proto_config = configparse.blade_config.get_config('protoc_config')
-        protobuf_lib = proto_config['protobuf_lib']
+        protobuf_lib = var_to_list(proto_config['protobuf_libs'])
 
         # Hardcode deps rule to thirdparty protobuf lib.
-        dkey = self._convert_string_to_target_helper(protobuf_lib)
-        if dkey not in self.target_database[self.key]['deps']:
-            self.target_database[self.key]['deps'].append(dkey)
+        self._add_hardcode_library(protobuf_lib)
 
         # Link all the symbols by default
         self.data['options']['link_all_symbols'] = True

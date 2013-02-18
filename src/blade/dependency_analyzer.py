@@ -4,9 +4,9 @@
  All rights reserved.
 
  Author: Huan Yu <huanyu@tencent.com>
-         Feng chen <phongchen@tencent.com>
+         Feng Chen <phongchen@tencent.com>
          Yi Wang <yiwang@tencent.com>
-         Chong peng <michaelpeng@tencent.com>
+         Chong Peng <michaelpeng@tencent.com>
  Date:   October 20, 2011
 
  This is the dependencies expander module which accepts the targets loaded
@@ -91,23 +91,30 @@ class DependenciesAnalyzer(object):
 
         self.blade.set_all_targets_expanded(self.targets)
 
-    def _find_all_deps(self, target_id, root_target_id=None):
+    def _find_all_deps(self, target_id, root_targets=None):
         """_find_all_deps.
 
         Return all targets depended by target_id directly and/or indirectly.
         We need the parameter root_target_id to check loopy dependency.
 
         """
-        if root_target_id == None:
-            root_target_id = target_id
+        if root_targets is None:
+            root_targets = []
+        root_targets.append(target_id)
 
         new_deps_list = self.deps_map_cache.get(target_id, [])
         if new_deps_list:
+            root_targets.pop()
             return new_deps_list
 
         for d in self.targets[target_id]['deps']:
-            if d == root_target_id:
-                print "loop dependency of %s" % ':'.join(root_target_id)
+            # loop dependency
+            if d in root_targets:
+                err_msg = ''
+                for t in root_targets:
+                    err_msg += "//%s:%s --> " % (t[0], t[1])
+                error_exit("loop dependency found: //%s:%s --> [%s]" % (
+                           d[0], d[1], err_msg))
             new_deps_piece = [d]
             if d not in self.targets:
                 error_exit('Target %s:%s depends on %s:%s, '
@@ -115,7 +122,7 @@ class DependenciesAnalyzer(object):
                                                             target_id[1],
                                                             d[0],
                                                             d[1]))
-            new_deps_piece += self._find_all_deps(d, root_target_id)
+            new_deps_piece += self._find_all_deps(d, root_targets)
             # Append new_deps_piece to new_deps_list, be aware of
             # de-duplication:
             for nd in new_deps_piece:
@@ -123,6 +130,8 @@ class DependenciesAnalyzer(object):
                     new_deps_list.remove(nd)
                 new_deps_list.append(nd)
         self.deps_map_cache[target_id] = new_deps_list
+
+        root_targets.pop()
         return new_deps_list
 
     def _topological_sort(self, pairlist):

@@ -11,6 +11,7 @@
 
 """
 import os
+import sys
 import traceback
 from blade_util import error_exit
 from cc_targets import HEAP_CHECK_VALUES
@@ -28,10 +29,11 @@ class BladeConfig(object):
             'cc_test_config' : {
                 'dynamic_link' : False,
                 'heap_check' : '',
-                'gperftools_lib' : '#tcmalloc',
-                'gperftools_debug_lib' : '#tcmalloc_debug',
-                'gtest_lib' : '#gtest',
-                'gtest_main_lib' : '#gtest_main'
+                'gperftools_libs' : ['thirdparty/perftools:tcmalloc'],
+                'gperftools_debug_libs' :
+                ['thirdparty/perftools:tcmalloc_debug'],
+                'gtest_libs' : ['thirdparty/gtest:gtest'],
+                'gtest_main_libs' : ['thirdparty/gtest:gtest_main']
             },
 
             'distcc_config' : {
@@ -49,8 +51,9 @@ class BladeConfig(object):
             },
 
             'protoc_config' : {
-                'protoc' : 'protoc',
-                'protobuf_lib': '#protobuf',
+                'protoc' : 'thirdparty/protobuf/bin/protoc',
+                'protobuf_libs':
+                ['thirdparty/protobuf:protobuf'],
                 'protobuf_path' : 'thirdparty',
                 'protobuf_include_path' :
                 'thirdparty', # splitted by space,
@@ -67,6 +70,14 @@ class BladeConfig(object):
 
     def parse(self):
         """load the configuration file and parse. """
+        try:
+            blade_conf = os.path.join(os.path.dirname(sys.argv[0]), "blade.conf")
+            if os.path.exists(blade_conf):
+                execfile(blade_conf)
+        except:
+            error_exit("Parse error in config file blade.conf, exit...\n%s" %
+                       traceback.format_exc())
+
         try:
             bladerc_file = os.path.expanduser("~/.bladerc")
             if os.path.exists(bladerc_file):
