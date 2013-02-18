@@ -1,0 +1,35 @@
+cc_test_config(
+    dynamic_link=False,
+    heap_check='',
+    gperftools_libs=['#tcmalloc'],
+    gperftools_debug_libs=['#tcmalloc_debug'],
+    gtest_libs=['#gtest'],
+    gtest_main_libs=['#gtest_main']
+)
+
+distcc_config(
+    enabled=False
+)
+
+link_config(
+    link_on_tmp=False,
+    enable_dccc=False
+)
+
+proto_library_config(
+    protoc='protoc',
+    protobuf_libs=['#protobuf'],
+    protobuf_path='thirdparty',
+    protobuf_include_path = 'thirdparty',
+    protobuf_php_path='thirdparty/Protobuf-PHP/library',
+    protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
+)
+
+cc_config(
+    extra_incs='thirdparty'
+)
+
+java_config(
+    source_version='',
+    target_version=''
+)
