@@ -52,51 +52,43 @@ class BladeConfig(object):
 
             'protoc_config' : {
                 'protoc' : 'thirdparty/protobuf/bin/protoc',
-                'protobuf_libs':
-                ['thirdparty/protobuf:protobuf'],
+                'protobuf_libs': ['thirdparty/protobuf:protobuf'],
                 'protobuf_path' : 'thirdparty',
-                'protobuf_include_path' :
-                'thirdparty', # splitted by space,
-                'protobuf_php_path' :
-                'thirdparty/Protobuf-PHP/library',
-                'protoc_php_plugin' :
-                'thirdparty/Protobuf-PHP/protoc-gen-php.php',
+                'protobuf_include_path' : 'thirdparty', # splitted by space,
+                'protobuf_php_path' : 'thirdparty/Protobuf-PHP/library',
+                'protoc_php_plugin' : 'thirdparty/Protobuf-PHP/protoc-gen-php.php',
             },
 
             'cc_config' : {
-                'extra_incs' : 'thirdparty' # splitted by space
+                'extra_incs' : 'thirdparty', # splitted by space
+                'cppflags' : [],
+                'cflags' : [],
+                'cxxflags' : [],
             }
         }
 
-    def parse(self):
+    def _try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
-            blade_conf = os.path.join(os.path.dirname(sys.argv[0]), "blade.conf")
-            if os.path.exists(blade_conf):
-                execfile(blade_conf)
+            if os.path.exists(filename):
+                execfile(filename)
         except:
-            error_exit("Parse error in config file blade.conf, exit...\n%s" %
-                       traceback.format_exc())
+            error_exit("Parse error in config file %s, exit...\n%s" %
+                       filename % traceback.format_exc())
 
-        try:
-            bladerc_file = os.path.expanduser("~/.bladerc")
-            if os.path.exists(bladerc_file):
-                execfile(bladerc_file)
-        except:
-            error_exit("Parse error in config file bladerc, exit...\n%s" %
-                       traceback.format_exc())
-
-        try:
-            execfile(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
-        except:
-            error_exit("Parse error in config file BLADE_ROOT, exit...\n%s" %
-                       traceback.format_exc())
+    def parse(self):
+        """load the configuration file and parse. """
+        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), "blade.conf"))
+        self._try_parse_file(os.path.expanduser("~/.bladerc"))
+        self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
 
     def update_config(self, section_name, user_configs):
         """update helper. """
         configs = self.configs.get(section_name, {})
         if configs:
             configs.update(user_configs)
+        else:
+            error("unknown config section name: %s" % section_name)
 
     def get_config(self, section_name):
         """get config section, returns default values if not set """

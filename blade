@@ -28,7 +28,7 @@ function _info()
 function _warning()
 {
     if [ -t 2 ]; then
-        echo -e "\e[1;33mBlade(warning): $@\e[m" >&2
+        echo -e "\033[1;33mBlade(warning): $@\033[m" >&2
     else
         echo -e "Blade(warning): $@" >&2
     fi
@@ -37,21 +37,39 @@ function _warning()
 function _error_exit()
 {
     if [ -t 2 ]; then
-        echo -e "\e[1;31mBlade(error): $@\nBlade (error): Blade will exit...\e[m" >&2
+        echo -e "\033[1;31mBlade(error): $@\nBlade (error): Blade will exit...\033[m" >&2
     else
         echo -e "Blade(error): $@\nBlade (error): Blade will exit..." >&2
     fi
     exit 1
 }
 
-blade_path=''
+function full_real_path()
+{
+    local o
+    local f
+    f="$1"
 
-if [ -L "$0" ]
-then
-    blade_path=`readlink $0`
-else
-    blade_path=$0
-fi
+    if [ ! -L "$0" ]; then
+        echo $f
+        return 0
+    fi
+
+    if o=`readlink -f $f 2>/dev/null`; then
+        echo "$o";
+        return 0
+    fi
+
+    # BSD readlink doesn't support -f
+    if o=`readlink $f`; then
+        f="$o"
+    fi
+
+    echo $(cd $(dirname $f) && pwd)/$(basename $f)
+    return 0
+}
+
+blade_path=`full_real_path $0`
 
 blade_dir=$(cd $(dirname $blade_path) && pwd)
 
