@@ -105,7 +105,7 @@ then
 fi
 
 # for _find_project_root
-source $(dirname $(readlink $0))/bladefunctions
+source $blade_dir/bladefunctions
 
 if blade_root=`_find_project_root`; then
     # in old version of blade, there is no blade.py but blade only
