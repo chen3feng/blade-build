@@ -119,6 +119,27 @@ class Target(object):
                             s, target_srcs_map[src_key], src_value))
             target_srcs_map[src_key] = src_value
 
+    def _add_hardcode_library(self, hardcode_dep_list):
+        """Add hardcode dep list to key's deps. """
+        for dep in hardcode_dep_list:
+            dkey = self._convert_string_to_target_helper(dep)
+            if dkey[0] == '#':
+                self._add_system_library(dkey, dep)
+            if dkey not in self.target_database[self.key]['deps']:
+                self.target_database[self.key]['deps'].append(dkey)
+
+    def _add_system_library(self, key, name):
+        """Add system library entry to database. """
+        if key not in self.target_database:
+            self.target_database[key] = {
+                                         'type' : 'system_library',
+                                         'srcs' : '',
+                                         'deps' : [],
+                                         'path' : self.current_source_path,
+                                         'name' : name,
+                                         'options': {}
+                                        }
+
     def _init_target_deps(self, deps):
         """Init the target deps.
 
@@ -150,14 +171,7 @@ class Target(object):
                 # System libaray, they don't have entry in BUILD so we need
                 # to add deps manually.
                 dkey = ('#', d[1:])
-                self.target_database[dkey] = {
-                                         'type' : 'system_library',
-                                         'srcs' : '',
-                                         'deps' : [],
-                                         'path' : self.current_source_path,
-                                         'name' : d,
-                                         'options': {}
-                                        }
+                self._add_system_library(dkey, d)
             else:
                 # Depend on library in relative subdirectory
                 if not ':' in d:
@@ -398,7 +412,10 @@ class Target(object):
                 return ("#", target_string[1:])
             elif target_string.find(":") != -1:
                 path, name = target_string.split(":")
-                return (path.strip(), name.strip())
+                path = path.strip()
+                if path.startswith("//"):
+                    path = path[2:]
+                return (path, name.strip())
             else:
                 bad_format = True
         else:

@@ -11,6 +11,7 @@
 
 """
 import os
+import sys
 import traceback
 from blade_util import error_exit
 from cc_targets import HEAP_CHECK_VALUES
@@ -28,10 +29,11 @@ class BladeConfig(object):
             'cc_test_config' : {
                 'dynamic_link' : False,
                 'heap_check' : '',
-                'gperftools_lib' : '#tcmalloc',
-                'gperftools_debug_lib' : '#tcmalloc_debug',
-                'gtest_lib' : '#gtest',
-                'gtest_main_lib' : '#gtest_main'
+                'gperftools_libs' : ['thirdparty/perftools:tcmalloc'],
+                'gperftools_debug_libs' :
+                ['thirdparty/perftools:tcmalloc_debug'],
+                'gtest_libs' : ['thirdparty/gtest:gtest'],
+                'gtest_main_libs' : ['thirdparty/gtest:gtest_main']
             },
 
             'distcc_config' : {
@@ -49,43 +51,44 @@ class BladeConfig(object):
             },
 
             'protoc_config' : {
-                'protoc' : 'protoc',
-                'protobuf_lib': '#protobuf',
+                'protoc' : 'thirdparty/protobuf/bin/protoc',
+                'protobuf_libs': ['thirdparty/protobuf:protobuf'],
                 'protobuf_path' : 'thirdparty',
-                'protobuf_include_path' :
-                'thirdparty', # splitted by space,
-                'protobuf_php_path' :
-                'thirdparty/Protobuf-PHP/library',
-                'protoc_php_plugin' :
-                'thirdparty/Protobuf-PHP/protoc-gen-php.php',
+                'protobuf_include_path' : 'thirdparty', # splitted by space,
+                'protobuf_php_path' : 'thirdparty/Protobuf-PHP/library',
+                'protoc_php_plugin' : 'thirdparty/Protobuf-PHP/protoc-gen-php.php',
             },
 
             'cc_config' : {
-                'extra_incs' : 'thirdparty' # splitted by space
+                'extra_incs' : 'thirdparty', # splitted by space
+                'cppflags' : [],
+                'cflags' : [],
+                'cxxflags' : [],
             }
         }
 
-    def parse(self):
+    def _try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
-            bladerc_file = os.path.expanduser("~/.bladerc")
-            if os.path.exists(bladerc_file):
-                execfile(bladerc_file)
+            if os.path.exists(filename):
+                execfile(filename)
         except:
-            error_exit("Parse error in config file bladerc, exit...\n%s" %
-                       traceback.format_exc())
+            error_exit("Parse error in config file %s, exit...\n%s" %
+                       filename % traceback.format_exc())
 
-        try:
-            execfile(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
-        except:
-            error_exit("Parse error in config file BLADE_ROOT, exit...\n%s" %
-                       traceback.format_exc())
+    def parse(self):
+        """load the configuration file and parse. """
+        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), "blade.conf"))
+        self._try_parse_file(os.path.expanduser("~/.bladerc"))
+        self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
 
     def update_config(self, section_name, user_configs):
         """update helper. """
         configs = self.configs.get(section_name, {})
         if configs:
             configs.update(user_configs)
+        else:
+            error("unknown config section name: %s" % section_name)
 
     def get_config(self, section_name):
         """get config section, returns default values if not set """

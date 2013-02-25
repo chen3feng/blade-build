@@ -54,17 +54,19 @@ ABORT_IF_FAIL = 2
 class TargetAttributes(object):
     """Build target attributes
     """
-    def __init__(self, arch, bits):
-        self._arch = arch
-        self._bits = bits
+    def __init__(self, options):
+        self._options = options
 
     @property
     def bits(self):
-        return self._bits
+        return int(self._options.m)
 
     @property
     def arch(self):
-        return self._arch
+        return 'i386' if self._options.m == '32' else 'x86_64'
+
+    def is_debug(self):
+        return self._options.profile == 'debug'
 
 
 build_target = None
@@ -118,12 +120,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     # loaded by execfile
     global build_target
     if build_target is None:
-        options = blade.get_options()
-        if options.m == '32':
-            arch = 'i386'
-        elif options.m == '64':
-            arch = 'x86_64'
-        build_target = TargetAttributes(arch, int(options.m))
+        build_target = TargetAttributes(blade.get_options())
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
