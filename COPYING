@@ -26,3 +26,12 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------------------
+iQIYI Copyright declaration:
+
+iQIYI 公司授予腾讯公司永久的，全球性的，非排他性的，免费的，免版税的，
+不可撤销的版权许可，把对blade支持thrift的所做的修改贡献给腾讯公司的开
+源项目 Blade (https://code.google.com/p/typhoon-blade/)，允许其合并到
+项目代码中。iQIYI 公司愿意在遵守Blade所选择的开源License的基础上，保
+留对贡献代码的版权。
