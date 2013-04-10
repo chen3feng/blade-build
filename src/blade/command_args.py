@@ -272,6 +272,10 @@ class CmdArguments(object):
             "--depended", dest = "depended",
             action = "store_true", default = False,
             help = "Show all targets that depened on the target being queried.")
+        parser.add_argument(
+            "--output-to-dot", dest = "output_to_dot", type = str,
+            help = "The name of file to output query results as dot(graphviz) "
+                   "format.")
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """

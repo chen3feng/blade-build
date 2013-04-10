@@ -265,24 +265,71 @@ class Blade(object):
                         self.options.deps)
         print_depended = hasattr(self.options, 'depended') and (
                         self.options.depended)
+        dot_file = ""
+        if hasattr(self.options, 'output-to-dot'):
+            dot_file = self.options.output_to_dot
         result_map = self.query_helper(targets)
-        for key in result_map.keys():
+        if dot_file:
+            nodes = {}
+            print_mode = 0
             if print_deps:
-                print "\n"
-                deps = result_map[key][0]
-                info("//%s:%s depends on the following targets:" % (
-                        key[0], key[1]))
-                for d in deps:
-                    print "%s:%s" % (d[0], d[1])
+                print_mode = 0
             if print_depended:
-                print "\n"
-                depended_by = result_map[key][1]
-                info("//%s:%s is depeneded by the following targets:" % (
-                        key[0], key[1]))
-                depended_by.sort(key=lambda x:x, reverse=False)
-                for d in depended_by:
-                    print "%s:%s" % (d[0], d[1])
+                print_mode = 1
+            if not dot_file.startswith("/"):
+                dot_file = self.working_dir + "/" + dot_file
+            self.output_dot(result_map, print_mode, dot_file)
+        else:
+            if print_deps:
+                for key in result_map.keys():
+                    print "\n"
+                    deps = result_map[key][0]
+                    info("//%s:%s depends on the following targets:" % (
+                            key[0], key[1]))
+                    for d in deps:
+                        print "%s:%s" % (d[0], d[1])
+            if print_depended:
+                for key in result_map.keys():
+                    print "\n"
+                    depended_by = result_map[key][1]
+                    info("//%s:%s is depended by the following targets:" % (
+                            key[0], key[1]))
+                    depended_by.sort(key=lambda x:x, reverse=False)
+                    for d in depended_by:
+                        print "%s:%s" % (d[0], d[1])
         return 0
+
+    def print_dot_node(self, output_file, node):
+        print >>output_file, '"%s:%s" [label = "%s:%s"]' % (node[0],
+                                                            node[1],
+                                                            node[0],
+                                                            node[1])
+
+    def print_dot_deps(self, output_file, node, target_set):
+        targets = self.related_targets
+        deps = targets.get(node, {}).get('direct_deps', [])
+        for i in deps:
+            if not i in target_set:
+                continue
+            print >>output_file, '"%s:%s" -> "%s:%s"' % (node[0],
+                                                         node[1],
+                                                         i[0],
+                                                         i[1])
+
+
+    def output_dot(self, result_map, print_mode, dot_file):
+        f = open(dot_file, 'w')
+        targets = result_map.keys()
+        nodes = set(targets)
+        for key in targets:
+            nodes |= set(result_map[key][print_mode])
+        print >>f, "digraph blade {"
+        for i in nodes:
+            self.print_dot_node(f, i)
+        for i in nodes:
+            self.print_dot_deps(f, i, nodes)
+        print >>f, "}"
+        f.close()
 
     def query_helper(self, targets):
         """Query the targets helper method. """

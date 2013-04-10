@@ -19,7 +19,7 @@
 function _info()
 {
     if [ -t 1 ]; then
-        echo -e "\e[1;36mBlade(info): $@\e[m"
+        echo -e "\033[1;36mBlade(info): $@\033[m"
     else
         echo -e "Blade(info): $@"
     fi
@@ -28,7 +28,7 @@ function _info()
 function _warning()
 {
     if [ -t 2 ]; then
-        echo -e "\e[1;33mBlade(warning): $@\e[m" >&2
+        echo -e "\033[1;33mBlade(warning): $@\033[m" >&2
     else
         echo -e "Blade(warning): $@" >&2
     fi
@@ -37,20 +37,39 @@ function _warning()
 function _error_exit()
 {
     if [ -t 2 ]; then
-        echo -e "\e[1;31mBlade(error): $@\nBlade (error): Blade will exit...\e[m" >&2
+        echo -e "\033[1;31mBlade(error): $@\nBlade (error): Blade will exit...\033[m" >&2
     else
         echo -e "Blade(error): $@\nBlade (error): Blade will exit..." >&2
     fi
     exit 1
 }
 
-blade_path=''
+function full_real_path()
+{
+    local o
+    local f
+    f="$1"
 
-if [ -L "$0" ]; then
-    blade_path=`readlink -f $0`
-else
-    blade_path=$0
-fi
+    if [ ! -L "$0" ]; then
+        echo $f
+        return 0
+    fi
+
+    if o=`readlink -f $f 2>/dev/null`; then
+        echo "$o";
+        return 0
+    fi
+
+    # BSD readlink doesn't support -f
+    if o=`readlink $f`; then
+        f="$o"
+    fi
+
+    echo $(cd $(dirname $f) && pwd)/$(basename $f)
+    return 0
+}
+
+blade_path=`full_real_path $0`
 
 blade_dir=$(cd $(dirname $blade_path) && pwd)
 
@@ -59,26 +78,91 @@ blade_file="$blade_dir/blade.zip"
 # Check the python version at first, exit blade when python
 # version is under 2.6
 no_python=$(which python 2>&1 | grep 'which: no')
-if [[ -n "$no_python" ]]; then
+if [[ -n "$no_python" ]]
+then
     _error_exit "Please install python 2.6 or above in your system"
 fi
 
 python_ver=$(python -V 2>&1 | sed 's/Python //g')
 
-if [[ "$python_ver" < "2.6" ]]; then
+if [[ "$python_ver" < "2.6" ]]
+then
     _info "Python version in your machine: $python_ver"
     _error_exit "Please upgrade your python version to 2.6 or above"
 fi
 
 # Check scons environment
 no_scons=$(which scons 2>&1 | grep 'which: no scons in')
-if [[ -n "$no_scons" ]]; then
+if [[ -n "$no_scons" ]]
+then
     _error_exit "Please install scons v2.0 or above on your machine"
 fi
 
 # blade now
-if [[ ! -f "$blade_file" ]]; then
+if [[ ! -f "$blade_file" ]]
+then
     _error_exit "Cannot find the core file $blade_file"
 fi
 
-python $blade_file "$@"
+# for _find_project_root
+source $blade_dir/bladefunctions
+
+if blade_root=`_find_project_root`; then
+    # in old version of blade, there is no blade.py but blade only
+    blade_path=$blade_root/common/builder/blade
+
+    # auto update blade main program to latest version and run it
+    if svn_up_info=`svn up --trust-server-cert --non-interactive ${blade_path} 2>&1`; then
+        _info "$svn_up_info"
+    else
+        _warning "Auto upgrade failure: $svn_up_info"
+        _warning "Please svn up $blade_path"
+    fi
+
+    blade=$blade_path/blade
+    blade_py=${blade}.py
+    blade2=${blade}.zip
+
+    build_by_blade2=1
+    actions="^(build|run|test|query|clean|--help)$"
+
+    if [ "$#" -ge 1 ]; then
+        if [[ ! "$1" =~ $actions ]]; then
+            build_by_blade2=0
+        fi
+    fi
+
+
+    if [ $build_by_blade2 -eq 1 ]
+    then
+        _info 'Welcome to blade2'
+        if [ -e "$blade_file" ]; then
+            python $blade_file "$@"
+        else
+            _error_exit "Cannot find the core file $blade_file"
+            exit 1
+        fi
+    else
+        case "$1" in
+        -t)
+            action="test"
+            ;;
+        -c)
+            action="clean"
+            ;;
+        *)
+            action="build"
+            ;;
+        esac
+        _error_exit "Command should be 'blade $action'"
+        if [ -e "$blade_py" ]; then
+            blade_python=$blade_py
+        else
+            blade_python=$blade
+        fi
+        $blade_python "$@"
+    fi
+
+else
+    _error_exit "Can't find BLADE_ROOT, are you in a correct source dir tree?"
+fi

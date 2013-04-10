@@ -379,6 +379,10 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         cc_str = toolchain_dir + os.environ.get('CC', 'gcc')
         cxx_str = toolchain_dir + os.environ.get('CXX', 'g++')
         ld_str = toolchain_dir + os.environ.get('LD', 'g++')
+        info("CPP=%s" % cpp_str)
+        info("CC=%s" % cc_str)
+        info("CXX=%s" % cxx_str)
+        info("LD=%s" % ld_str)
 
         self.ccflags_manager.set_cpp_str(cpp_str)
 
@@ -439,16 +443,15 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 %s.Replace(%s,
           CPPPATH=[%s, '%s', '%s'],
           CPPFLAGS=%s,
-          CFLAGS=[],
+          CFLAGS=%s,
           CXXFLAGS=%s,
           %s,
           LINKFLAGS=%s)
-""" % (self.env_list[0],
-       cc_env_str,
-       extra_includes,
-       self.build_dir, self.python_inc,
-       warn_cppflags + cppflags_except_warning,
-       warn_cxxflags,
+""" % (self.env_list[0], cc_env_str,
+       extra_includes, self.build_dir, self.python_inc,
+       cc_config['cppflags'] + warn_cppflags + cppflags_except_warning,
+       cc_config['cflags'],
+       cc_config['cxxflags'] + warn_cxxflags,
        ld_env_str,
        linkflags))
 
@@ -460,13 +463,12 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           CXXFLAGS=%s,
           %s,
           LINKFLAGS=%s)
-""" % (self.env_list[1],
-       cc_env_str,
+""" % (self.env_list[1], cc_env_str,
        extra_includes,
        self.build_dir, self.python_inc,
-       warn_cppflags  + err_cppflags + cppflags_except_warning,
-       err_cflags,
-       warn_cxxflags + err_cxxflags,
+       cc_config['cppflags'] + warn_cppflags  + err_cppflags + cppflags_except_warning,
+       cc_config['cflags'] + err_cflags,
+       cc_config['cxxflags'] + warn_cxxflags + err_cxxflags,
        ld_env_str,
        linkflags))
 
@@ -474,15 +476,15 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 %s.Replace(%s,
           CPPPATH=[%s, '%s', '%s'],
           CPPFLAGS=%s,
-          CFLAGS=[],
-          CXXFLAGS=[],
+          CFLAGS=%s,
+          CXXFLAGS=%s,
           %s,
           LINKFLAGS=%s)
-""" % (self.env_list[2],
-       cc_env_str,
-       extra_includes,
-       self.build_dir, self.python_inc,
-       cppflags_except_warning,
+""" % (self.env_list[2], cc_env_str,
+       extra_includes, self.build_dir, self.python_inc,
+       cc_config['cppflags'] + cppflags_except_warning,
+       cc_config['cflags'],
+       cc_config['cxxflags'],
        ld_env_str,
        linkflags))
 
