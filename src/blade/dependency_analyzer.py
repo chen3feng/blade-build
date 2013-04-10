@@ -16,7 +16,7 @@
 """
 
 
-from blade_util import error_exit
+import console
 
 
 class DependenciesAnalyzer(object):
@@ -82,9 +82,13 @@ class DependenciesAnalyzer(object):
                 for dep in self.targets[target_id]['deps']:
                     if self.targets[dep]['type'] == 'proto_library':
                         self.targets[dep]['options']['generate_python'] = True
+                    elif self.targets[dep]['type'] == 'thrift_library':
+                        self.targets[dep]['options']['generate_python'] = True
             elif self.targets[target_id]['type'] == 'java_jar':
                 for dep in self.targets[target_id]['deps']:
                     if self.targets[dep]['type'] == 'proto_library':
+                        self.targets[dep]['options']['generate_java'] = True
+                    elif self.targets[dep]['type'] == 'thrift_library':
                         self.targets[dep]['options']['generate_java'] = True
                     elif self.targets[dep]['type'] == 'swig_library':
                         self.targets[dep]['options']['generate_java'] = True
@@ -113,11 +117,11 @@ class DependenciesAnalyzer(object):
                 err_msg = ''
                 for t in root_targets:
                     err_msg += "//%s:%s --> " % (t[0], t[1])
-                error_exit("loop dependency found: //%s:%s --> [%s]" % (
+                console.error_exit("loop dependency found: //%s:%s --> [%s]" % (
                            d[0], d[1], err_msg))
             new_deps_piece = [d]
             if d not in self.targets:
-                error_exit('Target %s:%s depends on %s:%s, '
+                console.error_exit('Target %s:%s depends on %s:%s, '
                             'but it is missing, exit...' % (target_id[0],
                                                             target_id[1],
                                                             d[0],
@@ -139,19 +143,19 @@ class DependenciesAnalyzer(object):
         numpreds = {}   # elt -> # of predecessors
         successors = {} # elt -> list of successors
         for second, options in pairlist.items():
-            if not numpreds.has_key(second):
+            if second not in numpreds:
                 numpreds[second] = 0
             deps = options['deps']
             for first in deps:
                 # make sure every elt is a key in numpreds
-                if not numpreds.has_key(first):
+                if first not in numpreds:
                     numpreds[first] = 0
 
                 # since first < second, second gains a pred ...
                 numpreds[second] = numpreds[second] + 1
 
                 # ... and first gains a succ
-                if successors.has_key(first):
+                if first in successors:
                     successors[first].append(second)
                 else:
                     successors[first] = [second]
@@ -165,7 +169,7 @@ class DependenciesAnalyzer(object):
         for x in answer:
             assert numpreds[x] == 0
             del numpreds[x]
-            if successors.has_key(x):
+            if x in successors:
                 for y in successors[x]:
                     numpreds[y] = numpreds[y] - 1
                     if numpreds[y] == 0:

@@ -14,17 +14,18 @@
 
 import multiprocessing
 import os
+
 import configparse
-from blade_util import error_exit
-from blade_util import info
+import console
+
 from blade_util import relative_path
-from blade_util import warning
 from dependency_analyzer import DependenciesAnalyzer
 from load_build_files import load_targets
 from blade_platform import CcFlagsManager
 from blade_platform import SconsPlatform
 from build_environment import BuildEnvironment
 from rules_generator import SconsRulesGenerator
+from binary_runner import BinaryRunner
 from test_runner import TestRunner
 
 
@@ -202,7 +203,7 @@ class Blade(object):
 
     def load_targets(self):
         """Load the targets. """
-        info("loading BUILDs...")
+        console.info("loading BUILDs...")
         if self.kwargs.get('blade_command', '') == 'query':
             working_dir = self.current_source_path
 
@@ -219,24 +220,24 @@ class Blade(object):
                                                   working_dir,
                                                   self.current_source_path,
                                                   self)
-        info("loading done.")
+        console.info("loading done.")
         return self.direct_targets, self.all_command_targets
 
     def analyze_targets(self):
         """Expand the targets. """
-        info("analyzing dependency graph...")
+        console.info("analyzing dependency graph...")
         self.deps_analyzer = DependenciesAnalyzer(self)
         self.deps_analyzer.analyze_deps()
-        info("analyzing done.")
+        console.info("analyzing done.")
         return self.all_targets_expanded
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
-        info("generating build rules...")
+        console.info("generating build rules...")
         self.build_rules_generator = SconsRulesGenerator('SConstruct',
                                                          self.blade_path, self)
         rules_buf = self.build_rules_generator.generate_scons_script()
-        info("generating done.")
+        console.info("generating done.")
         return rules_buf
 
     def generate(self):
@@ -248,7 +249,10 @@ class Blade(object):
     def run(self, target):
         """Run the target. """
         key = self._get_normpath_target(target)
-        runner = TestRunner(self.all_targets_expanded, self.options)
+        runner = BinaryRunner(self.all_targets_expanded,
+                              self.options,
+                              self.prebuilt_cc_library_file_map,
+                              self.target_database)
         return runner.run_target(key)
 
     def test(self):
@@ -270,7 +274,6 @@ class Blade(object):
             dot_file = self.options.output_to_dot
         result_map = self.query_helper(targets)
         if dot_file:
-            nodes = {}
             print_mode = 0
             if print_deps:
                 print_mode = 0
@@ -284,7 +287,7 @@ class Blade(object):
                 for key in result_map.keys():
                     print "\n"
                     deps = result_map[key][0]
-                    info("//%s:%s depends on the following targets:" % (
+                    console.info("//%s:%s depends on the following targets:" % (
                             key[0], key[1]))
                     for d in deps:
                         print "%s:%s" % (d[0], d[1])
@@ -292,7 +295,7 @@ class Blade(object):
                 for key in result_map.keys():
                     print "\n"
                     depended_by = result_map[key][1]
-                    info("//%s:%s is depended by the following targets:" % (
+                    console.info("//%s:%s is depended by the following targets:" % (
                             key[0], key[1]))
                     depended_by.sort(key=lambda x:x, reverse=False)
                     for d in depended_by:
@@ -435,8 +438,9 @@ class Blade(object):
         """
         # check that whether there is already a key in database
         if target_key in self.scons_targets_map.keys():
-            error_exit("target name %s is duplicate in //%s/BUILD" % (
-                       target_key[1], target_key[0]))
+            console.error_exit(
+                    "target name %s is duplicate in //%s/BUILD" % (
+                        target_key[1], target_key[0]))
         self.scons_targets_map[target_key] = scons_target
 
     def get_scons_target(self, target_key):
@@ -497,7 +501,7 @@ class Blade(object):
                continue
             scons_object = self.scons_targets_map.get(k, None)
             if not scons_object:
-                warning('not registered scons object, key %s' % str(k))
+                console.warning('not registered scons object, key %s' % str(k))
                 continue
             if skip_test_targets and (target['type'] == 'cc_test' or
                                       target['type'] == 'dynamic_cc_test'):
@@ -560,6 +564,6 @@ class Blade(object):
                 if self.options.jobs > 8:
                     self.options.jobs = 8
         if self.options.jobs != user_jobs_num:
-            info("tunes the parallel jobs number(-j N) to be %d" % (
-                         self.options.jobs))
+            console.info("tunes the parallel jobs number(-j N) to be %d" % (
+                self.options.jobs))
         return self.options.jobs

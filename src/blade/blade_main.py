@@ -23,6 +23,7 @@
     java_jar          -- build java jar from java source files
     lex_yacc_library  -- build a library from lex/yacc source
     proto_library     -- build a library from Protobuf source
+    thrift_library    -- build a library from Thrift source
     resource_library  -- build resource library and gen header files
     swig_library      -- build swig library for python and java
 
@@ -70,19 +71,18 @@ import signal
 import subprocess
 import sys
 import traceback
+
 import blade
+import console
 import configparse
+
 from blade import Blade
-from blade_util import error
-from blade_util import error_exit
 from blade_util import get_cwd
-from blade_util import info
 from blade_util import lock_file
 from blade_util import unlock_file
 from command_args import CmdArguments
 from configparse import BladeConfig
 from load_build_files import find_blade_root_dir
-from optparse import OptionParser
 
 
 # Query targets
@@ -122,7 +122,7 @@ def _main(blade_path):
     if current_source_dir != working_dir:
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
-        print "Blade: Entering directory `%s'" % current_source_dir
+        print >>sys.stderr, "Blade: Entering directory `%s'" % current_source_dir
 
     # Init global configuration manager
     configparse.blade_config = BladeConfig(current_source_dir)
@@ -142,12 +142,13 @@ def _main(blade_path):
          ret_code) = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         if not locked_scons:
             if ret_code == errno.EAGAIN:
-                error_exit("There is already an active building in current source "
-                           "dir tree,\n"
-                           "or make sure there is no SConstruct file existed with "
-                           "BLADE_ROOT. Blade will exit...")
+                console.error_exit(
+                        "There is already an active building in current source "
+                        "dir tree,\n"
+                        "or make sure there is no SConstruct file existed with "
+                        "BLADE_ROOT. Blade will exit...")
             else:
-                error_exit("Lock exception, please try it later.")
+                console.error_exit("Lock exception, please try it later.")
 
         if command == 'query' and (
                 hasattr(options, 'depended') and options.depended):
@@ -188,7 +189,7 @@ def _main(blade_path):
                     os.remove(os.path.join(current_source_dir, 'SConstruct'))
                     unlock_file(lock_file_fd.fileno())
                 lock_file_fd.close()
-            except Exception as inst:
+            except Exception:
                 pass
     return 0
 
@@ -205,7 +206,7 @@ def _build(options):
     try:
         p.wait()
         if p.returncode:
-            error("building failure")
+            console.error("building failure")
             return p.returncode
     except: # KeyboardInterrupt
         return 1
@@ -232,11 +233,12 @@ def test(options):
 
 
 def clean(options):
-    info("cleaning...(hint: please specify --generate-dynamic to clean your so)")
+    console.info("cleaning...(hint: please specify --generate-dynamic to "
+                 "clean your so)")
     p = subprocess.Popen(
     "scons --duplicate=soft-copy -c -s --cache-show", shell=True)
     p.wait()
-    info("cleaning done.")
+    console.info("cleaning done.")
     return p.returncode
 
 
@@ -252,9 +254,9 @@ def main(blade_path):
     except SystemExit as e:
         exit_code = e.code
     except KeyboardInterrupt:
-        error_exit("keyboard interrupted", -signal.SIGINT)
+        console.error_exit("keyboard interrupted", -signal.SIGINT)
     except:
-        error_exit(traceback.format_exc())
+        console.error_exit(traceback.format_exc())
     sys.exit(exit_code)
 
 

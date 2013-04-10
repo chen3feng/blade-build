@@ -1,0 +1,12 @@
+java_jar(
+    name = 'poppy_java_client',
+    srcs = [
+            'src/com/soso/poppy'
+           ],
+    deps = [
+            '//test_java_jar:rpc_meta_info_proto',
+            '//test_java_jar:rpc_option_proto',
+            '//test_java_jar:poppy_client',
+            './lib:junit'
+           ]
+)

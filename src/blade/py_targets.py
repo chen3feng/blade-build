@@ -14,7 +14,8 @@
 import os
 import blade
 import blade_util
-from blade_util import error_exit
+
+import console
 from blade_util import var_to_list
 from target import Target
 
@@ -84,7 +85,7 @@ class PythonBinaryTarget(Target):
             binary_files.append(setup_file)
 
         if not os.path.exists(init_file):
-            error_exit("The __init__.py not existed in %s" % python_package)
+            console.error_exit("The __init__.py not existed in %s" % python_package)
         binary_files.append(init_file)
 
         dep_var_list = []

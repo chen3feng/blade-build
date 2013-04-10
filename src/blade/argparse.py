@@ -653,13 +653,13 @@ class ArgumentDefaultsHelpFormatter(HelpFormatter):
     """
 
     def _get_help_string(self, action):
-        help = action.help
+        help_msg = action.help
         if '%(default)' not in action.help:
             if action.default is not SUPPRESS:
                 defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
-                    help += ' (default: %(default)s)'
-        return help
+                    help_msg += ' (default: %(default)s)'
+        return help_msg
 
 
 # =====================
@@ -692,11 +692,11 @@ class ArgumentError(Exception):
 
     def __str__(self):
         if self.argument_name is None:
-            format = '%(message)s'
+            format_str = '%(message)s'
         else:
-            format = 'argument %(argument_name)s: %(message)s'
-        return format % dict(message=self.message,
-                             argument_name=self.argument_name)
+            format_str = 'argument %(argument_name)s: %(message)s'
+        return format_str % dict(message=self.message,
+                                 argument_name=self.argument_name)
 
 
 class ArgumentTypeError(Exception):

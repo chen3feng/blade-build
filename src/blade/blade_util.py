@@ -16,79 +16,24 @@
 import fcntl
 import hashlib
 import os
-import sys
 import subprocess
+import sys
 
-
-# Global color enabled or not
-color_enabled = False
-
-
-# file chunk size
-chunk_size = 8192
-
-
-class BladeFile(object):
-    """BladeFile object which is used to wrap the file and caculate md5 etc. """
-    def __init__(self, file_path):
-        """BladeFile init method. """
-        self.file_path = file_path
-        self.file_object = None
-
-    def get_file_path(self):
-        """Returns file path. """
-        return self.file_path
-
-    def get_file_object(self):
-        """Returns file object. """
-        try:
-            self.file_object = file(self.file_path, "rb")
-            return self.file_object
-        except:
-            return None
-
-    def close_file_object(self):
-        """close the file object. """
-        try:
-            if self.file_object:
-                self.file_object.close()
-        except:
-            pass
-
-
-def md5sum_file(blade_file):
-    """md5sum of one file. """
-    if not isinstance(blade_file, BladeFile):
-        error_exit("not a blade type of file to caculate md5")
-    m = hashlib.md5()
-    f = blade_file.get_file_object()
-    if not f:
-        error_exit("failed to open a file to caculate md5")
-    global chunk_size
-    while True:
-        d = f.read(chunk_size)
-        if not d:
-            break
-        m.update(d)
-    blade_file.close_file_object()
-    return m.hexdigest()
+import console
 
 
 def md5sum_str(user_str):
     """md5sum of basestring. """
     m = hashlib.md5()
     if not isinstance(user_str, basestring):
-        error_exit("not a valid basestring type to caculate md5")
+        console.error_exit("not a valid basestring type to caculate md5")
     m.update(user_str)
     return m.hexdigest()
 
 
 def md5sum(obj):
     """caculate md5sum and returns it. """
-    if isinstance(obj, BladeFile):
-        return md5sum_file(obj)
-    elif isinstance(obj, basestring):
-        return md5sum_str(obj)
+    return md5sum_str(obj)
 
 
 def lock_file(fd, flags):
@@ -109,49 +54,14 @@ def unlock_file(fd):
         return (False, ex_value[0])
 
 
-def error(msg, code = 1):
-    """dump error message. """
-    global color_enabled
-    msg = "Blade(error): " + msg
-    if color_enabled:
-        msg = '\033[1;31m' + msg + '\033[0m'
-    print >>sys.stderr, msg
-
-
-def error_exit(msg, code = 1):
-    """dump error message and exit. """
-    error(msg)
-    sys.exit(code)
-
-
-def warning(msg):
-    """dump warning message but continue. """
-    global color_enabled
-    msg = "Blade(warning): " + msg
-    if color_enabled:
-        msg = '\033[1;33m' + msg + '\033[0m'
-    print >>sys.stderr, msg
-
-
-def info_str(msg):
-    """wrap str with color or not """
-    global color_enabled
-    msg = "Blade(info): " + msg
-    if color_enabled:
-        msg = '\033[1;36m' + msg + '\033[0m'
-    return msg
-
-
-def info(msg):
-    """dump info message. """
-    print >>sys.stderr, info_str(msg)
-
-
 def var_to_list(var):
     """change the var to be a list. """
     if isinstance(var, list):
         return var
+    if not var:
+        return []
     return [var]
+
 
 def relative_path(a_path, reference_path):
     """_relative_path.
@@ -193,3 +103,12 @@ def get_cwd():
 
     """
     return subprocess.Popen(["pwd"], stdout = subprocess.PIPE, shell = True).communicate()[0].strip()
+
+
+def environ_add_path(env, key, path):
+    """Add path to PATH link environments, sucn as PATH, LD_LIBRARY_PATH, etc"""
+    old = env.get(key)
+    if old:
+        env[key] = old + ":" + path
+    else:
+        env[key] = path

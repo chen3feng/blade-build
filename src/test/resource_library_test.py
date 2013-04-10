@@ -118,7 +118,7 @@ class TestResourceLibrary(unittest.TestCase):
         self.assertTrue(gen_poppy_line)
 
         self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_lower_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
 
         self.assertTrue('-fPIC -Wall -Wextra' in com_forms_line)

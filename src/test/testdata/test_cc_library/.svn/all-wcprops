@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_cc_library
+END
+plowercase.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_cc_library/plowercase.cpp
+END
+puppercase.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_cc_library/puppercase.cpp
+END
+BUILD.TEST
+K 25
+svn:wc:ra_dav:version-url
+V 135
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_cc_library/BUILD.TEST
+END
+blade_string.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 141
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_cc_library/blade_string.cpp
+END

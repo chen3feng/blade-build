@@ -16,8 +16,8 @@ import math
 import os
 import subprocess
 import time
-from blade_util import info
-from blade_util import warning
+
+import console
 
 
 class BuildEnvironment(object):
@@ -37,11 +37,11 @@ class BuildEnvironment(object):
         if self.distcc_installed and self.distcc_host_list:
             self.distcc_env_prepared = True
         if self.distcc_installed and not self.distcc_host_list:
-            warning("DISTCC_HOSTS not set but you have "
+            console.warning("DISTCC_HOSTS not set but you have "
                     "distcc installed, will just build locally")
         self.distcc_log_file = os.environ.get('DISTCC_LOG', '')
         if self.distcc_log_file:
-            info("distcc log: %s" % self.distcc_log_file)
+            console.info("distcc log: %s" % self.distcc_log_file)
 
         # dccc
         self.dccc_env_prepared = True
@@ -51,7 +51,7 @@ class BuildEnvironment(object):
         if self.dccc_installed:
             if not self.dccc_master and not self.dccc_hosts_list:
                 self.dccc_env_prepared = False
-                warning("MASTER_HOSTS and DISTLD_HOSTS not set "
+                console.warning("MASTER_HOSTS and DISTLD_HOSTS not set "
                         "but you have dccc installed, will just build locally")
         else:
             self.dccc_env_prepared = False
@@ -72,7 +72,7 @@ class BuildEnvironment(object):
         if p.returncode == 0:
             version_line = stdout.splitlines(True)[0]
             if version_line and version_line.find("ccache version") != -1:
-                info("ccache found")
+                console.info("ccache found")
                 return True
         return False
 
@@ -90,7 +90,7 @@ class BuildEnvironment(object):
         if p.returncode == 0:
             version_line = stdout.splitlines(True)[0]
             if version_line and version_line.find("distcc") != -1:
-                info("distcc found")
+                console.info("distcc found")
                 return True
 
     @staticmethod
@@ -98,7 +98,7 @@ class BuildEnvironment(object):
         """Check dccc is installed or not. """
         home_dir = os.environ.get("HOME", "")
         if home_dir and os.path.exists(os.path.join(home_dir, "bin", "dccc")):
-            info("dccc found")
+            console.info("dccc found")
             return True
         return False
 
@@ -167,7 +167,7 @@ class ScacheManager(object):
         if not file_list:
             return
         map(self.cache_remove, file_list)
-        info('scons cache purged')
+        console.info('scons cache purged')
 
     def get_file_list(self):
         if not self.cache_path:

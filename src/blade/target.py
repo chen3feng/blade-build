@@ -14,9 +14,9 @@
 
 import os
 import string
-from blade_util import error_exit
+
+import console
 from blade_util import var_to_list
-from blade_util import warning
 
 
 class Target(object):
@@ -66,20 +66,20 @@ class Target(object):
 
     def _clone_env(self):
         """Clone target's environment. """
-        error_exit("_clone_env should be overridden in subclasses")
+        console.error_exit("_clone_env should be overridden in subclasses")
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        error_exit("_prepare_to_generate_rule should be overridden in subclasses")
+        console.error_exit("_prepare_to_generate_rule should be overridden in subclasses")
 
     def _check_name(self):
         if '/' in self.data.get('name', ''):
-            error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
+            console.error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
                 self.data['path'], self.data['name']))
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            warning("//%s:%s: unrecognized options %s"  % (
+            console.warning("//%s:%s: unrecognized options %s"  % (
                     self.data['path'], self.data['name'], kwargs))
 
     def _check_srcs(self):
@@ -115,7 +115,7 @@ class Target(object):
                 if not (value_existed.split(': ')[0] in allow_dup_src_type_list and
                        self.data['type'] in allow_dup_src_type_list):
                     # Just warn here, not raising exception
-                    warning( 'Source file %s belongs to both %s and %s' % (
+                    console.warning( 'Source file %s belongs to both %s and %s' % (
                             s, target_srcs_map[src_key], src_value))
             target_srcs_map[src_key] = src_value
 
@@ -211,10 +211,10 @@ class Target(object):
         for dep in deps:
             if not (dep.startswith(':') or dep.startswith('#') or
                 dep.startswith('//') or dep.startswith('./')):
-                error_exit('%s/%s: Invalid dep in %s.' % (
+                console.error_exit('%s/%s: Invalid dep in %s.' % (
                     self.current_source_path, name, dep))
             if dep.count(':') > 1:
-                error_exit('%s/%s: Invalid dep %s, missing \',\' between 2 deps?' %
+                console.error_exit('%s/%s: Invalid dep %s, missing \',\' between 2 deps?' %
                             (self.current_source_path, name, dep))
 
     def _check_deprecated_deps(self):
@@ -333,7 +333,7 @@ class Target(object):
         files = var_to_list(target_files)
         files_str = ",".join(["%s" % f for f in files])
         if not self.blade.get_expanded():
-            error_exit("logic error in Blade, error in _generate_target_explict_dependency")
+            console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
         targets = self.blade.get_all_targets_expanded()
         files_map = self.blade.get_gen_rule_files_map()
         deps = targets[self.key]['deps']
@@ -422,6 +422,6 @@ class Target(object):
             bad_format = True
 
         if bad_format:
-            error_exit("invalid target lib format: %s, "
+            console.error_exit("invalid target lib format: %s, "
                        "should be #lib_name or lib_path:lib_name" % target_string)
 

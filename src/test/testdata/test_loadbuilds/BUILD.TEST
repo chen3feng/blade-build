@@ -1,0 +1,90 @@
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+)
+
+resource_library(
+    name = 'static_resource',
+    srcs = [
+    'form.js'
+    ]
+)
+
+cc_library(
+    name = 'poppy',
+    srcs = [],
+    deps = [
+        ':rpc_meta_info_proto',
+        ':static_resource',
+    ]
+)
+
+cc_library(
+    name = 'poppy_mock',
+    srcs = [
+        'rpc_mock_channel.cc',
+    ],
+    deps = [
+        ':poppy',
+    ],
+    link_all_symbols=True
+)
+
+cc_library(
+    name = 'poppy_swig_wrap',
+    srcs = [],
+    prebuilt =True
+)
+
+cc_test(
+    name = 'rpc_channel_test',
+    srcs = 'rpc_channel_test.cc',
+    deps = ':poppy'
+)
+
+swig_library(
+    name = 'poppy_client',
+    srcs = ['poppy_client.i'],
+    deps = [':poppy_swig_wrap'],
+    warning = 'yes',
+    java_package='com.soso.poppy.swig',
+    java_lib_packed=True
+)
+
+java_jar(
+    name = 'poppy_java_client',
+    srcs = ['src/com/soso/poppy'],
+    deps = []
+)
+
+cc_binary(
+    name = 'echoserver',
+    srcs = [
+        'echo_server.cc'
+    ],
+    deps = [
+        ':poppy'
+    ]
+)
+
+lex_yacc_library(
+    name = "parser",
+    srcs = [
+      'line_parser.ll',
+      'line_parser.yy'
+    ],
+    deps = [],
+    recursive=1
+)
+
+cc_plugin(
+    name='meter_business',
+    srcs=[],
+    deps=['#pthread']
+)
+
+gen_rule(
+    name='search_service_echo',
+    cmd='echo search_service',
+    outs='search_service.c'
+)

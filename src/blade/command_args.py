@@ -14,11 +14,12 @@
 
 import os
 import platform
+import shlex
 import sys
+
 import blade_util
+import console
 from argparse import ArgumentParser
-from blade_util import error_exit
-from blade_util import warning
 
 
 class CmdArguments(object):
@@ -30,22 +31,33 @@ class CmdArguments(object):
     """
     def __init__(self):
         """Init the class. """
-        (self.options, self.targets) = self._cmd_parse()
+        (self.options, others) = self._cmd_parse()
+
+        # If '--' in arguments, use all other arguments after it as run arguments
+        if '--' in others:
+            pos = others.index('--')
+            self.targets = others[:pos]
+            self.options.args = others[pos+1:]
+        else:
+            self.targets = others
+            self.options.args = []
+
         for t in self.targets:
             if t.startswith('-'):
-                error_exit("unregconized option %s, use blade [action] "
-                           "--help to get all the options" % t)
+                console.error_exit("unregconized option %s, use blade [action] "
+                                   "--help to get all the options" % t)
 
         command = self.options.command
 
         # Check the options with different sub command
         actions = {
-                  'build' : self._build_action,
-                  'run'   : self._run_action,
-                  'test'  : self._test_action,
-                  'clean' : self._clean_action,
-                  'query' : self._query_action
-                  }[command]()
+                  'build' : self._check_build_command,
+                  'run'   : self._check_run_command,
+                  'test'  : self._check_test_command,
+                  'clean' : self._check_clean_command,
+                  'query' : self._check_query_command
+                  }
+        actions[command]()
 
     def _check_run_targets(self):
         """check that run command should have only one target. """
@@ -56,15 +68,26 @@ class CmdArguments(object):
         elif self.targets[0].find(':') == -1:
             err = True
         if err:
-            error_exit("Please specify a single target to run: "
+            console.error_exit("Please specify a single target to run: "
                        "blade run //target_path:target_name (or a_path:target_name)")
         if self.options.command == 'run' and len(self.targets) > 1:
-            warning("run command will only take one target to build and run")
+            console.warning("run command will only take one target to build and run")
         if self.targets[0].startswith("//"):
             targets.append(self.targets[0][2:])
         else:
             targets.append(self.targets[0])
         self.targets = targets
+        if self.options.runargs:
+            console.warning('--runargs has been deprecated, please put all run'
+                            ' arguments after a "--" ')
+            self.options.args = shlex.split(self.options.runargs) + self.options.args
+
+    def _check_test_options(self):
+        """check that test command options. """
+        if self.options.testargs:
+            console.warning('--testargs has been deprecated, please put all test'
+                            ' arguments after a "--" ')
+            self.options.args = shlex.split(self.options.testargs) + self.options.args
 
     def _check_query_targets(self):
         """check query targets, should have a leaset one target. """
@@ -81,39 +104,38 @@ class CmdArguments(object):
             else:
                 targets.append(target)
         if err:
-            error_exit("Please specify targets in this way: "
-                       "blade query //target_path:target_name (or a_path:target_name)")
+            console.error_exit("Please specify targets in this way: blade query"
+                               " //target_path:target_name (or path:target_name)")
         self.targets = targets
 
     def _check_plat_and_profile_options(self):
         """check platform and profile options. """
         if (self.options.profile != 'debug' and
             self.options.profile != 'release'):
-            error_exit("--profile must be 'debug' or 'release'.")
+            console.error_exit("--profile must be 'debug' or 'release'.")
 
         if self.options.m is None:
             self.options.m = self._arch_bits()
         else:
             if not (self.options.m == "32" or self.options.m == "64"):
-                error_exit("--m must be '32' or '64'")
+                console.error_exit("--m must be '32' or '64'")
 
             # TODO(phongchen): cross compile checking
             if self.options.m == "64" and platform.machine() != "x86_64":
-                error_exit("Sorry, 64-bit environment is required for "
+                console.error_exit("Sorry, 64-bit environment is required for "
                             "building 64-bit targets.")
 
     def _check_color_options(self):
         """check color options. """
         if self.options.color == "yes":
+            console.color_enabled = True
             self.options.color = True;
         elif self.options.color == "no":
-            self.options.color = False;
-        elif self.options.color == "auto" or  self.options.color is None:
-            self.options.color = (sys.stdout.isatty() and
-                                  os.environ['TERM'] not in ('emacs', 'dumb'))
+            console.color_enabled = False
+        elif self.options.color == "auto" or self.options.color is None:
+            pass
         else:
-            error_exit("--color can only be yes, no or auto.")
-        blade_util.color_enabled = self.options.color
+            console.error_exit("--color can only be yes, no or auto.")
 
     def _check_clean_options(self):
         """check the clean options. """
@@ -123,7 +145,7 @@ class CmdArguments(object):
     def _check_query_options(self):
         """check query action options. """
         if not self.options.deps and not self.options.depended:
-            error_exit("please specify --deps, --depended or both to query target")
+            console.error_exit("please specify --deps, --depended or both to query target")
 
     def _check_build_options(self):
         """check the building options. """
@@ -144,34 +166,30 @@ class CmdArguments(object):
         else:
             self.options.cache_size = int(self.options.cache_size) * 1024 * 1024 * 1024
 
-    def _build_action(self):
+    def _check_build_command(self):
         """check build options. """
         self._check_build_options()
-        return 0
 
-    def _run_action(self):
+    def _check_run_command(self):
         """check run options and the run targets. """
         self._check_build_options()
         self._check_run_targets()
-        return 0
 
-    def _test_action(self):
+    def _check_test_command(self):
         """check test optios. """
         self._check_build_options()
-        return 0
+        self._check_test_options()
 
-    def _clean_action(self):
+    def _check_clean_command(self):
         """check clean options. """
         self._check_clean_options()
-        return 0
 
-    def _query_action(self):
+    def _check_query_command(self):
         """check query options. """
         self._check_plat_and_profile_options()
         self._check_color_options()
         self._check_query_options()
         self._check_query_targets()
-        return 0
 
     def __add_plat_profile_arguments(self, parser):
         """Add plat and profile arguments. """
@@ -198,7 +216,7 @@ class CmdArguments(object):
         parser.add_argument(
             "--generate-java", dest = "generate_java",
             action = "store_true", default = False,
-            help = "Generate java files for proto_library and swig_library.")
+            help = "Generate java files for proto_library, thrift_library and swig_library.")
 
         parser.add_argument(
             "--generate-php", dest = "generate_php",
@@ -321,26 +339,26 @@ class CmdArguments(object):
 
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""
-        blade_cmd_help = 'blade {command} [options] target1 [target2] ...'
+        blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
 
         sub_parser = arg_parser.add_subparsers(dest="command",
-                        help="Available commands")
+                        help="Available subcommands")
 
         build_parser = sub_parser.add_parser("build",
-                        help="Builds specified targets")
+                        help="Build specified targets")
 
         run_parser = sub_parser.add_parser("run",
-                        help="Builds and runs a single target")
+                        help="Build and runs a single target")
 
         test_parser = sub_parser.add_parser("test",
-                        help="Builds the specified targets and runs tests")
+                        help="Build the specified targets and runs tests")
 
         clean_parser = sub_parser.add_parser("clean",
-                        help="Removs all Blade-created output")
+                        help="Remove all Blade-created output")
 
         query_parser = sub_parser.add_parser("query",
-                        help="Executes a dependency graph query")
+                        help="Execute a dependency graph query")
 
         self._add_build_arguments(build_parser)
         self._add_build_arguments(run_parser)

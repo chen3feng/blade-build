@@ -1,0 +1,9 @@
+cc_binary(
+    name = 'echoserver',
+    srcs = [
+        'echo_server.cc'
+    ],
+    deps = [
+        '//test_dependency:poppy'
+    ]
+)

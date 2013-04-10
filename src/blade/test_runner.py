@@ -15,17 +15,15 @@
 
 
 import os
-import shutil
-import subprocess
 import sys
 import time
-import blade_util
-from blade_util import error_exit
+
+import binary_runner
+import console
+
+from blade_util import environ_add_path
 from blade_util import get_cwd
-from blade_util import info
-from blade_util import info_str
 from blade_util import md5sum
-from blade_util import warning
 from test_scheduler import TestScheduler
 
 
@@ -60,270 +58,76 @@ def _diff_env(a, b):
     return (dict(seta - setb), dict(setb - seta))
 
 
-class TestRunner(object):
+class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
     def __init__(self, targets, options, prebuilt_file_map={}, target_database={}):
         """Init method. """
-        self.targets = targets
-        self.build_dir = "build%s_%s" % (options.m, options.profile)
-        self.options = options
-        self.run_list = ['cc_binary',
-                         'dynamic_cc_binary',
-                         'cc_test',
-                         'dynamic_cc_test']
-        self.prebuilt_file_map = prebuilt_file_map
-        self.target_database = target_database
+        binary_runner.BinaryRunner.__init__(self, targets, options, prebuilt_file_map, target_database)
 
         self.inctest_md5_file = ".blade.test.stamp"
         self.tests_detail_file = "./blade_tests_detail"
-        self.run_all = False
         self.inctest_run_list = []
-        self.testarg_dict = {}
-        self.env_dict = {}
-        self.cur_testarg_dict = {}
-        self.cur_env_dict = {}
-        self.inctest_md5_buffer = []
-        self.target_dict = {}
-        self.cur_target_dict = {}
-        self.option_has_fulltest = False
+        self.last_test_stamp = {}
+        self.last_test_stamp['md5'] = {}
+        self.test_stamp = {}
+        self.test_stamp['md5'] = {}
         self.valid_inctest_time_interval = 86400
-        self.last_inctest_time_dict = {}
-        self.this_inctest_time_dict = {}
         self.tests_run_map = {}
         self.run_all_reason = ''
         self.title_str = '='*13
         self.skipped_tests = []
-        if hasattr(self.options, 'fulltest'):
-            self.option_has_fulltest = True
-        if self.option_has_fulltest and (not self.options.fulltest):
+        if not self.options.fulltest:
             if os.path.exists(self.inctest_md5_file):
-                for line in open(self.inctest_md5_file):
-                    self.inctest_md5_buffer.append(line[:-1])
-            buf_len = len(self.inctest_md5_buffer)
-            if buf_len < 2 and buf_len > 0 :
-                if os.path.exists(self.inctest_md5_file):
-                    os.remove(self.inctest_md5_file)
-                error_exit("bad incremental test md5 file, removed")
-            if self.inctest_md5_buffer:
-                self.testarg_dict = eval(self.inctest_md5_buffer[0])
-                self.env_dict = eval(self.inctest_md5_buffer[1])
-            if buf_len >= 3:
-                self.target_dict = eval(self.inctest_md5_buffer[2])
-            if buf_len >= 4:
-                self.last_inctest_time_dict = eval(self.inctest_md5_buffer[3])
-        if hasattr(self.options, 'testargs'):
-            self.cur_testarg_dict['testarg'] = md5sum(self.options.testargs)
-        else:
-            self.cur_testarg_dict['testarg'] = None
+                try:
+                    self.last_test_stamp = eval(open(self.inctest_md5_file).read())
+                except (IOError, SyntaxError):
+                    console.warning("error loading incremental test history, will run full test")
+                    self.run_all_reason = 'NO_HISTORY'
+
+        self.test_stamp['testarg'] = md5sum(str(self.options.args))
         env_keys = os.environ.keys()
         env_keys = list(set(env_keys).difference(env_ignore_set))
         env_keys.sort()
-        env_dict = {}
+        last_test_stamp = {}
         for env_key in env_keys:
-            env_dict[env_key] = os.environ[env_key]
-        self.cur_env_dict['env'] = env_dict
-        self.this_inctest_time_dict['inctest_time'] = time.time()
+            last_test_stamp[env_key] = os.environ[env_key]
+        self.test_stamp['env'] = last_test_stamp
+        self.test_stamp['inctest_time'] = time.time()
 
-        if self.option_has_fulltest and (not self.options.fulltest):
-            if self.cur_testarg_dict['testarg'] != (
-                    self.testarg_dict.get('testarg', None)):
-                self.run_all = True
+        if not self.options.fulltest:
+            if self.test_stamp['testarg'] != (
+                    self.last_test_stamp.get('testarg', None)):
                 self.run_all_reason = 'ARGUMENT'
-                info("all tests will run due to test arguments changed")
+                console.info("all tests will run due to test arguments changed")
 
-            new_env = self.cur_env_dict['env']
-            old_env = self.env_dict.get('env', {})
+            new_env = self.test_stamp['env']
+            old_env = self.last_test_stamp.get('env', {})
             if isinstance(old_env, str): # For old test record
                 old_env = {}
             if new_env != old_env:
-                self.run_all = True
                 self.run_all_reason = 'ENVIRONMENT'
                 (new, old) = _diff_env(new_env, old_env)
-                info("all tests will run due to test environments changed:")
+                console.info("all tests will run due to test environments changed:")
                 if new:
-                    info("new environments: %s" % new)
+                    console.info("new environments: %s" % new)
                 if old:
-                    info("old environments: %s" % old)
+                    console.info("old environments: %s" % old)
 
-            this_time = int(round(self.this_inctest_time_dict['inctest_time']))
-            last_time = int(round(self.last_inctest_time_dict.get('inctest_time', 0)))
+            this_time = int(round(self.test_stamp['inctest_time']))
+            last_time = int(round(self.last_test_stamp.get('inctest_time', 0)))
             interval = this_time - last_time
 
             if interval >= self.valid_inctest_time_interval or interval < 0:
-                self.run_all = True
                 self.run_all_reason = 'STALE'
-                info("all tests will run due to all passed tests are invalid now")
-        if self.option_has_fulltest and self.options.fulltest:
-            self.run_all = True
+                console.info("all tests will run due to all passed tests are invalid now")
+        if self.options.fulltest:
             self.run_all_reason = 'FULLTEST'
-
-    def _test_executable(self, target):
-        """Returns the executable path. """
-        return "%s/%s/%s" % (self.build_dir, target['path'], target['name'])
-
-    def _runfiles_dir(self, target):
-        """Returns runfiles dir. """
-        return "./%s.runfiles" % (self._test_executable(target))
-
-    def _prepare_run_env(self, target):
-        """Prepare the run environment. """
-        profile_link_name = os.path.basename(self.build_dir)
-        target_dir = os.path.dirname(self._test_executable(target))
-        lib_link = os.path.join(target_dir, profile_link_name)
-        if os.path.exists(lib_link):
-            os.remove(lib_link)
-        os.symlink(os.path.abspath(self.build_dir), lib_link)
-
-    def _get_prebuilt_files(self, target):
-        """Get prebuilt files for one target that it depends. """
-        file_list = []
-        target_key = (target['path'], target['name'])
-        for dep in self.target_database.get(target_key, {}).get('deps', []):
-            target_type = self.target_database.get(dep, {}).get('type', '')
-            if target_type == 'prebuilt_cc_library':
-                prebuilt_file = self.prebuilt_file_map.get(dep, None)
-                if prebuilt_file:
-                    file_list.append(prebuilt_file)
-        return file_list
-
-    def __check_link_name(self, link_name, link_name_list):
-        """check the link name is valid or not. """
-        link_name_norm = os.path.normpath(link_name)
-        if link_name in link_name_list:
-            return "AMBIGUOUS", None
-        long_path = ''
-        short_path = ''
-        short_len = 0
-        for item in link_name_list:
-            item_norm = os.path.normpath(item)
-            if len(link_name_norm) >= len(item_norm):
-                (long_path, short_path) = (link_name_norm, item_norm)
-            else:
-                (long_path, short_path) = (item_norm, link_name_norm)
-            if long_path.startswith(short_path) and (
-                    long_path[len(short_path)] == '/'):
-                return "INCOMPATIBLE", item
-        else:
-            return  "VALID", None
-
-    def _prepare_test_env(self, target):
-        """Prepare the test environment. """
-        shutil.rmtree(self._runfiles_dir(target), ignore_errors=True)
-        os.mkdir(self._runfiles_dir(target))
-        # add build profile symlink
-        profile_link_name = os.path.basename(self.build_dir)
-        os.symlink(os.path.abspath(self.build_dir),
-                   os.path.join(self._runfiles_dir(target), profile_link_name))
-
-        # add pre build library symlink
-        for prebuilt_file in self._get_prebuilt_files(target):
-            src = os.path.abspath(prebuilt_file[0])
-            dst = os.path.join(self._runfiles_dir(target), prebuilt_file[1])
-            if os.path.lexists(dst):
-                warning("trying to make duplicate prebuilt symlink:\n"
-                        "%s -> %s\n"
-                        "%s -> %s already exists\n"
-                        "skipped, should check duplicate prebuilt libraries"
-                        % (dst, src, dst, os.path.realpath(dst)))
-                continue
-            os.symlink(src, dst)
-
-        link_name_list = []
-        for i in target['options']['testdata']:
-            if isinstance(i, tuple):
-                data_target = i[0]
-                link_name = i[1]
-            else:
-                data_target = link_name = i
-            if '..' in data_target:
-                continue
-            if link_name.startswith('//'):
-                link_name = link_name[2:]
-            err_msg, item = self.__check_link_name(link_name, link_name_list)
-            if err_msg == "AMBIGUOUS":
-                error_exit("Ambiguous testdata of //%s:%s: %s, exit..." % (
-                             target['path'], target['name'], link_name))
-            elif err_msg == "INCOMPATIBLE":
-                error_exit("%s could not exist with %s in testdata of //%s:%s" % (
-                           link_name, item, target['path'], target['name']))
-            link_name_list.append(link_name)
-            try:
-                os.makedirs(os.path.dirname('%s/%s' % (
-                        self._runfiles_dir(target), link_name)))
-            except os.error:
-                pass
-
-            symlink_name = os.path.abspath('%s/%s' % (
-                                self._runfiles_dir(target), link_name))
-            symlink_valid = False
-            if os.path.lexists(symlink_name):
-                if os.path.exists(symlink_name):
-                    symlink_valid = True
-                    warning("%s already existed, could not prepare testdata for "
-                            "//%s:%s" % (link_name, target['path'], target['name']))
-                else:
-                    os.remove(symlink_name)
-                    warning("%s already existed, but it is a broken "
-                            "symbolic link, blade will remove it and "
-                            "make a new one." % link_name)
-            if data_target.startswith('//'):
-                data_target = data_target[2:]
-                dest_data_file = os.path.abspath(data_target)
-            else:
-                dest_data_file = os.path.abspath("%s/%s" % (target['path'], data_target))
-
-            if not symlink_valid:
-                os.symlink(dest_data_file,
-                           '%s/%s' % (self._runfiles_dir(target), link_name))
-
-    def _clean_test_target(self, target):
-        """clean the test target environment. """
-        profile_link_name = os.path.basename(self.build_dir)
-        profile_link_path = os.path.join(self._runfiles_dir(target), profile_link_name)
-        if os.path.exists(profile_link_path):
-            os.remove(profile_link_path)
-
-    def _clean_test_env(self):
-        """clean test environment. """
-        for target in self.targets.values():
-            if not (target['type'] == 'cc_test' or
-                    target['type'] == 'dynamic_cc_test'):
-                continue
-            self._clean_test_target(target)
-
-    def run_target(self, target_key):
-        """Run one single target. """
-        target = self.targets.get(target_key, {})
-        if not target:
-            error_exit("target %s:%s is not in the target databases" % (
-                       target_key[0], target_key[1]))
-        if target['type'] not in self.run_list:
-            error_exit("target %s:%s is not a target that could run" % (
-                       target_key[0], target_key[1]))
-        self._prepare_run_env(target)
-        old_pwd = get_cwd()
-        cmd = "%s " % os.path.abspath(self._test_executable(target))
-        if self.options.runargs:
-            cmd += "%s" % self.options.runargs
-        info("it will run '%s' " % cmd )
-        sys.stdout.flush()
-
-        target_dir = os.path.dirname(self._test_executable(target))
-        os.chdir(target_dir)
-        run_env = dict(os.environ)
-        run_env['LD_LIBRARY_PATH'] = target_dir
-        p = subprocess.Popen(cmd,
-                             env=run_env,
-                             shell=True)
-        p.wait()
-        os.chdir(old_pwd)
-        return p.returncode
 
     def _get_test_target_md5sum(self, target):
         """Get test target md5sum. """
         related_file_list = []
         related_file_data_list = []
-        test_file_name = os.path.abspath(self._test_executable(target))
+        test_file_name = os.path.abspath(self._executable(target))
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
@@ -373,16 +177,16 @@ class TestRunner(object):
 
         return md5sum(test_target_str), md5sum(test_target_data_str)
 
-    def _get_inctest_run_list(self):
+    def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
             if not (target['type'] == 'cc_test' or
                     target['type'] == 'dynamic_cc_test'):
                 continue
             target_key = "%s:%s" % (target['path'], target['name'])
-            test_file_name = os.path.abspath(self._test_executable(target))
-            self.cur_target_dict[test_file_name] = self._get_test_target_md5sum(target)
-            if self.run_all:
+            test_file_name = os.path.abspath(self._executable(target))
+            self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
+            if self.run_all_reason:
                 self.tests_run_map[target_key] = {
                         'runfile'  : test_file_name,
                         'result'   : '',
@@ -390,8 +194,8 @@ class TestRunner(object):
                         'costtime' : 0}
                 continue
 
-            old_md5sum = self.target_dict.get(test_file_name, None)
-            new_md5sum = self.cur_target_dict[test_file_name]
+            old_md5sum = self.last_test_stamp['md5'].get(test_file_name, None)
+            new_md5sum = self.test_stamp['md5'][test_file_name]
             if new_md5sum != old_md5sum:
                 self.inctest_run_list.append(target)
                 reason = ''
@@ -412,11 +216,11 @@ class TestRunner(object):
                         'costtime' : 0}
 
         # Append old md5sum that not existed into new
-        old_keys = set(self.target_dict.keys())
-        new_keys = set(self.cur_target_dict.keys())
+        old_keys = set(self.last_test_stamp['md5'].keys())
+        new_keys = set(self.test_stamp['md5'].keys())
         diff_keys = old_keys.difference(new_keys)
         for key in list(diff_keys):
-            self.cur_target_dict[key] = self.target_dict[key]
+            self.test_stamp['md5'][key] = self.last_test_stamp['md5'][key]
 
     def _check_inctest_md5sum_file(self):
         """check the md5sum file size, remove it when it is too large.
@@ -424,18 +228,15 @@ class TestRunner(object):
         """
         if os.path.exists(self.inctest_md5_file):
             if os.path.getsize(self.inctest_md5_file) > 2*1024*1024*1024:
-                warning("Will remove the md5sum file for incremental test "
+                console.warning("Will remove the md5sum file for incremental test "
                         "for it is oversized"
                         )
                 os.remove(self.inctest_md5_file)
 
-    def _write_inctest_md5sum(self):
+    def _write_test_history(self):
        """write md5sum to file. """
        f = open(self.inctest_md5_file, "w")
-       print >> f, str(self.cur_testarg_dict)
-       print >> f, str(self.cur_env_dict)
-       print >> f, str(self.cur_target_dict)
-       print >> f, str(self.this_inctest_time_dict)
+       print >> f, str(self.test_stamp)
        f.close()
        self._check_inctest_md5sum_file()
 
@@ -454,26 +255,26 @@ class TestRunner(object):
         sort_buf.sort(key=lambda x : x[1])
 
         if self.tests_run_map.keys():
-            info("%s Testing detail %s" %(self.title_str, self.title_str))
+            console.info("%s Testing detail %s" %(self.title_str, self.title_str))
         for key, costtime in sort_buf:
             reason = self.tests_run_map.get(key, {}).get('reason', 'UNKNOWN')
             result = self.tests_run_map.get(key, {}).get('result',
                                                          'INTERRUPTED')
             if 'SIG' in result:
                 result = "with %s" % result
-            print info_str("%s triggered by %s, exit(%s), cost %.2f s" % (
-                           key, reason, result, costtime))
+            console.info("%s triggered by %s, exit(%s), cost %.2f s" % (
+                         key, reason, result, costtime), prefix=False)
 
     def _finish_tests(self):
         """finish some work before return from runner. """
-        self._write_inctest_md5sum()
-        if hasattr(self.options, 'show_details') and self.options.show_details:
+        self._write_test_history()
+        if self.options.show_details:
             self._write_tests_detail_map()
-            if not self.run_all:
+            if not self.run_all_reason:
                 self._show_skipped_tests_detail()
                 self._show_skipped_tests_summary()
             self._show_tests_detail()
-        elif not self.run_all:
+        elif not self.run_all_reason:
             self._show_skipped_tests_summary()
 
     def _show_skipped_tests_detail(self):
@@ -481,72 +282,69 @@ class TestRunner(object):
         if not self.skipped_tests:
             return
         self.skipped_tests.sort()
-        info("skipped tests")
+        console.info("skipped tests")
         for target_key in self.skipped_tests:
             print "%s:%s" % (target_key[0], target_key[1])
 
     def _show_skipped_tests_summary(self):
         """show tests skipped summary. """
-        info("%d tests skipped when doing incremental test" % len(self.skipped_tests))
-        info("to run all tests, please specify --full-test argument")
+        console.info("%d tests skipped when doing incremental test" % len(self.skipped_tests))
+        console.info("to run all tests, please specify --full-test argument")
 
     def run(self):
         """Run all the cc_test target programs. """
         failed_targets = []
-        self._get_inctest_run_list()
+        self._generate_inctest_run_list()
         tests_run_list = []
-        old_pwd = get_cwd()
         for target in self.targets.values():
             if not (target['type'] == 'cc_test' or
                     target['type'] == 'dynamic_cc_test'):
                 continue
-            if (not self.run_all) and target not in self.inctest_run_list:
+            if (not self.run_all_reason) and target not in self.inctest_run_list:
                 if not target.get('options', {}).get('always_run', False):
                     self.skipped_tests.append((target['path'], target['name']))
                     continue
-            self._prepare_test_env(target)
-            cmd = "%s --gtest_output=xml" % os.path.abspath(self._test_executable(target))
-            if self.options.testargs:
-                cmd = "%s %s" % (cmd, self.options.testargs)
+            self._prepare_env(target)
+            cmd = [os.path.abspath(self._executable(target))]
+            cmd += self.options.args
 
             sys.stdout.flush() # make sure output before scons if redirected
 
             test_env = dict(os.environ)
-            test_env['LD_LIBRARY_PATH'] = self._runfiles_dir(target)
-            test_env['GTEST_COLOR'] = 'yes' if blade_util.color_enabled else 'no'
+            environ_add_path(test_env, 'LD_LIBRARY_PATH', self._runfiles_dir(target))
+            test_env['GTEST_COLOR'] = 'yes' if console.color_enabled else 'no'
+            test_env['GTEST_OUTPUT'] = 'xml'
             test_env['HEAPCHECK'] = target.get('options', {}).get('heap_check', '')
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,
                                    cmd))
         concurrent_jobs = 0
-        if hasattr(self.options, 'test_jobs'):
-            concurrent_jobs = self.options.test_jobs
+        concurrent_jobs = self.options.test_jobs
         scheduler = TestScheduler(tests_run_list,
                                   concurrent_jobs,
                                   self.tests_run_map)
         scheduler.schedule_jobs()
 
-        os.chdir(old_pwd)
-        self._clean_test_env()
-        info("%s Testing Summary %s" % (self.title_str, self.title_str))
-        info("Run %d test targets" % scheduler.num_of_run_tests)
+        self._clean_env()
+        console.info("%s Testing Summary %s" % (self.title_str, self.title_str))
+        console.info("Run %d test targets" % scheduler.num_of_run_tests)
 
         failed_targets = scheduler.failed_targets
         if failed_targets:
-            info("%d tests failed:" % len(failed_targets))
+            console.error("%d tests failed:" % len(failed_targets))
             for i in failed_targets:
                 print "%s/%s, exit code: %s" % (
                     i["path"], i["name"], i["test_exit_code"])
-                test_file_name = os.path.abspath(self._test_executable(i))
+                test_file_name = os.path.abspath(self._executable(i))
                 # Do not skip failed test by default
-                if self.cur_target_dict.has_key(test_file_name):
-                    self.cur_target_dict[test_file_name] = (0, 0)
-            info("%d tests passed" % (
+                if test_file_name in self.test_stamp['md5']:
+                    self.test_stamp['md5'][test_file_name] = (0, 0)
+            console.info("%d tests passed" % (
                 scheduler.num_of_run_tests - len(failed_targets)))
             self._finish_tests()
             return 1
         else:
-            info("All tests passed!")
+            console.info("All tests passed!")
             self._finish_tests()
             return 0

@@ -80,7 +80,9 @@ _blade()
         return 0
     fi
 
-    commonOpts="--color --profile --generate-dynamic --no-test --help -pdebug -prelease -m32 -m64"
+    commonOpts="--color --profile --generate-dynamic --no-test --help -pdebug \
+                -prelease -m32 -m64 --verbose"
+    buildOpts="$commonOpts --gcov --gprof --generate-java --generate-php"
 
     # possible options for the command
     cmdOpts=
@@ -95,7 +97,7 @@ _blade()
         cmdOpts="$commonOpts"
         ;;
     query)
-        cmdOpts="$commonOpts"
+        cmdOpts="$commonOpts --deps --dependeds"
         ;;
     *)
         ;;

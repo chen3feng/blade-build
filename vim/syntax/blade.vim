@@ -28,13 +28,16 @@ endif
 
 syn case match
 
+" Sorted by alphabet order
 syn keyword bladeTarget cc_binary cc_library cc_plugin cc_test enable_if
 syn keyword bladeTarget gen_rule lex_yacc_library proto_library java_jar
 syn keyword resource_library swig_library
 
-syn keyword bladeArg always_run cmd defs deprecated deps dynamic_link exclusive
-syn keyword bladeArg extra_cppflags heap_check heap_check_debug incs
-syn keyword bladeArg link_all_symbols name outs prebuilt srcs testdata warning
+" Sorted by alphabet order
+syn keyword bladeArg always_run cmd defs deprecated deps dynamic_link
+syn keyword bladeArg exclusive export_dynamic extra_cppflags extra_linkflags
+syn keyword bladeArg heap_check heap_check_debug incs link_all_symbols
+syn keyword bladeArg name optimize outs prebuilt srcs testdata warning
 
 if version >= 508 || !exists("did_blade_syn_inits")
     if version < 508

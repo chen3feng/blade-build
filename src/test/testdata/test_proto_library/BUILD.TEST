@@ -1,0 +1,26 @@
+proto_library(
+    name = 'rpc_option_proto',
+    srcs = 'rpc_option.proto'
+)
+
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+    deps = ':rpc_option_proto'
+)
+
+cc_library(
+    name='lowercase',
+    srcs=[
+         'plowercase.cpp'
+         ],
+    deps=[
+         '#pthread',
+         ':rpc_meta_info_proto',
+         ':rpc_option_proto'
+    ],
+    defs=['LOWER_DEF'],
+    incs=['include'],
+    optimize=['O3'],
+    always_optimize=True,
+)

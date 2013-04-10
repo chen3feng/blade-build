@@ -20,13 +20,21 @@ import socket
 import subprocess
 import string
 import time
+
 import blade_util
 import configparse
+import console
+
 from blade_platform import CcFlagsManager
 from blade_platform import SconsPlatform
-from blade_util import info
 from blade_util import var_to_list
-from blade_util import warning
+
+
+def _incs_list_to_string(incs):
+    """ Convert incs list to string
+    ['thirdparty', 'include'] -> -I thirdparty -I include
+    """
+    return ' '.join(['-I ' + path for path in incs])
 
 
 class SconsRules(object):
@@ -97,7 +105,7 @@ version_obj = env_version.SharedObject('$filename')
             svn_dir = os.path.basename(root_dir_realpath)
 
             if not os.path.exists("%s/.svn" % root_dir):
-                warning("%s is not under version control" % root_dir)
+                console.warning("%s is not under version control" % root_dir)
                 continue
 
             p = subprocess.Popen("svn info %s" % svn_dir,
@@ -108,7 +116,7 @@ version_obj = env_version.SharedObject('$filename')
                                  shell=True)
             std_out, std_err = p.communicate()
             if p.returncode:
-                warning("failed to get version control info in %s" % root_dir)
+                console.warning("failed to get version control info in %s" % root_dir)
             else:
                 self.svn_info_map[root_dir] = std_out.replace("\n", "\\n\\\n")
 
@@ -169,16 +177,19 @@ import signal
 import time
 import socket
 import glob
+
 import blade_util
-from build_environment import ScacheManager
+import console
 import scons_helper
+
+from build_environment import ScacheManager
+from scons_helper import MakeAction
 from scons_helper import create_fast_link_builders
 from scons_helper import echospawn
 from scons_helper import error_colorize
 from scons_helper import generate_python_binary
 from scons_helper import generate_resource_file
 from scons_helper import generate_resource_header
-from scons_helper import MakeAction
 """)
 
         if hasattr(self.options, 'verbose') and self.options.verbose:
@@ -196,14 +207,13 @@ from scons_helper import MakeAction
     def generate_compliation_verbose(self):
         """Generates color and verbose message. """
         self._add_rule("top_env.Decider('MD5-timestamp')")
+        self._add_rule("console.color_enabled=%s" % console.color_enabled)
         self._add_rule("colors = scons_helper.colors")
-        color_enabled = "True" if blade_util.color_enabled else "False"
-        self._add_rule("blade_util.color_enabled=%s" % color_enabled)
 
-        if hasattr(self.options, 'color') and not self.options.color:
+        if not console.color_enabled:
             self._add_rule(
                 """
-for key, value in colors.iteritems():
+for key in colors:
     colors[key] = ''
 """)
         if hasattr(self.options, 'verbose') and not self.options.verbose:
@@ -221,6 +231,15 @@ compile_proto_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
     (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
 
 compile_proto_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
+    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+
+compile_thrift_cc_message = '%sCompiling %s$SOURCE%s to cc source%s' % \
+    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+
+compile_thrift_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
+    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+
+compile_thrift_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
     (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
 
 compile_resource_header_message = '%sGenerating resource header %s$TARGET%s%s' % \
@@ -267,15 +286,15 @@ compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
             self._add_rule(
             r"""
 top_env.Append(
-  CXXCOMSTR = compile_source_message,
-  CCCOMSTR = compile_source_message,
-  SHCCCOMSTR = compile_source_message,
-  SHCXXCOMSTR = compile_source_message,
-  ARCOMSTR = link_library_message,
-  RANLIBCOMSTR = ranlib_library_message,
-  SHLINKCOMSTR = link_shared_library_message,
-  LINKCOMSTR = link_program_message,
-  JAVACCOMSTR = compile_source_message
+    CXXCOMSTR = compile_source_message,
+    CCCOMSTR = compile_source_message,
+    SHCCCOMSTR = compile_source_message,
+    SHCXXCOMSTR = compile_source_message,
+    ARCOMSTR = link_library_message,
+    RANLIBCOMSTR = ranlib_library_message,
+    SHLINKCOMSTR = link_shared_library_message,
+    LINKCOMSTR = link_program_message,
+    JAVACCOMSTR = compile_source_message
 )""")
 
     def _generate_fast_link_builders(self):
@@ -292,20 +311,13 @@ top_env.Append(
         # Generates builders specified in blade bash at first
         self._generate_fast_link_builders()
 
-        protoc_config = configparse.blade_config.get_config('protoc_config')
-        protoc_bin = protoc_config['protoc']
-        protobuf_path = protoc_config['protobuf_path']
+        proto_config = configparse.blade_config.get_config('proto_library_config')
+        protoc_bin = proto_config['protoc']
+        protobuf_path = proto_config['protobuf_path']
 
-        protobuf_include_path = protoc_config['protobuf_include_path']
-        protobuf_path_list = []
-        for p in protobuf_include_path.split(" "):
-            p = p.strip()
-            protobuf_path_list.append("-I%s" % p)
-
-        protobuf_include_path_str = ' '.join(protobuf_path_list)
-
-        protobuf_php_path = protoc_config['protobuf_php_path']
-        protoc_php_plugin = protoc_config['protoc_php_plugin']
+        protobuf_incs_str = _incs_list_to_string(proto_config['protobuf_incs'])
+        protobuf_php_path = proto_config['protobuf_php_path']
+        protoc_php_plugin = proto_config['protoc_php_plugin']
         # Genreates common builders now
         builder_list = []
         self._add_rule("time_value = Value('%s')" %  time.asctime())
@@ -314,7 +326,7 @@ top_env.Append(
             "--proto_path=. -I. %s -I=`dirname $SOURCE` "
             "--cpp_out=%s "
             "$SOURCE', compile_proto_cc_message))" % (
-                    protoc_bin, protobuf_include_path_str, self.build_dir))
+                    protoc_bin, protobuf_incs_str, self.build_dir))
         builder_list.append("BUILDERS = {'Proto' : proto_bld}")
 
         self._add_rule(
@@ -331,7 +343,7 @@ top_env.Append(
             "-I. %s -I%s -I=`dirname $SOURCE` "
             "--php_out=%s/`dirname $SOURCE` "
             "$SOURCE', compile_proto_php_message))" % (
-                    protoc_bin, protoc_php_plugin, protobuf_include_path_str,
+                    protoc_bin, protoc_php_plugin, protobuf_incs_str,
                     protobuf_php_path, self.build_dir))
         builder_list.append("BUILDERS = {'ProtoPhp' : proto_php_bld}")
 
@@ -341,8 +353,35 @@ top_env.Append(
             "-I. %s -I=`dirname $SOURCE` "
             "--python_out=%s "
             "$SOURCE', compile_proto_python_message))" % (
-                    protoc_bin, protobuf_include_path_str, self.build_dir))
+                    protoc_bin, protobuf_incs_str, self.build_dir))
         builder_list.append("BUILDERS = {'ProtoPython' : proto_python_bld}")
+
+        # Generate thrift library builders.
+        thrift_config = configparse.blade_config.get_config('thrift_config')
+        thrift_bin = thrift_config['thrift']
+        thrift_incs_str = _incs_list_to_string(thrift_config['thrift_incs'])
+
+        # Genreates common builders now
+        self._add_rule(
+            "thrift_bld = Builder(action = MakeAction('%s "
+            "--gen cpp:include_prefix -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` "
+            "$SOURCE', compile_thrift_cc_message))" % (
+                    thrift_bin, thrift_incs_str, self.build_dir))
+        builder_list.append("BUILDERS = {'Thrift' : thrift_bld}")
+
+        self._add_rule(
+            "thrift_java_bld = Builder(action = MakeAction('%s "
+            "--gen java -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` "
+            "$SOURCE', compile_thrift_java_message))" % (
+                    thrift_bin, thrift_incs_str, self.build_dir))
+        builder_list.append("BUILDERS = {'ThriftJava' : thrift_java_bld}")
+
+        self._add_rule(
+            "thrift_python_bld = Builder(action = MakeAction('%s "
+            "--gen py -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` "
+            "$SOURCE', compile_thrift_python_message))" % (
+                    thrift_bin, thrift_incs_str, self.build_dir))
+        builder_list.append("BUILDERS = {'ThriftPython' : thrift_python_bld}")
 
         self._add_rule(
                      r"""
@@ -379,10 +418,10 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         cc_str = toolchain_dir + os.environ.get('CC', 'gcc')
         cxx_str = toolchain_dir + os.environ.get('CXX', 'g++')
         ld_str = toolchain_dir + os.environ.get('LD', 'g++')
-        info("CPP=%s" % cpp_str)
-        info("CC=%s" % cc_str)
-        info("CXX=%s" % cxx_str)
-        info("LD=%s" % ld_str)
+        console.info("CPP=%s" % cpp_str)
+        console.info("CC=%s" % cc_str)
+        console.info("CXX=%s" % cxx_str)
+        console.info("LD=%s" % ld_str)
 
         self.ccflags_manager.set_cpp_str(cpp_str)
 
@@ -431,10 +470,9 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         cc_config = configparse.blade_config.get_config('cc_config')
         extra_incs = cc_config['extra_incs']
-        include_list = []
-        for inc in extra_incs.split(" "):
-            include_list.append("'%s'" % inc)
-        extra_includes = ", ".join(include_list)
+        extra_incs_str =', '.join(["'%s'" % inc for inc in extra_incs])
+        if not extra_incs_str:
+            extra_incs_str = "''"
 
         for env in self.env_list:
             self._add_rule("%s = top_env.Clone()" % env)
@@ -448,7 +486,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           %s,
           LINKFLAGS=%s)
 """ % (self.env_list[0], cc_env_str,
-       extra_includes, self.build_dir, self.python_inc,
+       extra_incs_str, self.build_dir, self.python_inc,
        cc_config['cppflags'] + warn_cppflags + cppflags_except_warning,
        cc_config['cflags'],
        cc_config['cxxflags'] + warn_cxxflags,
@@ -464,7 +502,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           %s,
           LINKFLAGS=%s)
 """ % (self.env_list[1], cc_env_str,
-       extra_includes,
+       extra_incs_str,
        self.build_dir, self.python_inc,
        cc_config['cppflags'] + warn_cppflags  + err_cppflags + cppflags_except_warning,
        cc_config['cflags'] + err_cflags,
@@ -481,7 +519,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           %s,
           LINKFLAGS=%s)
 """ % (self.env_list[2], cc_env_str,
-       extra_includes, self.build_dir, self.python_inc,
+       extra_incs_str, self.build_dir, self.python_inc,
        cc_config['cppflags'] + cppflags_except_warning,
        cc_config['cflags'],
        cc_config['cxxflags'],
@@ -491,14 +529,14 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         if hasattr(self.options, 'cache_dir') and self.options.cache_dir:
             if not self.build_environment.ccache_installed:
                 self._add_rule("CacheDir('%s')" % self.options.cache_dir)
-                self._add_rule("blade_util.info('using cache directory %s')" % (
+                self._add_rule("console.info('using cache directory %s')" % (
                         self.options.cache_dir))
                 if hasattr(self.options, 'cache_size') and (
                         self.options.cache_size != -1):
                     self._add_rule("scache_manager = ScacheManager('%s', cache_limit=%s)" % (
                             self.options.cache_dir, self.options.cache_size))
                     self._add_rule("Progress(scache_manager, interval=100)")
-                    self._add_rule("blade_util.info('scache size %d')" % (
+                    self._add_rule("console.info('scache size %d')" % (
                                    self.options.cache_size))
 
         if not self.build_environment.ccache_installed:
@@ -506,11 +544,11 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
                         not self.options.cache_dir):
                 default_cache_dir = os.path.expanduser("~/.bladescache")
                 default_cache_size = 1024*1024*1024
-                warning("there is no ccache and you don't have scache enabled, "
+                console.warning("there is no ccache and you don't have scache enabled, "
                         "use %s as current scache dir, scache size 1G" % (
                         default_cache_dir))
                 self._add_rule("CacheDir('%s')" % default_cache_dir)
-                self._add_rule("blade_util.info('using cache directory %s')" % (
+                self._add_rule("console.info('using cache directory %s')" % (
                                default_cache_dir))
                 self._add_rule("scache_manager = ScacheManager('%s', "
                                "cache_limit=%d)" % (

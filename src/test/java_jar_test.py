@@ -190,8 +190,8 @@ class TestJavaJar(unittest.TestCase):
                          "librpc_meta_info_proto.a build64_release/test_java_jar/"
                          "librpc_option_proto.a -Wl,--no-whole-archive")
         self.assertTrue(whole_archive in java_so_line)
-        self.assertGreater(jar_idx, java_com_idx)
-        self.assertGreater(jar_idx, java_so_idx)
+        self.assertTrue(jar_idx > java_com_idx)
+        self.assertTrue(jar_idx > java_so_idx)
 
         os.remove('./SConstruct')
         os.remove(self.command_file)

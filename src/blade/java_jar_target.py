@@ -15,6 +15,8 @@
 import os
 import blade
 import blade_util
+
+import console
 import configparse
 from blade_util import relative_path
 from blade_util import var_to_list
@@ -448,7 +450,7 @@ def java_jar(name,
                            blade.blade,
                            kwargs)
     if pre_build:
-        blade_util.warning("//%s:%s: 'pre_build' has been deprecated, "
+        console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_scons_target(target.key, target)

@@ -18,32 +18,23 @@
 import os
 import sys
 import traceback
-from blade_util import error_exit
+
+import console
 from blade_util import get_cwd
 from blade_util import relative_path
-from blade_util import warning
 from cc_targets import cc_binary
-from cc_targets import CcBinary
 from cc_targets import cc_library
-from cc_targets import CcLibrary
 from cc_targets import cc_plugin
-from cc_targets import CcPlugin
 from cc_targets import cc_test
-from cc_targets import CcTest
 from cc_targets import lex_yacc_library
-from cc_targets import LexYaccLibrary
 from cc_targets import proto_library
-from cc_targets import ProtoLibrary
 from cc_targets import resource_library
 from cc_targets import ResourceLibrary
 from cc_targets import swig_library
-from cc_targets import SwigLibrary
 from gen_rule_target import gen_rule
-from gen_rule_target import GenRuleTarget
 from java_jar_target import java_jar
-from java_jar_target import JavaJarTarget
 from py_targets import py_binary
-from py_targets import PythonBinaryTarget
+from thrift_library import thrift_library
 
 
 IGNORE_IF_FAIL = 0
@@ -90,9 +81,9 @@ def _report_not_exist(source_dir, path, blade):
     """
     depender = _find_dir_depender(source_dir, blade)
     if depender:
-        error_exit('//%s not found, required by %s, exit...' % (path, depender))
+        console.error_exit('//%s not found, required by %s, exit...' % (path, depender))
     else:
-        error_exit('//%s not found, exit...' % path)
+        console.error_exit('//%s not found, exit...' % path)
 
 
 def enable_if(cond, true_value, false_value = None):
@@ -140,9 +131,9 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
             # which can be loaded and executed by execfile().
             execfile(build_file, globals(), None)
         except SystemExit:
-            error_exit("%s: fatal error, exit..." % build_file)
+            console.error_exit("%s: fatal error, exit..." % build_file)
         except:
-            error_exit('Parse error in %s, exit...\n%s' % (
+            console.error_exit('Parse error in %s, exit...\n%s' % (
                     build_file, traceback.format_exc()))
     else:
         if action_if_fail == ABORT_IF_FAIL:
@@ -242,7 +233,7 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
                          blade)
 
         if target_id not in target_database:
-            error_exit("%s: target //%s:%s does not exists" % (
+            console.error_exit("%s: target //%s:%s does not exists" % (
                 _find_depender(target_id, blade), source_dir, target_name))
 
         related_targets[target_id] = target_database[target_id]
@@ -277,7 +268,7 @@ def find_blade_root_dir(working_dir):
             break
         blade_root_dir = os.path.dirname(blade_root_dir)
     if not blade_root_dir or blade_root_dir == "/":
-        error_exit("Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+        console.error_exit("Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
                    "Blade need this file as a placeholder to locate the root source directory "
                    "(aka the directory where you #include start from).\n"
                    "You should create it manually at the first time.")

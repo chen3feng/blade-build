@@ -117,7 +117,7 @@ class TestLexYacc(unittest.TestCase):
             print sys.exc_info()
             self.fail("Failed while dry running in test case")
         self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_lower_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
 
         self.assertTrue('line_parser.yy.cc' in com_bison_line)
@@ -126,13 +126,13 @@ class TestLexYacc(unittest.TestCase):
         self.assertTrue('-Woverloaded-virtual' in com_ll_static_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_ll_static_line)
         self.assertTrue('-fPIC -Wall -Wextra' in com_ll_so_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_ll_so_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_ll_so_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_ll_so_line)
 
         self.assertTrue('-Woverloaded-virtual' in com_yy_static_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_yy_static_line)
         self.assertTrue('-fPIC -Wall -Wextra' in com_yy_so_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_yy_so_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_yy_so_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_yy_so_line)
 
         self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)

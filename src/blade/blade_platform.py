@@ -162,15 +162,25 @@ class CcFlagsManager(object):
             flags_except_warning += ["-ggdb3", "-fstack-protector"]
         elif self.options.profile == 'release':
             flags_except_warning += ["-g", "-DNDEBUG"]
-        flags_except_warning += ["-D_FILE_OFFSET_BITS=64"]
+        flags_except_warning += [
+                "-D_FILE_OFFSET_BITS=64",
+                "_D__STDC_CONSTANT_MACROS",
+                "-D__STDC_FORMAT_MACROS",
+                "-D__STDC_LIMIT_MACROS",
+        ]
 
         if hasattr(self.options, 'gprof') and self.options.gprof:
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
         if hasattr(self.options, 'gcov') and self.options.gcov:
-            flags_except_warning.append('--coverage')
-            linkflags.append('--coverage')
+            if SconsPlatform().gcc_version > '4.1':
+                flags_except_warning.append('--coverage')
+                linkflags.append('--coverage')
+            else:
+                flags_except_warning.append('-fprofile-arcs')
+                flags_except_warning.append('-ftest-coverage')
+                linkflags += ['-Wl,--whole-archive', '-lgcov', '-Wl,--no-whole-archive']
 
         flags_except_warning = self._filter_out_invalid_flags(
                 flags_except_warning, 'cpp')
@@ -190,7 +200,7 @@ class CcFlagsManager(object):
                 "-Wendif-labels",
                 "-Wfloat-equal",
                 "-Wformat=2",
-                "-Wframe-larger-than=65536",
+                "-Wframe-larger-than=69632", # A 64k buffer and other small vars
                 "-Wmissing-include-dirs",
                 "-Wpointer-arith",
                 "-Wwrite-strings",

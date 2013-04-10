@@ -12,15 +12,16 @@
 """
 
 
-import multiprocessing
+import os
 import Queue
+import multiprocessing
 import subprocess
 import sys
 import threading
 import time
 import traceback
-from blade_util import info
-from blade_util import info_str
+
+import console
 
 
 signal_map = { -1 : 'SIGHUP', -2 : 'SIGINT', -3 : 'SIGQUIT',
@@ -46,12 +47,12 @@ class WorkerThread(threading.Thread):
         self.start_working_time = time.time()
         self.end_working_time = None
         self.ret = None
-        info("blade test executor %d starts to work" % self.thread_id)
+        console.info("blade test executor %d starts to work" % self.thread_id)
 
     def __process(self):
         """Private handler to handle one job. """
-        info("blade worker %d starts to process" % self.thread_id)
-        info("blade worker %d finish" % self.thread_id)
+        console.info("blade worker %d starts to process" % self.thread_id)
+        console.info("blade worker %d finish" % self.thread_id)
         return
 
     def get_return(self):
@@ -126,41 +127,32 @@ class TestScheduler(object):
         (target, run_dir, test_env, cmd) = job
         test_name = "%s/%s" % (target['path'], target['name'])
 
-        info("Running %s" % test_name)
-        start_time = time.time()
+        console.info("Running %s" % cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
-                             shell=True)
+                             close_fds=True)
 
         (stdoutdata, stderrdata) = p.communicate()
-        cost_time = time.time() - start_time
         result = self.__get_result(p.returncode)
-        print "%s\n%s%s\n" % (info_str("Output of %s" % test_name),
-                stdoutdata, info_str("%s finished: %s" % (test_name, result)))
+        console.info("Output of %s:\n%s\n%s finished: %s\n" % (test_name,
+                stdoutdata, test_name, result))
 
-        return (target, p.returncode, cost_time)
+        return p.returncode
 
     def _run_job(self, job):
         """run job, do not redirect the output. """
         (target, run_dir, test_env, cmd) = job
-        info("Running %s/%s" % (target['path'], target['name']))
-
-        start_time = time.time()
-        p = subprocess.Popen(cmd,
-                             env=test_env,
-                             cwd=run_dir,
-                             shell=True)
-
+        console.info("Running %s" % cmd)
+        p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True)
         p.wait()
-        cost_time = time.time() - start_time
         result = self.__get_result(p.returncode)
-        info("%s/%s finished : %s\n" % (
+        console.info("%s/%s finished : %s\n" % (
              target['path'], target['name'], result))
 
-        return (target, p.returncode, cost_time)
+        return p.returncode
 
     def _process_command(self, job_queue, redirect):
         """process routine.
@@ -169,14 +161,22 @@ class TestScheduler(object):
 
         """
         while not job_queue.empty():
-            if redirect:
-                (target,
-                 returncode,
-                 costtime) = self._run_job_redirect(job_queue.get())
-            else:
-                (target,
-                 returncode,
-                 costtime) = self._run_job(job_queue.get())
+            job = job_queue.get()
+            target = job[0]
+            target_key = "%s:%s" % (target['path'], target['name'])
+            start_time = time.time()
+
+            try:
+                if redirect:
+                     returncode = self._run_job_redirect(job)
+                else:
+                     returncode = self._run_job(job)
+            except OSError as e:
+                console.error("%s: Create test process error: %s" %
+                        (target_key, str(e)))
+                returncode = 255
+
+            costtime = time.time() - start_time
 
             if returncode:
                 target["test_exit_code"] = returncode
@@ -185,7 +185,6 @@ class TestScheduler(object):
                 self.failed_targets_lock.release()
 
             self.tests_run_map_lock.acquire()
-            target_key = "%s:%s" % (target['path'], target['name'])
             run_item_map = self.tests_run_map.get(target_key, {})
             if run_item_map:
                 run_item_map['result'] = self.__get_result(returncode)
@@ -199,7 +198,14 @@ class TestScheduler(object):
 
     def print_summary(self):
         """print the summary output of tests. """
-        info("There are %d tests scheduled to run by scheduler" % (len(self.tests_list)))
+        console.info("There are %d tests scheduled to run by scheduler" % (len(self.tests_list)))
+
+    def _join_thread(self, t):
+        """Join thread and keep signal awareable"""
+        # The Thread.join without timeout will block signals, which makes
+        # blade can't be terminated by Ctrl-C
+        while t.is_alive():
+            t.join(1)
 
     def schedule_jobs(self):
         """scheduler. """
@@ -207,7 +213,7 @@ class TestScheduler(object):
             return True
 
         num_of_workers = self.__get_workers_num()
-        info("spawn %d worker(s) to run tests" % num_of_workers)
+        console.info("spawn %d worker(s) to run tests" % num_of_workers)
 
         for i in self.tests_list:
             target = i[0]
@@ -222,14 +228,14 @@ class TestScheduler(object):
             t.start()
             self.threads.append(t)
         for t in self.threads:
-            t.join()
+            self._join_thread(t)
 
         if not self.exclusive_job_queue.empty():
-            info("spawn 1 worker to run exclusive tests")
+            console.info("spawn 1 worker to run exclusive tests")
             test_arg = [self.exclusive_job_queue, False]
             last_t = WorkerThread((num_of_workers), self._process_command, args=test_arg)
             last_t.start()
-            last_t.join()
+            self._join_thread(last_t)
 
         self.print_summary()
         return True

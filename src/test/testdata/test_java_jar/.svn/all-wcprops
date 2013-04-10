@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar
+END
+rpc_meta_info.proto
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar/rpc_meta_info.proto
+END
+poppy_client.i
+K 25
+svn:wc:ra_dav:version-url
+V 137
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar/poppy_client.i
+END
+BUILD.TEST
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar/BUILD.TEST
+END
+rpc_option.proto
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar/rpc_option.proto
+END
+rpc_server.cc
+K 25
+svn:wc:ra_dav:version-url
+V 136
+/setech/setech_infrastructure_rep/!svn/ver/94777/Infra_proj/trunk/src/common/builder/blade/src/test/testdata/test_java_jar/rpc_server.cc
+END

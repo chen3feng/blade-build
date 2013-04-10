@@ -59,21 +59,21 @@ class Namespace(dict):
         """Copy constructors"""
         if names is None:
             names = dir(obj)
-        ns = {name:getattr(obj, name) for name in names}
+        ns = dict([(name, getattr(obj, name)) for name in names])
         return cls(ns)
 
     @classmethod
     def from_mapping(cls, ns, names=None):
         """Copy from mapping"""
         if names:
-            ns = {name:ns[name] for name in names}
+            ns = dict([(name, ns[name]) for name in names])
         return cls(ns)
 
     @classmethod
     def from_sequence(cls, seq, names=None):
         """Copy from sequence """
         if names:
-            seq = {name:val for name, val in seq if name in names}
+            seq = dict([(name, val) for name, val in seq if name in names])
         return cls(seq)
 
     @staticmethod

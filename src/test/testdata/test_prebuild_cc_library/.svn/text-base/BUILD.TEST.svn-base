@@ -1,0 +1,16 @@
+cc_library(
+    name='lowercase',
+    srcs=[],
+    deps=[],
+    prebuilt=1
+)
+
+cc_library(
+    name='uppercase',
+    srcs=[
+         'puppercase.cpp'
+         ],
+    deps=[':lowercase'],
+    link_all_symbols=1
+)
+

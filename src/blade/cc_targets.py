@@ -16,11 +16,12 @@ import os
 import blade
 import blade_util
 import configparse
-from blade_util import error_exit
+
+import console
 from blade_util import var_to_list
-from blade_util import warning
 from blade_platform import CcFlagsManager
 from target import Target
+from thrift_helper import ThriftHelper
 
 
 class CcTarget(Target):
@@ -85,7 +86,7 @@ class CcTarget(Target):
                 replaced_target = ''
                 if replaced_targets:
                     replaced_target = eval(str(replaced_targets[0]))
-                blade_util.warning("//%s:%s : "
+                console.warning("//%s:%s : "
                                    "//%s:%s has been deprecated, "
                                    "please depends on //%s:%s" % (
                                    self.data['path'], self.data['name'],
@@ -105,7 +106,7 @@ class CcTarget(Target):
         """
         opt_list = ['O0', 'O1', 'O2', 'O3', 'Os', 'Ofast']
         if not oflag in opt_list:
-            error_exit("please specify optimization flags only in %s" % (
+            console.error_exit("please specify optimization flags only in %s" % (
                        ','.join(opt_list)))
 
     def _check_defs(self):
@@ -136,7 +137,7 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in cxx_keyword_list:
-                warning("DO NOT specify c++ keyword %s in defs list" % macro )
+                console.warning("DO NOT specify c++ keyword %s in defs list" % macro )
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
@@ -155,7 +156,7 @@ class CcTarget(Target):
             illegal_path_list += [s for s in srcs if not keyword in s]
 
         if illegal_path_list:
-            warning("//%s:%s : warning='no' is only allowed "
+            console.warning("//%s:%s : warning='no' is only allowed "
                     "for code in thirdparty." % (
                      self.key[0], self.key[1]))
 
@@ -323,10 +324,10 @@ class CcTarget(Target):
 
         """
         if not self.blade.get_expanded():
-            error_exit('logic error in blade, expand targets at first')
+            console.error_exit('logic error in blade, expand targets at first')
         self.targets = self.blade.get_all_targets_expanded()
         if not self.targets:
-            error_exit('logic error in blade, no expanded targets')
+            console.error_exit('logic error in blade, no expanded targets')
         deps = self.targets[self.key]['deps']
         lib_list = []
         link_all_symbols_lib_list = []
@@ -366,10 +367,10 @@ class CcTarget(Target):
 
         """
         if not self.blade.get_expanded():
-            error_exit('logic error in blade, expand targets at first')
+            console.error_exit('logic error in blade, expand targets at first')
         self.targets = self.blade.get_all_targets_expanded()
         if not self.targets:
-            error_exit('logic error in blade, no expanded targets')
+            console.error_exit('logic error in blade, no expanded targets')
         deps = self.targets[self.key]['deps']
         lib_list = []
         for lib in deps:
@@ -594,7 +595,7 @@ class CcTarget(Target):
                         "cc_plugin"]
 
         if not self.data['type'] in target_types:
-            error_exit("logic error, type %s err in object rule" % self.data['type'])
+            console.error_exit("logic error, type %s err in object rule" % self.data['type'])
 
         self.objects = self.blade.get_cc_objects_pool()
 
@@ -637,7 +638,7 @@ class CcTarget(Target):
         This method should be impolemented in subclass.
 
         """
-        error_exit('cc_target should be subclassing')
+        console.error_exit('cc_target should be subclassing')
 
 
 class CcLibrary(CcTarget):
@@ -754,7 +755,7 @@ def cc_library(name,
                        blade.blade,
                        kwargs)
     if pre_build:
-        blade_util.warning("//%s:%s: 'pre_build' has been deprecated, "
+        console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_scons_target(target.key,
@@ -805,6 +806,11 @@ class CcBinary(CcTarget):
 
         if export_dynamic:
             self.data['options']['export_dynamic'] = True
+
+        cc_binary_config = configparse.blade_config.get_config('cc_binary_config')
+        # add extra link library
+        link_libs = var_to_list(cc_binary_config['extra_libs'])
+        self._add_hardcode_library(link_libs)
 
     def _clone_env(self):
         """override this method. """
@@ -972,7 +978,7 @@ def cc_plugin(name,
                       blade.blade,
                       kwargs)
     if pre_build:
-        blade_util.warning("//%s:%s: 'pre_build' has been deprecated, "
+        console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_scons_target(target.key, target)
@@ -1063,7 +1069,7 @@ class CcTest(CcTarget):
             heap_check = cc_test_config.get('heap_check', '')
         else:
             if heap_check not in HEAP_CHECK_VALUES:
-                error_exit("//%s:%s: heap_check can only be in %s" % (
+                console.error_exit("//%s:%s: heap_check can only be in %s" % (
                     self.data['path'], self.data['name'], HEAP_CHECK_VALUES))
 
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
@@ -1287,7 +1293,7 @@ class ProtoLibrary(CcTarget):
                           blade,
                           kwargs)
 
-        proto_config = configparse.blade_config.get_config('protoc_config')
+        proto_config = configparse.blade_config.get_config('proto_library_config')
         protobuf_lib = var_to_list(proto_config['protobuf_libs'])
 
         # Hardcode deps rule to thirdparty protobuf lib.
@@ -1313,7 +1319,7 @@ class ProtoLibrary(CcTarget):
             if file_suffix != 'proto':
                 err = 1
             if err == 1:
-                error_exit("invalid proto file name %s" % src)
+                console.error_exit("invalid proto file name %s" % src)
 
     def _proto_gen_files(self, path, src):
         """_proto_gen_files. """
@@ -2109,7 +2115,7 @@ class SwigLibrary(CcTarget):
             self._swig_library_rules_java(dep_files_map)
         if hasattr(self.options, 'generate_php') and self.options.generate_php:
             if not self.php_inc_list:
-                error_exit("failed to build //%s:%s, please install php modules" % (
+                console.error_exit("failed to build //%s:%s, please install php modules" % (
                            self.data['path'], self.data['name']))
             else:
                 self._swig_library_rules_php(dep_files_map)

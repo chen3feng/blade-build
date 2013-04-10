@@ -40,7 +40,9 @@ class TestTestRunner(unittest.TestCase):
         self.options = Namespace({'m' : '64',
                                   'profile' : 'release',
                                   'generate_dynamic' : True,
-                                  'testargs' : '',
+                                  'args' : '',
+                                  'test_jobs' : 1,
+                                  'show_details' : True,
                                   'fulltest' : False
                                  })
         self.direct_targets = []
@@ -114,15 +116,15 @@ class TestTestRunner(unittest.TestCase):
             print sys.exc_info()
             self.fail("Failed while dry running in test case")
         self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_lower_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
 
         self.assertTrue('-fPIC -Wall -Wextra' in com_upper_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_upper_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
 
         self.assertTrue('-fPIC -Wall -Wextra' in com_string_line)
-        self.assertTrue('-Wframe-larger-than=65536' in com_string_line)
+        self.assertTrue('-Wframe-larger-than=69632' in com_string_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_string_line)
 
         self.assertTrue('-static-libgcc -static-libstdc++' in string_main_depends_libs)

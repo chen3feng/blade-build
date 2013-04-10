@@ -1,0 +1,88 @@
+proto_library(
+    name = 'rpc_option_proto',
+    srcs = 'rpc_option.proto'
+)
+
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+    deps = ':rpc_option_proto'
+)
+
+resource_library(
+    name = 'static_resource',
+    srcs = [
+        'static/favicon.ico',
+        'static/forms.html',
+        'static/forms.js',
+        'static/jquery-1.4.2.min.js',
+        'static/jquery.json-2.2.min.js',
+        'static/methods.html',
+        'static/poppy.html'
+    ],
+    deps = ['#pthread']
+)
+
+cc_library(
+    name = 'poppy',
+    srcs = [
+        'address_resolver.cc',
+        'rpc_builtin_service.cc',
+        'rpc_channel.cc',
+        'rpc_channel_impl.cc',
+        'rpc_client.cc',
+        'rpc_connection_group.cc',
+        'rpc_controller.cc',
+        'rpc_error_code.cc',
+        'rpc_form.cc',
+        'rpc_handler.cc',
+        'rpc_http_channel.cc',
+        'rpc_json.cc',
+        'rpc_request_queue.cc',
+        'rpc_server.cc',
+        'rpc_server_session_pool.cc',
+        'stats_registry.cc',
+    ],
+    deps = [
+        ':rpc_meta_info_proto',
+        ':rpc_option_proto',
+        ':static_resource',
+    ]
+)
+
+cc_library(
+    name = 'poppy_mock',
+    srcs = [
+        'rpc_mock_channel.cc',
+    ],
+    deps = [
+        ':poppy',
+    ],
+    link_all_symbols = 1,
+)
+
+cc_library(
+    name = 'poppy_swig_wrap',
+    srcs = [],
+    prebuilt=1
+)
+
+cc_test(
+    name = 'rpc_channel_test',
+    srcs = 'rpc_channel_test.cc',
+    deps = ':poppy'
+)
+
+swig_library(
+    name = 'poppy_client',
+    srcs = [
+        'poppy_client.i'
+    ],
+    deps = [
+        ':poppy_swig_wrap',
+        ':poppy'
+    ],
+    warning = 'yes',
+    java_package = 'com.soso.poppy.swig',
+    java_lib_packed = 1
+)

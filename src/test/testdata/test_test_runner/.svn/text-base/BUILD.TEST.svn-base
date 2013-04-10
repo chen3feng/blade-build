@@ -1,0 +1,56 @@
+cc_library(
+    name='lowercase',
+    srcs=[
+         'plowercase.cpp'
+         ],
+    deps=['#pthread'],
+    warning='yes',
+    defs=['LOWER_DEF'],
+    incs=['include'],
+    optimize=['O3'],
+    always_optimize=True,
+    link_all_symbols=1
+)
+
+
+cc_library(
+    name='uppercase',
+    srcs=[
+         'puppercase.cpp'
+         ],
+    deps=['#dl'],
+    link_all_symbols=1
+)
+
+
+cc_test(
+    name='string_test_main',
+    srcs=[
+         'string_test.cpp'
+         ],
+    deps=[
+         ':lowercase',
+         ':uppercase',
+         '#pthread',
+         '#dl'
+         ],
+    warning='yes',
+    defs=['BLADE_STR_DEF'],
+#dynamic_link=1
+)
+
+cc_test(
+    name='string_test_main_2',
+    srcs=[
+         'string_test_2.cpp'
+         ],
+    deps=[
+         ':lowercase',
+         ':uppercase',
+         '#pthread',
+         '#dl'
+         ],
+    warning='yes',
+    defs=['BLADE_STR_DEF'],
+#dynamic_link=1
+)

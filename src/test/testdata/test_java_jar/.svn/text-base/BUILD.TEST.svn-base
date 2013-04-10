@@ -1,0 +1,34 @@
+proto_library(
+    name = 'rpc_option_proto',
+    srcs = 'rpc_option.proto'
+)
+
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+    deps = ':rpc_option_proto'
+)
+
+cc_library(
+    name = 'poppy',
+    srcs = [
+        'rpc_server.cc'
+    ],
+    deps = [
+        ':rpc_meta_info_proto',
+        ':rpc_option_proto'
+    ]
+)
+
+swig_library(
+    name = 'poppy_client',
+    srcs = [
+        'poppy_client.i'
+    ],
+    deps = [
+        ':poppy'
+    ],
+    warning = 'yes',
+    java_package = 'com.soso.poppy.swig',
+    java_lib_packed = 1
+)

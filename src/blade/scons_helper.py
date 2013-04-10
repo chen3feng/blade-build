@@ -21,16 +21,16 @@ import signal
 import string
 import subprocess
 import sys
+import tempfile
+import traceback
+
 import SCons
 import SCons.Action
 import SCons.Builder
 import SCons.Scanner
 import SCons.Scanner.Prog
-import tempfile
-import traceback
-from blade_util import error_exit
-from blade_util import info
-from blade_util import warning
+
+import console
 
 
 # option_verbose to indicate print verbose or not
@@ -56,7 +56,7 @@ linking_tmp_dir = ""
 def generate_python_binary(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith("setup.py"):
-        warning("setup.py not existed to generate target %s, "
+        console.warning("setup.py not existed to generate target %s, "
                 "blade will generate a default one for you" % str(target[0]))
     else:
         setup_file = str(source[0])
@@ -87,7 +87,7 @@ def generate_python_binary(target, source, env):
     else:
         target_name = os.path.basename(init_file_dir)
         if not target_name:
-            error_exit("invalid package for target %s" % str(target[0]))
+            console.error_exit("invalid package for target %s" % str(target[0]))
         # generate default setup.py for user
         setup_str = """
 #!/usr/bin/env python
@@ -121,9 +121,9 @@ setup(
             universal_newlines=True)
     std_out, std_err = p.communicate()
     if p.returncode:
-        info(std_out)
-        info(std_err)
-        error_exit("failed to copy source files from %s to %s" % (
+        console.info(std_out)
+        console.info(std_err)
+        console.error_exit("failed to copy source files from %s to %s" % (
                    init_file_dir, target_dir))
         return p.returncode
 
@@ -156,9 +156,9 @@ setup(
             universal_newlines=True)
     std_out, std_err = p.communicate()
     if p.returncode:
-        info(std_out)
-        info(std_err)
-        error_exit("failed to generate python binary in %s" % target_dir)
+        console.info(std_out)
+        console.info(std_err)
+        console.error_exit("failed to generate python binary in %s" % target_dir)
         return p.returncode
     return 0
 
@@ -195,9 +195,9 @@ def generate_resource_file(target, source, env):
             universal_newlines=True)
     std_out, std_err = p.communicate()
     if p.returncode:
-        info(std_out)
-        info(std_err)
-        error_exit("failed to generate resource file")
+        console.info(std_out)
+        console.info(std_err)
+        console.error_exit("failed to generate resource file")
     return p.returncode
 
 
@@ -216,7 +216,7 @@ _WARNINGS = [": warning:", ": note: "]
 
 def error_colorize(message):
     global colors
-    colored_message = ""
+    colored_message = []
     for t in message.splitlines(True):
         color = 'cyan'
 
@@ -233,11 +233,10 @@ def error_colorize(message):
                     color = 'red'
                     break
 
-        if t.strip().startswith('^'):
-            color = 'green'
-
-        colored_message += "%s%s%s" % (colors[color], t, colors['end'])
-    return colored_message
+        colored_message.append(colors[color])
+        colored_message.append(t)
+        colored_message.append(colors['end'])
+    return ''.join(colored_message)
 
 
 def echospawn(sh, escape, cmd, args, env):
@@ -259,12 +258,14 @@ def echospawn(sh, escape, cmd, args, env):
 
     if p.returncode:
         if p.returncode != -signal.SIGINT:
+            # Error
             sys.stdout.write(error_colorize(stdout))
             sys.stderr.write(error_colorize(stderr))
     else:
         if stderr:
-            sys.stderr.write(error_colorize(stderr))
+            # Only warnings
             sys.stdout.write(error_colorize(stdout))
+            sys.stderr.write(error_colorize(stderr))
         else:
             sys.stdout.write(stdout)
 
@@ -273,7 +274,7 @@ def echospawn(sh, escape, cmd, args, env):
 
 def _blade_action_postfunc(closing_message):
     """To do post jobs if blade's own actions failed to build. """
-    info(closing_message)
+    console.info(closing_message)
     # Remember to write the dblite incase of re-linking once fail to
     # build last time. We should elaborate a way to avoid rebuilding
     # after failure of our own builders or actions.
@@ -312,7 +313,7 @@ def _fast_link_helper(target, source, env, link_com):
     if p.returncode == 0:
         shutil.move(temporary_file, target_file)
         if not os.path.exists(target_file):
-            warning("failed to genreate %s in link on tmpfs mode" % target_file)
+            console.warning("failed to genreate %s in link on tmpfs mode" % target_file)
     else:
         _blade_action_postfunc("failed while fast linking")
         return p.returncode
@@ -400,12 +401,12 @@ def create_fast_link_builders(env):
 
     # Do not try to overwrite builder with error
     if p.returncode:
-        warning("you have link on tmp enabled, but it is not fullfilled to make it.")
+        console.warning("you have link on tmp enabled, but it is not fullfilled to make it.")
         return
 
     # No tmpfs to do fastlink, will not overwrite the builder
     if not std_out:
-        warning("you have link on tmp enabled, but there is no tmpfs to make it.")
+        console.warning("you have link on tmp enabled, but there is no tmpfs to make it.")
         return
 
     # Use the first one
@@ -415,11 +416,11 @@ def create_fast_link_builders(env):
     # Do not try to do that if there is no memory space left
     usage = int(usage.replace("%", ""))
     if usage > 90:
-        warning("you have link on tmp enabled, "
+        console.warning("you have link on tmp enabled, "
                 "but there is not enough space on %s to make it." % linking_tmp_dir)
         return
 
-    info("building in link on tmpfs mode")
+    console.info("building in link on tmpfs mode")
 
     create_fast_link_sharelib_builder(env)
     create_fast_link_prog_builder(env)

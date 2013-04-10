@@ -1,0 +1,16 @@
+java_jar(
+    name = 'poppy_java_client',
+    srcs = [
+            'src/com/soso/poppy'
+           ],
+    deps = [
+            '//test_dependency:rpc_meta_info_proto',
+            '//test_dependency:rpc_option_proto',
+            './lib:log4j',
+            './lib:netty',
+            './lib:protobuf-java',
+            './lib:snappy-java',
+            './lib:junit',
+            './lib:zookeeper'
+           ]
+)
