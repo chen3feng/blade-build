@@ -16,6 +16,7 @@ function cleanup()
 
     # Cleanup generated files
     rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.sconsign.dblite,blade_tests_detail,.SConstruct.lock} SConstruct
+    rm -f *.pyc ../blade/*.pyc
 }
 
 cd `dirname $0`
