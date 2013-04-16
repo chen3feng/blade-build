@@ -242,6 +242,7 @@ class CcTarget(Target):
         warnings = self.data.get('options', {}).get('warnings', '')
         defs_list = self.data.get('options', {}).get('defs', [])
         incs_list = self.data.get('options', {}).get('incs', [])
+        export_incs_list = self.data.get('export_incs', [])
         opt_list = self.data.get('options', {}).get('optimize', [])
         extra_cppflags = self.data.get('options', {}).get('extra_cppflags', [])
         always_optimize = self.data.get('options', {}).get('always_optimize', False)
@@ -251,18 +252,20 @@ class CcTarget(Target):
         cpp_flags = []
         new_defs_list = []
         new_incs_list = []
-        export_incs_list = self._export_incs_list()
+        new_export_incs_list = self._export_incs_list()
         new_opt_list = []
         if warnings == 'no':
             cpp_flags.append('-w')
         if defs_list:
             new_defs_list = [('-D' + macro) for macro in defs_list]
             cpp_flags += new_defs_list
+        if not incs_list:
+            incs_list = export_incs_list
         if incs_list:
             for inc in incs_list:
                 new_incs_list.append(os.path.join(self.data['path'], inc))
-        if export_incs_list:
-            for inc in export_incs_list:
+        if new_export_incs_list:
+            for inc in new_export_incs_list:
                 new_incs_list.append(inc)
 
         if opt_list:

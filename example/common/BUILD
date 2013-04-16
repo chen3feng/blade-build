@@ -1,7 +1,6 @@
 cc_library(
     name = 'common',
     srcs = 'common.cpp',
-    incs = 'incs',
     export_incs = 'incs'
 )
 
