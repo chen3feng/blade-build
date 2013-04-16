@@ -1,7 +1,7 @@
 #include "bar/bar.h"
 
 #include <iostream>
-#include "common/common.h"
+#include "common.h"
 
 void Bar()
 {

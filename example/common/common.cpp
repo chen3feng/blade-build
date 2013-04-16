@@ -1,4 +1,4 @@
-#include "common/common.h"
+#include "common.h"
 #include <iostream>
 
 void Common()

@@ -39,6 +39,7 @@ class CcTarget(Target):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  extra_cppflags,
                  extra_linkflags,
@@ -53,6 +54,7 @@ class CcTarget(Target):
         deps = var_to_list(deps)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
+        export_incs = var_to_list(export_incs)
         opt = var_to_list(optimize)
         extra_cppflags = var_to_list(extra_cppflags)
         extra_linkflags = var_to_list(extra_linkflags)
@@ -61,6 +63,7 @@ class CcTarget(Target):
                         name,
                         target_type,
                         srcs,
+                        export_incs,
                         deps,
                         blade,
                         kwargs)
@@ -248,6 +251,7 @@ class CcTarget(Target):
         cpp_flags = []
         new_defs_list = []
         new_incs_list = []
+        export_incs_list = self._export_incs_list()
         new_opt_list = []
         if warnings == 'no':
             cpp_flags.append('-w')
@@ -257,6 +261,10 @@ class CcTarget(Target):
         if incs_list:
             for inc in incs_list:
                 new_incs_list.append(os.path.join(self.data['path'], inc))
+        if export_incs_list:
+            for inc in export_incs_list:
+                new_incs_list.append(inc)
+
         if opt_list:
             for flag in opt_list:
                 if flag.find('O') == -1:
@@ -309,6 +317,36 @@ class CcTarget(Target):
         """
         target_type = self.targets[dep].get('type')
         return ('library' in target_type or 'plugin' in target_type)
+
+    def _export_incs_list(self):
+        """_export_incs_list.
+        TODO
+        """
+        if not self.blade.get_expanded():
+            console.error_exit('logic error in blade, expand targets at first')
+        self.targets = self.blade.get_all_targets_expanded()
+        if not self.targets:
+            console.error_exit('logic error in blade, no expanded targets')
+        deps = self.targets[self.key]['deps']
+        inc_list = []
+        for lib in deps:
+            # lib is (path, libname) pair.
+            if not lib:
+                continue
+
+            if not self._dep_is_library(lib):
+                continue
+
+            # system lib
+            if lib[0] == "#":
+                continue
+
+            target = self.target_database[lib]
+            for inc in target.get('export_incs', {}):
+                path = os.path.normpath('%s/%s' % (lib[0], inc))
+                inc_list.append(path)
+
+        return inc_list
 
     def _static_deps_list(self):
         """_static_deps_list.
@@ -655,6 +693,7 @@ class CcLibrary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  always_optimize,
                  prebuilt,
@@ -677,6 +716,7 @@ class CcLibrary(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -729,6 +769,7 @@ def cc_library(name,
                warning='yes',
                defs=[],
                incs=[],
+               export_incs=[],
                optimize=[],
                always_optimize=False,
                pre_build=False,
@@ -745,6 +786,7 @@ def cc_library(name,
                        warning,
                        defs,
                        incs,
+                       export_incs,
                        optimize,
                        always_optimize,
                        prebuilt or pre_build,
@@ -776,6 +818,7 @@ class CcBinary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  dynamic_link,
                  extra_cppflags,
@@ -796,6 +839,7 @@ class CcBinary(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -843,6 +887,7 @@ def cc_binary(name,
               warning='yes',
               defs=[],
               incs=[],
+              export_incs=[],
               optimize=[],
               dynamic_link=False,
               extra_cppflags=[],
@@ -856,6 +901,7 @@ def cc_binary(name,
                                 warning,
                                 defs,
                                 incs,
+                                export_incs,
                                 optimize,
                                 dynamic_link,
                                 extra_cppflags,
@@ -1009,6 +1055,7 @@ class CcTest(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  dynamic_link,
                  testdata,
@@ -1034,6 +1081,7 @@ class CcTest(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -1115,6 +1163,7 @@ def cc_test(name,
             warning='yes',
             defs=[],
             incs=[],
+            export_incs=[],
             optimize=[],
             dynamic_link=None,
             testdata=[],
@@ -1133,6 +1182,7 @@ def cc_test(name,
                             warning,
                             defs,
                             incs,
+                            export_incs,
                             optimize,
                             dynamic_link,
                             testdata,
@@ -1289,7 +1339,7 @@ class ProtoLibrary(CcTarget):
                           srcs,
                           deps,
                           'yes',
-                          [], [], optimize, [], [],
+                          [], [], [], optimize, [], [],
                           blade,
                           kwargs)
 

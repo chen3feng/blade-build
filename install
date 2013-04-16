@@ -40,4 +40,4 @@ then
     PATH=~/bin:$PATH
 fi
 
-echo -e "\E[1;32mAll successful, please log in again or source ~/.bashrc manually\E[0m"
+echo -e "\033[1;32mAll successful, please log in again or source ~/.bashrc manually\033[0m"
