@@ -56,11 +56,6 @@ class GenRuleTarget(Target):
         """Returns srcs list. """
         return ','.join(["'%s'" % os.path.join(self.build_path, path, src) for src in srcs])
 
-    def _clone_env(self):
-        """override _clone_env. """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
-
     def scons_rules(self):
         """scons_rules.
 

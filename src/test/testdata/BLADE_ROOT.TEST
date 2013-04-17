@@ -1,0 +1,96 @@
+cc_config(
+    extra_incs='thirdparty',
+    warnings = [
+        "-Wall",
+        "-Wextra",
+        # disable some warnings enabled by Wextra
+        "-Wno-unused-but-set-variable",
+        "-Wno-unused-parameter",
+        "-Wno-missing-field-initializers",
+        # other useful warnings
+        "-Wendif-labels",
+        "-Wfloat-equal",
+        "-Wformat=2",
+        "-Wframe-larger-than=69632", # A 64k buffer and other small vars
+        "-Wmissing-include-dirs",
+        "-Wpointer-arith",
+        "-Wwrite-strings",
+        # error flags
+        "-Werror=char-subscripts",
+        "-Werror=comments",
+        "-Werror=conversion-null",
+        "-Werror=empty-body",
+        "-Werror=endif-labels",
+        "-Werror=format",
+        "-Werror=format-nonliteral",
+        "-Werror=missing-include-dirs",
+        "-Werror=non-virtual-dtor",
+        "-Werror=overflow",
+        "-Werror=overloaded-virtual",
+        "-Werror=parentheses",
+        "-Werror=reorder",
+        "-Werror=return-type",
+        "-Werror=sequence-point",
+        "-Werror=sign-compare",
+        "-Werror=switch",
+        "-Werror=type-limits",
+        "-Werror=uninitialized",
+        # Masked it at first
+        # "-Werror=unused-function",
+        "-Werror=unused-label",
+        "-Werror=unused-result",
+        "-Werror=unused-value",
+        "-Werror=unused-variable",
+        "-Werror=write-strings"
+    ],
+    cxx_warnings = [
+        "-Wno-invalid-offsetof",
+        "-Woverloaded-virtual",
+        "-Wnon-virtual-dtor",
+        "-Wvla",
+        "-Werror=vla",
+        "-Werror=non-virtual-dtor"
+    ],
+    c_warnings = ["-Werror-implicit-function-declaration"]
+)
+
+cc_test_config(
+    dynamic_link=False,
+    heap_check='',
+    gperftools_libs=['thirdparty/perftools:tcmalloc'],
+    gperftools_debug_libs=['thirdparty/perftools:tcmalloc_debug'],
+    gtest_libs=['thirdparty/gtest:gtest'],
+    gtest_main_libs=['thirdparty/gtest:gtest_main']
+)
+
+distcc_config(
+    enabled=False
+)
+
+link_config(
+    link_on_tmp=False,
+    enable_dccc=False
+)
+
+proto_library_config(
+    protoc='thirdparty/protobuf/bin/protoc',
+    protobuf_libs=['thirdparty/protobuf:protobuf'],
+    protobuf_path='thirdparty',
+    protobuf_incs = 'thirdparty',
+    protobuf_php_path='thirdparty/Protobuf-PHP/library',
+    protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
+)
+
+thrift_library_config(
+    # The path to thrift compiler.
+    thrift='/usr/local/bin/thrift',
+    # The libraries depended by thrift.
+    thrift_libs=['#thrift', '#pthread'],
+    # The extra include paths to be passed to thrift compiler.
+    thrift_incs=[],
+)
+
+java_config(
+    source_version='',
+    target_version=''
+)
