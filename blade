@@ -76,10 +76,11 @@ blade_file="$blade_dir/blade.zip"
 if [[ "$BLADE_AUTO_UPGRADE" != "no" ]]; then
     # Auto update blade main program to latest version and run it
     if svn_up_info=`svn up --trust-server-cert --non-interactive ${blade_dir} 2>&1`; then
-        _info "auto upgrade success: $svn_up_info"
+        _info "Auto upgrade success: $svn_up_info"
     else
         _warning "Auto upgrade failure: $svn_up_info"
         _warning "Please svn up $blade_dir"
+        _warning "You can setenv BLADE_AUTO_UPGRADE=no to disable auto upgrade"
     fi
 fi
 

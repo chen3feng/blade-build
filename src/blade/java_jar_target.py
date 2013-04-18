@@ -349,11 +349,6 @@ class JavaJarTarget(Target):
         java_classpath_map = self.blade.get_java_classpath_map()
         java_classpath_map[(self.data['path'], self.data['name'])] = self._prebuilt_java_jar_src_path()
 
-    def _clone_env(self):
-        """override _clone_env(). """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
-
     def scons_rules(self):
         """scons_rules.
 

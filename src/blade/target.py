@@ -68,7 +68,7 @@ class Target(object):
 
     def _clone_env(self):
         """Clone target's environment. """
-        console.error_exit("_clone_env should be overridden in subclasses")
+        self._write_rule("%s = top_env.Clone()" % self._env_name())
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
