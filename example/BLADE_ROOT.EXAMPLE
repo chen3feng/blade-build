@@ -20,7 +20,7 @@ proto_library_config(
     protoc='protoc',
     protobuf_libs=['#protobuf', '#pthread'],
     protobuf_path='thirdparty',
-    protobuf_incs = 'thirdparty',
+    protobuf_incs = [],
     protobuf_php_path='thirdparty/Protobuf-PHP/library',
     protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
 )
@@ -35,7 +35,8 @@ thrift_library_config(
 )
 
 cc_config(
-    extra_incs='thirdparty'
+    extra_incs=[],
+    cppflags = '-DHAVE_CONFIG_H'
 )
 
 java_config(
