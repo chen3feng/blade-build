@@ -49,7 +49,7 @@ class ThriftLibrary(CcTarget):
                           srcs,
                           deps,
                           '',
-                          [], [], optimize, [], [],
+                          [], [], [], optimize, [], [],
                           blade,
                           kwargs)
 
