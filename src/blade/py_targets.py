@@ -48,11 +48,6 @@ class PythonBinaryTarget(Target):
         if prebuilt:
             self.data['type'] = 'prebuilt_py_binary'
 
-    def _clone_env(self):
-        """override _clone_env(). """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
-
     def scons_rules(self):
         """scons_rules.
 

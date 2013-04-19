@@ -14,6 +14,8 @@
 
 import os
 import subprocess
+
+import configparse
 from blade_util import var_to_list
 
 
@@ -187,73 +189,15 @@ class CcFlagsManager(object):
 
         return (flags_except_warning, linkflags)
 
-    def get_warning_ccflags(self):
+    def get_warning_flags(self):
         """Get the warning flags. """
-        cppflags = [
-                "-Wall",
-                "-Wextra",
-                # disable some warnings enabled by Wextra
-                "-Wno-unused-but-set-variable",
-                "-Wno-unused-parameter",
-                "-Wno-missing-field-initializers",
-                # other useful warnings
-                "-Wendif-labels",
-                "-Wfloat-equal",
-                "-Wformat=2",
-                "-Wframe-larger-than=69632", # A 64k buffer and other small vars
-                "-Wmissing-include-dirs",
-                "-Wpointer-arith",
-                "-Wwrite-strings",
-        ]
-        cxxflags = [
-                "-Wno-invalid-offsetof",
-                "-Woverloaded-virtual",
-                "-Wnon-virtual-dtor",
-                "-Wvla"
-        ]
+        cc_config = configparse.blade_config.get_config('cc_config')
+        cppflags = cc_config['warnings']
+        cxxflags = cc_config['cxx_warnings']
+        cflags = cc_config['c_warnings']
 
         filtered_cppflags = self._filter_out_invalid_flags(cppflags, 'cpp')
         filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'cxx')
-
-        return (filtered_cppflags, filtered_cxxflags)
-
-    def get_error_ccflags(self):
-        cppflags = [
-                "-Werror=char-subscripts",
-                "-Werror=comments",
-                "-Werror=conversion-null",
-                "-Werror=empty-body",
-                "-Werror=endif-labels",
-                "-Werror=format",
-                "-Werror=format-nonliteral",
-                "-Werror=missing-include-dirs",
-                "-Werror=non-virtual-dtor",
-                "-Werror=overflow",
-                "-Werror=overloaded-virtual",
-                "-Werror=parentheses",
-                "-Werror=reorder",
-                "-Werror=return-type",
-                "-Werror=sequence-point",
-                "-Werror=sign-compare",
-                "-Werror=switch",
-                "-Werror=type-limits",
-                "-Werror=uninitialized",
-                # Masked it at first
-                # "-Werror=unused-function",
-                "-Werror=unused-label",
-                "-Werror=unused-result",
-                "-Werror=unused-value",
-                "-Werror=unused-variable",
-                "-Werror=write-strings"
-        ]
-        cflags = ["-Werror-implicit-function-declaration"]
-        cxxflags = [
-                "-Werror=vla",
-                "-Werror=non-virtual-dtor"
-        ]
-
-        filtered_cppflags = self._filter_out_invalid_flags(cppflags, 'cpp')
         filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
-        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'cxx')
 
-        return (filtered_cflags, filtered_cppflags, filtered_cxxflags)
+        return (filtered_cppflags, filtered_cxxflags, filtered_cflags)
