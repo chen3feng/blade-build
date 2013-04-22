@@ -14,9 +14,10 @@ for src in *.proto; do
 done
 
 # generate cc_library
+test_src_pattern='_test\.c.*$'
 echo -e "cc_library(\n    name = '$libname',\n    srcs = ["
 for src in *.{c,cc,cpp,cxx}; do
-    if ! [[ $src =~ '_test\.c.*$' ]]; then
+    if ! [[ $src =~ $test_src_pattern ]]; then
         echo "        '$src',"
     fi
 done
