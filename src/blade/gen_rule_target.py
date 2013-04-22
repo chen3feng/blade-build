@@ -45,6 +45,7 @@ class GenRuleTarget(Target):
                         name,
                         'gen_rule',
                         srcs,
+                        [],
                         deps,
                         blade,
                         kwargs)
@@ -143,4 +144,3 @@ def gen_rule(name,
                                    blade.blade,
                                    kwargs)
    blade.blade.register_scons_target(gen_rule_target.key, gen_rule_target)
-
