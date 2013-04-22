@@ -1,7 +1,7 @@
-#include "foo.h"
+#include "foo/foo.h"
 
 #include <iostream>
-#include "common.h"
+#include "common/common.h"
 
 void Foo()
 {

@@ -11,7 +11,7 @@
 function cleanup()
 {
     # Cleanup BLADE_ROOT and BUILDs to avoid ran by 'blade build ...' on upper dirs
-    find -name BUILD | xargs rm
+    find . -name BUILD | xargs rm
     rm -rf BLADE_ROOT
 
     # Cleanup generated files
@@ -23,7 +23,7 @@ cd `dirname $0`
 # Cleanup before running
 rm -rf blade-bin/ build64_release/
 
-for f in `find -name BUILD.EXAMPLE`; do
+for f in `find . -name BUILD.EXAMPLE`; do
     cp $f ${f%.EXAMPLE}
 done
 cp BLADE_ROOT.EXAMPLE BLADE_ROOT
