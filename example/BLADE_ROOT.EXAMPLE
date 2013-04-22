@@ -4,7 +4,7 @@ cc_test_config(
     dynamic_link=False,
     heap_check='strict',
     gperftools_libs=['#tcmalloc'],
-    gperftools_debug_libs=['tcmalloc_debug'],
+    gperftools_debug_libs=['#tcmalloc_debug'],
     gtest_libs=['#gtest'],
     gtest_main_libs=['#gtest_main']
 )
@@ -28,7 +28,7 @@ proto_library_config(
     protoc='protoc',
     protobuf_libs=['#protobuf', '#glog', '#gflags', '#pthread'],
     protobuf_path='thirdparty',
-    protobuf_incs='thirdparty',
+    protobuf_incs = [],
     protobuf_php_path='thirdparty/Protobuf-PHP/library',
     protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
 )
@@ -43,8 +43,8 @@ thrift_library_config(
 )
 
 cc_config(
-    extra_incs='thirdparty',
-    cppflags='-DHAVE_CONFIG_H'
+    extra_incs=[],
+    cppflags = '-DHAVE_CONFIG_H'
 )
 
 """
