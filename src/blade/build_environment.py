@@ -74,7 +74,7 @@ class BuildEnvironment(object):
                 if version_line and version_line.find("ccache version") != -1:
                     console.info("ccache found")
                     return True
-        except OSError
+        except OSError:
             pass
         return False
 
