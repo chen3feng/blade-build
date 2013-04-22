@@ -1,110 +1,0 @@
-10
-
-dir
-95440
-https://tc-scm.tencent.com/setech/setech_infrastructure_rep/Infra_proj/trunk/src/common/builder/blade/src/test/testdata
-https://tc-scm.tencent.com/setech/setech_infrastructure_rep
-
-
-
-2013-03-11T07:41:11.543165Z
-94777
-phongchen
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-a6a6ae7a-4cab-2a4d-aca5-e4c2f47b7092
-
-test_loadbuilds
-dir
-
-test_cc_test
-dir
-
-test_proto_library
-dir
-
-test_lex_yacc
-dir
-
-BLADE_ROOT.TEST
-file
-
-
-
-
-2013-03-08T08:25:15.000000Z
-d41d8cd98f00b204e9800998ecf8427e
-2013-03-11T07:41:11.543165Z
-94777
-phongchen
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-0
-
-test_cc_binary
-dir
-
-thirdparty
-dir
-
-test_swig_library
-dir
-
-test_prebuild_cc_library
-dir
-
-test_gen_rule
-dir
-
-test_cc_plugin
-dir
-
-test_query
-dir
-
-test_test_runner
-dir
-
-test_cc_library
-dir
-
-test_resource_library
-dir
-
-test_java_jar
-dir
-
-test_dependency
-dir
-

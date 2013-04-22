@@ -30,6 +30,7 @@ class Target(object):
                  name,
                  target_type,
                  srcs,
+                 export_incs,
                  deps,
                  blade,
                  kwargs):
@@ -52,6 +53,7 @@ class Target(object):
                      'path' : self.current_source_path,
                      'type' : target_type,
                      'srcs' : srcs_list,
+                     'export_incs' : export_incs,
                      'deps' : [],
                      'options' : {},
                      'direct_deps' : []
@@ -66,7 +68,7 @@ class Target(object):
 
     def _clone_env(self):
         """Clone target's environment. """
-        console.error_exit("_clone_env should be overridden in subclasses")
+        self._write_rule("%s = top_env.Clone()" % self._env_name())
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -424,4 +426,3 @@ class Target(object):
         if bad_format:
             console.error_exit("invalid target lib format: %s, "
                        "should be #lib_name or lib_path:lib_name" % target_string)
-

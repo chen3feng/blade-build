@@ -48,8 +48,8 @@ class ThriftLibrary(CcTarget):
                           'thrift_library',
                           srcs,
                           deps,
-                          'yes',
-                          [], [], optimize, [], [],
+                          '',
+                          [], [], [], optimize, [], [],
                           blade,
                           kwargs)
 
@@ -170,11 +170,6 @@ class ThriftLibrary(CcTarget):
             self.blade.python_binary_dep_source_map[self.key].extend(
                     thrift_py_src_files)
 
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
-
     def scons_rules(self):
         """scons_rules.
 
@@ -219,7 +214,7 @@ class ThriftLibrary(CcTarget):
                     self.data['path'], thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
-                    "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX'], "
+                    "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                     "source = '%s')" % (obj_name,
                                         env_name,
                                         thrift_cpp_src,

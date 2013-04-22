@@ -39,6 +39,7 @@ class CcTarget(Target):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  extra_cppflags,
                  extra_linkflags,
@@ -53,6 +54,7 @@ class CcTarget(Target):
         deps = var_to_list(deps)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
+        export_incs = var_to_list(export_incs)
         opt = var_to_list(optimize)
         extra_cppflags = var_to_list(extra_cppflags)
         extra_linkflags = var_to_list(extra_linkflags)
@@ -61,11 +63,12 @@ class CcTarget(Target):
                         name,
                         target_type,
                         srcs,
+                        export_incs,
                         deps,
                         blade,
                         kwargs)
 
-        self.data['options']['warnings'] = warning
+        self.data['options']['warning'] = warning
         self.data['options']['defs'] = defs
         self.data['options']['incs'] = incs
         self.data['options']['optimize'] = opt
@@ -97,6 +100,15 @@ class CcTarget(Target):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
+
+    def _clone_env(self):
+        """Select env. """
+        env_name = self._env_name()
+        warning = self.data.get('options', {}).get('warning', '')
+        if warning == 'yes':
+            self._write_rule("%s = env_with_error.Clone()" % env_name)
+        else:
+            self._write_rule("%s = env_no_warning.Clone()" % env_name)
 
     def _check_optimize_flags(self, oflag):
         """_check_optimize_flags.
@@ -141,9 +153,9 @@ class CcTarget(Target):
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
-        warnings = self.data.get('options', {}).get('warnings', 'yes')
+        warning = self.data.get('options', {}).get('warning', 'yes')
         srcs = self.data.get('srcs', [])
-        if not srcs or warnings == 'yes':
+        if not srcs or warning != 'no':
             return
 
         keywords_list = self.blade.get_sources_keyword_list()
@@ -236,9 +248,10 @@ class CcTarget(Target):
         It will return the cpp flags according to the BUILD file.
 
         """
-        warnings = self.data.get('options', {}).get('warnings', '')
+        warning = self.data.get('options', {}).get('warning', '')
         defs_list = self.data.get('options', {}).get('defs', [])
         incs_list = self.data.get('options', {}).get('incs', [])
+        export_incs_list = self.data.get('export_incs', [])
         opt_list = self.data.get('options', {}).get('optimize', [])
         extra_cppflags = self.data.get('options', {}).get('extra_cppflags', [])
         always_optimize = self.data.get('options', {}).get('always_optimize', False)
@@ -248,15 +261,22 @@ class CcTarget(Target):
         cpp_flags = []
         new_defs_list = []
         new_incs_list = []
+        new_export_incs_list = self._export_incs_list()
         new_opt_list = []
-        if warnings == 'no':
+        if warning == 'no':
             cpp_flags.append('-w')
         if defs_list:
             new_defs_list = [('-D' + macro) for macro in defs_list]
             cpp_flags += new_defs_list
+        if not incs_list:
+            incs_list = export_incs_list
         if incs_list:
             for inc in incs_list:
                 new_incs_list.append(os.path.join(self.data['path'], inc))
+        if new_export_incs_list:
+            for inc in new_export_incs_list:
+                new_incs_list.append(inc)
+
         if opt_list:
             for flag in opt_list:
                 if flag.find('O') == -1:
@@ -309,6 +329,36 @@ class CcTarget(Target):
         """
         target_type = self.targets[dep].get('type')
         return ('library' in target_type or 'plugin' in target_type)
+
+    def _export_incs_list(self):
+        """_export_incs_list.
+        TODO
+        """
+        if not self.blade.get_expanded():
+            console.error_exit('logic error in blade, expand targets at first')
+        self.targets = self.blade.get_all_targets_expanded()
+        if not self.targets:
+            console.error_exit('logic error in blade, no expanded targets')
+        deps = self.targets[self.key]['deps']
+        inc_list = []
+        for lib in deps:
+            # lib is (path, libname) pair.
+            if not lib:
+                continue
+
+            if not self._dep_is_library(lib):
+                continue
+
+            # system lib
+            if lib[0] == "#":
+                continue
+
+            target = self.target_database[lib]
+            for inc in target.get('export_incs', {}):
+                path = os.path.normpath('%s/%s' % (lib[0], inc))
+                inc_list.append(path)
+
+        return inc_list
 
     def _static_deps_list(self):
         """_static_deps_list.
@@ -442,7 +492,7 @@ class CcTarget(Target):
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
                              self._prebuilt_cc_library_build_path(),
                              self._prebuilt_cc_library_src_path()))
-            self._write_rule("%s = env.File('%s')" % (
+            self._write_rule("%s = top_env.File('%s')" % (
                              var_name,
                              self._prebuilt_cc_library_build_path()))
         if dynamic == 1:
@@ -461,7 +511,7 @@ class CcTarget(Target):
             var_name = self._generate_variable_name(self.data['path'],
                                                     self.data['name'],
                                                     "dynamic")
-            self._write_rule("%s = env.File('%s')" % (
+            self._write_rule("%s = top_env.File('%s')" % (
                         var_name,
                         prebuilt_target_file))
             prebuilt_symlink = os.path.realpath(prebuilt_src_file)
@@ -618,7 +668,7 @@ class CcTarget(Target):
                 target_path = os.path.join(
                         self.build_path, path, '%s.objs' % self.data['name'], src)
                 self._write_rule(
-                        "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX']"
+                        "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
                         ", source = '%s')" % (self.objects[src_name],
                                               env_name,
                                               target_path,
@@ -655,6 +705,7 @@ class CcLibrary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  always_optimize,
                  prebuilt,
@@ -677,6 +728,7 @@ class CcLibrary(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -688,15 +740,6 @@ class CcLibrary(CcTarget):
         self.data['options']['link_all_symbols'] = link_all_symbols
         self.data['options']['always_optimize'] = always_optimize
         self.data['options']['deprecated'] = deprecated
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        warnings = self.data.get('options', {}).get('warnings', '')
-        if warnings == 'no':
-            self._write_rule("%s = env_no_warning.Clone()" % env_name)
-        else:
-            self._write_rule("%s = env_with_error.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -729,6 +772,7 @@ def cc_library(name,
                warning='yes',
                defs=[],
                incs=[],
+               export_incs=[],
                optimize=[],
                always_optimize=False,
                pre_build=False,
@@ -745,6 +789,7 @@ def cc_library(name,
                        warning,
                        defs,
                        incs,
+                       export_incs,
                        optimize,
                        always_optimize,
                        prebuilt or pre_build,
@@ -776,6 +821,7 @@ class CcBinary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  dynamic_link,
                  extra_cppflags,
@@ -796,6 +842,7 @@ class CcBinary(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -811,15 +858,6 @@ class CcBinary(CcTarget):
         # add extra link library
         link_libs = var_to_list(cc_binary_config['extra_libs'])
         self._add_hardcode_library(link_libs)
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        warnings = self.data.get('options', {}).get('warnings', '')
-        if warnings == 'no':
-            self._write_rule("%s = env_no_warning.Clone()" % env_name)
-        else:
-            self._write_rule("%s = env_with_error.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -843,6 +881,7 @@ def cc_binary(name,
               warning='yes',
               defs=[],
               incs=[],
+              export_incs=[],
               optimize=[],
               dynamic_link=False,
               extra_cppflags=[],
@@ -856,6 +895,7 @@ def cc_binary(name,
                                 warning,
                                 defs,
                                 incs,
+                                export_incs,
                                 optimize,
                                 dynamic_link,
                                 extra_cppflags,
@@ -906,15 +946,6 @@ class CcPlugin(CcTarget):
         if prebuilt:
             self.data['type'] = 'prebuilt_cc_library'
             self.data['srcs'] = []
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        warnings = self.data.get('options', {}).get('warnings', '')
-        if warnings == 'no':
-            self._write_rule("%s = env_no_warning.Clone()" % env_name)
-        else:
-            self._write_rule("%s = env_with_error.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -1009,6 +1040,7 @@ class CcTest(CcTarget):
                  warning,
                  defs,
                  incs,
+                 export_incs,
                  optimize,
                  dynamic_link,
                  testdata,
@@ -1034,6 +1066,7 @@ class CcTest(CcTarget):
                           warning,
                           defs,
                           incs,
+                          export_incs,
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -1087,8 +1120,8 @@ class CcTest(CcTarget):
     def _clone_env(self):
         """override this method. """
         env_name = self._env_name()
-        warnings = self.data.get('options', {}).get('warnings', '')
-        if warnings == 'no':
+        warning = self.data.get('options', {}).get('warning', '')
+        if warning == 'no':
             self._write_rule("%s = env_no_warning.Clone()" % env_name)
         else:
             self._write_rule("%s = env_with_error.Clone()" % env_name)
@@ -1115,6 +1148,7 @@ def cc_test(name,
             warning='yes',
             defs=[],
             incs=[],
+            export_incs=[],
             optimize=[],
             dynamic_link=None,
             testdata=[],
@@ -1133,6 +1167,7 @@ def cc_test(name,
                             warning,
                             defs,
                             incs,
+                            export_incs,
                             optimize,
                             dynamic_link,
                             testdata,
@@ -1181,11 +1216,6 @@ class LexYaccLibrary(CcTarget):
                           kwargs)
         self.data['options']['recursive'] = recursive
         self.data['options']['prefix'] = prefix
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -1288,8 +1318,8 @@ class ProtoLibrary(CcTarget):
                           'proto_library',
                           srcs,
                           deps,
-                          'yes',
-                          [], [], optimize, [], [],
+                          '',
+                          [], [], [], optimize, [], [],
                           blade,
                           kwargs)
 
@@ -1433,11 +1463,6 @@ class ProtoLibrary(CcTarget):
             self.blade.python_binary_dep_source_map[self.key].append(
                     proto_python_src)
 
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
-
     def scons_rules(self):
         """scons_rules.
 
@@ -1486,7 +1511,7 @@ class ProtoLibrary(CcTarget):
                 self.data['path'], src)
             obj_names.append(obj_name)
             self._write_rule(
-                "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX'], "
+                "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                 "source = '%s')" % (obj_name,
                                     env_name,
                                     proto_src,
@@ -1546,7 +1571,7 @@ class ResourceLibrary(CcTarget):
                           'resource_library',
                           srcs,
                           deps,
-                          'yes',
+                          '',
                           [],
                           [],
                           optimize,
@@ -1554,11 +1579,6 @@ class ResourceLibrary(CcTarget):
                           [],
                           blade,
                           kwargs)
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        self._write_rule("%s = env.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -1615,7 +1635,7 @@ class ResourceLibrary(CcTarget):
                                            '%s.objs' % self.data['name'],
                                            base_src_name)
                 self._write_rule(
-                        "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX']"
+                        "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
                         ", source = '%s')" % (res_objects[src_name],
                                               env_name,
                                               target_path,
@@ -1780,7 +1800,7 @@ class SwigLibrary(CcTarget):
             obj_names_py.append(obj_name_py)
 
             self._write_rule(
-                "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX'], "
+                "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                 "source = '%s')" % (obj_name_py,
                                     env_name,
                                     pyswig_src,
@@ -1956,7 +1976,7 @@ class SwigLibrary(CcTarget):
             obj_names_java.append(obj_name_java)
 
             self._write_rule(
-                    "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX'], "
+                    "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                     "source = '%s')" % (
                             obj_name_java,
                             env_name,
@@ -2050,7 +2070,7 @@ class SwigLibrary(CcTarget):
             obj_names_php.append(obj_name_php)
 
             self._write_rule(
-                "%s = %s.SharedObject(target = '%s' + env['OBJSUFFIX'], "
+                "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                 "source = '%s')" % (obj_name_php,
                                     env_name,
                                     phpswig_src,
@@ -2093,11 +2113,6 @@ class SwigLibrary(CcTarget):
                     env_name, var_name, i[1]))
 
         self._generate_target_explict_dependency(var_name)
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        self._write_rule("%s = env_no_warning.Clone()" % env_name)
 
     def scons_rules(self):
         """scons_rules.

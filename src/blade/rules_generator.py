@@ -55,7 +55,7 @@ class SconsRules(object):
         self.python_inc = python_inc
         self.build_environment = build_environment
         self.ccflags_manager = CcFlagsManager(options)
-        self.env_list = ['env', 'env_with_error', 'env_no_warning']
+        self.env_list = ['env_with_error', 'env_no_warning']
 
     def _add_rule(self, rule):
         """Append one rule to buffer. """
@@ -425,10 +425,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         self.ccflags_manager.set_cpp_str(cpp_str)
 
-        (warn_cppflags, warn_cxxflags) = self.ccflags_manager.get_warning_ccflags()
-        (err_cflags,
-         err_cppflags,
-         err_cxxflags) = self.ccflags_manager.get_error_ccflags()
+        (warnings, cxx_warnings, c_warnings) = self.ccflags_manager.get_warning_flags()
 
         (cppflags_except_warning,
          linkflags) = self.ccflags_manager.get_flags_except_warning()
@@ -487,9 +484,9 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           LINKFLAGS=%s)
 """ % (self.env_list[0], cc_env_str,
        extra_incs_str, self.build_dir, self.python_inc,
-       cc_config['cppflags'] + warn_cppflags + cppflags_except_warning,
-       cc_config['cflags'],
-       cc_config['cxxflags'] + warn_cxxflags,
+       cc_config['cppflags'] + warnings  + cppflags_except_warning,
+       cc_config['cflags'] + c_warnings,
+       cc_config['cxxflags'] + cxx_warnings,
        ld_env_str,
        linkflags))
 
@@ -502,23 +499,6 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           %s,
           LINKFLAGS=%s)
 """ % (self.env_list[1], cc_env_str,
-       extra_incs_str,
-       self.build_dir, self.python_inc,
-       cc_config['cppflags'] + warn_cppflags  + err_cppflags + cppflags_except_warning,
-       cc_config['cflags'] + err_cflags,
-       cc_config['cxxflags'] + warn_cxxflags + err_cxxflags,
-       ld_env_str,
-       linkflags))
-
-        self._add_rule("""
-%s.Replace(%s,
-          CPPPATH=[%s, '%s', '%s'],
-          CPPFLAGS=%s,
-          CFLAGS=%s,
-          CXXFLAGS=%s,
-          %s,
-          LINKFLAGS=%s)
-""" % (self.env_list[2], cc_env_str,
        extra_incs_str, self.build_dir, self.python_inc,
        cc_config['cppflags'] + cppflags_except_warning,
        cc_config['cflags'],
