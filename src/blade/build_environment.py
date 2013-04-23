@@ -61,18 +61,21 @@ class BuildEnvironment(object):
     @staticmethod
     def _check_ccache_install():
         """Check ccache is installed or not. """
-        p = subprocess.Popen(
-            ['ccache', '-V'],
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
-            version_line = stdout.splitlines(True)[0]
-            if version_line and version_line.find("ccache version") != -1:
-                console.info("ccache found")
-                return True
+        try:
+            p = subprocess.Popen(
+                ['ccache', '-V'],
+                env=os.environ,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                universal_newlines=True)
+            (stdout, stderr) = p.communicate()
+            if p.returncode == 0:
+                version_line = stdout.splitlines(True)[0]
+                if version_line and version_line.find("ccache version") != -1:
+                    console.info("ccache found")
+                    return True
+        except OSError:
+            pass
         return False
 
     @staticmethod
