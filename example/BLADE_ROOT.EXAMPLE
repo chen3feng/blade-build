@@ -35,7 +35,7 @@ proto_library_config(
 
 thrift_library_config(
     # The path to thrift compiler.
-    thrift='/opt/local/bin/thrift',
+    thrift='thrift',
     # The libraries depended by thrift.
     thrift_libs=['#thrift', '#pthread'],
     # The extra include paths to be passed to thrift compiler.
