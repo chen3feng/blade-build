@@ -49,6 +49,7 @@ class JavaJarTarget(Target):
                         name,
                         'java_jar',
                         srcs,
+                        [],
                         deps,
                         blade,
                         kwargs)
@@ -449,5 +450,3 @@ def java_jar(name,
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_scons_target(target.key, target)
-
-

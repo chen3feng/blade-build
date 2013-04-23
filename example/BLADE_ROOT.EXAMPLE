@@ -33,6 +33,15 @@ proto_library_config(
     protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
 )
 
+thrift_library_config(
+    # The path to thrift compiler.
+    thrift='/opt/local/bin/thrift',
+    # The libraries depended by thrift.
+    thrift_libs=['#thrift', '#pthread'],
+    # The extra include paths to be passed to thrift compiler.
+    thrift_incs=[],
+)
+
 cc_config(
     extra_incs=[],
     cppflags = '-DHAVE_CONFIG_H'
