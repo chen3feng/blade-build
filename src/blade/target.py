@@ -30,7 +30,6 @@ class Target(object):
                  name,
                  target_type,
                  srcs,
-                 export_incs,
                  deps,
                  blade,
                  kwargs):
@@ -53,7 +52,6 @@ class Target(object):
                      'path' : self.current_source_path,
                      'type' : target_type,
                      'srcs' : srcs_list,
-                     'export_incs' : export_incs,
                      'deps' : [],
                      'options' : {},
                      'direct_deps' : []

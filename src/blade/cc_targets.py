@@ -63,7 +63,6 @@ class CcTarget(Target):
                         name,
                         target_type,
                         srcs,
-                        export_incs,
                         deps,
                         blade,
                         kwargs)
@@ -71,6 +70,7 @@ class CcTarget(Target):
         self.data['options']['warning'] = warning
         self.data['options']['defs'] = defs
         self.data['options']['incs'] = incs
+        self.data['options']['export_incs'] = export_incs
         self.data['options']['optimize'] = opt
         self.data['options']['extra_cppflags'] = extra_cppflags
         self.data['options']['extra_linkflags'] = extra_linkflags
@@ -187,17 +187,8 @@ class CcTarget(Target):
             path = self.data['path']
         if not name:
             name = self.data['name']
-        if not dynamic:
-            return "%s" % os.path.join(
-                self.build_path,
-                path,
-                'lib%s.a' % name)
-        else:
-            return "%s" % os.path.join(
-                self.build_path,
-                path,
-                'lib%s.so' % name)
-
+        suffix = 'so' if dynamic else 'a'
+        return os.path.join(self.build_path, path, 'lib%s.%s' % (name, suffix))
 
     def _prebuilt_cc_library_src_path(self, path='', name='', dynamic=0):
         """Returns the source path of the prebuilt cc library. """
@@ -206,16 +197,9 @@ class CcTarget(Target):
         if not name:
             name = self.data['name']
         options = self.blade.get_options()
-        if not dynamic:
-            return "%s" % os.path.join(
-                path,
-                'lib%s_%s' % (options.m, options.profile),
-                'lib%s.a' % name)
-        else:
-            return "%s" % os.path.join(
-                path,
-                'lib%s_%s' % (options.m, options.profile),
-                'lib%s.so' % name)
+        suffix = 'so' if dynamic else 'a'
+        return os.path.join(path, 'lib%s_%s' % (options.m, options.profile),
+                            'lib%s.%s' % (name, suffix))
 
     def _setup_cc_flags(self):
         """_setup_cc_flags. """
@@ -245,55 +229,35 @@ class CcTarget(Target):
     def _get_cc_flags(self):
         """_get_cc_flags.
 
-        It will return the cpp flags according to the BUILD file.
+        Return the cpp flags according to the BUILD file and other configs.
 
         """
-        warning = self.data.get('options', {}).get('warning', '')
-        defs_list = self.data.get('options', {}).get('defs', [])
-        incs_list = self.data.get('options', {}).get('incs', [])
-        export_incs_list = self.data.get('export_incs', [])
-        opt_list = self.data.get('options', {}).get('optimize', [])
-        extra_cppflags = self.data.get('options', {}).get('extra_cppflags', [])
-        always_optimize = self.data.get('options', {}).get('always_optimize', False)
-
-        options = self.blade.get_options()
-        user_oflag = ''
         cpp_flags = []
-        new_defs_list = []
-        new_incs_list = []
-        new_export_incs_list = self._export_incs_list()
-        new_opt_list = []
-        if warning == 'no':
-            cpp_flags.append('-w')
-        if defs_list:
-            new_defs_list = [('-D' + macro) for macro in defs_list]
-            cpp_flags += new_defs_list
-        if not incs_list:
-            incs_list = export_incs_list
-        if incs_list:
-            for inc in incs_list:
-                new_incs_list.append(os.path.join(self.data['path'], inc))
-        if new_export_incs_list:
-            for inc in new_export_incs_list:
-                new_incs_list.append(inc)
 
+        # Warnings
+        if self.data['options'].get('warning', '') == 'no':
+            cpp_flags.append('-w')
+
+        # Defs
+        defs = self.data['options'].get('defs', [])
+        cpp_flags += [('-D' + macro) for macro in defs]
+
+        # Optimize flags
+        oflags = []
+        opt_list = self.data['options'].get('optimize')
         if opt_list:
             for flag in opt_list:
-                if flag.find('O') == -1:
-                    new_opt_list.append('-' + flag)
-                else:
+                if flag.startswith('O'):
                     self._check_optimize_flags(flag)
-                    user_oflag = '-%s' % flag
-            cpp_flags += new_opt_list
-
-        oflag = ''
-        if always_optimize:
-            oflag = user_oflag if user_oflag else '-O2'
-            cpp_flags.append(oflag)
+                    oflags.append('-' + flag)
+                else:
+                    cpp_flags.append('-' + flag)
         else:
-            if options.profile == 'release':
-                oflag = user_oflag if user_oflag else '-O2'
-                cpp_flags.append(oflag)
+            oflags = ['-O2']
+
+        if (self.blade.get_options().profile == 'release' or
+            self.data['options'].get('always_optimize')):
+            cpp_flags += oflags
 
         # Add the compliation flags here
         # 1. -fno-omit-frame-pointer to release
@@ -301,6 +265,14 @@ class CcTarget(Target):
         blade_gcc_flags_checked = self._check_gcc_flag(blade_gcc_flags)
         cpp_flags += list(set(blade_gcc_flags_checked).difference(set(cpp_flags)))
 
+        cpp_flags += self.data['options'].get('extra_cppflags', [])
+
+        # Incs
+        incs = self.data['options'].get('incs', [])
+        if not incs:
+            incs = self.data['options'].get('export_incs', [])
+        new_incs_list = [os.path.join(self.data['path'], inc) for inc in incs]
+        new_incs_list += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
         incs_list = []
         for inc in new_incs_list:
@@ -308,12 +280,7 @@ class CcTarget(Target):
             if new_inc not in incs_list:
                 incs_list.append(new_inc)
 
-        # TODO(michael): Enable this to support header files conflicting
-        # requirements from reverted-index team, these lines of code
-        # SHOULD be removed in the future
-        cpp_flags += [('-I' + inc) for inc in incs_list]
-
-        return (cpp_flags + extra_cppflags, incs_list)
+        return (cpp_flags, incs_list)
 
     def _dep_is_library(self, dep):
         """_dep_is_library.
@@ -354,7 +321,7 @@ class CcTarget(Target):
                 continue
 
             target = self.target_database[lib]
-            for inc in target.get('export_incs', {}):
+            for inc in target['options'].get('export_incs', []):
                 path = os.path.normpath('%s/%s' % (lib[0], inc))
                 inc_list.append(path)
 
