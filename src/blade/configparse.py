@@ -86,7 +86,7 @@ class BladeConfig(object):
                 'c_warnings' : [],
                 'cxx_warnings' : [],
                 'warnings' : [],
-                'cpplint_path' : 'typhoon-blade/cpplint.py',
+                'cpplint' : 'cpplint.py',
             }
         }
 

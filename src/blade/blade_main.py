@@ -102,7 +102,7 @@ def is_svn_client(blade_root_dir):
 # dir , add subdirs are github repos, here we need to fix out the git ROOT for each
 # build target
 def is_git_client(blade_root_dir , target, working_dir):
-        #Remove "..." in target
+    #Remove "..." in target
     target = target.replace(".", "")
     if os.path.exists(os.path.join(blade_root_dir, '.git')):
         return (True, blade_root_dir, target)
@@ -151,11 +151,11 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
     return opened_files
 
 def _check_code_style(opened_files):
-    cpplint_path = configparse.blade_config.configs['cc_config']['cpplint_path']
+    cpplint = configparse.blade_config.configs['cc_config']['cpplint']
     console.info("Begin to check code style for source code")
-    if len(opened_files) == 0:
+    if not opened_files:
         return 0
-    p = subprocess.Popen(("python %s %s" % (cpplint_path, ' '.join(opened_files))), shell=True)
+    p = subprocess.Popen(("python %s %s" % (cpplint, ' '.join(opened_files))), shell=True)
     try:
         p.wait()
         if p.returncode:
