@@ -94,6 +94,77 @@ run_target = None
 # Return code
 blade_ret_code = 0
 
+def is_svn_client(blade_root_dir):
+    # We suppose that BLADE_ROOT is under svn root dir now.
+    return os.path.exists(os.path.join(blade_root_dir, '.svn'))
+
+# For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
+# dir , add subdirs are github repos, here we need to fix out the git ROOT for each
+# build target
+def is_git_client(blade_root_dir , target, working_dir):
+    #Remove "..." in target
+    target = target.replace(".", "")
+    if os.path.exists(os.path.join(blade_root_dir, '.git')):
+        return (True, blade_root_dir, target)
+    blade_root_dir = os.path.normpath(blade_root_dir)
+    root_dirs = blade_root_dir.split('/')
+    full_target = os.path.normpath(os.path.join(working_dir, target))
+    dirs = full_target.split('/')
+    index = len(root_dirs)
+    while index <= len(dirs):
+        # Find git repo root dir
+        top_dir = '/'.join(dirs[0:index])
+        # Get subdir under git repo root
+        sub_dir = '/'.join(dirs[index:])
+        index += 1
+        if (os.path.exists(os.path.join(top_dir, '.git'))):
+            return (True, top_dir, sub_dir)
+    return (False, None, None)
+
+def _get_opened_files(targets, blade_root_dir, working_dir):
+    check_dir = set()
+    opened_files = set()
+    for target in targets:
+        d = os.path.dirname(target)
+        if d in check_dir:
+            return
+        check_dir.add(d)
+        output = []
+        if is_svn_client(blade_root_dir):
+            output = os.popen('svn st %s' % d).read().split('\n')
+        else:
+            (is_git, git_root, git_subdir) = is_git_client(blade_root_dir, target, working_dir)
+            if is_git:
+                os.chdir(git_root)
+                status_cmd = 'git status --porcelain %s' % (git_subdir)
+                output = os.popen(status_cmd).read().split('\n')
+            else:
+                console.warning("unknown source client type, NOT svn OR git")
+        for f in output:
+            seg = f.strip().split(' ')
+            if seg[0] != 'M' and seg[0] != 'A':
+                continue
+            f = seg[len(seg) - 1]
+            if f.endswith('.h') or f.endswith('.hpp') or f.endswith('.cc') or f.endswith('.cpp'):
+                fullpath = os.path.join(os.getcwd(), f)
+                opened_files.add(fullpath)
+    return opened_files
+
+def _check_code_style(opened_files):
+    cpplint = configparse.blade_config.configs['cc_config']['cpplint']
+    console.info("Begin to check code style for source code")
+    if not opened_files:
+        return 0
+    p = subprocess.Popen(("python %s %s" % (cpplint, ' '.join(opened_files))), shell=True)
+    try:
+        p.wait()
+        if p.returncode:
+            msg = "Please try fixing style warnings in the opened files before submitting the code!"
+            console.warning(msg)
+    except: # KeyboardInterrupt
+        return 1
+    return 0
+
 def _main(blade_path):
     """The main entry of blade. """
 
@@ -113,20 +184,27 @@ def _main(blade_path):
         targets = ['.']
     options = cmd_options.get_options()
 
-    # Set current_source_dir to the directory which contains the
+    # Set blade_root_dir to the directory which contains the
     # file BLADE_ROOT, is upper than and is closest to the current
     # directory.  Set working_dir to current directory.
     working_dir = get_cwd()
-    current_source_dir = find_blade_root_dir(working_dir)
-    os.chdir(current_source_dir)
-    if current_source_dir != working_dir:
+    blade_root_dir = find_blade_root_dir(working_dir)
+    os.chdir(blade_root_dir)
+
+    if blade_root_dir != working_dir:
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
-        print >>sys.stderr, "Blade: Entering directory `%s'" % current_source_dir
+        print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
 
     # Init global configuration manager
-    configparse.blade_config = BladeConfig(current_source_dir)
+    configparse.blade_config = BladeConfig(blade_root_dir)
     configparse.blade_config.parse()
+
+    # check code style using cpplint.py
+    if command == 'build' or command == 'test':
+        opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
+        os.chdir(blade_root_dir)
+        _check_code_style(opened_files)
 
     # Init global blade manager.
     current_building_path = "build%s_%s" % (options.m, options.profile)
@@ -157,7 +235,7 @@ def _main(blade_path):
                             blade_path,
                             working_dir,
                             current_building_path,
-                            current_source_dir,
+                            blade_root_dir,
                             options,
                             blade_command=command)
 
@@ -186,7 +264,7 @@ def _main(blade_path):
                 command == 'clean' or command == 'query' ):
             try:
                 if locked_scons:
-                    os.remove(os.path.join(current_source_dir, 'SConstruct'))
+                    os.remove(os.path.join(blade_root_dir, 'SConstruct'))
                     unlock_file(lock_file_fd.fileno())
                 lock_file_fd.close()
             except Exception:
