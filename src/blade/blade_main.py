@@ -121,17 +121,31 @@ def is_git_client(blade_root_dir , target, working_dir):
             return (True, top_dir, sub_dir)
     return (False, None, None)
 
+def _normalize_target_path(target):
+    target = target.replace(".", "")
+    index = target.find(':')
+    if index != -1:
+        target = target[index +1:]
+    if target and target[len(target) != '/']:
+        target = target + "/"
+    return target
+
 def _get_opened_files(targets, blade_root_dir, working_dir):
     check_dir = set()
     opened_files = set()
+    blade_root_dir = os.path.normpath(blade_root_dir)
+
     for target in targets:
+        target = _normalize_target_path(target)
         d = os.path.dirname(target)
         if d in check_dir:
             return
         check_dir.add(d)
         output = []
         if is_svn_client(blade_root_dir):
-            output = os.popen('svn st %s' % d).read().split('\n')
+            full_target = os.path.normpath(os.path.join(working_dir, d))
+            top_dir = full_target[len(blade_root_dir) + 1:]
+            output = os.popen('svn st %s' % top_dir).read().split('\n')
         else:
             (is_git, git_root, git_subdir) = is_git_client(blade_root_dir, target, working_dir)
             if is_git:
