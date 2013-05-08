@@ -155,7 +155,7 @@ def _check_code_style(opened_files):
     console.info("Begin to check code style for source code")
     if not opened_files:
         return 0
-    p = subprocess.Popen(("python %s %s" % (cpplint, ' '.join(opened_files))), shell=True)
+    p = subprocess.Popen(("%s %s" % (cpplint, ' '.join(opened_files))), shell=True)
     try:
         p.wait()
         if p.returncode:
