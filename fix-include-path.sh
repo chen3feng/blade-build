@@ -3,27 +3,40 @@
 # source file types, you may need to change it, using regex
 SOURCE_TYPES=".*[.]\(c\|h\|cc\|hh\|cpp\|hpp\)$"
 
-# do not touch this two variables, we will choose proper values
-OLD_SRC_ROOT=`pwd`
-DST_SRC_ROOT=""
-
 CONVERT_LOG="convert.log"
 SKIP_LOG="skip.log"
 WARNING_LOG="warning.log"
 
-find_root ()
+function _warning()
 {
-    old_path=`pwd`
-    
-    cd $1
-    path=`pwd`
-    while [  ! -f 'BLADE_ROOT' -a $path  != "/" ]; do
-        cd ..
-        path=`pwd`
-    done
-    cd $old_path
+    if [ -t 2 ]; then
+        echo -e "\033[1;33m$@\033[m" >&2
+    else
+        echo -e "$@" >&2
+    fi
+}
 
-    echo $path
+function _info()
+{
+    if [ -t 2 ]; then
+        echo -e "\033[1;36m$@\033[m" >&2
+    else
+        echo -e "$@" >&2
+    fi
+}
+
+_find_project_root ()
+{
+    local dir
+    dir=$PWD;
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/BLADE_ROOT" ]; then
+            echo "$dir"
+            return 0
+        fi;
+        dir=`dirname "$dir"`
+    done
+    return 1
 }
 
 absolute_path()
@@ -42,74 +55,77 @@ escape_slash ()
     echo ${1////\\/}
 }
 
-# convert_headers root prefix
+# convert_headers root
 # @param root:   the path of source root (original root)
-# @param prefix: the prefix we should patch to the include path
 convert_headers ()
 {
-    root=$(absolute_path $1)
-    prefix=$2
-
-    echo "root=$root prefix=$prefix"
-    srcs=`find $root -regex "$SOURCE_TYPES"`
+    root="$1"
+    srcs=`find . -regex "$SOURCE_TYPES"`
     for src in $srcs ; do
         src_dir=`dirname $src`
-        
-        #echo "parse $src"
-        lines=`awk ' 
+        _info "Checking $src"
+        lines=`awk '
             /^[[:blank:]]*#[[:blank:]]*include[[:blank:]]*"[[:alnum:].\-_][[:alnum:]/.\-_]*"/ {
                 match($0, /"[[:alnum:]/.\-_]*"/, m)
                 hdr=gensub(/"([[:alnum:]/.\-_]*)"/, "\\\\1", "", m[0])
                 printf "%s,%s\n", NR, hdr
             }' $src`
 
-        sed_cmd="" 
+        sed_cmd=""
         for line in $lines ; do
             lineno=${line%,*}
             hdr=${line#*,}
             hdr_path=""
 
+            # Ignore *.pb.h
+            if [[ "$hdr" =~ \.pb\.h$ ]]; then
+                continue
+            fi
+
+            # Already good
             if [ -f "$root/$hdr" ] ; then
-                hdr_path=$(absolute_path "$root/$hdr")
+                continue
             fi
 
             if [ -f "$src_dir/$hdr" ] ; then
                 hdr_path=$(absolute_path "$src_dir/$hdr")
-            fi
-            
-            # check if header file exists from source root
-            if [[ $hdr_path != "" ]] ; then
-                new_hdr=$prefix${hdr_path#$root/}
-                #echo $new_hdr
-                sed_cmd=${sed_cmd}"$lineno {s|$(escape_slash $hdr)|$(escape_slash $new_hdr)|g}"$'\n'
+            else
+                search_dir="`find $root | grep -E "/$hdr$"`"
+                if [[ $(echo "$search_dir" | wc -l) -gt 1 ]]; then
+                    _warning "Ambiguous file: '$hdr', can't be fixed automatically:\n$search_dir"
+                    continue
+                fi
+                if [ -f "$search_dir" ] ; then
+                    hdr_path=${search_dir#$root/}
+                fi
             fi
 
+            # check if header file exists from source root
+            if [[ $hdr_path != "" ]] ; then
+                new_hdr=${hdr_path#$root}
+                if [[ "$hdr" != "$new_hdr" ]] ; then
+                    _info "Replace '$hdr' to '$new_hdr'"
+                    sed_cmd=${sed_cmd}"$lineno {s|$(escape_slash $hdr)|$(escape_slash $new_hdr)|g}"$'\n'
+                fi
+            fi
         done
 
         if [ -n "$sed_cmd" ]; then
-            echo "$sed_cmd"
-            echo "converting $src"
-            #echo "$sed_cmd"
+            _info "Converting $src, backup file is $src.bak"
             sed -i.bak "$sed_cmd" $src
         fi
-
     done
 }
 
-OLD_SRC_ROOT=$(absolute_path $OLD_SRC_ROOT)
-
-if [ -n $DST_SRC_ROOT ] ; then
-    DST_SRC_ROOT=$(find_root $OLD_SRC_ROOT)
+if [ $# -ne 1 ]; then
+    _warning "Fix the source file include path"
+    _warning "Usage: $0 <dir>"
+    _warning "Example: $0 ."
+    exit 1
 fi
 
-if [ $OLD_SRC_ROOT == $DST_SRC_ROOT ] ; then
-    echo "we are already in the source root"
-    exit
-fi
-echo "fix the source file include path $DST_SRC_ROOT"
+cd $1 || exit 1
 
-ROOT_PREFIX=${OLD_SRC_ROOT#$DST_SRC_ROOT/}/
-#echo $ROOT_PREFIX
-
-convert_headers $OLD_SRC_ROOT $ROOT_PREFIX
+ROOT=$(_find_project_root)
+convert_headers $ROOT
 

@@ -186,71 +186,70 @@ class JavaJarTarget(Target):
             self.cmd_var_list.append(cmd_var_id)
 
         new_target_idx = 0
-        if new_target_source_list:
-            classes_var = '%s_classes' % (
-            self._generate_variable_name(self.data['path'], self.data['name']))
+        classes_var = '%s_classes' % (
+        self._generate_variable_name(self.data['path'], self.data['name']))
 
-            java_config = configparse.blade_config.get_config('java_config')
-            source_version = java_config['source_version']
-            target_version = java_config['target_version']
-            javac_cmd = 'javac'
-            if source_version:
-                javac_cmd += ' -source %s' % source_version
-            if target_version:
-                javac_cmd += ' -target %s' % target_version
-            if not classpath:
-                javac_class_path = ''
-            else:
-                javac_class_path = ' -classpath %s' % classpath
-            javac_classes_out = ' -d %s' % class_root
-            javac_source_path = ' -sourcepath %s' % new_src
+        java_config = configparse.blade_config.get_config('java_config')
+        source_version = java_config['source_version']
+        target_version = java_config['target_version']
+        javac_cmd = 'javac'
+        if source_version:
+            javac_cmd += ' -source %s' % source_version
+        if target_version:
+            javac_cmd += ' -target %s' % target_version
+        if not classpath:
+            javac_class_path = ''
+        else:
+            javac_class_path = ' -classpath %s' % classpath
+        javac_classes_out = ' -d %s' % class_root
+        javac_source_path = ' -sourcepath %s' % new_src
 
-            no_dup_source_list = []
-            for dep_src in self.java_jar_after_dep_source_list:
-                if not dep_src in no_dup_source_list:
-                    no_dup_source_list.append(dep_src)
-            for src in new_target_source_list:
-                if not src in no_dup_source_list:
-                    no_dup_source_list.append(src)
+        no_dup_source_list = []
+        for dep_src in self.java_jar_after_dep_source_list:
+            if not dep_src in no_dup_source_list:
+                no_dup_source_list.append(dep_src)
+        for src in new_target_source_list:
+            if not src in no_dup_source_list:
+                no_dup_source_list.append(src)
 
-            source_files_list = []
-            for src_dir in no_dup_source_list:
-                srcs = os.path.join(src_dir, "*.java")
-                source_files_list.append(srcs)
+        source_files_list = []
+        for src_dir in no_dup_source_list:
+            srcs = os.path.join(src_dir, "*.java")
+            source_files_list.append(srcs)
 
-            cmd = javac_cmd + javac_class_path + javac_classes_out
-            cmd += javac_source_path + " " + " ".join(source_files_list)
-            dummy_file = '%s_dummy_file_%s' % (
-                    self.data['name'], str(new_target_idx))
-            new_target_idx += 1
-            class_root_dummy = os.path.join(class_root, dummy_file)
-            self._write_rule('%s = %s.Command("%s", "", ["%s"])' % (
-                    classes_var,
+        cmd = javac_cmd + javac_class_path + javac_classes_out
+        cmd += javac_source_path + " " + " ".join(source_files_list)
+        dummy_file = '%s_dummy_file_%s' % (
+                self.data['name'], str(new_target_idx))
+        new_target_idx += 1
+        class_root_dummy = os.path.join(class_root, dummy_file)
+        self._write_rule('%s = %s.Command("%s", "", ["%s"])' % (
+                classes_var,
+                env_name,
+                class_root_dummy,
+                cmd))
+
+        # Find out the java_jar depends
+        for dep in self.targets[self.key]['deps']:
+            if dep in self.java_jars_map.keys():
+                dep_java_jar_list = self.java_jars_map[dep]
+                self._write_rule("%s.Depends(%s, %s)" % (
                     env_name,
-                    class_root_dummy,
+                    classes_var,
+                    dep_java_jar_list
+                    ))
+
+        self._generate_target_explict_dependency(classes_var)
+
+        for cmd in self.cmd_var_list:
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    env_name,
+                    classes_var,
                     cmd))
 
-            # Find out the java_jar depends
-            for dep in self.targets[self.key]['deps']:
-                if dep in self.java_jars_map.keys():
-                    dep_java_jar_list = self.java_jars_map[dep]
-                    self._write_rule("%s.Depends(%s, %s)" % (
-                        env_name,
-                        classes_var,
-                        dep_java_jar_list
-                        ))
-
-            self._generate_target_explict_dependency(classes_var)
-
-            for cmd in self.cmd_var_list:
-                self._write_rule('%s.Depends(%s, %s)' % (
-                        env_name,
-                        classes_var,
-                        cmd))
-
-            self.java_classpath_list.append(class_root)
-            classes_var_list.append(classes_var)
-            pack_list.append(class_root)
+        self.java_classpath_list.append(class_root)
+        classes_var_list.append(classes_var)
+        pack_list.append(class_root)
 
     def _java_jar_rules_make_jar(self, pack_list, classes_var_list):
         """Make the java jar files, pack the files that the target needs. """
@@ -293,6 +292,7 @@ class JavaJarTarget(Target):
                     self.java_jar_cmd_list.append(f_dst)
                     cmd_list.append(cmd_var_id)
                     cmd_idx += 1
+
             rel_path = relative_path(class_path, target_base_dir)
             class_path_name = rel_path.replace('/', '_')
             jar_var = '%s_%s_jar' % (
@@ -327,7 +327,6 @@ class JavaJarTarget(Target):
             if removed:
                 self._write_rule('%s.Depends(%s, %s)' % (
                         env_name, jar_var, cmd_remove_var))
-
 
     def _prebuilt_java_jar_build_path(self):
         """The build path for pre build java jar. """

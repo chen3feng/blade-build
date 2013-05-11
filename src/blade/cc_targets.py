@@ -1361,17 +1361,13 @@ class ProtoLibrary(CcTarget):
                 normal_package_line = line
 
         if package_line:
-            package = package_line.split('=')[1]
-            package = package.strip("""'";\n""")
-            package = package.replace('.', '/')
-            return package
+            package = package_line.split('=')[1].strip().strip(r'\'";')
         elif normal_package_line:
-            package = normal_package_line.split(' ')[1]
-            package = package.strip("""'";\n""")
-            package = package.replace('.', '/')
-            return package
-        else:
-            return ""
+            package = normal_package_line.split(' ')[1].strip().strip(';')
+
+        package = package.replace('.', '/')
+
+        return package
 
     def _proto_java_gen_file(self, path, src, package):
         """Generate the java files name of the proto library. """
