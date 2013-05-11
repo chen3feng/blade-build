@@ -29,7 +29,7 @@ for f in `find testdata -name BUILD.TEST`; do
 done
 cp testdata/BLADE_ROOT.TEST testdata/BLADE_ROOT
 
-python blade_main_test.py
+python -B blade_main_test.py
 exit_code=$?
 
 cleanup
