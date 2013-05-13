@@ -121,12 +121,14 @@ class TestResourceLibrary(unittest.TestCase):
         self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_forms_line)
-        self.assertTrue('-Wframe-larger-than=' in com_forms_line)
+        self.assertTrue('-fPIC' in com_forms_line)
+        self.assertTrue('-Wall -Wextra' not in com_forms_line)
+        self.assertTrue('-Wframe-larger-than=' not in com_forms_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_forms_line)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_poppy_line)
-        self.assertTrue('-Wframe-larger-than=' in com_poppy_line)
+        self.assertTrue('-fPIC' in com_poppy_line)
+        self.assertTrue('-Wall -Wextra' not in com_poppy_line)
+        self.assertTrue('-Wframe-larger-than=' not in com_poppy_line)
         self.assertTrue('-Werror=overloaded-virtual' not in com_poppy_line)
 
         self.assertTrue('forms_js_c.o' in static_so_line)

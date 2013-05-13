@@ -171,8 +171,8 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
 def _check_code_style(opened_files):
     if not opened_files:
         return 0
-    console.info("Begin to check code style for changed source code")
     cpplint = configparse.blade_config.configs['cc_config']['cpplint']
+    console.info("Begin to check code style for changed source code")
     p = subprocess.Popen(("%s %s" % (cpplint, ' '.join(opened_files))), shell=True)
     try:
         p.wait()
