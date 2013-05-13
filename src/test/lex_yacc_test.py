@@ -12,10 +12,11 @@
 
 
 import os
-import sys
-sys.path.append('..')
-import unittest
 import subprocess
+import sys
+import unittest
+
+sys.path.append('..')
 import blade.blade
 import blade.configparse
 from blade.blade import Blade
@@ -124,16 +125,16 @@ class TestLexYacc(unittest.TestCase):
         self.assertTrue('line_parser.ll.cc' in com_flex_line)
 
         self.assertTrue('-Woverloaded-virtual' in com_ll_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_ll_static_line)
+        self.assertTrue('-Werror=overloaded-virtual' in com_ll_static_line)
         self.assertTrue('-fPIC -Wall -Wextra' in com_ll_so_line)
         self.assertTrue('-Wframe-larger-than=69632' in com_ll_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_ll_so_line)
+        self.assertTrue('-Werror=overloaded-virtual' in com_ll_so_line)
 
         self.assertTrue('-Woverloaded-virtual' in com_yy_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_yy_static_line)
+        self.assertTrue('-Werror=overloaded-virtual' in com_yy_static_line)
         self.assertTrue('-fPIC -Wall -Wextra' in com_yy_so_line)
         self.assertTrue('-Wframe-larger-than=69632' in com_yy_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_yy_so_line)
+        self.assertTrue('-Werror=overloaded-virtual' in com_yy_so_line)
 
         self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)
         self.assertTrue('line_parser.ll.os' in lex_yacc_depends_libs)
