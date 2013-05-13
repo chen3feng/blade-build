@@ -98,6 +98,7 @@ def is_svn_client(blade_root_dir):
     # We suppose that BLADE_ROOT is under svn root dir now.
     return os.path.exists(os.path.join(blade_root_dir, '.svn'))
 
+
 # For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
 # dir , add subdirs are github repos, here we need to fix out the git ROOT for each
 # build target
@@ -121,6 +122,7 @@ def is_git_client(blade_root_dir , target, working_dir):
             return (True, top_dir, sub_dir)
     return (False, None, None)
 
+
 def _normalize_target_path(target):
     target = target.replace(".", "")
     index = target.find(':')
@@ -129,6 +131,7 @@ def _normalize_target_path(target):
     if target and target[len(target) != '/']:
         target = target + "/"
     return target
+
 
 def _get_opened_files(targets, blade_root_dir, working_dir):
     check_dir = set()
@@ -164,20 +167,29 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
                 opened_files.add(fullpath)
     return opened_files
 
+
 def _check_code_style(opened_files):
-    cpplint = configparse.blade_config.configs['cc_config']['cpplint']
-    console.info("Begin to check code style for source code")
     if not opened_files:
         return 0
+    console.info("Begin to check code style for changed source code")
+    cpplint = configparse.blade_config.configs['cc_config']['cpplint']
     p = subprocess.Popen(("%s %s" % (cpplint, ' '.join(opened_files))), shell=True)
     try:
         p.wait()
         if p.returncode:
-            msg = "Please try fixing style warnings in the opened files before submitting the code!"
+            if p.returncode == 127:
+                msg = ("Can't execute '{0}' to check style, you can config the "
+                       "'cpplint' option to be a valid cpplint path in the "
+                       "'cc_config' section of blade.conf or BLADE_ROOT, or "
+                       "make sure '{0}' command is correct.").format(cpplint)
+            else:
+                msg = "Please fixing style warnings before submitting the code!"
             console.warning(msg)
-    except: # KeyboardInterrupt
+    except KeyboardInterrupt as e:
+        console.error(str(e))
         return 1
     return 0
+
 
 def _main(blade_path):
     """The main entry of blade. """
@@ -214,7 +226,7 @@ def _main(blade_path):
     configparse.blade_config = BladeConfig(blade_root_dir)
     configparse.blade_config.parse()
 
-    # check code style using cpplint.py
+    # Check code style using cpplint.py
     if command == 'build' or command == 'test':
         opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
         os.chdir(blade_root_dir)

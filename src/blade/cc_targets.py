@@ -2107,7 +2107,7 @@ class SwigLibrary(CcTarget):
 def swig_library(name,
                  srcs=[],
                  deps=[],
-                 warning='yes',
+                 warning='',
                  java_package='',
                  java_lib_packed=False,
                  optimize=[],
