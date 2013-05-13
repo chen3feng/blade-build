@@ -159,13 +159,12 @@ class TestJavaJar(unittest.TestCase):
         self.assertTrue(com_proto_java_option)
         self.assertTrue(com_proto_java_meta)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_proto_option_cc)
-        self.assertTrue('-Wframe-larger-than=' in com_proto_option_cc)
+        self.assertTrue('-fPIC' in com_proto_option_cc)
+        self.assertTrue('-Wall -Wextra' not in com_proto_option_cc)
+        self.assertTrue('-Wframe-larger-than=' not in com_proto_option_cc)
         self.assertTrue('-Werror=overloaded-virtual' not in com_proto_option_cc)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_proto_meta_cc)
-        self.assertTrue('-Wframe-larger-than=' in com_proto_meta_cc)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_proto_meta_cc)
+        self.assertTrue('-fPIC' in com_proto_meta_cc)
 
         self.assertTrue('poppy_client_pywrap.cxx' in com_swig_python)
         self.assertTrue('poppy_client_javawrap.cxx' in com_swig_java)
