@@ -14,13 +14,13 @@
 
 import os
 import Queue
-import multiprocessing
 import subprocess
 import sys
 import threading
 import time
 import traceback
 
+import blade_util
 import console
 
 
@@ -84,7 +84,7 @@ class TestScheduler(object):
         self.tests_run_map = tests_run_map
         self.tests_run_map_lock = threading.Lock()
         self.worker_threads = []
-        self.cpu_core_num = multiprocessing.cpu_count()
+        self.cpu_core_num = blade_util.cpu_count()
         self.num_of_tests = len(self.tests_list)
         self.max_worker_threads = 16
         self.threads = []
@@ -171,7 +171,7 @@ class TestScheduler(object):
                      returncode = self._run_job_redirect(job)
                 else:
                      returncode = self._run_job(job)
-            except OSError as e:
+            except OSError, e:
                 console.error("%s: Create test process error: %s" %
                         (target_key, str(e)))
                 returncode = 255

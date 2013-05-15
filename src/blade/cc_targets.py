@@ -187,7 +187,9 @@ class CcTarget(Target):
             path = self.data['path']
         if not name:
             name = self.data['name']
-        suffix = 'so' if dynamic else 'a'
+        suffix = 'a'
+        if dynamic:
+            suffix = 'so'
         return os.path.join(self.build_path, path, 'lib%s.%s' % (name, suffix))
 
     def _prebuilt_cc_library_src_path(self, path='', name='', dynamic=0):
@@ -197,7 +199,9 @@ class CcTarget(Target):
         if not name:
             name = self.data['name']
         options = self.blade.get_options()
-        suffix = 'so' if dynamic else 'a'
+        suffix = 'a'
+        if dynamic:
+            suffix = 'so'
         return os.path.join(path, 'lib%s_%s' % (options.m, options.profile),
                             'lib%s.%s' % (name, suffix))
 
