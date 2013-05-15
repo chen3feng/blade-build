@@ -14,17 +14,20 @@
 """
 
 import fcntl
-import hashlib
 import os
 import subprocess
 import sys
 
 import console
 
+try:
+    import hashlib as md5
+except ImportError:
+    import md5
 
 def md5sum_str(user_str):
     """md5sum of basestring. """
-    m = hashlib.md5()
+    m = md5.md5()
     if not isinstance(user_str, basestring):
         console.error_exit("not a valid basestring type to caculate md5")
     m.update(user_str)

@@ -54,7 +54,10 @@ class TargetAttributes(object):
 
     @property
     def arch(self):
-        return 'i386' if self._options.m == '32' else 'x86_64'
+        if self._options.m == '32':
+            return 'i386'
+        else:
+            return 'x86_64'
 
     def is_debug(self):
         return self._options.profile == 'debug'
@@ -88,7 +91,10 @@ def _report_not_exist(source_dir, path, blade):
 
 def enable_if(cond, true_value, false_value = None):
     """A global function can be called in BUILD to filter srcs by target"""
-    ret = true_value if cond else false_value
+    if cond:
+        ret = true_value
+    else:
+        ret = false_value
     if ret is None:
         ret = []
     return ret

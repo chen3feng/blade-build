@@ -16,7 +16,7 @@ import re
 
 import console
 
-class ThriftHelper():
+class ThriftHelper(object):
     def __init__(self, path):
         self.path = path
         if not os.path.isfile(path):
