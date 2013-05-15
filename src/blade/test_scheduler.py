@@ -204,7 +204,7 @@ class TestScheduler(object):
         """Join thread and keep signal awareable"""
         # The Thread.join without timeout will block signals, which makes
         # blade can't be terminated by Ctrl-C
-        while t.is_alive():
+        while t.isAlive():
             t.join(1)
 
     def schedule_jobs(self):
