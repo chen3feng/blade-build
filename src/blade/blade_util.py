@@ -115,3 +115,11 @@ def environ_add_path(env, key, path):
         env[key] = old + ":" + path
     else:
         env[key] = path
+
+
+def cpu_count():
+    try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    except ImportError:
+        return int(os.sysconf('SC_NPROCESSORS_ONLN'))
