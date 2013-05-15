@@ -21,7 +21,7 @@ import sys
 import console
 
 try:
-    import md5 as md5
+    import hashlib as md5
 except ImportError:
     import md5
 
