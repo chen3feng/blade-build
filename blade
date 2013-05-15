@@ -71,7 +71,7 @@ function _full_real_path()
 
 blade_path=`_full_real_path $0`
 blade_dir=$(cd $(dirname $blade_path) && pwd)
-blade_file="$blade_dir/bootstarp.py"
+blade_file="$blade_dir/bootstrap.py"
 
 if [[ "$BLADE_AUTO_UPGRADE" != "no" ]]; then
     # Auto update blade main program to latest version and run it
