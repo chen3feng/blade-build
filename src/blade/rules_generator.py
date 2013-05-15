@@ -93,7 +93,10 @@ version_obj = env_version.SharedObject('$filename')
                 building_var="",
                 condition=False):
         """A helper method: append prefix to building var if condition is True."""
-        return "%s %s" % (prefix, building_var) if condition else building_var
+        if condition:
+            return "%s %s" % (prefix, building_var)
+        else:
+            return building_var
 
     def _get_version_info(self):
         """Gets svn root dir info. """

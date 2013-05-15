@@ -312,7 +312,10 @@ class TestRunner(binary_runner.BinaryRunner):
 
             test_env = dict(os.environ)
             environ_add_path(test_env, 'LD_LIBRARY_PATH', self._runfiles_dir(target))
-            test_env['GTEST_COLOR'] = 'yes' if console.color_enabled else 'no'
+            if console.color_enabled:
+                test_env['GTEST_COLOR'] = 'yes'
+            else:
+                test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
             test_env['HEAPCHECK'] = target.get('options', {}).get('heap_check', '')
             tests_run_list.append((target,

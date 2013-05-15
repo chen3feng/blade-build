@@ -185,7 +185,7 @@ def _check_code_style(opened_files):
             else:
                 msg = "Please fixing style warnings before submitting the code!"
             console.warning(msg)
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt, e:
         console.error(str(e))
         return 1
     return 0
@@ -303,8 +303,9 @@ def _build(options):
         return 0
 
     scons_options = '--duplicate=soft-copy --cache-show'
-    scons_options += " -j %s %s" % (
-            options.jobs, '-k' if options.keep_going else '')
+    scons_options += ' -j %s' % options.jobs
+    if options.keep_going:
+        scons_options += ' -k'
 
     p = subprocess.Popen("scons %s" % scons_options, shell=True)
     try:
@@ -355,7 +356,7 @@ def main(blade_path):
     exit_code = 0
     try:
         exit_code = _main(blade_path)
-    except SystemExit as e:
+    except SystemExit, e:
         exit_code = e.code
     except KeyboardInterrupt:
         console.error_exit("keyboard interrupted", -signal.SIGINT)

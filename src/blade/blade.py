@@ -12,13 +12,12 @@
 """
 
 
-import multiprocessing
 import os
 
 import configparse
 import console
 
-from blade_util import relative_path
+from blade_util import relative_path, cpu_count
 from dependency_analyzer import DependenciesAnalyzer
 from load_build_files import load_targets
 from blade_platform import CcFlagsManager
@@ -549,7 +548,7 @@ class Blade(object):
         """Tune the jobs num. """
         user_jobs_num = self.options.jobs
         jobs_num = 0
-        cpu_core_num = multiprocessing.cpu_count()
+        cpu_core_num = cpu_count()
         if self.distcc_enabled and self.build_environment.distcc_env_prepared:
             jobs_num = int(1.5*len(self.build_environment.get_distcc_hosts_list())) + 1
             if jobs_num > 20:
