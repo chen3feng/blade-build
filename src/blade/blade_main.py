@@ -91,8 +91,6 @@ query_targets = None
 # Run target
 run_target = None
 
-# Return code
-blade_ret_code = 0
 
 def is_svn_client(blade_root_dir):
     # We suppose that BLADE_ROOT is under svn root dir now.
@@ -103,8 +101,8 @@ def is_svn_client(blade_root_dir):
 # dir , add subdirs are github repos, here we need to fix out the git ROOT for each
 # build target
 def is_git_client(blade_root_dir , target, working_dir):
-    #Remove "..." in target
-    target = target.replace(".", "")
+    if target.endswith('...'):
+        target = target[:-3]
     if os.path.exists(os.path.join(blade_root_dir, '.git')):
         return (True, blade_root_dir, target)
     blade_root_dir = os.path.normpath(blade_root_dir)
@@ -124,12 +122,13 @@ def is_git_client(blade_root_dir , target, working_dir):
 
 
 def _normalize_target_path(target):
-    target = target.replace(".", "")
+    if target.endswith('...'):
+        target = target[:-3]
     index = target.find(':')
     if index != -1:
         target = target[index +1:]
-    if target and target[len(target) != '/']:
-        target = target + "/"
+    if target and not target.endswith('/'):
+        target = target + '/'
     return target
 
 
