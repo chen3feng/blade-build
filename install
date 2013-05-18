@@ -34,13 +34,11 @@ echo -n "Installing blade..."
 ln -sf $blade_dir/blade ~/bin
 echo ", Done."
 
-if ! echo $PATH | grep "$HOME/bin" &> /dev/null
-then
-    echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
-    if [ -f ~/.zshrc ]; then
-        echo 'export PATH=~/bin:$PATH' >> ~/.zshrc
+if ! echo $PATH | grep "$HOME/bin" &> /dev/null; then
+    if [ -f ~/.profile ]; then
+        echo 'export PATH=~/bin:$PATH' >> ~/.profile
     fi
     PATH=~/bin:$PATH
 fi
 
-echo -e "\033[1;32mAll successful, please log in again or source ~/.bashrc or source ~/.zshrc manually\033[0m"
+echo -e "\033[1;32mAll successful, please log in again or source ~/.profile manually\033[0m"
