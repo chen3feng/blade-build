@@ -87,6 +87,8 @@ class BladeConfig(object):
                 'cxx_warnings' : [],
                 'warnings' : [],
                 'cpplint' : 'cpplint.py',
+                'benchmark_libs' : [],
+                'benchmark_main_libs' : []
             }
         }
 
@@ -163,6 +165,11 @@ def cc_test_config(append=None, **kwargs):
                    HEAP_CHECK_VALUES)
     global blade_config
     blade_config.update_config('cc_test_config', append, kwargs)
+
+def cc_benchmark_config(append=None, **kwargs):
+    """cc_benchmark_config section. """
+    global blade_config
+    blade_config.update_config('cc_benchmark_config', append, kwargs)
 
 
 def cc_binary_config(append=None, **kwargs):

@@ -19,6 +19,7 @@
     cc_library        -- build a library from C++ source
     cc_plugin         -- build a plugin from C++ source
     cc_test           -- build a unittest binary from C++ source
+    cc_benchmark      -- build a benchmark binary from C++ source
     gen_rule          -- used to specify a general building rule
     java_jar          -- build java jar from java source files
     lex_yacc_library  -- build a library from lex/yacc source

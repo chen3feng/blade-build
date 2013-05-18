@@ -35,6 +35,7 @@ class BinaryRunner(object):
         self.run_list = ['cc_binary',
                          'dynamic_cc_binary',
                          'cc_test',
+                         'cc_benchmark',
                          'dynamic_cc_test']
         self.prebuilt_file_map = prebuilt_file_map
         self.target_database = target_database
