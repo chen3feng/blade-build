@@ -449,6 +449,7 @@ class CcTarget(Target):
         allow_only_dynamic = True
         need_static_lib_targets = ['cc_test',
                                    'cc_binary',
+                                   'cc_benchmark',
                                    'cc_plugin',
                                    'swig_library']
         for key in self.targets.keys():
@@ -612,6 +613,7 @@ class CcTarget(Target):
                         "cc_binary",
                         "dynamic_cc_binary",
                         "cc_test",
+                        "cc_benchmark",
                         "dynamic_cc_test",
                         "cc_plugin"]
 
@@ -777,7 +779,6 @@ def cc_library(name,
     blade.blade.register_scons_target(target.key,
                                       target)
 
-
 class CcBinary(CcTarget):
     """A scons cc target subclass.
 
@@ -876,6 +877,36 @@ def cc_binary(name,
                                 kwargs)
     blade.blade.register_scons_target(cc_binary_target.key, cc_binary_target)
 
+def cc_benchmark(name,
+                 srcs=[],
+                 deps=[],
+                 warning='yes',
+                 defs=[],
+                 incs=[],
+                 export_incs=[],
+                 optimize=[],
+                 dynamic_link=False,
+                 extra_cppflags=[],
+                 extra_linkflags=[],
+                 export_dynamic=False,
+                 **kwargs):
+    """cc_benchmark target. """
+    cc_benchmark_config = configparse.blade_config.get_config('cc_benchmark_config')
+    benchmark_main_libs = var_to_list(cc_benchmark_config['benchmark_main_libs'])
+    deps += benchmark_main_libs
+    target = cc_binary(name,
+              srcs,
+              deps,
+              warning,
+              defs,
+              incs,
+              export_incs,
+              optimize,
+              dynamic_link,
+              extra_cppflags,
+              extra_linkflags,
+              export_dynamic,
+              **kwargs)
 
 class CcPlugin(CcTarget):
     """A scons cc target subclass.

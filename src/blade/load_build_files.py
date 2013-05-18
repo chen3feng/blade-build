@@ -26,6 +26,7 @@ from cc_targets import cc_binary
 from cc_targets import cc_library
 from cc_targets import cc_plugin
 from cc_targets import cc_test
+from cc_targets import cc_benchmark
 from cc_targets import lex_yacc_library
 from cc_targets import proto_library
 from cc_targets import resource_library

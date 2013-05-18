@@ -49,6 +49,10 @@ class BladeConfig(object):
                 'extra_libs' : []
             },
 
+           'cc_benchmark_config' : {
+                'benchmark_main_libs' : []
+            },
+
             'distcc_config' : {
                 'enabled' : False
             },
@@ -163,6 +167,11 @@ def cc_test_config(append=None, **kwargs):
                    HEAP_CHECK_VALUES)
     global blade_config
     blade_config.update_config('cc_test_config', append, kwargs)
+
+def cc_benchmark_config(append=None, **kwargs):
+    """cc_benchmark_config section. """
+    global blade_config
+    blade_config.update_config('cc_benchmark_config', append, kwargs)
 
 
 def cc_binary_config(append=None, **kwargs):
