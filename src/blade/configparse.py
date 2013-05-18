@@ -49,10 +49,6 @@ class BladeConfig(object):
                 'extra_libs' : []
             },
 
-           'cc_benchmark_config' : {
-                'benchmark_main_libs' : []
-            },
-
             'distcc_config' : {
                 'enabled' : False
             },
@@ -91,6 +87,8 @@ class BladeConfig(object):
                 'cxx_warnings' : [],
                 'warnings' : [],
                 'cpplint' : 'cpplint.py',
+                'benchmark_libs' : [],
+                'benchmark_main_libs' : []
             }
         }
 

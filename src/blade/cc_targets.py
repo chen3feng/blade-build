@@ -779,6 +779,7 @@ def cc_library(name,
     blade.blade.register_scons_target(target.key,
                                       target)
 
+
 class CcBinary(CcTarget):
     """A scons cc target subclass.
 
@@ -877,36 +878,15 @@ def cc_binary(name,
                                 kwargs)
     blade.blade.register_scons_target(cc_binary_target.key, cc_binary_target)
 
-def cc_benchmark(name,
-                 srcs=[],
-                 deps=[],
-                 warning='yes',
-                 defs=[],
-                 incs=[],
-                 export_incs=[],
-                 optimize=[],
-                 dynamic_link=False,
-                 extra_cppflags=[],
-                 extra_linkflags=[],
-                 export_dynamic=False,
-                 **kwargs):
+
+def cc_benchmark(name, srcs= [], deps=[], **kwargs):
     """cc_benchmark target. """
-    cc_benchmark_config = configparse.blade_config.get_config('cc_benchmark_config')
-    benchmark_main_libs = var_to_list(cc_benchmark_config['benchmark_main_libs'])
-    deps += benchmark_main_libs
-    target = cc_binary(name,
-              srcs,
-              deps,
-              warning,
-              defs,
-              incs,
-              export_incs,
-              optimize,
-              dynamic_link,
-              extra_cppflags,
-              extra_linkflags,
-              export_dynamic,
-              **kwargs)
+    cc_config = configparse.blade_config.get_config('cc_config')
+    benchmark_libs = var_to_list(cc_config['benchmark_libs'])
+    benchmark_libs += var_to_list(cc_config['benchmark_main_libs'])
+    deps = var_to_list(deps) + benchmark_libs
+    cc_binary(name, srcs, deps, **kwargs)
+
 
 class CcPlugin(CcTarget):
     """A scons cc target subclass.
