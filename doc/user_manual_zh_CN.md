@@ -499,21 +499,28 @@ targets是一个列表，支持的格式：
 ----
 Blade 支持三个配置文件
 
- * blade.zip 同一个目录下的 blade.conf，这是全局配置。
- * ~/.bladerc 用户 HOME 目录下的 .bladerc 文件，这是用户级的配置。
- * BLADE_ROOT其实是个配置文件，写在这里的是项目级配置。
- * 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
+* blade.zip 同一个目录下的 blade.conf，这是全局配置。
+* ~/.bladerc 用户 HOME 目录下的 .bladerc 文件，这是用户级的配置。
+* BLADE_ROOT 其实也是个配置文件，写在这里的是项目级配置。
+
+后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
+
 ### cc_config
 所有c/c++目标的公共配置
-```
+```python
 cc_config(
-    extra_incs = ['thirdparty']  # 额外的 -I，比如 thirdparty
+    extra_incs = ['thirdparty'],  # 额外的 -I，比如 thirdparty
+    warnings = ['-Wall', '-Wextra'...], # C/C++公用警告
+    c_warnings = ['-Wall', '-Wextra'...], # C专用警告
+    cxx_warnings = ['-Wall', '-Wextra'...], # C++专用警告
+    optimize = '-O2', # 优化级别
 )
 ```
+所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 
 ### cc_test_config
 构建和运行测试所需的配置
-```
+```python
 cc_test_config(
     dynamic_link=True,   # 测试程序是否默认动态链接，可以减少磁盘开销，默认为 False
     heap_check='strict', # 开启 gperftools 的 HEAPCHECK，具体取值请参考 gperftools 的文档
@@ -524,11 +531,21 @@ cc_test_config(
 )
 ```
 
+所有的 config 的列表类型的选项均支持追加模式，用法如下：
+
+```python
+cc_config(
+    append = config_items(
+        warnings = [...]
+    )
+)
+```
+
 注意:
 
- * gtest 1.6开始，去掉了 make install，但是可以绕过[http://blog.csdn.net/chengwenyao18/article/details/7181514 gtest1.6.0安装方法]。
- * gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
- * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
+* gtest 1.6开始，去掉了 make install，但是可以绕过[http://blog.csdn.net/chengwenyao18/article/details/7181514 gtest1.6.0安装方法]。
+* gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
+* 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
 
 ### proto_library_config
 编译protobuf需要的配置
@@ -559,11 +576,11 @@ thrift_library_config(
 
 Blade还支持以下环境变量：
 
- * TOOLCHAIN_DIR，默认为空
- * CPP，默认为cpp
- * CXX，默认为c++
- * CC，默认为gcc
- * LD，默认为c++
+* TOOLCHAIN_DIR，默认为空
+* CPP，默认为cpp
+* CXX，默认为c++
+* CC，默认为gcc
+* LD，默认为c++
 
 TOOLCHAIN_DIR和CPP等组合起来，构成调用工具的完整路径，例如：
 
@@ -594,10 +611,14 @@ blade命令的符号链接会被安装下面的命令到~/bin 下。
 ### vim集成
 我们编写了vim的blade语法文件，高亮显示blade关键字，install后就会自动生效。
 
-我们编写了 Blade 命令，使得可以在 vim 中直接执行 blade，并快速跳转到出错行（得益于 vim 的 [http://easwy.com/blog/archives/advanced-vim-skills-quickfix-mode/ quickfix] 特性）。
+我们编写了 Blade 命令，使得可以在 vim 中直接执行 blade，并快速跳转到出错行（得益于 vim 的 [hquickfix](ttp://easwy.com/blog/archives/advanced-vim-skills-quickfix-mode/) 特性）。
 
 使用时直接在 vim 的 : 模式输入（可带参数）
+
+```
 :Blade
+```
+
 即可构建。
 
 这个命令的源代码在 tools/.vimrc 中。
@@ -610,14 +631,22 @@ blade命令的符号链接会被安装下面的命令到~/bin 下。
 
 执行install脚本即可安装到~/bin下，目前因还在开发阶段，变化还比较快，以软链方式安装，install后不能删除checkout出来的原始目录。
 目前blade生成scons脚本，因此还需要安装scons 2.0以上版本。
-Blade 需要至少 Python 2.6，我们建议使用 python 2.7.x (x越高越好)，但不用 python3
+Blade 需要支持 Python 2.4-2.7.x，不支持 python3。
 
 install使得可以在任何目录下直接执行
- $ blade
+
+```
+$ blade
+```
+
 命令。
 如果不行，确保~/bin在你的PATH环境变量里，否则修改 ~/.profile，加入
- export PATH=~/bin:$PATH
-重新登录即可。
+
+```
+export PATH=~/bin:$PATH
+```
+
+然后重新登录即可。
 
 
 我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
