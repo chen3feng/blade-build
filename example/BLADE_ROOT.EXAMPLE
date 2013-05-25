@@ -44,6 +44,7 @@ thrift_library_config(
 
 cc_config(
     extra_incs=[],
+    auto_dep_projs=['common', 'bar', 'foo'],
     cppflags = '-DHAVE_CONFIG_H'
 )
 

@@ -23,6 +23,53 @@ from blade_platform import CcFlagsManager
 from target import Target
 from thrift_helper import ThriftHelper
 
+def analyse_code_deps(name, srcs, target):
+    cc_config = configparse.blade_config.get_config('cc_config')
+    auto_dep_projs = cc_config.get('auto_dep_projs', [])
+    if not auto_dep_projs: return []
+
+    import re, os
+    files = []
+    srcs = var_to_list(srcs)
+    src_dir = target.current_source_path
+    for src in srcs:
+        src_path = src_dir + "/" + src
+        if os.path.isfile(src_path): files.append( src_path )
+        src_path = src_path.replace(".h", "").replace(".cpp", ".h").replace(".c", ".h")
+        if os.path.isfile(src_path): files.append( src_path )
+
+    # analyse include files
+    includes = []
+    tag = re.compile(r"""\s*#include \s*['"]([a-zA-Z0-9_/\.]+)['"]""")
+    for src_path in files:
+        for line in open(src_path).readlines():
+            ret = tag.match(line)
+            if not ret: continue
+            inc = ret.group(1)
+            for dir in auto_dep_projs:
+                if inc.startswith(dir):
+                    includes.append(inc)
+                    break
+
+    # convert include => deps
+    auto_deps = []
+    for inc in includes:
+        c_file = inc.replace(".h", ".c")
+        cpp_file = inc.replace(".h", ".cpp")
+        if not os.path.isfile( c_file ) and not os.path.isfile( cpp_file ): continue
+        vals = inc.split("/")
+        if len(vals) < 2: continue
+        dep_dirs = vals[0:-1]
+        dep_name = vals[-1].replace(".h", "").replace(".cpp", "")
+        dep = "//" + "/".join(vals[0:-1]) + ":" + dep_name
+        if os.path.dirname(inc) == src_dir and dep_name == name: continue
+        auto_deps.append( dep )
+
+    options = target.blade.get_options()
+    if hasattr(options, 'verbose') and options.verbose and auto_deps:
+        console.info("%s/%s => [%s]" % (src_dir, name, ", ".join(auto_deps) ) )
+
+    return auto_deps
 
 class CcTarget(Target):
     """A scons cc target subclass.
@@ -748,6 +795,7 @@ def cc_library(name,
                deprecated=False,
                extra_cppflags=[],
                extra_linkflags=[],
+               auto_deps = True,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -770,6 +818,12 @@ def cc_library(name,
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
+
+    if auto_deps:
+        code_deps = analyse_code_deps(name, srcs, target)
+        if code_deps:
+            target._init_target_deps(code_deps)
+
     blade.blade.register_scons_target(target.key,
                                       target)
 
@@ -854,9 +908,10 @@ def cc_binary(name,
               extra_cppflags=[],
               extra_linkflags=[],
               export_dynamic=False,
+              auto_deps = True,
               **kwargs):
     """cc_binary target. """
-    cc_binary_target = CcBinary(name,
+    target = CcBinary(name,
                                 srcs,
                                 deps,
                                 warning,
@@ -870,7 +925,12 @@ def cc_binary(name,
                                 export_dynamic,
                                 blade.blade,
                                 kwargs)
-    blade.blade.register_scons_target(cc_binary_target.key, cc_binary_target)
+    if auto_deps:
+        code_deps = analyse_code_deps(name, srcs, target)
+        if code_deps:
+            target._init_target_deps(code_deps)
+
+    blade.blade.register_scons_target(target.key, target)
 
 
 class CcPlugin(CcTarget):

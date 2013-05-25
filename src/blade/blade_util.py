@@ -58,6 +58,8 @@ def var_to_list(var):
     """change the var to be a list. """
     if isinstance(var, list):
         return var
+    if isinstance(var, str):
+        return var.split()
     if not var:
         return []
     return [var]
