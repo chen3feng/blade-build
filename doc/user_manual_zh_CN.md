@@ -131,13 +131,14 @@ cc_`*` 目标
 || optimize || 用户定义的optimize flags || optimize=['O3'] || 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library ||
 
 
-===cc_library===
+#### cc_library
+
 用于描述C++库目标。
 cc_library同时用于构建静态和动态库，默认只构建静态库，只有被dynamic_link=1的cc_binary依赖时或者命令行指定
 --generate-dynamic 才生成动态链接库。
 
 举例：
-```
+```python
 cc_library(
     name='lowercase',
     srcs=['./src/lower/plowercase.cpp'],
@@ -146,30 +147,27 @@ cc_library(
 )
 ```
 
- * link_all_symbols=True
+参数：
+
+* link_all_symbols=True
 库在被静态链接时，确保库里所有的符号都被链接，以保证依赖全局对象构造函数，比如自动注册器的代码能够正常工作。
-
-需要全部链接的部分最好单独拆分出来做成全部链接的库，而不是整个库全都全部链接，否则会无端增大可执行文件的大小。
-
-需要注意的是，link_all_symbols是库自身的属性，不是使用库时的属性。
-
-Blade是为大型项目设计的，基于以下因素，我们提倡任何模块都应该有自己的 cc_library，用户程序都应该在deps里写全直接依赖，不提倡创建像boost那样的全头文件的库。
+需要全部链接的部分最好单独拆分出来做成全部链接的库，而不是整个库全都全部链接，否则会无端增大可执行文件的大小。 需要注意的是，link_all_symbols是库自身的属性，不是使用库时的属性。Blade是为大型项目设计的，基于以下因素，我们提倡任何模块都应该有自己的 cc_library，用户程序都应该在deps里写全直接依赖，不提倡创建像boost那样的全头文件的库。
  * 编译速度
  * 将来未知的改变，比如某库一开始只需要头文件就能使用，不依赖标准库之外的任何库，但是后来依赖了MD5，所有使用这个库的代码都要加上新产生的依赖，这与我们设计Blade的初衷是违背的。
 
 要强制用户这样使用，可以在编写代码时，总是编写 .h 对应的 .cpp 文件，并把一部分必然要用到的符号（函数，静态变量）的实现写在里面，即使对于模板库，可以引入一个非模板的基类，或者把非模板部分的实现放到 .cpp 里。
 
- * always_optimize
+* always_optimize
 True: 不论debug版本还是release版本总是被优化。
 False: debug版本不作优化。
 默认为False。目前只对cc_library有效。
 
- * prebuilt=True
+* prebuilt=True
 主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64}_{release,debug} 这样的子目录中。不区分debug/release时可以只有两个实际的目录。
 
 ####cc_binary
 定义C++可执行文件目标
-```
+```python
 cc_binary(
     name='prstr',
     srcs=['./src/mystr_main/mystring.cpp'],
@@ -177,16 +175,14 @@ cc_binary(
 )
 ```
 
- * dynamic_link=True
+* dynamic_link=True
 目前我们的binary默认为全静态编译以适应云计算平台使用。
 如果有应用需要动态编译方式，可以使用此参数指定，此时被此target依赖的所有库都会自动生成对应的动态库供链接。
 需要注意的是，dynamic_link只适用于可执行文件，不适用于库。
 
- * export_dynamic=True
+* export_dynamic=True
 常规情况下，so中只引用所依赖的so中的符号，但是对于应用特殊的场合，需要在so中引用宿主可执行文件中的符号，就需要这个选项。
-
 这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中的这些符号。
-
 详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
 ####cc_test
@@ -194,19 +190,19 @@ cc_binary(
 还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt
 用blade test子命令，会在成功构建后到name.runfiles目录下自动运行，并输出总结信息。
 
- * testdata=[]
+* testdata=[]
 在name.runfiles里建立symbolic link指向工程目录的文件，目前支持
 以下几种形式
 
-  * 'file'
+ * 'file'
 在测试程序中使用这个名字本身的形式来访问
-  * '//your_proj/path/file'
+ * '//your_proj/path/file'
 在测试程序中用"your_proj/path/file"来访问。
-  * ('//your_proj/path/file', "new_name")
+ * ('//your_proj/path/file', "new_name")
 在测试程序中用"new_name"来访问
 
 可以根据需要自行选择，这些路径都也可以是目录。
-```
+```python
 cc_test(
     name = 'textfile_test',
     srcs = 'textfile_test.cpp',
@@ -219,15 +215,12 @@ cc_test(
 )
 ```
 
- * export_dynamic=True
-Pass the flag ‘-export-dynamic’ to the ELF linker, on targets that support it. This instructs the linker to add all symbols, not only used ones, to the dynamic symbol table. This option is needed for some uses of dlopen or to allow obtaining backtraces from within a program.
-
 #### proto_library
 用于定义protobuf目标
 deps 为import所涉及的其他proto_library
 自动依赖protobuf，使用者不需要再显式指定。
 构建时自动调用protoc生成cc和h，并且编译成对应的cc_library
-```
+```python
 proto_library(
     name = 'rpc_meta_info_proto',
     srcs = 'rpc_meta_info.proto',
@@ -244,7 +237,8 @@ Blade支持proto_library，使得在项目中使用protobuf十分方便。
 deps 为import所涉及的其他thrift_library
 自动依赖thrift，使用者不需要再显式指定。
 构建时自动调用thrift命令生成cpp和h，并且编译成对应的cc_library
-```
+
+```python
 thrift_library(
     name = 'shared_thrift',
     srcs = 'shared.thrift',
@@ -255,13 +249,16 @@ thrift_library(
     deps = ':shared_thrift'
 )
 ```
+
 C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
  * thrift 0.9版（之前版本未测）有个[https://issues.apache.org/jira/browse/THRIFT-1859 bug]，需要修正才能使用，此bug已经在开发版本中[https://builds.apache.org/job/Thrift/633/changes#detail13 修正]
 
 #### lex_yacc_library
+
 srcs 必须为二元列表，后缀分别为ll和yy
 构建时自动调用flex和bison, 并且编译成对应的cc_library
-```
+
+```python
 lex_yacc_library(
      name = 'parser',
      srcs = [
@@ -277,10 +274,10 @@ lex_yacc_library(
 
 * recursive=True
 生成可重入的C scanner.
-flex has the ability to generate a reentrant C scanner. This is accomplished by specifying %option reentrant (`-R').
 
 
 #### gen_rule
+
 用于定制自己的目标
 outs = []，表示输出的文件列表，需要填写这个域gen_rule才会被执行
 cmd, 字符串，表示被调用的命令行
@@ -290,7 +287,8 @@ $OUTS
 $FIRST_SRC
 $FIRST_OUT
 $BUILD_DIR -- 可被替换为 build[64,32]_[release,debug] 输出目录
-```
+
+```python
 gen_rule(
     name='test_gen_target',
     cmd='echo what_a_nice_day;touch test2.c',
@@ -298,14 +296,17 @@ gen_rule(
     outs=['test2.c']
 )
 ````
+
 很多用户使用gen_rule动态生成代码文件然后和某个cc_library或者cc_binary一起编译，
 需要注意应该尽量在输出目录生成代码文件,如build64_debug下，并且文件的路径名要写对，
 如 outs = ['websearch2/project_example/module_1/file_2.cc'], 这样使用
 gen_rule生成的文件和库一起编译时就不会发生找不到动态生成的代码文件问题了。
 
 ####swig_library
+
 根据.i文件生成相应的python, java 和php cxx模块代码，并且生成对应语言的代码。
-```
+
+```python
 swig_library(
     name = 'poppy_client',
     srcs = [
@@ -320,12 +321,14 @@ swig_library(
     optimize=['O3']    # 编译优化选项
 )
 ```
- * warning
+
+* warning
 这里的warning仅仅指swig编译参数cpperraswarn是否被指定了，swig_library默认使用非标准编译告警级别（没有那么严格）。
 
 #### cc_plugin
+
 支持生成target所依赖的库都是静态库.a的so库，即plugin。
-{{{
+```python
 cc_plugin(
     name='mystring',
     srcs=['./src/mystr/mystring.cpp'],
@@ -334,7 +337,8 @@ cc_plugin(
     defs=['_MT'],
     optimize=['O3']
 )
-}}}
+```
+
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
 #### resource_library
@@ -343,7 +347,7 @@ cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不�
 大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
 blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
 比如poppy下的BUILD文件里用的静态资源：
-```
+```python
 resource_library(
     name = 'static_resource',
     srcs = [
@@ -373,7 +377,7 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 
 #### java_jar
 编译java源代码。
-```
+```python
 java_jar(
     name = 'poppy_java_client',
     srcs = [
@@ -409,14 +413,14 @@ Blade Cache
 -----------
 blade 支持 cache，可以大幅度加快构建速度。
 blade 支持两种cache
- * ccache , cache配置使用ccache的配置, 如通过配置 CCACHE_DIR 环境变量指定ccache目录。
- * ccache 没有安装，则使用scons cache, 配置细节如下
+* ccache , cache配置使用ccache的配置, 如通过配置 CCACHE_DIR 环境变量指定ccache目录。
+* ccache 没有安装，则使用scons cache, 配置细节如下
 
 scons cache需要一个目录，依次按以下顺序检测：
- * 命令行参数--cache-dir
- * 环境变量BLADE_CACHE_DIR
- * 如果均未配置，则不启用cache。
- * 空的BLADE_CACHE_DIR变量或者不带参数值的--cache-dir=, 则会禁止cache。
+* 命令行参数--cache-dir
+* 环境变量BLADE_CACHE_DIR
+* 如果均未配置，则不启用cache。
+* 空的BLADE_CACHE_DIR变量或者不带参数值的--cache-dir=, 则会禁止cache。
 
 --cache-size 如不指定，则默认为2G，如指定，则使用用户指定的以Gigabyte为单位的大小的cache。
 如 --cache-dir='~/user_cache' --cache-size=16 (16 G)大小cache。
@@ -427,14 +431,16 @@ scons cache需要一个目录，依次按以下顺序检测：
 -------------
 Blade test支持增量测试 ，可以加快tests的执行。
 已经Pass 的tests 在下一次构建和测试时不需要再跑，除非：
- * tests 的任何依赖变化导致其重新生成。
- * tests 依赖的测试数据改变，这种依赖为显式依赖，用户需要使用BUILD文件指定，如testdata。
- * tests 所在环境变量发生改变。
- * test arguments 改变。
- * Fail 的test cases ，每次都重跑。
+
+* tests 的任何依赖变化导致其重新生成。
+* tests 依赖的测试数据改变，这种依赖为显式依赖，用户需要使用BUILD文件指定，如testdata。
+* tests 所在环境变量发生改变。
+* test arguments 改变。
+* Fail 的test cases ，每次都重跑。
+
 如果需要使用全量测试，使用--full-test option, 如 blade test common/... --full-test ， 全部测试都需要跑。
 另外，cc_test 支持了 always_run 属性，用于在增量测试时，不管上次的执行结果，每次总是要跑。
-```
+```python
 cc_test(
     name = 'zookeeper_test',
     srcs = 'zookeeper_test.cc',
@@ -447,7 +453,7 @@ blade test [targets] --test-jobs N
 -t, --test-jobs N 设置并发测试的并发数，Blade会让N个测试进程并行执行
 
 对于某些因为可能相互干扰而不能并行跑的测试，可以加上 exclusive 属性
-```
+```python
 cc_test(
     name = 'zookeeper_test',
     srcs = 'zookeeper_test.cc',
@@ -457,43 +463,43 @@ cc_test(
 
 命令行参考
 ---------
-```
+```bash
 blade `[`action`]` `[`options`]` `[`targets`]`
 ```
 
 action是一个动作，目前有
 
- * build 表示构建项目
- * test  表示构建并且跑单元测试
- * clean 表示清除目标的构建结果
- * query 查询目标的依赖项与被依赖项
- * run   构建并run一个单一目标
+* build 表示构建项目
+* test  表示构建并且跑单元测试
+* clean 表示清除目标的构建结果
+* query 查询目标的依赖项与被依赖项
+* run   构建并run一个单一目标
 
 targets是一个列表，支持的格式：
 
- * path:name 表示path中的某个target
- * path表示path中所有targets
- * path/... 表示path中所有targets，并递归包括所有子目录
- * :name表示当前目录下的某个target
+* path:name 表示path中的某个target
+* path表示path中所有targets
+* path/... 表示path中所有targets，并递归包括所有子目录
+* :name表示当前目录下的某个target
 默认表示当前目录
 
 参数列表：
 
- * -m32,-m64            指定构建目标位数，默认为自动检测
- * -p PROFILE           指定debug/release，默认release
- * -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
- * -j N,--jobs=N        N路并行编译，多CPU机器上适用
- * -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
- * --cache-dir=DIR      指定一个cache目录
- * --cache-size=SZ      指定cache大小，以G为单位
- * --verbose            完整输出所运行的每条命令行
- * –h, --help           显示帮助
- * --color=yes/no/auto  是否开启彩色
- * --generate-dynamic   强制生成动态库
- * --generate-java      为proto_library 和 swig_library 生成java文件
- * --generate-php       为proto_library 和 swig_library 生成php文件
- * --gprof              支持 GNU gprof
- * --gcov               支持 GNU gcov 做覆盖率测试
+* -m32,-m64            指定构建目标位数，默认为自动检测
+* -p PROFILE           指定debug/release，默认release
+* -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
+* -j N,--jobs=N        N路并行编译，多CPU机器上适用
+* -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
+* --cache-dir=DIR      指定一个cache目录
+* --cache-size=SZ      指定cache大小，以G为单位
+* --verbose            完整输出所运行的每条命令行
+* –h, --help           显示帮助
+* --color=yes/no/auto  是否开启彩色
+* --generate-dynamic   强制生成动态库
+* --generate-java      为proto_library 和 swig_library 生成java文件
+* --generate-php       为proto_library 和 swig_library 生成php文件
+* --gprof              支持 GNU gprof
+* --gcov               支持 GNU gcov 做覆盖率测试
 
 配置
 ----
@@ -549,7 +555,7 @@ cc_config(
 
 ### proto_library_config
 编译protobuf需要的配置
-```
+```python
 proto_library_config(
     protoc='protoc',  # protoc编译器的路径
     protobuf_libs='//thirdparty/protobuf:protobuf', # protobuf库的路径，Blade deps 格式
@@ -560,7 +566,7 @@ proto_library_config(
 
 ### thrift_library_config
 编译thrift需要的配置
-```
+```python
 thrift_library_config(
     thrift='thrift',  # protoc编译器的路径
     thrift_libs='//thirdparty/thrift:thrift', # thrift库的路径，Blade deps 格式
@@ -585,11 +591,11 @@ Blade还支持以下环境变量：
 TOOLCHAIN_DIR和CPP等组合起来，构成调用工具的完整路径，例如：
 
 调用/usr/bin下的gcc（开发机上的原版gcc）
-```
+```bash
 TOOLCHAIN_DIR=/usr/bin blade
 ```
 使用clang
-```
+```bash
 CPP='clang -E' CC=clang CXX=clang++ ld=clang++ blade
 ```
 
@@ -615,7 +621,7 @@ blade命令的符号链接会被安装下面的命令到~/bin 下。
 
 使用时直接在 vim 的 : 模式输入（可带参数）
 
-```
+```vim
 :Blade
 ```
 
@@ -635,14 +641,14 @@ Blade 需要支持 Python 2.4-2.7.x，不支持 python3。
 
 install使得可以在任何目录下直接执行
 
-```
+```bash
 $ blade
 ```
 
 命令。
 如果不行，确保~/bin在你的PATH环境变量里，否则修改 ~/.profile，加入
 
-```
+```bash
 export PATH=~/bin:$PATH
 ```
 
