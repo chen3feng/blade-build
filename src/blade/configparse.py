@@ -87,6 +87,7 @@ class BladeConfig(object):
                 'cxx_warnings' : [],
                 'warnings' : [],
                 'cpplint' : 'cpplint.py',
+                'optimize' : [],
             }
         }
 

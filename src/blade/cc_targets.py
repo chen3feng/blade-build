@@ -110,17 +110,6 @@ class CcTarget(Target):
         else:
             self._write_rule("%s = env_no_warning.Clone()" % env_name)
 
-    def _check_optimize_flags(self, oflag):
-        """_check_optimize_flags.
-
-        It will exit if user defines unregconized optimize flag.
-
-        """
-        opt_list = ['O0', 'O1', 'O2', 'O3', 'Os', 'Ofast']
-        if not oflag in opt_list:
-            console.error_exit("please specify optimization flags only in %s" % (
-                       ','.join(opt_list)))
-
     def _check_defs(self):
         """_check_defs.
 
@@ -230,6 +219,23 @@ class CcTarget(Target):
             gcc_flags_list_checked.append(flag)
         return gcc_flags_list_checked
 
+    def _get_optimize_flags(self):
+        """get optimize flags such as -O2"""
+        oflags = []
+        opt_list = self.data['options'].get('optimize')
+        if not opt_list:
+            cc_config = configparse.blade_config.get_config('cc_config')
+            opt_list = cc_config['optimize']
+        if opt_list:
+            for flag in opt_list:
+                if flag.startswith('-'):
+                    oflags.append(flag)
+                else:
+                    oflags.append('-' + flag)
+        else:
+            oflags = ['-O2']
+        return oflags
+
     def _get_cc_flags(self):
         """_get_cc_flags.
 
@@ -247,21 +253,10 @@ class CcTarget(Target):
         cpp_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
-        oflags = []
-        opt_list = self.data['options'].get('optimize')
-        if opt_list:
-            for flag in opt_list:
-                if flag.startswith('O'):
-                    self._check_optimize_flags(flag)
-                    oflags.append('-' + flag)
-                else:
-                    cpp_flags.append('-' + flag)
-        else:
-            oflags = ['-O2']
 
         if (self.blade.get_options().profile == 'release' or
             self.data['options'].get('always_optimize')):
-            cpp_flags += oflags
+            cpp_flags += self._get_optimize_flags()
 
         # Add the compliation flags here
         # 1. -fno-omit-frame-pointer to release
