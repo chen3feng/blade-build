@@ -12,18 +12,11 @@ Documentation in zh_CN
  * 新增 cc_config.optimize 选项，可以控制整体默认优化级别。
  * 更新文档
 
-* google-libs发布1.0.5，添加了一个新的库，[google  cpp-btree](https://code.google.com/p/cpp-btree/)，并做了以下[修改](https://code.google.com/p/cpp-btree/issues/detail?id=18)：
- * 修改了代码使得不依赖C++11。
- * 增加了 CPP_BTREE_SIZE_TYPE 宏，来决定 size() 的类型，原来为 ssize_t，默认改为 size_t，使得和 STL 容器完全兼容，在 -Wsign-compare 开启下也能平滑替换STL容器。
- * 消除了 strict-alias 警告。
-
-* 开启C++11的方法: 在配置文件cc_config节确保加上cxxflags='gnu++0x'参数即可：cc_config(cxxflags='gnu++0x')
-* 有bug和需求请发到issue里，我们有时间会尽快解决，但是因为工作繁忙等关系，无法担保解决时间，我们也欢迎提交patch，参与开发，共同完善Blade。
-
 贡献者名单：
 
 * chenjingxu at qiyi dot com
 * whuwxl at github dot com
+* guanqun at githun dot com
 
 概述
 ---
