@@ -39,4 +39,12 @@
 	* Add 'export_incs' to cc_library, see example/extra for usage, thanks to
 	whuwxl.
 	* Fix bug of detecting ccache installation. thanks to yeshunping.
+
+2013-05-25  Tencent Inc. <chen3feng@gmail.com>
+	* Add cc_config:optimize config option, see blade.conf
+	* Fix command line parsing bug on python 2.7.0.
+	* Support python 2.4 now.
+	* Th install command support zsh.
+	* Integrate cpplint in to blade, thanks to yehsunping.
+	* Update Documentations.
 Copyright 2012, 2013 Tencent, Inc.
