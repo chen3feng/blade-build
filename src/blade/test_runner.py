@@ -60,10 +60,10 @@ def _diff_env(a, b):
 
 class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
-    def __init__(self, targets, options, prebuilt_file_map={}, target_database={}):
+    def __init__(self, targets, options, prebuilt_file_map, target_database, direct_targets):
         """Init method. """
         binary_runner.BinaryRunner.__init__(self, targets, options, prebuilt_file_map, target_database)
-
+        self.direct_targets = direct_targets
         self.inctest_md5_file = ".blade.test.stamp"
         self.tests_detail_file = "./blade_tests_detail"
         self.inctest_run_list = []
@@ -120,7 +120,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if interval >= self.valid_inctest_time_interval or interval < 0:
                 self.run_all_reason = 'STALE'
                 console.info("all tests will run due to all passed tests are invalid now")
-        if self.options.fulltest:
+        else:
             self.run_all_reason = 'FULLTEST'
 
     def _get_test_target_md5sum(self, target):
@@ -183,7 +183,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if not (target['type'] == 'cc_test' or
                     target['type'] == 'dynamic_cc_test'):
                 continue
-            target_key = "%s:%s" % (target['path'], target['name'])
+            target_key = (target['path'], target['name'])
             test_file_name = os.path.abspath(self._executable(target))
             self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
             if self.run_all_reason:
@@ -191,6 +191,15 @@ class TestRunner(binary_runner.BinaryRunner):
                         'runfile'  : test_file_name,
                         'result'   : '',
                         'reason'   : self.run_all_reason,
+                        'costtime' : 0}
+                continue
+
+            if target_key in self.direct_targets:
+                self.inctest_run_list.append(target)
+                self.tests_run_map[target_key] = {
+                        'runfile'  : test_file_name,
+                        'result'   : '',
+                        'reason'   : 'EXPLICIT',
                         'costtime' : 0}
                 continue
 
