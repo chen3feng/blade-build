@@ -259,7 +259,8 @@ class Blade(object):
         test_runner = TestRunner(self.all_targets_expanded,
                                  self.options,
                                  self.prebuilt_cc_library_file_map,
-                                 self.target_database)
+                                 self.target_database,
+                                 self.direct_targets)
         return test_runner.run()
 
     def query(self, targets):
