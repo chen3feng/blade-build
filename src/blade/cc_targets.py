@@ -444,6 +444,7 @@ class CcTarget(Target):
         allow_only_dynamic = True
         need_static_lib_targets = ['cc_test',
                                    'cc_binary',
+                                   'cc_benchmark',
                                    'cc_plugin',
                                    'swig_library']
         for key in self.targets.keys():
@@ -870,6 +871,15 @@ def cc_binary(name,
                                 blade.blade,
                                 kwargs)
     blade.blade.register_scons_target(cc_binary_target.key, cc_binary_target)
+
+
+def cc_benchmark(name, deps=[], **kwargs):
+    """cc_benchmark target. """
+    cc_config = configparse.blade_config.get_config('cc_config')
+    benchmark_libs = var_to_list(cc_config['benchmark_libs'])
+    benchmark_libs += var_to_list(cc_config['benchmark_main_libs'])
+    deps = var_to_list(deps) + benchmark_libs
+    cc_binary(name=name, deps=deps, **kwargs)
 
 
 class CcPlugin(CcTarget):
