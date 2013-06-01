@@ -99,7 +99,7 @@ class Target(object):
 
         """
         target_srcs_map = self.blade.get_target_srcs_map()
-        allow_dup_src_type_list = ['cc_binary', 'cc_test', 'cc_benchmark', 'dynamic_cc_binary']
+        allow_dup_src_type_list = ['cc_binary', 'cc_test', 'dynamic_cc_binary']
         for s in self.data['srcs']:
             if '..' in s or s.startswith('/'):
                 raise Exception, (
