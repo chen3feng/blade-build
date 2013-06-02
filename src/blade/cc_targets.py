@@ -876,9 +876,9 @@ def cc_binary(name,
 def cc_benchmark(name, deps=[], **kwargs):
     """cc_benchmark target. """
     cc_config = configparse.blade_config.get_config('cc_config')
-    benchmark_libs = var_to_list(cc_config['benchmark_libs'])
-    benchmark_libs += var_to_list(cc_config['benchmark_main_libs'])
-    deps = var_to_list(deps) + benchmark_libs
+    benchmark_libs = cc_config['benchmark_libs']
+    benchmark_main_libs = cc_config['benchmark_main_libs']
+    deps = var_to_list(deps) + benchmark_libs + benchmark_main_libs
     cc_binary(name=name, deps=deps, **kwargs)
 
 
