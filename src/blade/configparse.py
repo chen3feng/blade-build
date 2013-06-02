@@ -88,6 +88,8 @@ class BladeConfig(object):
                 'warnings' : [],
                 'cpplint' : 'cpplint.py',
                 'optimize' : [],
+                'benchmark_libs' : [],
+                'benchmark_main_libs' : [],
             }
         }
 
