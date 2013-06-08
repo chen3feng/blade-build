@@ -108,7 +108,7 @@ Blade用一组target函数来定义目标，这些target的通用属性有：
 
 deps的允许的格式：
 
- * "//path/to/dir/:name" 其他目录下的target，path为从BUILD_ROOT出发的路径，name为被依赖的目标名。看见就知道在哪里。
+ * "//path/to/dir/:name" 其他目录下的target，path为从BLADE_ROOT出发的路径，name为被依赖的目标名。看见就知道在哪里。
  * ":name" 当前目录下的target， path可以省略。
  * "#pthread" 系统库。直接写#跟名字即可。
 
