@@ -35,10 +35,11 @@ ln -sf $blade_dir/blade ~/bin
 echo ", Done."
 
 if ! echo $PATH | grep "$HOME/bin" &> /dev/null; then
-    if [ -f ~/.profile ]; then
-        echo 'export PATH=~/bin:$PATH' >> ~/.profile
+    echo 'export PATH=~/bin:$PATH' >> ~/.profile
+
+    if echo $SHELL | grep "zsh" &> /dev/null; then
+        echo 'export PATH=~/bin:$PATH' >> ~/.zshrc
     fi
-    PATH=~/bin:$PATH
 fi
 
 echo -e "\033[1;32mAll successful, please log in again or source ~/.profile manually\033[0m"
