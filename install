@@ -36,6 +36,10 @@ echo ", Done."
 
 if ! echo $PATH | grep "$HOME/bin" &> /dev/null; then
     echo 'export PATH=~/bin:$PATH' >> ~/.profile
+
+    if echo $SHELL | grep "zsh" &> /dev/null; then
+        echo 'export PATH=~/bin:$PATH' >> ~/.zshrc
+    fi
 fi
 
 echo -e "\033[1;32mAll successful, please log in again or source ~/.profile manually\033[0m"
