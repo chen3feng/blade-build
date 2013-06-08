@@ -17,7 +17,7 @@ Documentation in zh_CN
 * chenjingxu at qiyi dot com
 * whuwxl at github dot com
 * yeshunping at github dot com
-* guanqun at githun dot com
+* guanqun at github dot com
 
 概述
 ---
