@@ -102,10 +102,7 @@ convert_headers ()
 
             # check if header file exists from source root
             if [[ $hdr_path != "" ]] ; then
-                new_hdr=${hdr_path#$root}
-                if [[ "${new_hdr:0:1}" == "/" ]] ; then
-                    new_hdr=${new_hdr:1}
-                fi
+                new_hdr=${hdr_path#$root/}
                 if [[ "$hdr" != "$new_hdr" ]] ; then
                     _info "Replace '$hdr' to '$new_hdr'"
                     sed_cmd=${sed_cmd}"$lineno {s|$(escape_slash $hdr)|$(escape_slash $new_hdr)|g}"$'\n'
