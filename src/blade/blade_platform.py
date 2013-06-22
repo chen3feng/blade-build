@@ -75,7 +75,7 @@ class SconsPlatform(object):
         if p.returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
-            header_list = [ "'%s'" % s[2:] for s in headers]
+            header_list = ["'%s'" % s[2:] for s in headers]
             return header_list
         return []
 
@@ -182,7 +182,8 @@ class CcFlagsManager(object):
             else:
                 flags_except_warning.append('-fprofile-arcs')
                 flags_except_warning.append('-ftest-coverage')
-                linkflags += ['-Wl,--whole-archive', '-lgcov', '-Wl,--no-whole-archive']
+                linkflags += ['-Wl,--whole-archive', '-lgcov',
+                              '-Wl,--no-whole-archive']
 
         flags_except_warning = self._filter_out_invalid_flags(
                 flags_except_warning, 'cpp')

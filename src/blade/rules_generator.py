@@ -21,13 +21,10 @@ import subprocess
 import string
 import time
 
-import blade_util
 import configparse
 import console
 
 from blade_platform import CcFlagsManager
-from blade_platform import SconsPlatform
-from blade_util import var_to_list
 
 
 def _incs_list_to_string(incs):
@@ -64,6 +61,7 @@ class SconsRules(object):
     def get_rules(self):
         """Return rules buffer. """
         return self.rules_buf
+
 
 class SconsRulesHelper(SconsRules):
     """One subclass of SconsRules. """
@@ -103,7 +101,7 @@ version_obj = env_version.SharedObject('$filename')
         for root_dir in self.svn_roots:
             lc_all_env = os.environ
             lc_all_env['LC_ALL'] = 'POSIX'
-            root_dir_realpath =  os.path.realpath(root_dir)
+            root_dir_realpath = os.path.realpath(root_dir)
             svn_working_dir = os.path.dirname(root_dir_realpath)
             svn_dir = os.path.basename(root_dir_realpath)
 
@@ -161,9 +159,9 @@ version_obj = env_version.SharedObject('$filename')
 
         self._add_rule("VariantDir('%s', '.', duplicate=0)" % self.build_dir)
         self._add_rule(self.version_cpp_compile_template.substitute(
-            updateinfo = "version information updated",
-            m = self.options.m,
-            filename = "%s/version.cpp" % self.build_dir))
+            updateinfo="version information updated",
+            m=self.options.m,
+            filename="%s/version.cpp" % self.build_dir))
 
     def generate_imports_functions(self, blade_path):
         """Generates imports and functions. """
@@ -323,7 +321,7 @@ top_env.Append(
         protoc_php_plugin = proto_config['protoc_php_plugin']
         # Genreates common builders now
         builder_list = []
-        self._add_rule("time_value = Value('%s')" %  time.asctime())
+        self._add_rule("time_value = Value('%s')" % time.asctime())
         self._add_rule(
             "proto_bld = Builder(action = MakeAction('%s "
             "--proto_path=. -I. %s -I=`dirname $SOURCE` "
@@ -470,7 +468,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         cc_config = configparse.blade_config.get_config('cc_config')
         extra_incs = cc_config['extra_incs']
-        extra_incs_str =', '.join(["'%s'" % inc for inc in extra_incs])
+        extra_incs_str = ', '.join(["'%s'" % inc for inc in extra_incs])
         if not extra_incs_str:
             extra_incs_str = "''"
 
@@ -487,7 +485,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
           LINKFLAGS=%s)
 """ % (self.env_list[0], cc_env_str,
        extra_incs_str, self.build_dir, self.python_inc,
-       cc_config['cppflags'] + warnings  + cppflags_except_warning,
+       cc_config['cppflags'] + warnings + cppflags_except_warning,
        cc_config['cflags'] + c_warnings,
        cc_config['cxxflags'] + cxx_warnings,
        ld_env_str,
@@ -526,7 +524,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
             if hasattr(self.options, 'cache_dir') and (
                         not self.options.cache_dir):
                 default_cache_dir = os.path.expanduser("~/.bladescache")
-                default_cache_size = 1024*1024*1024
+                default_cache_size = 1024 * 1024 * 1024
                 console.warning("there is no ccache and you don't have scache enabled, "
                         "use %s as current scache dir, scache size 1G" % (
                         default_cache_dir))

@@ -22,7 +22,6 @@ import string
 import subprocess
 import sys
 import tempfile
-import traceback
 
 import SCons
 import SCons.Action
@@ -215,7 +214,6 @@ _WARNINGS = [": warning:", ": note: "]
 
 
 def error_colorize(message):
-    global colors
     colored_message = []
     for t in message.splitlines(True):
         color = 'cyan'
@@ -241,7 +239,6 @@ def error_colorize(message):
 
 def echospawn(sh, escape, cmd, args, env):
     # convert env from unicode strings
-    global colors
     asciienv = {}
     for key, value in env.iteritems():
         asciienv[key] = str(value)
@@ -283,7 +280,6 @@ def _blade_action_postfunc(closing_message):
 
 def _fast_link_helper(target, source, env, link_com):
     """fast link helper function. """
-    global linking_tmp_dir
     target_file = str(target[0])
     prefix_str = "blade_%s" % target_file.replace("/", "_").replace(".", "_")
     fd, temporary_file = tempfile.mkstemp(suffix='xianxian',
@@ -352,13 +348,13 @@ def create_fast_link_prog_builder(env):
        largely degrades building performance.
     """
     new_link_action = MakeAction(fast_link_prog_action, "$LINKCOMSTR")
-    program = SCons.Builder.Builder(action = new_link_action,
-                                    emitter = '$PROGEMITTER',
-                                    prefix = '$PROGPREFIX',
-                                    suffix = '$PROGSUFFIX',
-                                    src_suffix = '$OBJSUFFIX',
-                                    src_builder = 'Object',
-                                    target_scanner = SCons.Scanner.Prog.ProgramScanner())
+    program = SCons.Builder.Builder(action=new_link_action,
+                                    emitter='$PROGEMITTER',
+                                    prefix='$PROGPREFIX',
+                                    suffix='$PROGSUFFIX',
+                                    src_suffix='$OBJSUFFIX',
+                                    src_builder='Object',
+                                    target_scanner=SCons.Scanner.Prog.ProgramScanner())
     env['BUILDERS']['Program'] = program
 
 
@@ -376,13 +372,13 @@ def create_fast_link_sharelib_builder(env):
     new_link_actions.append(SCons.Defaults.SharedCheck)
     new_link_actions.append(MakeAction(fast_link_sharelib_action, "$SHLINKCOMSTR"))
 
-    sharedlib = SCons.Builder.Builder(action = new_link_actions,
-                                      emitter = "$SHLIBEMITTER",
-                                      prefix = '$SHLIBPREFIX',
-                                      suffix = '$SHLIBSUFFIX',
-                                      target_scanner = SCons.Scanner.Prog.ProgramScanner(),
-                                      src_suffix = '$SHOBJSUFFIX',
-                                      src_builder = 'SharedObject')
+    sharedlib = SCons.Builder.Builder(action=new_link_actions,
+                                      emitter="$SHLIBEMITTER",
+                                      prefix='$SHLIBPREFIX',
+                                      suffix='$SHLIBSUFFIX',
+                                      target_scanner=SCons.Scanner.Prog.ProgramScanner(),
+                                      src_suffix='$SHOBJSUFFIX',
+                                      src_builder='SharedObject')
     env['BUILDERS']['SharedLibrary'] = sharedlib
 
 

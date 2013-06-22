@@ -18,19 +18,19 @@ import sys
 
 
 # Global color enabled or not
-color_enabled = (sys.stdout.isatty() and os.environ['TERM'] not in ('emacs', 'dumb'))
+color_enabled = (sys.stdout.isatty() and
+                 os.environ['TERM'] not in ('emacs', 'dumb'))
 
 
 def error(msg):
     """dump error message. """
-    global color_enabled
     msg = "Blade(error): " + msg
     if color_enabled:
         msg = '\033[1;31m' + msg + '\033[0m'
     print >>sys.stderr, msg
 
 
-def error_exit(msg, code = 1):
+def error_exit(msg, code=1):
     """dump error message and exit. """
     error(msg)
     sys.exit(code)
@@ -38,7 +38,6 @@ def error_exit(msg, code = 1):
 
 def warning(msg):
     """dump warning message but continue. """
-    global color_enabled
     msg = "Blade(warning): " + msg
     if color_enabled:
         msg = '\033[1;33m' + msg + '\033[0m'
@@ -47,10 +46,8 @@ def warning(msg):
 
 def info(msg, prefix=True):
     """dump info message. """
-    global color_enabled
     if prefix:
         msg = "Blade(info): " + msg
     if color_enabled:
         msg = '\033[1;36m' + msg + '\033[0m'
     print >>sys.stderr, msg
-

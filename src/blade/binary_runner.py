@@ -22,12 +22,11 @@ import sys
 import console
 
 from blade_util import environ_add_path
-from blade_util import get_cwd
 
 
 class BinaryRunner(object):
     """BinaryRunner. """
-    def __init__(self, targets, options, prebuilt_file_map={}, target_database={}):
+    def __init__(self, targets, options, prebuilt_file_map, target_database):
         """Init method. """
         self.targets = targets
         self.build_dir = "build%s_%s" % (options.m, options.profile)
@@ -196,4 +195,3 @@ class BinaryRunner(object):
         p.wait()
         self._clean_env()
         return p.returncode
-

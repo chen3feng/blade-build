@@ -16,6 +16,7 @@ import re
 
 import console
 
+
 class ThriftHelper(object):
     def __init__(self, path):
         self.path = path
@@ -78,10 +79,10 @@ class ThriftHelper(object):
             console.error_exit('%s is an empty thrift file.' % self.path)
 
     def get_generated_cpp_files(self):
-        files = [ '%s_constants.cpp' % self.thrift_name,
-                  '%s_constants.h' % self.thrift_name,
-                  '%s_types.cpp' % self.thrift_name,
-                  '%s_types.h' % self.thrift_name ]
+        files = ['%s_constants.cpp' % self.thrift_name,
+                 '%s_constants.h' % self.thrift_name,
+                 '%s_types.cpp' % self.thrift_name,
+                 '%s_types.h' % self.thrift_name]
         for service in self.services:
             files.append('%s.cpp' % service)
             files.append('%s.h' % service)
@@ -90,7 +91,7 @@ class ThriftHelper(object):
 
     def get_generated_java_files(self):
         java_package = ''
-        if self.package_name.has_key('java'):
+        if 'java' in self.package_name:
             java_package = self.package_name['java']
         base_path = os.path.join(*java_package.split('.'))
 
@@ -110,18 +111,18 @@ class ThriftHelper(object):
         for service in self.services:
             files.append('%s.java' % service)
 
-        files = [ os.path.join(base_path, f) for f in files ]
+        files = [os.path.join(base_path, f) for f in files]
         return files
 
     def get_generated_py_files(self):
         py_package = self.thrift_name
-        if self.package_name.has_key('py'):
+        if 'py' in self.package_name:
             py_package = self.package_name['py']
         base_path = os.path.join(*py_package.split('.'))
 
-        files = [ 'constants.py', 'ttypes.py' ]
+        files = ['constants.py', 'ttypes.py']
         for service in self.services:
             files.append('%s.py' % service)
 
-        files = [ os.path.join(base_path, f) for f in files ]
+        files = [os.path.join(base_path, f) for f in files]
         return files

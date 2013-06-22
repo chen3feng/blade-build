@@ -14,14 +14,11 @@
 
 import os
 import blade
-import blade_util
 import configparse
 
 import console
 from blade_util import var_to_list
-from blade_platform import CcFlagsManager
 from target import Target
-from thrift_helper import ThriftHelper
 
 
 class CcTarget(Target):
@@ -94,7 +91,7 @@ class CcTarget(Target):
                                    "please depends on //%s:%s" % (
                                    self.data['path'], self.data['name'],
                                    target['path'], target['name'],
-                                   replaced_target[0],replaced_target[1]))
+                                   replaced_target[0], replaced_target[1]))
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -138,7 +135,7 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in cxx_keyword_list:
-                console.warning("DO NOT specify c++ keyword %s in defs list" % macro )
+                console.warning("DO NOT specify c++ keyword %s in defs list" % macro)
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
@@ -1262,14 +1259,14 @@ def lex_yacc_library(name,
                      prefix=None,
                      **kwargs):
     """lex_yacc_library. """
-    lex_yacc_library = LexYaccLibrary(name,
-                                      srcs,
-                                      deps,
-                                      recursive,
-                                      prefix,
-                                      blade.blade,
-                                      kwargs)
-    blade.blade.register_scons_target(lex_yacc_library.key, lex_yacc_library)
+    target = LexYaccLibrary(name,
+                            srcs,
+                            deps,
+                            recursive,
+                            prefix,
+                            blade.blade,
+                            kwargs)
+    blade.blade.register_scons_target(target.key, target)
 
 
 class ProtoLibrary(CcTarget):
@@ -1381,16 +1378,16 @@ class ProtoLibrary(CcTarget):
     def _proto_java_gen_file(self, path, src, package):
         """Generate the java files name of the proto library. """
         proto_name = src[:-6]
-        base_name  = os.path.basename(proto_name)
-        base_name  = ''.join(base_name.title().split('_'))
-        base_name  = '%s.java' % base_name
+        base_name = os.path.basename(proto_name)
+        base_name = ''.join(base_name.title().split('_'))
+        base_name = '%s.java' % base_name
         dir_name = os.path.join(path, package)
         proto_name = os.path.join(dir_name, base_name)
         return os.path.join(self.build_path, proto_name)
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
-        java_jar_dep_source_map =self.blade.get_java_jar_dep_source_map()
+        java_jar_dep_source_map = self.blade.get_java_jar_dep_source_map()
         self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
         self.sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
@@ -1645,7 +1642,7 @@ def resource_library(name,
                      srcs=[],
                      deps=[],
                      optimize=[],
-                     extra_cppflags = [],
+                     extra_cppflags=[],
                      **kwargs):
     """scons_resource_library. """
     resource_library_target = ResourceLibrary(name,
@@ -1731,7 +1728,7 @@ class SwigLibrary(CcTarget):
     def _swig_library_rules_py(self):
         """_swig_library_rules_py.
         """
-        env_name  = self._env_name()
+        env_name = self._env_name()
         var_name = self._generate_variable_name(self.data['path'],
                                                 self.data['name'],
                                                 'dynamic_py')
@@ -1801,7 +1798,6 @@ class SwigLibrary(CcTarget):
         if not target_lib.startswith('_'):
             target_lib = '_%s' % target_lib
         target_path_py = os.path.join(os.path.dirname(target_path), target_lib)
-
 
         (link_all_symbols_lib_list,
          lib_str,
@@ -1902,7 +1898,6 @@ class SwigLibrary(CcTarget):
                                              java_lib_packed, out_dir,
                                              builder_alias, dep_files_map)
 
-
     def _swig_library_rules_java_helper(self,
                                         dep_outdir,
                                         java_build_jar,
@@ -1932,7 +1927,7 @@ class SwigLibrary(CcTarget):
         for src in self.data['srcs']:
             javaswig_src = self._javaswig_gen_file(self.data['path'], src)
             src_basename = os.path.basename(src)
-            javaswig_var = "%s_%s"% (
+            javaswig_var = "%s_%s" % (
                     var_name, self._regular_variable_name(src_basename))
             self._write_rule("%s = %s.%s(['%s'], '%s')" % (
                     javaswig_var,
@@ -2001,10 +1996,10 @@ class SwigLibrary(CcTarget):
             lib_name = os.path.basename(target_path_java)
             lib_name = 'lib%s.so' % lib_name
             jar_files_packing_map[self.key] = (
-                    os.path.join(lib_dir,lib_name), self.data['name'])
+                    os.path.join(lib_dir, lib_name), self.data['name'])
 
     def _swig_library_rules_php(self, dep_files_map):
-        env_name  = self._env_name()
+        env_name = self._env_name()
         var_name = self._generate_variable_name(self.data['path'], self.data['name'])
         obj_names_php = []
 
@@ -2041,7 +2036,7 @@ class SwigLibrary(CcTarget):
                     env_name,
                     builder_alias,
                     phpswig_src,
-                    os.path.join(self.data['path'],src)))
+                    os.path.join(self.data['path'], src)))
             obj_name_php = "%s_object" % self._generate_variable_name(
                 self.data['path'], src, 'php')
             obj_names_php.append(obj_name_php)

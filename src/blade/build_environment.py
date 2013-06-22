@@ -22,7 +22,7 @@ import console
 
 class BuildEnvironment(object):
     """Managers ccache, distcc, dccc. """
-    def __init__(self, blade_root_dir, distcc_hosts_list=[]):
+    def __init__(self, blade_root_dir, distcc_hosts_list=None):
         # ccache
         self.blade_root_dir = blade_root_dir
         self.ccache_installed = self._check_ccache_install()
@@ -119,11 +119,11 @@ class BuildEnvironment(object):
         for env in env_list:
             self._add_rule('%s.Append(%s)' % (
                            env,
-                           'DISTCC_HOSTS = "%s"' % self.distcc_host_list))
+                           'DISTCC_HOSTS="%s"' % self.distcc_host_list))
 
     def get_distcc_hosts_list(self):
         """Returns the hosts list. """
-        return filter(lambda x:x, self.distcc_host_list.split(' '))
+        return filter(lambda x: x, self.distcc_host_list.split(' '))
 
     def _add_rule(self, rule):
         """Append to buffer. """
@@ -146,8 +146,8 @@ class ScacheManager(object):
     and we should not reduce the progress interval(the evaluating nodes).
 
     """
-    def __init__(self, cache_path = None, cache_limit = 0,
-                 cache_life = 6*60*60):
+    def __init__(self, cache_path=None, cache_limit=0,
+                 cache_life=6 * 60 * 60):
         self.cache_path = cache_path
         self.cache_limit = cache_limit
         self.cache_life = cache_life
@@ -175,17 +175,17 @@ class ScacheManager(object):
         if not self.cache_path:
             return []
 
-        file_stat_list = [(x,
-            os.stat(x)[6:8]) for x in glob.glob(os.path.join(self.cache_path, '*', '*'))]
+        file_stat_list = [(x, os.stat(x)[6:8])
+                for x in glob.glob(os.path.join(self.cache_path, '*', '*'))]
         if not file_stat_list:
             return []
 
         current_time = time.time()
         file_stat_list = [(x[0], x[1][0],
-            x[1][0]*math.exp(self.exponent_scale*(x[1][1] - current_time)))
+            x[1][0] * math.exp(self.exponent_scale * (x[1][1] - current_time)))
             for x in file_stat_list]
 
-        file_stat_list.sort(key = lambda x: x[2], reverse = True)
+        file_stat_list.sort(key=lambda x: x[2], reverse=True)
 
         total_sz, start_index = 0, None
         for i, x in enumerate(file_stat_list):
@@ -198,4 +198,3 @@ class ScacheManager(object):
             return []
         else:
             return [x[0] for x in file_stat_list[start_index:]]
-

@@ -54,7 +54,8 @@ class GenRuleTarget(Target):
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
-        return ','.join(["'%s'" % os.path.join(self.build_path, path, src) for src in srcs])
+        return ','.join(["'%s'" % os.path.join(self.build_path, path, src)
+            for src in srcs])
 
     def scons_rules(self):
         """scons_rules.
@@ -134,12 +135,12 @@ def gen_rule(name,
              outs=[],
              cmd="",
              **kwargs):
-   """scons_gen_rule. """
-   gen_rule_target = GenRuleTarget(name,
-                                   srcs,
-                                   deps,
-                                   outs,
-                                   cmd,
-                                   blade.blade,
-                                   kwargs)
-   blade.blade.register_scons_target(gen_rule_target.key, gen_rule_target)
+    """scons_gen_rule. """
+    gen_rule_target = GenRuleTarget(name,
+                                    srcs,
+                                    deps,
+                                    outs,
+                                    cmd,
+                                    blade.blade,
+                                    kwargs)
+    blade.blade.register_scons_target(gen_rule_target.key, gen_rule_target)

@@ -140,8 +140,8 @@ class DependenciesAnalyzer(object):
 
     def _topological_sort(self, pairlist):
         """Sort the targets. """
-        numpreds = {}   # elt -> # of predecessors
-        successors = {} # elt -> list of successors
+        numpreds = {}    # elt -> # of predecessors
+        successors = {}  # elt -> list of successors
         for second, options in pairlist.items():
             if second not in numpreds:
                 numpreds[second] = 0

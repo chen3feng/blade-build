@@ -14,7 +14,6 @@
 
 import os
 import blade
-import blade_util
 
 import console
 import configparse
@@ -322,7 +321,7 @@ class JavaJarTarget(Target):
                             env_name, jar_var, dep_classes_var))
             for cmd in cmd_list:
                 self._write_rule('%s.Depends(%s, %s)' % (
-                        env_name, jar_var, cmd ))
+                        env_name, jar_var, cmd))
             if removed:
                 self._write_rule('%s.Depends(%s, %s)' % (
                         env_name, jar_var, cmd_remove_var))
@@ -448,4 +447,3 @@ def java_jar(name,
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_scons_target(target.key, target)
-

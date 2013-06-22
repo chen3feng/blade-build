@@ -36,60 +36,60 @@ class BladeConfig(object):
         self.current_source_dir = current_source_dir
         self.current_file_name = ""
         self.configs = {
-            'cc_test_config' : {
-                'dynamic_link' : False,
-                'heap_check' : '',
-                'gperftools_libs' : [],
-                'gperftools_debug_libs' : [],
-                'gtest_libs' : [],
-                'gtest_main_libs' : []
+            'cc_test_config': {
+                'dynamic_link': False,
+                'heap_check': '',
+                'gperftools_libs': [],
+                'gperftools_debug_libs': [],
+                'gtest_libs': [],
+                'gtest_main_libs': []
             },
 
-            'cc_binary_config' : {
-                'extra_libs' : []
+            'cc_binary_config': {
+                'extra_libs': []
             },
 
-            'distcc_config' : {
-                'enabled' : False
+            'distcc_config': {
+                'enabled': False
             },
 
-            'link_config' : {
-                'link_on_tmp' : False,
-                'enable_dccc' : False
+            'link_config': {
+                'link_on_tmp': False,
+                'enable_dccc': False
             },
 
-            'java_config' : {
-                'source_version' : '',
-                'target_version' : ''
+            'java_config': {
+                'source_version': '',
+                'target_version': ''
             },
 
-            'thrift_config' : {
-                'thrift' : 'thrift',
+            'thrift_config': {
+                'thrift': 'thrift',
                 'thrift_libs': [],
-                'thrift_incs' : [],
+                'thrift_incs': [],
             },
 
-            'proto_library_config' : {
-                'protoc' : 'thirdparty/protobuf/bin/protoc',
+            'proto_library_config': {
+                'protoc': 'thirdparty/protobuf/bin/protoc',
                 'protobuf_libs': [],
-                'protobuf_path' : '',
-                'protobuf_incs' : [],
-                'protobuf_php_path' : '',
-                'protoc_php_plugin' : '',
+                'protobuf_path': '',
+                'protobuf_incs': [],
+                'protobuf_php_path': '',
+                'protoc_php_plugin': '',
             },
 
-            'cc_config' : {
-                'extra_incs' : [],
-                'cppflags' : [],
-                'cflags' : [],
-                'cxxflags' : [],
-                'c_warnings' : [],
-                'cxx_warnings' : [],
-                'warnings' : [],
-                'cpplint' : 'cpplint.py',
-                'optimize' : [],
-                'benchmark_libs' : [],
-                'benchmark_main_libs' : [],
+            'cc_config': {
+                'extra_incs': [],
+                'cppflags': [],
+                'cflags': [],
+                'cxxflags': [],
+                'c_warnings': [],
+                'cxx_warnings': [],
+                'warnings': [],
+                'cpplint': 'cpplint.py',
+                'optimize': [],
+                'benchmark_libs': [],
+                'benchmark_main_libs': [],
             }
         }
 
@@ -138,7 +138,6 @@ class BladeConfig(object):
                     console.warning('%s: %s: unknown config item name: %s' %
                             (self.current_file_name, section_name, k))
 
-
     def _replace_config(self, section_name, config, user_config):
         """Replace config section items"""
         for k in user_config.keys():
@@ -164,37 +163,31 @@ def cc_test_config(append=None, **kwargs):
     if heap_check and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
                    HEAP_CHECK_VALUES)
-    global blade_config
     blade_config.update_config('cc_test_config', append, kwargs)
 
 
 def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
-    global blade_config
     blade_config.update_config('cc_binary_config', append, kwargs)
 
 
 def distcc_config(append=None, **kwargs):
     """distcc_config. """
-    global blade_config
     blade_config.update_config('distcc_config', append, kwargs)
 
 
 def link_config(append=None, **kwargs):
     """link_config. """
-    global blade_config
     blade_config.update_config('link_config', append, kwargs)
 
 
 def java_config(append=None, **kwargs):
     """java_config. """
-    global blade_config
     blade_config.update_config('java_config', append, kwargs)
 
 
 def proto_library_config(append=None, **kwargs):
     """protoc config. """
-    global blade_config
     path = kwargs.get('protobuf_include_path')
     if path:
         console.warning(('%s: proto_library_config: protobuf_include_path has been '
@@ -208,14 +201,14 @@ def proto_library_config(append=None, **kwargs):
 
     blade_config.update_config('proto_library_config', append, kwargs)
 
+
 def thrift_library_config(append=None, **kwargs):
     """thrift config. """
-    global blade_config
     blade_config.update_config('thrift_config', append, kwargs)
+
 
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
-    global blade_config
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, basestring) and ' ' in extra_incs:

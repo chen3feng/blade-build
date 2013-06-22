@@ -16,14 +16,15 @@
 import fcntl
 import os
 import subprocess
-import sys
 
 import console
+
 
 try:
     import hashlib as md5
 except ImportError:
     import md5
+
 
 def md5sum_str(user_str):
     """md5sum of basestring. """
@@ -82,7 +83,7 @@ def relative_path(a_path, reference_path):
 
     # Count the number of segments shared by reference_path and a_path.
     reference_list = os.path.abspath(reference_path).split(os.path.sep)
-    path_list  = os.path.abspath(a_path).split(os.path.sep)
+    path_list = os.path.abspath(a_path).split(os.path.sep)
     for i in range(min(len(reference_list), len(path_list))):
         # TODO(yiwang): Why use lower here?
         if reference_list[i].lower() != path_list[i].lower():
@@ -91,7 +92,7 @@ def relative_path(a_path, reference_path):
             # TODO(yiwnag): Why do not move i+=1 out from the loop?
             i += 1
 
-    rel_list = [os.path.pardir] * (len(reference_list)-i) + path_list[i:]
+    rel_list = [os.path.pardir] * (len(reference_list) - i) + path_list[i:]
     if not rel_list:
         return os.path.curdir
     return os.path.join(*rel_list)
@@ -105,7 +106,7 @@ def get_cwd():
     So in practice we simply use system('pwd') to get current working directory.
 
     """
-    return subprocess.Popen(["pwd"], stdout = subprocess.PIPE, shell = True).communicate()[0].strip()
+    return subprocess.Popen(["pwd"], stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
 
 
 def environ_add_path(env, key, path):

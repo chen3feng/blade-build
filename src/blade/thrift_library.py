@@ -22,6 +22,7 @@ from blade_util import var_to_list
 from cc_targets import CcTarget
 from thrift_helper import ThriftHelper
 
+
 class ThriftLibrary(CcTarget):
     """A scons thrift library target subclass.
 
@@ -76,19 +77,19 @@ class ThriftLibrary(CcTarget):
         Checks whether the thrift file's name ends with 'thrift'.
 
         """
-        err = 0
+        error = 0
         for src in srcs:
             base_name = os.path.basename(src)
             pos = base_name.rfind('.')
             if pos == -1:
-                err = 1
-                break
+                console.error("invalid thrift file name %s" % src)
+                error += 1
             file_suffix = base_name[pos + 1:]
             if file_suffix != 'thrift':
-                err = 1
-                break
-        if err == 1:
-            console.error_exit("invalid thrift file name %s" % src)
+                console.error("invalid thrift file name %s" % src)
+                error += 1
+        if error > 0:
+            console.error_exit("invalid thrift file names found.")
 
     def _thrift_gen_cpp_files(self, path, src):
         """_thrift_gen_cpp_files.
@@ -127,7 +128,7 @@ class ThriftLibrary(CcTarget):
 
         """
 
-        java_jar_dep_source_map =self.blade.get_java_jar_dep_source_map()
+        java_jar_dep_source_map = self.blade.get_java_jar_dep_source_map()
         self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
         self.sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
@@ -202,7 +203,7 @@ class ThriftLibrary(CcTarget):
         obj_names = []
         for src in self.data['srcs']:
             thrift_cpp_files = self._thrift_gen_cpp_files(self.data['path'], src)
-            thrift_cpp_src_files = [ f for f in thrift_cpp_files if f.endswith('.cpp') ]
+            thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
 
             self._write_rule("%s.Thrift(%s, '%s')" % (
                     env_name,
@@ -248,5 +249,3 @@ def thrift_library(name,
                                           kwargs)
     blade.blade.register_scons_target(thrift_library_target.key,
                                       thrift_library_target)
-
-

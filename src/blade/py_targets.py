@@ -13,7 +13,6 @@
 
 import os
 import blade
-import blade_util
 
 import console
 from blade_util import var_to_list
@@ -103,6 +102,7 @@ class PythonBinaryTarget(Target):
         for var in dep_var_list:
             self._write_rule("%s.Depends(%s, %s)" % (
                              env_name, python_binary_var, var))
+
 
 def py_binary(name,
               srcs=[],

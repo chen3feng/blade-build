@@ -199,7 +199,6 @@ class Blade(object):
         path = os.path.normpath(path)
         return path, name
 
-
     def load_targets(self):
         """Load the targets. """
         console.info("loading BUILDs...")
@@ -297,7 +296,7 @@ class Blade(object):
                     depended_by = result_map[key][1]
                     console.info("//%s:%s is depended by the following targets:" % (
                             key[0], key[1]))
-                    depended_by.sort(key=lambda x:x, reverse=False)
+                    depended_by.sort(key=lambda x: x, reverse=False)
                     for d in depended_by:
                         print "%s:%s" % (d[0], d[1])
         return 0
@@ -318,7 +317,6 @@ class Blade(object):
                                                          node[1],
                                                          i[0],
                                                          i[1])
-
 
     def output_dot(self, result_map, print_mode, dot_file):
         f = open(dot_file, 'w')
@@ -352,12 +350,12 @@ class Blade(object):
         for key in query_list:
             result_map[key] = ([], [])
             deps = all_targets.get(key, {}).get('deps', [])
-            deps.sort(key=lambda x:x, reverse=False)
+            deps.sort(key=lambda x: x, reverse=False)
             depended_by = []
             for tkey in all_targets.keys():
                 if key in all_targets[tkey]['deps']:
                     depended_by.append(tkey)
-            depended_by.sort(key=lambda x:x, reverse=False)
+            depended_by.sort(key=lambda x: x, reverse=False)
             result_map[key] = (list(deps), list(depended_by))
         return result_map
 
@@ -498,7 +496,7 @@ class Blade(object):
         for k in self.sorted_targets_keys:
             target = self.all_targets_expanded[k]
             if not self._is_scons_object_type(target['type']):
-               continue
+                continue
             scons_object = self.scons_targets_map.get(k, None)
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
@@ -551,14 +549,14 @@ class Blade(object):
         jobs_num = 0
         cpu_core_num = cpu_count()
         if self.distcc_enabled and self.build_environment.distcc_env_prepared:
-            jobs_num = int(1.5*len(self.build_environment.get_distcc_hosts_list())) + 1
+            jobs_num = int(1.5 * len(self.build_environment.get_distcc_hosts_list())) + 1
             if jobs_num > 20:
                 jobs_num = 20
             if jobs_num and self.options.jobs != jobs_num:
                 self.options.jobs = jobs_num
         elif self.options.jobs < 1:
             if cpu_core_num <= 4:
-                self.options.jobs = 2*cpu_core_num
+                self.options.jobs = 2 * cpu_core_num
             else:
                 self.options.jobs = cpu_core_num
                 if self.options.jobs > 8:

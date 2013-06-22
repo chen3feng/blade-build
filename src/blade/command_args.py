@@ -15,9 +15,7 @@
 import os
 import platform
 import shlex
-import sys
 
-import blade_util
 import console
 from argparse import ArgumentParser
 
@@ -33,11 +31,12 @@ class CmdArguments(object):
         """Init the class. """
         (self.options, others) = self._cmd_parse()
 
-        # If '--' in arguments, use all other arguments after it as run arguments
+        # If '--' in arguments, use all other arguments after it as run
+        # arguments
         if '--' in others:
             pos = others.index('--')
             self.targets = others[:pos]
-            self.options.args = others[pos+1:]
+            self.options.args = others[pos + 1:]
         else:
             self.targets = others
             self.options.args = []
@@ -51,11 +50,11 @@ class CmdArguments(object):
 
         # Check the options with different sub command
         actions = {
-                  'build' : self._check_build_command,
-                  'run'   : self._check_run_command,
-                  'test'  : self._check_test_command,
-                  'clean' : self._check_clean_command,
-                  'query' : self._check_query_command
+                  'build': self._check_build_command,
+                  'run':   self._check_run_command,
+                  'test':  self._check_test_command,
+                  'clean': self._check_clean_command,
+                  'query': self._check_query_command
                   }
         actions[command]()
 
@@ -129,7 +128,7 @@ class CmdArguments(object):
         """check color options. """
         if self.options.color == "yes":
             console.color_enabled = True
-            self.options.color = True;
+            self.options.color = True
         elif self.options.color == "no":
             console.color_enabled = False
         elif self.options.color == "auto" or self.options.color is None:
@@ -194,105 +193,104 @@ class CmdArguments(object):
     def __add_plat_profile_arguments(self, parser):
         """Add plat and profile arguments. """
         parser.add_argument("-m",
-                            dest = "m",
-                            help = ("Generate code for a 32-bit(-m32) or "
-                                    "64-bit(-m64) environment, "
-                                    "default is autodetect."))
+                            dest="m",
+                            help=("Generate code for a 32-bit(-m32) or "
+                                  "64-bit(-m64) environment, "
+                                  "default is autodetect."))
 
         parser.add_argument("-p",
                             "--profile",
-                            dest = "profile",
-                            default = "release",
-                            help = ("Build profile: debug or release, "
-                                    "default is release."))
+                            dest="profile",
+                            default="release",
+                            help=("Build profile: debug or release, "
+                                  "default is release."))
 
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
         parser.add_argument(
-            "--generate-dynamic", dest = "generate_dynamic",
-            action = "store_true", default = False,
-            help = "Generate dynamic libraries.")
+            "--generate-dynamic", dest="generate_dynamic",
+            action="store_true", default=False,
+            help="Generate dynamic libraries.")
 
         parser.add_argument(
-            "--generate-java", dest = "generate_java",
-            action = "store_true", default = False,
-            help = "Generate java files for proto_library, thrift_library and swig_library.")
+            "--generate-java", dest="generate_java",
+            action="store_true", default=False,
+            help="Generate java files for proto_library, thrift_library and swig_library.")
 
         parser.add_argument(
-            "--generate-php", dest = "generate_php",
-            action = "store_true", default = False,
-            help = "Generate php files for proto_library and swig_library.")
+            "--generate-php", dest="generate_php",
+            action="store_true", default=False,
+            help="Generate php files for proto_library and swig_library.")
 
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
-            "--generate-scons-only", dest = "scons_only",
-            action = "store_true", default = False,
-            help = "Generate scons script for debug purpose.")
+            "--generate-scons-only", dest="scons_only",
+            action="store_true", default=False,
+            help="Generate scons script for debug purpose.")
 
         parser.add_argument(
-            "-j", "--jobs", dest = "jobs", type = int, default = 0,
-            help = ("Specifies the number of jobs (commands) to "
-                    "run simultaneously."))
+            "-j", "--jobs", dest="jobs", type=int, default=0,
+            help=("Specifies the number of jobs (commands) to "
+                  "run simultaneously."))
 
         parser.add_argument(
-            "-k", "--keep-going", dest = "keep_going",
-            action = "store_true", default = False,
-            help = "Continue as much as possible after an error.")
+            "-k", "--keep-going", dest="keep_going",
+            action="store_true", default=False,
+            help="Continue as much as possible after an error.")
 
         parser.add_argument(
-            "--verbose", dest = "verbose", action = "store_true",
-            default = False, help = "Show all details.")
+            "--verbose", dest="verbose", action="store_true",
+            default=False, help="Show all details.")
 
         parser.add_argument(
-            "--no-test", dest = "no_test", action = "store_true",
-            default = False, help = "Do not build the test targets.")
+            "--no-test", dest="no_test", action="store_true",
+            default=False, help="Do not build the test targets.")
 
     def __add_color_arguments(self, parser):
         """Add color argument. """
         parser.add_argument(
-            "--color", dest = "color",
-            default = "auto",
-            help = "Enable color: yes, no or auto, default is auto.")
+            "--color", dest="color", default="auto",
+            help="Enable color: yes, no or auto, default is auto.")
 
     def __add_cache_arguments(self, parser):
         """Add cache related arguments. """
         parser.add_argument(
-            "--cache-dir", dest = "cache_dir", type = str,
-            help = "Specifies location of shared cache directory.")
+            "--cache-dir", dest="cache_dir", type=str,
+            help="Specifies location of shared cache directory.")
 
         parser.add_argument(
-            "--cache-size", dest = "cache_size", type = str,
-            help = "Specifies cache size of shared cache directory in Gigabytes."
+            "--cache-size", dest="cache_size", type=str,
+            help="Specifies cache size of shared cache directory in Gigabytes."
                    "'unlimited' for unlimited. ")
 
     def __add_coverage_arguments(self, parser):
         """Add coverage arguments. """
         parser.add_argument(
-            "--gprof", dest = "gprof",
-            action = "store_true", default = False,
-            help = "Add build options to support GNU gprof.")
+            "--gprof", dest="gprof",
+            action="store_true", default=False,
+            help="Add build options to support GNU gprof.")
 
         parser.add_argument(
-            "--gcov", dest = "gcov",
-            action = "store_true", default = False,
-            help = "Add build options to support GNU gcov to do coverage test.")
+            "--gcov", dest="gcov",
+            action="store_true", default=False,
+            help="Add build options to support GNU gcov to do coverage test.")
 
     def _add_query_arguments(self, parser):
         """Add query arguments for parser. """
         self.__add_plat_profile_arguments(parser)
         self.__add_color_arguments(parser)
         parser.add_argument(
-            "--deps", dest = "deps",
-            action = "store_true", default = False,
-            help = "Show all targets that depended by the target being queried.")
+            "--deps", dest="deps",
+            action="store_true", default=False,
+            help="Show all targets that depended by the target being queried.")
         parser.add_argument(
-            "--depended", dest = "depended",
-            action = "store_true", default = False,
-            help = "Show all targets that depened on the target being queried.")
+            "--depended", dest="depended",
+            action="store_true", default=False,
+            help="Show all targets that depened on the target being queried.")
         parser.add_argument(
-            "--output-to-dot", dest = "output_to_dot", type = str,
-            help = "The name of file to output query results as dot(graphviz) "
+            "--output-to-dot", dest="output_to_dot", type=str,
+            help="The name of file to output query results as dot(graphviz) "
                    "format.")
 
     def _add_clean_arguments(self, parser):
@@ -304,29 +302,29 @@ class CmdArguments(object):
     def _add_test_arguments(self, parser):
         """Add test command arguments. """
         parser.add_argument(
-            "--testargs", dest = "testargs", type = str,
-            help = "Command line arguments to be passed to tests.")
+            "--testargs", dest="testargs", type=str,
+            help="Command line arguments to be passed to tests.")
 
         parser.add_argument(
-            "--full-test", action = 'store_true',
-            dest = "fulltest", default = False,
-            help = "Enable full test, default is incremental test.")
+            "--full-test", action='store_true',
+            dest="fulltest", default=False,
+            help="Enable full test, default is incremental test.")
 
         parser.add_argument(
-            "-t", "--test-jobs", dest = "test_jobs", type = int, default = 1,
-            help = ("Specifies the number of tests to "
+            "-t", "--test-jobs", dest="test_jobs", type=int, default=1,
+            help=("Specifies the number of tests to "
                     "run simultaneously."))
 
         parser.add_argument(
-            "--show-details", action = 'store_true',
-            dest = "show_details", default = False,
-            help = "Shows the test result in detail and provides a file.")
+            "--show-details", action='store_true',
+            dest="show_details", default=False,
+            help="Shows the test result in detail and provides a file.")
 
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
         parser.add_argument(
-            "--runargs", dest = "runargs", type = str,
-            help = "Command line arguments to be passed to the single run target.")
+            "--runargs", dest="runargs", type=str,
+            help="Command line arguments to be passed to the single run target.")
 
     def _add_build_arguments(self, parser):
         """Add building arguments for parser. """

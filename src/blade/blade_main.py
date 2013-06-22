@@ -67,7 +67,6 @@
 import errno
 import fcntl
 import os
-import platform
 import signal
 import subprocess
 import sys
@@ -99,9 +98,9 @@ def is_svn_client(blade_root_dir):
 
 
 # For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
-# dir , add subdirs are github repos, here we need to fix out the git ROOT for each
-# build target
-def is_git_client(blade_root_dir , target, working_dir):
+# dir , add subdirs are github repos, here we need to fix out the git ROOT for
+# each build target
+def is_git_client(blade_root_dir, target, working_dir):
     if target.endswith('...'):
         target = target[:-3]
     if os.path.exists(os.path.join(blade_root_dir, '.git')):
@@ -127,7 +126,7 @@ def _normalize_target_path(target):
         target = target[:-3]
     index = target.find(':')
     if index != -1:
-        target = target[index +1:]
+        target = target[index + 1:]
     if target and not target.endswith('/'):
         target = target + '/'
     return target
@@ -239,7 +238,7 @@ def _main(blade_path):
     locked_scons = False
     try:
         lock_file_fd = open('.SConstruct.lock', 'w')
-        old_fd_flags =  fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
+        old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
 
         (locked_scons,
@@ -278,16 +277,16 @@ def _main(blade_path):
 
         # Switch case due to different sub command
         action = {
-                 'build' : build,
-                 'run'   : run,
-                 'test'  : test,
-                 'clean' : clean,
-                 'query' : query
+                 'build': build,
+                 'run':   run,
+                 'test':  test,
+                 'clean': clean,
+                 'query': query
                  }[command](options)
         return action
     finally:
         if (hasattr(options, 'scons_only') and not options.scons_only) or (
-                command == 'clean' or command == 'query' ):
+                command == 'clean' or command == 'query'):
             try:
                 if locked_scons:
                     os.remove(os.path.join(blade_root_dir, 'SConstruct'))
@@ -313,7 +312,7 @@ def _build(options):
         if p.returncode:
             console.error("building failure")
             return p.returncode
-    except: # KeyboardInterrupt
+    except:  # KeyboardInterrupt
         return 1
     return 0
 
@@ -323,7 +322,6 @@ def build(options):
 
 
 def run(options):
-    global run_target
     ret = _build(options)
     if ret:
         return ret
@@ -331,7 +329,7 @@ def run(options):
 
 
 def test(options):
-    ret =  _build(options)
+    ret = _build(options)
     if ret:
         return ret
     return blade.blade.test()
@@ -348,7 +346,6 @@ def clean(options):
 
 
 def query(options):
-    global query_targets
     return blade.blade.query(query_targets)
 
 
@@ -364,11 +361,3 @@ def main(blade_path):
         console.error_exit(traceback.format_exc())
     sys.exit(exit_code)
 
-
-"""About main entry
-
-Main entry is placed to __main__.py, cause we need to pack
-the python sources to a zip ball and invoke the blade through
-command line in this way: python blade.zip
-
-"""

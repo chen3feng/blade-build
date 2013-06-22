@@ -48,13 +48,13 @@ class Target(object):
 
         self.key = (self.current_source_path, name)
         self.data = {
-                     'name' : name,
-                     'path' : self.current_source_path,
-                     'type' : target_type,
-                     'srcs' : srcs_list,
-                     'deps' : [],
-                     'options' : {},
-                     'direct_deps' : []
+                     'name': name,
+                     'path': self.current_source_path,
+                     'type': target_type,
+                     'srcs': srcs_list,
+                     'deps': [],
+                     'options': {},
+                     'direct_deps': []
                     }
         self.target_database[self.key] = self.data
 
@@ -79,7 +79,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.warning("//%s:%s: unrecognized options %s"  % (
+            console.warning("//%s:%s: unrecognized options %s" % (
                     self.data['path'], self.data['name'], kwargs))
 
     def _check_srcs(self):
@@ -115,7 +115,7 @@ class Target(object):
                 if not (value_existed.split(': ')[0] in allow_dup_src_type_list and
                        self.data['type'] in allow_dup_src_type_list):
                     # Just warn here, not raising exception
-                    console.warning( 'Source file %s belongs to both %s and %s' % (
+                    console.warning('Source file %s belongs to both %s and %s' % (
                             s, target_srcs_map[src_key], src_value))
             target_srcs_map[src_key] = src_value
 
@@ -132,11 +132,11 @@ class Target(object):
         """Add system library entry to database. """
         if key not in self.target_database:
             self.target_database[key] = {
-                                         'type' : 'system_library',
-                                         'srcs' : '',
-                                         'deps' : [],
-                                         'path' : self.current_source_path,
-                                         'name' : name,
+                                         'type': 'system_library',
+                                         'srcs': '',
+                                         'deps': [],
+                                         'path': self.current_source_path,
+                                         'name': name,
                                          'options': {}
                                         }
 
@@ -188,7 +188,6 @@ class Target(object):
 
             if dkey not in self.target_database[self.key]['direct_deps']:
                 self.target_database[self.key]['direct_deps'].append(dkey)
-
 
     def _check_deps_in_build_file(self, name, deps):
         """_check_deps_in_build_file.

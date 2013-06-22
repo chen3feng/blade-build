@@ -16,11 +16,9 @@
 
 
 import os
-import sys
 import traceback
 
 import console
-from blade_util import get_cwd
 from blade_util import relative_path
 from cc_targets import cc_binary
 from cc_targets import cc_library
@@ -30,7 +28,6 @@ from cc_targets import cc_benchmark
 from cc_targets import lex_yacc_library
 from cc_targets import proto_library
 from cc_targets import resource_library
-from cc_targets import ResourceLibrary
 from cc_targets import swig_library
 from gen_rule_target import gen_rule
 from java_jar_target import java_jar
@@ -90,7 +87,7 @@ def _report_not_exist(source_dir, path, blade):
         console.error_exit('//%s not found, exit...' % path)
 
 
-def enable_if(cond, true_value, false_value = None):
+def enable_if(cond, true_value, false_value=None):
     """A global function can be called in BUILD to filter srcs by target"""
     if cond:
         ret = true_value
@@ -280,4 +277,3 @@ def find_blade_root_dir(working_dir):
                    "(aka the directory where you #include start from).\n"
                    "You should create it manually at the first time.")
     return blade_root_dir
-

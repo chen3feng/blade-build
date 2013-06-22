@@ -22,7 +22,6 @@ import binary_runner
 import console
 
 from blade_util import environ_add_path
-from blade_util import get_cwd
 from blade_util import md5sum
 from test_scheduler import TestScheduler
 
@@ -74,7 +73,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self.valid_inctest_time_interval = 86400
         self.tests_run_map = {}
         self.run_all_reason = ''
-        self.title_str = '='*13
+        self.title_str = '=' * 13
         self.skipped_tests = []
         if not self.options.fulltest:
             if os.path.exists(self.inctest_md5_file):
@@ -102,7 +101,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
             new_env = self.test_stamp['env']
             old_env = self.last_test_stamp.get('env', {})
-            if isinstance(old_env, str): # For old test record
+            if isinstance(old_env, str):  # For old test record
                 old_env = {}
             if new_env != old_env:
                 self.run_all_reason = 'ENVIRONMENT'
@@ -188,19 +187,19 @@ class TestRunner(binary_runner.BinaryRunner):
             self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
             if self.run_all_reason:
                 self.tests_run_map[target_key] = {
-                        'runfile'  : test_file_name,
-                        'result'   : '',
-                        'reason'   : self.run_all_reason,
-                        'costtime' : 0}
+                        'runfile': test_file_name,
+                        'result': '',
+                        'reason': self.run_all_reason,
+                        'costtime': 0}
                 continue
 
             if target_key in self.direct_targets:
                 self.inctest_run_list.append(target)
                 self.tests_run_map[target_key] = {
-                        'runfile'  : test_file_name,
-                        'result'   : '',
-                        'reason'   : 'EXPLICIT',
-                        'costtime' : 0}
+                        'runfile': test_file_name,
+                        'result':  '',
+                        'reason':  'EXPLICIT',
+                        'costtime': 0}
                 continue
 
             old_md5sum = self.last_test_stamp['md5'].get(test_file_name, None)
@@ -219,10 +218,10 @@ class TestRunner(binary_runner.BinaryRunner):
                 else:
                     reason = 'STALE'
                 self.tests_run_map[target_key] = {
-                        'runfile'  : test_file_name,
-                        'result'   : '',
-                        'reason'   : reason,
-                        'costtime' : 0}
+                        'runfile':  test_file_name,
+                        'result':   '',
+                        'reason':   reason,
+                        'costtime': 0}
 
         # Append old md5sum that not existed into new
         old_keys = set(self.last_test_stamp['md5'].keys())
@@ -236,18 +235,18 @@ class TestRunner(binary_runner.BinaryRunner):
            It is 2G by default.
         """
         if os.path.exists(self.inctest_md5_file):
-            if os.path.getsize(self.inctest_md5_file) > 2*1024*1024*1024:
+            if os.path.getsize(self.inctest_md5_file) > 2 * 1024 * 1024 * 1024:
                 console.warning("Will remove the md5sum file for incremental test "
                         "for it is oversized"
                         )
                 os.remove(self.inctest_md5_file)
 
     def _write_test_history(self):
-       """write md5sum to file. """
-       f = open(self.inctest_md5_file, "w")
-       print >> f, str(self.test_stamp)
-       f.close()
-       self._check_inctest_md5sum_file()
+        """write md5sum to file. """
+        f = open(self.inctest_md5_file, "w")
+        print >> f, str(self.test_stamp)
+        f.close()
+        self._check_inctest_md5sum_file()
 
     def _write_tests_detail_map(self):
         """write the tests detail map for further use. """
@@ -261,10 +260,10 @@ class TestRunner(binary_runner.BinaryRunner):
         for key in self.tests_run_map.keys():
             costtime = self.tests_run_map.get(key, {}).get('costtime', 0)
             sort_buf.append((key, costtime))
-        sort_buf.sort(key=lambda x : x[1])
+        sort_buf.sort(key=lambda x: x[1])
 
         if self.tests_run_map.keys():
-            console.info("%s Testing detail %s" %(self.title_str, self.title_str))
+            console.info("%s Testing detail %s" % (self.title_str, self.title_str))
         for key, costtime in sort_buf:
             reason = self.tests_run_map.get(key, {}).get('reason', 'UNKNOWN')
             result = self.tests_run_map.get(key, {}).get('result',
@@ -317,7 +316,7 @@ class TestRunner(binary_runner.BinaryRunner):
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
 
-            sys.stdout.flush() # make sure output before scons if redirected
+            sys.stdout.flush()  # make sure output before scons if redirected
 
             test_env = dict(os.environ)
             environ_add_path(test_env, 'LD_LIBRARY_PATH', self._runfiles_dir(target))
