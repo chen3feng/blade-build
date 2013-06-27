@@ -143,4 +143,4 @@ def gen_rule(name,
                                     cmd,
                                     blade.blade,
                                     kwargs)
-    blade.blade.register_scons_target(gen_rule_target.key, gen_rule_target)
+    blade.blade.register_target(gen_rule_target)

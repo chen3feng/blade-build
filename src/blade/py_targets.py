@@ -116,4 +116,4 @@ def py_binary(name,
                                 prebuilt,
                                 blade.blade,
                                 kwargs)
-    blade.blade.register_scons_target(target.key, target)
+    blade.blade.register_target(target)

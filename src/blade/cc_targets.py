@@ -85,13 +85,13 @@ class CcTarget(Target):
                 replaced_targets = target.get('deps', [])
                 replaced_target = ''
                 if replaced_targets:
-                    replaced_target = eval(str(replaced_targets[0]))
+                    replaced_target = replaced_targets[0]
                 console.warning("//%s:%s : "
-                                   "//%s:%s has been deprecated, "
-                                   "please depends on //%s:%s" % (
-                                   self.data['path'], self.data['name'],
-                                   target['path'], target['name'],
-                                   replaced_target[0], replaced_target[1]))
+                                "//%s:%s has been deprecated, "
+                                "please depends on //%s:%s" % (
+                                self.data['path'], self.data['name'],
+                                target['path'], target['name'],
+                                replaced_target[0], replaced_target[1]))
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -432,7 +432,7 @@ class CcTarget(Target):
         return lib_str
 
     def _prebuilt_cc_library(self, dynamic=0):
-        """pre build cc library rules. """
+        """prebuilt cc library rules. """
         self.targets = self.blade.get_all_targets_expanded()
         self.prebuilt_file_map = self.blade.get_prebuilt_cc_library_file_map()
         prebuilt_target_file = ''
@@ -459,7 +459,7 @@ class CcTarget(Target):
             self._write_rule("%s = top_env.File('%s')" % (
                              var_name,
                              self._prebuilt_cc_library_build_path()))
-        if dynamic == 1:
+        if dynamic:
             prebuilt_target_file = self._prebuilt_cc_library_build_path(
                                             self.data['path'],
                                             self.data['name'],
@@ -723,9 +723,7 @@ class CcLibrary(CcTarget):
             self._prebuilt_cc_library(building_dynamic)
         else:
             self._cc_objects_rules()
-
             self._cc_library()
-
             if building_dynamic == 1:
                 self._dynamic_cc_library()
 
@@ -767,8 +765,7 @@ def cc_library(name,
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
-    blade.blade.register_scons_target(target.key,
-                                      target)
+    blade.blade.register_target(target)
 
 
 class CcBinary(CcTarget):
@@ -867,7 +864,7 @@ def cc_binary(name,
                                 export_dynamic,
                                 blade.blade,
                                 kwargs)
-    blade.blade.register_scons_target(cc_binary_target.key, cc_binary_target)
+    blade.blade.register_target(cc_binary_target)
 
 
 def cc_benchmark(name, deps=[], **kwargs):
@@ -989,7 +986,7 @@ def cc_plugin(name,
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
-    blade.blade.register_scons_target(target.key, target)
+    blade.blade.register_target(target)
 
 
 # See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
@@ -1157,7 +1154,7 @@ def cc_test(name,
                             heap_check_debug,
                             blade.blade,
                             kwargs)
-    blade.blade.register_scons_target(cc_test_target.key, cc_test_target)
+    blade.blade.register_target(cc_test_target)
 
 
 class LexYaccLibrary(CcTarget):
@@ -1266,7 +1263,7 @@ def lex_yacc_library(name,
                             prefix,
                             blade.blade,
                             kwargs)
-    blade.blade.register_scons_target(target.key, target)
+    blade.blade.register_target(target)
 
 
 class ProtoLibrary(CcTarget):
@@ -1515,8 +1512,7 @@ def proto_library(name,
                                         deprecated,
                                         blade.blade,
                                         kwargs)
-    blade.blade.register_scons_target(proto_library_target.key,
-                                      proto_library_target)
+    blade.blade.register_target(proto_library_target)
 
 
 class ResourceLibrary(CcTarget):
@@ -1652,8 +1648,7 @@ def resource_library(name,
                                               extra_cppflags,
                                               blade.blade,
                                               kwargs)
-    blade.blade.register_scons_target(resource_library_target.key,
-                                      resource_library_target)
+    blade.blade.register_target(resource_library_target)
 
 
 class SwigLibrary(CcTarget):
@@ -2128,5 +2123,4 @@ def swig_library(name,
                                       extra_swigflags,
                                       blade.blade,
                                       kwargs)
-    blade.blade.register_scons_target(swig_library_target.key,
-                                      swig_library_target)
+    blade.blade.register_target(swig_library_target)

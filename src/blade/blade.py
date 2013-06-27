@@ -428,18 +428,19 @@ class Blade(object):
         """Whether the targets are expanded. """
         return self.target_deps_expanded
 
-    def register_scons_target(self, target_key, scons_target):
+    def register_target(self, target):
         """Register scons targets into the scons targets map.
 
         It is used to do quick looking.
 
         """
+        target_key = target.key
         # check that whether there is already a key in database
         if target_key in self.scons_targets_map.keys():
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (
                         target_key[1], target_key[0]))
-        self.scons_targets_map[target_key] = scons_target
+        self.scons_targets_map[target_key] = target
 
     def get_scons_target(self, target_key):
         """Get scons target according to the key. """

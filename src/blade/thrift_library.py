@@ -247,5 +247,4 @@ def thrift_library(name,
                                           deprecated,
                                           blade.blade,
                                           kwargs)
-    blade.blade.register_scons_target(thrift_library_target.key,
-                                      thrift_library_target)
+    blade.blade.register_target(thrift_library_target)

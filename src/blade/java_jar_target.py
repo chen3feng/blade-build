@@ -25,7 +25,7 @@ from target import Target
 class JavaJarTarget(Target):
     """A java jar target subclass.
 
-    This class is derived from SconsTarget and generates relates java jar
+    This class is derived from Target and generates relates java jar
     rules.
 
     """
@@ -435,7 +435,7 @@ def java_jar(name,
              prebuilt=False,
              pre_build=False,
              **kwargs):
-    """scons_java_jar. """
+    """Define java_jar target. """
     target = JavaJarTarget(name,
                            srcs,
                            deps,
@@ -444,6 +444,6 @@ def java_jar(name,
                            kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                           "please use 'prebuilt'" % (target.data['path'],
-                                                      target.data['name']))
-    blade.blade.register_scons_target(target.key, target)
+                        "please use 'prebuilt'" % (target.data['path'],
+                                                   target.data['name']))
+    blade.blade.register_target(target)
