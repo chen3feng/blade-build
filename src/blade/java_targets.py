@@ -98,7 +98,14 @@ class JavaBinary(JavaTarget):
     """JavaLibrary"""
     def __init__(name, srcs, deps, **kwargs):
         type = 'java_binary'
-        JavaTarget.__init__(self, name, type, srcs, deps, prebuilt, kwargs)
+        JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
+
+
+class JavaTest(JavaBinary):
+    """JavaLibrary"""
+    def __init__(name, srcs, deps, **kwargs):
+        type = 'java_binary'
+        JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
 
 def java_library(name,

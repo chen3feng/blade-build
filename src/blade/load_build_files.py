@@ -31,6 +31,9 @@ from cc_targets import resource_library
 from cc_targets import swig_library
 from gen_rule_target import gen_rule
 from java_jar_target import java_jar
+from java_targets import java_library
+from java_targets import java_binary
+from java_targets import java_test
 from py_targets import py_binary
 from thrift_library import thrift_library
 
