@@ -14,6 +14,7 @@ import blade
 
 import console
 import configparse
+import load_build_files
 from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
@@ -147,3 +148,9 @@ def java_test(name,
                       blade.blade,
                       kwargs)
     blade.blade.register_target(target)
+
+
+load_build_files.register_build_function(java_binary)
+load_build_files.register_build_function(java_library)
+load_build_files.register_build_function(java_test)
+

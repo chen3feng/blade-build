@@ -15,6 +15,7 @@ import os
 import blade
 
 import console
+import load_build_files
 from blade_util import var_to_list
 from target import Target
 
@@ -126,3 +127,6 @@ def py_binary(name,
                                 blade.blade,
                                 kwargs)
     blade.blade.register_target(target)
+
+
+load_build_files.register_build_function(py_binary)

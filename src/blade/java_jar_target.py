@@ -17,6 +17,7 @@ import blade
 
 import console
 import configparse
+import load_build_files
 from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
@@ -493,3 +494,6 @@ def java_jar(name,
                         "please use 'prebuilt'" % (target.data['path'],
                                                    target.data['name']))
     blade.blade.register_target(target)
+
+
+load_build_files.register_build_function(java_jar)

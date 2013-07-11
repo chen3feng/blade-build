@@ -19,7 +19,9 @@ import configparse
 import console
 
 import java_jar_target
+import load_build_files
 import py_targets
+
 from blade_util import var_to_list
 from cc_targets import CcTarget
 from thrift_helper import ThriftHelper
@@ -250,3 +252,6 @@ def thrift_library(name,
                                           blade.blade,
                                           kwargs)
     blade.blade.register_target(thrift_library_target)
+
+
+load_build_files.register_build_function(thrift_library)

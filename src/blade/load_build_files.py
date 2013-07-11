@@ -20,27 +20,19 @@ import traceback
 
 import console
 from blade_util import relative_path
-from cc_targets import cc_binary
-from cc_targets import cc_library
-from cc_targets import cc_plugin
-from cc_targets import cc_test
-from cc_targets import cc_benchmark
-from cc_targets import lex_yacc_library
-from cc_targets import proto_library
-from cc_targets import resource_library
-from cc_targets import swig_library
-from gen_rule_target import gen_rule
-from java_jar_target import java_jar
-from java_targets import java_library
-from java_targets import java_binary
-from java_targets import java_test
-from py_targets import py_binary
-from thrift_library import thrift_library
 
 
-IGNORE_IF_FAIL = 0
-WARN_IF_FAIL = 1
-ABORT_IF_FAIL = 2
+_build_globals = {}
+
+
+def register_build_global(name, value):
+    """Register a variable that accessiable in BUILD file """
+    _build_globals[name] = value
+
+
+def register_build_function(f):
+    """Register a function as a build function that callable in BUILD file """
+    register_build_global(f.__name__, f)
 
 
 class TargetAttributes(object):
@@ -100,6 +92,13 @@ def enable_if(cond, true_value, false_value=None):
         ret = []
     return ret
 
+register_build_function(enable_if)
+
+
+IGNORE_IF_FAIL = 0
+WARN_IF_FAIL = 1
+ABORT_IF_FAIL = 2
+
 
 def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     """_load_build_file to load the BUILD and place the targets into database.
@@ -119,6 +118,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     global build_target
     if build_target is None:
         build_target = TargetAttributes(blade.get_options())
+        register_build_global('build_target', build_target)
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
@@ -136,7 +136,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, globals(), None)
+            execfile(build_file, _build_globals, None)
         except SystemExit:
             console.error_exit("%s: fatal error, exit..." % build_file)
         except:

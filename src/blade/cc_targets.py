@@ -18,6 +18,7 @@ import configparse
 
 import console
 import java_jar_target
+import load_build_files
 import py_targets
 from blade_util import var_to_list
 from target import Target
@@ -770,6 +771,9 @@ def cc_library(name,
     blade.blade.register_target(target)
 
 
+load_build_files.register_build_function(cc_library)
+
+
 class CcBinary(CcTarget):
     """A scons cc target subclass.
 
@@ -869,6 +873,9 @@ def cc_binary(name,
     blade.blade.register_target(cc_binary_target)
 
 
+load_build_files.register_build_function(cc_binary)
+
+
 def cc_benchmark(name, deps=[], **kwargs):
     """cc_benchmark target. """
     cc_config = configparse.blade_config.get_config('cc_config')
@@ -876,6 +883,9 @@ def cc_benchmark(name, deps=[], **kwargs):
     benchmark_main_libs = cc_config['benchmark_main_libs']
     deps = var_to_list(deps) + benchmark_libs + benchmark_main_libs
     cc_binary(name=name, deps=deps, **kwargs)
+
+
+load_build_files.register_build_function(cc_benchmark)
 
 
 class CcPlugin(CcTarget):
@@ -989,6 +999,9 @@ def cc_plugin(name,
                            "please use 'prebuilt'" % (target.data['path'],
                                                       target.data['name']))
     blade.blade.register_target(target)
+
+
+load_build_files.register_build_function(cc_plugin)
 
 
 # See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
@@ -1159,6 +1172,9 @@ def cc_test(name,
     blade.blade.register_target(cc_test_target)
 
 
+load_build_files.register_build_function(cc_test)
+
+
 class LexYaccLibrary(CcTarget):
     """A scons cc target subclass.
 
@@ -1266,6 +1282,9 @@ def lex_yacc_library(name,
                             blade.blade,
                             kwargs)
     blade.blade.register_target(target)
+
+
+load_build_files.register_build_function(lex_yacc_library)
 
 
 class ProtoLibrary(CcTarget):
@@ -1517,6 +1536,9 @@ def proto_library(name,
     blade.blade.register_target(proto_library_target)
 
 
+load_build_files.register_build_function(proto_library)
+
+
 class ResourceLibrary(CcTarget):
     """A scons cc target subclass.
 
@@ -1651,6 +1673,9 @@ def resource_library(name,
                                               blade.blade,
                                               kwargs)
     blade.blade.register_target(resource_library_target)
+
+
+load_build_files.register_build_function(resource_library)
 
 
 class SwigLibrary(CcTarget):
@@ -2126,3 +2151,6 @@ def swig_library(name,
                                       blade.blade,
                                       kwargs)
     blade.blade.register_target(swig_library_target)
+
+
+load_build_files.register_build_function(swig_library)
