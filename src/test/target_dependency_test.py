@@ -78,7 +78,7 @@ class TestDepsAnalyzing(unittest.TestCase):
         sys.stdout.flush()
         sys.stderr.flush()
 
-        self.assertTrue(self.blade.get_expanded())
+        self.assertTrue(self.blade.is_expanded())
         self.assertTrue(self.all_targets)
 
         system_lib = ('#', 'pthread')
