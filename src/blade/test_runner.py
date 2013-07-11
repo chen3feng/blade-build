@@ -59,9 +59,9 @@ def _diff_env(a, b):
 
 class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
-    def __init__(self, targets, options, prebuilt_file_map, target_database, direct_targets):
+    def __init__(self, targets, options, target_database, direct_targets):
         """Init method. """
-        binary_runner.BinaryRunner.__init__(self, targets, options, prebuilt_file_map, target_database)
+        binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
         self.inctest_md5_file = ".blade.test.stamp"
         self.tests_detail_file = "./blade_tests_detail"

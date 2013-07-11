@@ -65,10 +65,6 @@ class Blade(object):
         exactly one rule/target(only library target).
         target_srcs_map = {}
 
-        The scons cache manager class string, which should be output to
-        scons script if ccache is not installed
-        scache_manager_class_str = ''
-
         The targets keys list after sorting by topological sorting method.
         sorted_targets_keys = []
 
@@ -82,13 +78,6 @@ class Blade(object):
 
         The scons target objects registered into blade manager
         scons_targets_map = {}
-
-        The cc objects pool, a map to hold all the objects name.
-        cc_objects_pool = {}
-
-        The gen rule files map, which is used to generate the explict dependency
-        relationtion ship between gen_rule target and other targets
-        gen_rule_files_map = {}
 
         The direct targets that are used for analyzing
         direct_targets = []
@@ -106,10 +95,6 @@ class Blade(object):
         The sources files that are needed to perform explict dependency
         sources_explict_dependency_map = {}
 
-        The prebuilt cc_library file map which is needed to establish
-        symbolic links while testing
-        prebuilt_cc_library_file_map = {}
-
         """
         self.command_targets = command_targets
         self.direct_targets = []
@@ -121,23 +106,18 @@ class Blade(object):
         self.target_database = {}
         self.related_targets = {}
         self.target_srcs_map = {}
-        self.scache_manager_class_str = ''
         self.options = blade_options
         self.sorted_targets_keys = []
         self.target_deps_expanded = False
         self.all_targets_expanded = {}
         self.scons_targets_map = {}
-        self.cc_objects_pool = {}
 
         self.deps_expander = None
         self.build_rules_generator = None
 
-        self.gen_rule_files_map = {}
-
         self.scons_platform = SconsPlatform()
         self.ccflags_manager = CcFlagsManager(self.options)
         self.sources_explict_dependency_map = {}
-        self.prebuilt_cc_library_file_map = {}
 
         self.distcc_enabled = configparse.blade_config.get_config(
                 'distcc_config')['enabled']
@@ -214,7 +194,6 @@ class Blade(object):
         key = self._get_normpath_target(target)
         runner = BinaryRunner(self.all_targets_expanded,
                               self.options,
-                              self.prebuilt_cc_library_file_map,
                               self.target_database)
         return runner.run_target(key)
 
@@ -222,7 +201,6 @@ class Blade(object):
         """Run tests. """
         test_runner = TestRunner(self.all_targets_expanded,
                                  self.options,
-                                 self.prebuilt_cc_library_file_map,
                                  self.target_database,
                                  self.direct_targets)
         return test_runner.run()
@@ -411,10 +389,6 @@ class Blade(object):
         """Get scons target according to the key. """
         return self.scons_targets_map.get(target_key, None)
 
-    def get_cc_objects_pool(self):
-        """The cc objects pool which is used when generating the cc object rules. """
-        return self.cc_objects_pool
-
     def _is_scons_object_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
 
@@ -450,14 +424,6 @@ class Blade(object):
             rules_buf += scons_object.get_rules()
         return rules_buf
 
-    def set_gen_rule_files_map(self, files_map):
-        """Set the gen_rule files map. """
-        self.gen_rule_files_map = dict(files_map)
-
-    def get_gen_rule_files_map(self):
-        """Get the gen_rule files map. """
-        return self.gen_rule_files_map
-
     def get_scons_platform(self):
         """Return handle of the platform class. """
         return self.scons_platform
@@ -480,10 +446,6 @@ class Blade(object):
     def get_sources_explict_dependency_map(self):
         """Returns the handle of sources_explict_dependency_map. """
         return self.sources_explict_dependency_map
-
-    def get_prebuilt_cc_library_file_map(self):
-        """Returns the prebuilt_cc_library_file_map. """
-        return self.prebuilt_cc_library_file_map
 
     def tune_parallel_jobs_num(self):
         """Tune the jobs num. """

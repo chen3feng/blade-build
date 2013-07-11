@@ -21,6 +21,11 @@ from blade_util import var_to_list
 from target import Target
 
 
+# The gen rule files map, which is used to generate the explict dependency
+# relationtion ship between gen_rule target and other targets
+_files_map = {}
+
+
 class GenRuleTarget(Target):
     """A scons gen rule target subclass.
 
@@ -100,8 +105,7 @@ class GenRuleTarget(Target):
                 srcs_str,
                 cmd))
 
-        gen_rule_files_map = self.blade.get_gen_rule_files_map()
-        gen_rule_files_map[(self.data['path'], self.data['name'])] = var_name
+        _files_map[(self.data['path'], self.data['name'])] = var_name
         self._generate_target_explict_dependency(var_name)
 
         self.targets = self.blade.get_all_targets_expanded()

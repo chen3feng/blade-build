@@ -334,7 +334,8 @@ class Target(object):
         if not self.blade.is_expanded():
             console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
         targets = self.blade.get_all_targets_expanded()
-        files_map = self.blade.get_gen_rule_files_map()
+        import gen_rule_target
+        files_map = gen_rule_target._files_map
         deps = targets[self.key]['deps']
         for d in deps:
             dep_target = targets[d]

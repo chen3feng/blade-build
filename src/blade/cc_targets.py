@@ -24,6 +24,15 @@ from blade_util import var_to_list
 from target import Target
 
 
+# The prebuilt cc_library file map which is needed to establish
+# symbolic links while testing
+prebuilt_cc_library_file_map = {}
+
+
+# The cc objects pool, a map to hold all the objects name.
+_objects_pool = {}
+
+
 class CcTarget(Target):
     """A scons cc target subclass.
 
@@ -437,7 +446,6 @@ class CcTarget(Target):
     def _prebuilt_cc_library(self, dynamic=0):
         """prebuilt cc library rules. """
         self.targets = self.blade.get_all_targets_expanded()
-        self.prebuilt_file_map = self.blade.get_prebuilt_cc_library_file_map()
         prebuilt_target_file = ''
         prebuilt_src_file = ''
         prebuilt_symlink = ''
@@ -483,7 +491,7 @@ class CcTarget(Target):
                         prebuilt_target_file))
             prebuilt_symlink = os.path.realpath(prebuilt_src_file)
             prebuilt_symlink = os.path.basename(prebuilt_symlink)
-            self.prebuilt_file_map[self.key] = (prebuilt_target_file,
+            prebuilt_cc_library_file_map[self.key] = (prebuilt_target_file,
                                                 prebuilt_symlink)
 
     def _cc_library(self):
@@ -614,8 +622,6 @@ class CcTarget(Target):
         if not self.data['type'] in target_types:
             console.error_exit("logic error, type %s err in object rule" % self.data['type'])
 
-        self.objects = self.blade.get_cc_objects_pool()
-
         path = self.data['path']
         objs_name = self._objs_name()
         env_name = self._env_name()
@@ -627,8 +633,8 @@ class CcTarget(Target):
         for src in self.data['srcs']:
             src_name = self._generate_variable_name(path, src)
             src_name = '%s_%s' % (src_name, self.data['name'])
-            if src_name not in self.objects:
-                self.objects[src_name] = (
+            if src_name not in _objects_pool:
+                _objects_pool[src_name] = (
                         "%s_%s_object" % (
                                 self._generate_variable_name(path, src),
                                 self._regular_variable_name(self.data['name'])))
@@ -636,16 +642,16 @@ class CcTarget(Target):
                         self.build_path, path, '%s.objs' % self.data['name'], src)
                 self._write_rule(
                         "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
-                        ", source = '%s')" % (self.objects[src_name],
+                        ", source = '%s')" % (_objects_pool[src_name],
                                               env_name,
                                               target_path,
                                               self._target_file_path(path, src)))
                 self._write_rule("%s.Depends(%s, '%s')" % (
                                  env_name,
-                                 self.objects[src_name],
+                                 _objects_pool[src_name],
                                  self._target_file_path(path, src)))
             sources.append(self._target_file_path(path, src))
-            objs.append(self.objects[src_name])
+            objs.append(_objects_pool[src_name])
         self._write_rule("%s = [%s]" % (objs_name, ','.join(objs)))
         return sources
 
