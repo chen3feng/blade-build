@@ -126,13 +126,24 @@ def java_library(name,
 def java_binary(name,
                 srcs=[],
                 deps=[],
-                prebuilt=False,
                 **kwargs):
     """Define java_jar target. """
     target = JavaBinary(name,
                         srcs,
                         deps,
-                        prebuilt,
                         blade.blade,
                         kwargs)
+    blade.blade.register_target(target)
+
+
+def java_test(name,
+              srcs=[],
+              deps=[],
+              **kwargs):
+    """Define java_jar target. """
+    target = JavaTest(name,
+                      srcs,
+                      deps,
+                      blade.blade,
+                      kwargs)
     blade.blade.register_target(target)

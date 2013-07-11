@@ -331,7 +331,7 @@ class Target(object):
         env_name = self._env_name()
         files = var_to_list(target_files)
         files_str = ",".join(["%s" % f for f in files])
-        if not self.blade.get_expanded():
+        if not self.blade.is_expanded():
             console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
         targets = self.blade.get_all_targets_expanded()
         files_map = self.blade.get_gen_rule_files_map()

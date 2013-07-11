@@ -102,7 +102,7 @@ class GenRuleTarget(Target):
         self._generate_target_explict_dependency(var_name)
 
         self.targets = self.blade.get_all_targets_expanded()
-        self.java_jars_map = self.blade.get_java_jars_map()
+        self.java_jars_map = java_jar_target.get_java_jars_map()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
         for i in self.data['deps']:

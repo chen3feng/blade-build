@@ -17,6 +17,8 @@ import blade
 import configparse
 
 import console
+import java_jar_target
+import py_targets
 from blade_util import var_to_list
 from target import Target
 
@@ -297,7 +299,7 @@ class CcTarget(Target):
         """_export_incs_list.
         TODO
         """
-        if not self.blade.get_expanded():
+        if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
         self.targets = self.blade.get_all_targets_expanded()
         if not self.targets:
@@ -336,7 +338,7 @@ class CcTarget(Target):
         It will find the libs needed to be linked into the target statically.
 
         """
-        if not self.blade.get_expanded():
+        if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
         self.targets = self.blade.get_all_targets_expanded()
         if not self.targets:
@@ -379,7 +381,7 @@ class CcTarget(Target):
         It will find the libs needed to be linked into the target dynamically.
 
         """
-        if not self.blade.get_expanded():
+        if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
         self.targets = self.blade.get_all_targets_expanded()
         if not self.targets:
@@ -1384,7 +1386,7 @@ class ProtoLibrary(CcTarget):
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
-        java_jar_dep_source_map = self.blade.get_java_jar_dep_source_map()
+        java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
         self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
         self.sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
@@ -1417,8 +1419,8 @@ class ProtoLibrary(CcTarget):
 
     def _proto_python_rules(self):
         """Generate python files. """
-        self.blade.python_binary_dep_source_map[self.key] = []
-        self.blade.python_binary_dep_source_cmd[self.key] = []
+        py_targets.binary_dep_source_map[self.key] = []
+        py_targets.binary_dep_source_cmd[self.key] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             proto_python_src = self._proto_gen_python_file(self.data['path'], src)
@@ -1429,8 +1431,8 @@ class ProtoLibrary(CcTarget):
                     self._env_name(),
                     proto_python_src,
                     src_path))
-            self.blade.python_binary_dep_source_cmd[self.key].append(py_cmd_var)
-            self.blade.python_binary_dep_source_map[self.key].append(
+            py_targets.binary_dep_source_cmd[self.key].append(py_cmd_var)
+            py_targets.binary_dep_source_map[self.key].append(
                     proto_python_src)
 
     def scons_rules(self):
@@ -1751,8 +1753,8 @@ class SwigLibrary(CcTarget):
 
         self._setup_cc_flags()
 
-        self.blade.python_binary_dep_source_map[self.key] = []
-        self.blade.python_binary_dep_source_cmd[self.key] = []
+        py_targets.binary_dep_source_map[self.key] = []
+        py_targets.binary_dep_source_cmd[self.key] = []
         dep_files = []
         dep_files_map = {}
         for src in self.data['srcs']:
@@ -1762,7 +1764,7 @@ class SwigLibrary(CcTarget):
                     builder_alias,
                     pyswig_src,
                     os.path.join(self.data['path'], src)))
-            self.blade.python_binary_dep_source_map[self.key].append(
+            py_targets.binary_dep_source_map[self.key].append(
                     self._pyswig_gen_python_file(self.data['path'], src))
             obj_name_py = "%s_object" % self._generate_variable_name(
                 self.data['path'], src, 'python')
@@ -1774,7 +1776,7 @@ class SwigLibrary(CcTarget):
                                     env_name,
                                     pyswig_src,
                                     pyswig_src))
-            self.blade.python_binary_dep_source_cmd[self.key].append(
+            py_targets.binary_dep_source_cmd[self.key].append(
                     obj_name_py)
             dep_files = self._swig_extract_dependency_files(
                                 os.path.join(self.data['path'], src))
@@ -1809,9 +1811,9 @@ class SwigLibrary(CcTarget):
                        target_path_py,
                        objs_name_py,
                        lib_str))
-            self.blade.python_binary_dep_source_map[self.key].append(
+            py_targets.binary_dep_source_map[self.key].append(
                     "%s.so" % target_path_py)
-            self.blade.python_binary_dep_source_cmd[self.key].append(var_name)
+            py_targets.binary_dep_source_cmd[self.key].append(var_name)
 
         for i in link_all_symbols_lib_list:
             self._write_rule("%s.Depends(%s, %s)" % (
@@ -1827,10 +1829,10 @@ class SwigLibrary(CcTarget):
         var_name = self._generate_variable_name(self.data['path'],
                                                 self.data['name'],
                                                 'dynamic_java')
-        self.java_jar_dep_vars = self.blade.get_java_jar_dep_vars()
+        self.java_jar_dep_vars = java_jar_target.get_java_jar_dep_vars()
         self.java_jar_dep_vars[self.key] = []
 
-        java_jar_dep_source_map = self.blade.get_java_jar_dep_source_map()
+        java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
 
         build_jar = False
         java_lib_packed = False
@@ -1985,7 +1987,7 @@ class SwigLibrary(CcTarget):
 
         self._generate_target_explict_dependency(var_name)
 
-        jar_files_packing_map = self.blade.get_java_jar_files_packing_map()
+        jar_files_packing_map = java_jar_target.get_java_jar_files_packing_map()
         if build_jar and java_lib_packed:
             lib_dir = os.path.dirname(target_path_java)
             lib_name = os.path.basename(target_path_java)
