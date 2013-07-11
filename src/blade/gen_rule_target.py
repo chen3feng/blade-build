@@ -15,8 +15,8 @@
 import os
 
 import blade
+import build_globals
 import java_jar_target
-import load_build_files
 from blade_util import var_to_list
 from target import Target
 
@@ -149,5 +149,5 @@ def gen_rule(name,
     blade.blade.register_target(gen_rule_target)
 
 
-load_build_files.register_build_function(gen_rule)
+build_globals.register_build_function(gen_rule)
 

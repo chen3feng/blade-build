@@ -18,21 +18,19 @@
 import os
 import traceback
 
+import build_globals
 import console
 from blade_util import relative_path
 
 
-_build_globals = {}
-
-
-def register_build_global(name, value):
-    """Register a variable that accessiable in BUILD file """
-    _build_globals[name] = value
-
-
-def register_build_function(f):
-    """Register a function as a build function that callable in BUILD file """
-    register_build_global(f.__name__, f)
+# import these modules make build functions registered into build_globals
+# TODO(chen3feng): Load build modules dynamically to enable extension.
+import cc_targets
+import java_jar_target
+import gen_rule_target
+import java_targets
+import py_targets
+import thrift_library
 
 
 class TargetAttributes(object):
@@ -83,7 +81,7 @@ def _report_not_exist(source_dir, path, blade):
 
 
 def enable_if(cond, true_value, false_value=None):
-    """A global function can be called in BUILD to filter srcs by target"""
+    """A global function can be called in BUILD to filter srcs/deps by target"""
     if cond:
         ret = true_value
     else:
@@ -92,7 +90,7 @@ def enable_if(cond, true_value, false_value=None):
         ret = []
     return ret
 
-register_build_function(enable_if)
+build_globals.register_build_function(enable_if)
 
 
 IGNORE_IF_FAIL = 0
@@ -118,7 +116,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     global build_target
     if build_target is None:
         build_target = TargetAttributes(blade.get_options())
-        register_build_global('build_target', build_target)
+        build_globals.register_build_global('build_target', build_target)
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
@@ -136,7 +134,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, _build_globals, None)
+            execfile(build_file, build_globals.get_all(), None)
         except SystemExit:
             console.error_exit("%s: fatal error, exit..." % build_file)
         except:

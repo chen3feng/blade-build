@@ -12,9 +12,10 @@
 import os
 import blade
 
+import build_globals
 import console
 import configparse
-import load_build_files
+
 from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
@@ -150,7 +151,7 @@ def java_test(name,
     blade.blade.register_target(target)
 
 
-load_build_files.register_build_function(java_binary)
-load_build_files.register_build_function(java_library)
-load_build_files.register_build_function(java_test)
+build_globals.register_build_function(java_binary)
+build_globals.register_build_function(java_library)
+build_globals.register_build_function(java_test)
 
