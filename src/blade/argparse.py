@@ -1592,7 +1592,10 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
 
         # add help and version arguments if necessary
         # (using explicit default to override global argument_default)
-        default_prefix = '-' if '-' in prefix_chars else prefix_chars[0]
+        if '-' in prefix_chars:
+            default_prefix = '-'
+        else:
+            default_prefix = prefix_chars[0]
         if self.add_help:
             self.add_argument(
                 default_prefix+'h', default_prefix*2+'help',
