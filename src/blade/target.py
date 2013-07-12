@@ -125,8 +125,8 @@ class Target(object):
             dkey = self._convert_string_to_target_helper(dep)
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
-            if dkey not in self.target_database[self.key]['deps']:
-                self.target_database[self.key]['deps'].append(dkey)
+            if dkey not in self.data['deps']:
+                self.data['deps'].append(dkey)
 
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
@@ -183,11 +183,11 @@ class Target(object):
                 dkey = (os.path.normpath('%s/%s' % (
                                           self.current_source_path, path)), lib)
 
-            if dkey not in self.target_database[self.key]['deps']:
-                self.target_database[self.key]['deps'].append(dkey)
+            if dkey not in self.data['deps']:
+                self.data['deps'].append(dkey)
 
-            if dkey not in self.target_database[self.key]['direct_deps']:
-                self.target_database[self.key]['direct_deps'].append(dkey)
+            if dkey not in self.data['direct_deps']:
+                self.data['direct_deps'].append(dkey)
 
     def _check_deps_in_build_file(self, name, deps):
         """_check_deps_in_build_file.

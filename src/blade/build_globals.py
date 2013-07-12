@@ -1,10 +1,11 @@
+# Copyright (c) 2013 Tencent Inc.
+# All rights reserved.
+#
+# Author: Feng Chen <phongchen@tencent.com>
+
+
 """
-
- Copyright (c) 2013 Tencent Inc.
- All rights reserved.
-
- Author: Feng Chen <phongchen@tencent.com>
-
+ Manage symbols can be used in BUILD files.
 """
 
 

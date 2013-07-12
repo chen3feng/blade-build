@@ -1,11 +1,12 @@
+# Copyright (c) 2013 Tencent Inc.
+# All rights reserved.
+#
+# Author: CHEN Feng <phongchen@tencent.com>
+# Created: Jun 26, 2013
+
+
 """
-
- Copyright (c) 2013 Tencent Inc.
- All rights reserved.
-
- Author: CHEN Feng <phongchen@tencent.com>
- Created: Jun 26, 2013
-
+Implement java_library, java_binary and java_test
 """
 
 
