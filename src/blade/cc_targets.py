@@ -540,72 +540,6 @@ class CcTarget(Target):
                     self._objs_name()))
         self._generate_target_explict_dependency(var_name)
 
-    def _cc_binary(self):
-        """_cc_binary rules. """
-        env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-
-        platform = self.blade.get_scons_platform()
-        if platform.get_gcc_version() > '4.5':
-            link_flag_list = ["-static-libgcc", "-static-libstdc++"]
-            self._write_rule('%s.Append(LINKFLAGS=%s)' % (env_name, link_flag_list))
-
-        (link_all_symbols_lib_list,
-         lib_str,
-         whole_link_flags) = self._get_static_deps_lib_list()
-        if whole_link_flags:
-            self._write_rule(
-                    '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
-
-        if self.data.get('options', {}).get('export_dynamic', False):
-            self._write_rule(
-                "%s.Append(LINKFLAGS='-rdynamic')" % env_name)
-
-        self._setup_extra_link_flags()
-
-        self._write_rule("%s = %s.Program('%s', %s, %s)" % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            self._objs_name(),
-            lib_str))
-        self._write_rule("%s.Depends(%s, %s)" % (
-            env_name,
-            var_name,
-            self._objs_name()))
-        self._generate_target_explict_dependency(var_name)
-
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
-                    env_name, var_name, i[1]))
-
-        self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-        self._write_rule("%s.Requires(%s, version_obj)" % (
-                         env_name, var_name))
-
-    def _dynamic_cc_binary(self):
-        """_dynamic_cc_binary. """
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-
-        if self.data.get('options', {}).get('export_dynamic', False):
-            self._write_rule(
-                "%s.Append(LINKFLAGS='-rdynamic')" % self._env_name())
-
-        self._setup_extra_link_flags()
-
-        lib_str = self._get_dynamic_deps_lib_list()
-        self._write_rule("%s = %s.Program('%s', %s, %s)" % (
-            var_name,
-            self._env_name(),
-            self._target_file_path(),
-            self._objs_name(),
-            lib_str))
-        self._write_rule("%s.Depends(%s, %s)" % (
-            self._env_name(),
-            var_name,
-            self._objs_name()))
-        self._generate_target_explict_dependency(var_name)
-
     def _cc_objects_rules(self):
         """_cc_objects_rules.
 
@@ -614,9 +548,7 @@ class CcTarget(Target):
         """
         target_types = ["cc_library",
                         "cc_binary",
-                        "dynamic_cc_binary",
                         "cc_test",
-                        "dynamic_cc_test",
                         "cc_plugin"]
 
         if not self.data['type'] in target_types:
@@ -733,7 +665,7 @@ class CcLibrary(CcTarget):
         else:
             self._cc_objects_rules()
             self._cc_library()
-            if building_dynamic == 1:
+            if building_dynamic:
                 self._dynamic_cc_library()
 
 
@@ -821,16 +753,79 @@ class CcBinary(CcTarget):
                           extra_linkflags,
                           blade,
                           kwargs)
-        if dynamic_link:
-            self.data['type'] = 'dynamic_cc_binary'
-
-        if export_dynamic:
-            self.data['options']['export_dynamic'] = True
+        self.data['options']['dynamic_link'] = dynamic_link
+        self.data['options']['export_dynamic'] = export_dynamic
 
         cc_binary_config = configparse.blade_config.get_config('cc_binary_config')
         # add extra link library
         link_libs = var_to_list(cc_binary_config['extra_libs'])
         self._add_hardcode_library(link_libs)
+
+    def _cc_binary(self):
+        """_cc_binary rules. """
+        env_name = self._env_name()
+        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+
+        platform = self.blade.get_scons_platform()
+        if platform.get_gcc_version() > '4.5':
+            link_flag_list = ["-static-libgcc", "-static-libstdc++"]
+            self._write_rule('%s.Append(LINKFLAGS=%s)' % (env_name, link_flag_list))
+
+        (link_all_symbols_lib_list,
+         lib_str,
+         whole_link_flags) = self._get_static_deps_lib_list()
+        if whole_link_flags:
+            self._write_rule(
+                    '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
+
+        if self.data.get('options', {}).get('export_dynamic', False):
+            self._write_rule(
+                "%s.Append(LINKFLAGS='-rdynamic')" % env_name)
+
+        self._setup_extra_link_flags()
+
+        self._write_rule("%s = %s.Program('%s', %s, %s)" % (
+            var_name,
+            env_name,
+            self._target_file_path(),
+            self._objs_name(),
+            lib_str))
+        self._write_rule("%s.Depends(%s, %s)" % (
+            env_name,
+            var_name,
+            self._objs_name()))
+        self._generate_target_explict_dependency(var_name)
+
+        for i in link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, %s)" % (
+                    env_name, var_name, i[1]))
+
+        self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
+        self._write_rule("%s.Requires(%s, version_obj)" % (
+                         env_name, var_name))
+
+    def _dynamic_cc_binary(self):
+        """_dynamic_cc_binary. """
+        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+
+        if self.data.get('options', {}).get('export_dynamic', False):
+            self._write_rule(
+                "%s.Append(LINKFLAGS='-rdynamic')" % self._env_name())
+
+        self._setup_extra_link_flags()
+
+        lib_str = self._get_dynamic_deps_lib_list()
+        self._write_rule("%s = %s.Program('%s', %s, %s)" % (
+            var_name,
+            self._env_name(),
+            self._target_file_path(),
+            self._objs_name(),
+            lib_str))
+        self._write_rule("%s.Depends(%s, %s)" % (
+            self._env_name(),
+            var_name,
+            self._objs_name()))
+        self._generate_target_explict_dependency(var_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -842,10 +837,10 @@ class CcBinary(CcTarget):
 
         self._cc_objects_rules()
 
-        if self.data['type'] == 'cc_binary':
-            self._cc_binary()
-        elif self.data['type'] == 'dynamic_cc_binary':
+        if self.data['options']['dynamic_link']:
             self._dynamic_cc_binary()
+        else:
+            self._cc_binary()
 
 
 def cc_binary(name,
@@ -1021,7 +1016,7 @@ HEAP_CHECK_VALUES = set([
 ])
 
 
-class CcTest(CcTarget):
+class CcTest(CcBinary):
     """A scons cc target subclass.
 
     This class is derived from SconsCCTarget and it generates the cc_test
@@ -1053,9 +1048,12 @@ class CcTest(CcTarget):
         Init the cc target.
 
         """
-        CcTarget.__init__(self,
+        cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        if dynamic_link is None:
+            dynamic_link = cc_test_config['dynamic_link']
+
+        CcBinary.__init__(self,
                           name,
-                          'cc_test',
                           srcs,
                           deps,
                           warning,
@@ -1063,35 +1061,23 @@ class CcTest(CcTarget):
                           incs,
                           export_incs,
                           optimize,
+                          dynamic_link,
                           extra_cppflags,
                           extra_linkflags,
+                          export_dynamic,
                           blade,
                           kwargs)
-        testdata = var_to_list(testdata)
-        self.data['options']['testdata'] = testdata
+        self.data['type'] = 'cc_test'
+        self.data['options']['testdata'] = var_to_list(testdata)
+        self.data['options']['always_run'] = always_run
+        self.data['options']['exclusive'] = exclusive
 
-        cc_test_config = configparse.blade_config.get_config('cc_test_config')
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
 
         # Hardcode deps rule to thirdparty gtest main lib.
         self._add_hardcode_library(gtest_lib)
         self._add_hardcode_library(gtest_main_lib)
-
-        # dynamic link by default
-        if dynamic_link is None:
-            dynamic_link = cc_test_config['dynamic_link']
-        if dynamic_link:
-            self.data['type'] = 'dynamic_cc_test'
-
-        if export_dynamic:
-            self.data['options']['export_dynamic'] = True
-
-        if always_run:
-            self.data['options']['always_run'] = True
-
-        if exclusive:
-            self.data['options']['exclusive'] = True
 
         if heap_check is None:
             heap_check = cc_test_config.get('heap_check', '')
@@ -1111,30 +1097,6 @@ class CcTest(CcTarget):
                 perftools_lib_list = perftools_lib
 
             self._add_hardcode_library(perftools_lib_list)
-
-    def _clone_env(self):
-        """override this method. """
-        env_name = self._env_name()
-        warning = self.data.get('options', {}).get('warning', '')
-        if warning == 'no':
-            self._write_rule("%s = env_no_warning.Clone()" % env_name)
-        else:
-            self._write_rule("%s = env_with_error.Clone()" % env_name)
-
-    def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
-        self._prepare_to_generate_rule()
-
-        self._cc_objects_rules()
-
-        if self.data['type'] == 'cc_test':
-            self._cc_binary()
-        elif self.data['type'] == 'dynamic_cc_test':
-            self._dynamic_cc_binary()
 
 
 def cc_test(name,

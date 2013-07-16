@@ -33,9 +33,7 @@ class BinaryRunner(object):
         self.build_dir = "build%s_%s" % (options.m, options.profile)
         self.options = options
         self.run_list = ['cc_binary',
-                         'dynamic_cc_binary',
-                         'cc_test',
-                         'dynamic_cc_test']
+                         'cc_test']
         self.target_database = target_database
 
     def _executable(self, target):
@@ -172,8 +170,7 @@ class BinaryRunner(object):
     def _clean_env(self):
         """clean test environment. """
         for target in self.targets.values():
-            if not (target['type'] == 'cc_test' or
-                    target['type'] == 'dynamic_cc_test'):
+            if target['type'] != 'cc_test':
                 continue
             self._clean_target(target)
 
