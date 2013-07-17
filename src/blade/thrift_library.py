@@ -18,7 +18,7 @@ import blade
 import configparse
 import console
 
-import build_globals
+import build_rules
 import java_jar_target
 import py_targets
 
@@ -254,4 +254,4 @@ def thrift_library(name,
     blade.blade.register_target(thrift_library_target)
 
 
-build_globals.register_build_function(thrift_library)
+build_rules.register_function(thrift_library)

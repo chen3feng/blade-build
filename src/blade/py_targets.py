@@ -14,7 +14,7 @@
 import os
 import blade
 
-import build_globals
+import build_rules
 import console
 
 from blade_util import var_to_list
@@ -130,4 +130,4 @@ def py_binary(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(py_binary)
+build_rules.register_function(py_binary)

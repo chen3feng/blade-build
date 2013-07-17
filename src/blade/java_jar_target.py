@@ -15,7 +15,7 @@
 import os
 import blade
 
-import build_globals
+import build_rules
 import console
 import configparse
 
@@ -497,4 +497,4 @@ def java_jar(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(java_jar)
+build_rules.register_function(java_jar)

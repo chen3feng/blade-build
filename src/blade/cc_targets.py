@@ -17,7 +17,7 @@ import blade
 import configparse
 
 import console
-import build_globals
+import build_rules
 import java_jar_target
 import py_targets
 from blade_util import var_to_list
@@ -709,7 +709,7 @@ def cc_library(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(cc_library)
+build_rules.register_function(cc_library)
 
 
 class CcBinary(CcTarget):
@@ -874,7 +874,7 @@ def cc_binary(name,
     blade.blade.register_target(cc_binary_target)
 
 
-build_globals.register_build_function(cc_binary)
+build_rules.register_function(cc_binary)
 
 
 def cc_benchmark(name, deps=[], **kwargs):
@@ -886,7 +886,7 @@ def cc_benchmark(name, deps=[], **kwargs):
     cc_binary(name=name, deps=deps, **kwargs)
 
 
-build_globals.register_build_function(cc_benchmark)
+build_rules.register_function(cc_benchmark)
 
 
 class CcPlugin(CcTarget):
@@ -1002,7 +1002,7 @@ def cc_plugin(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(cc_plugin)
+build_rules.register_function(cc_plugin)
 
 
 # See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
@@ -1140,7 +1140,7 @@ def cc_test(name,
     blade.blade.register_target(cc_test_target)
 
 
-build_globals.register_build_function(cc_test)
+build_rules.register_function(cc_test)
 
 
 class LexYaccLibrary(CcTarget):
@@ -1252,7 +1252,7 @@ def lex_yacc_library(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(lex_yacc_library)
+build_rules.register_function(lex_yacc_library)
 
 
 class ProtoLibrary(CcTarget):
@@ -1504,7 +1504,7 @@ def proto_library(name,
     blade.blade.register_target(proto_library_target)
 
 
-build_globals.register_build_function(proto_library)
+build_rules.register_function(proto_library)
 
 
 class ResourceLibrary(CcTarget):
@@ -1643,7 +1643,7 @@ def resource_library(name,
     blade.blade.register_target(resource_library_target)
 
 
-build_globals.register_build_function(resource_library)
+build_rules.register_function(resource_library)
 
 
 class SwigLibrary(CcTarget):
@@ -2121,4 +2121,4 @@ def swig_library(name,
     blade.blade.register_target(swig_library_target)
 
 
-build_globals.register_build_function(swig_library)
+build_rules.register_function(swig_library)

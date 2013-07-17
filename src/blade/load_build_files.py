@@ -18,16 +18,16 @@
 import os
 import traceback
 
-import build_globals
+import build_rules
 import console
 from blade_util import relative_path
 
 
-# import these modules make build functions registered into build_globals
+# import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 import cc_targets
-import java_jar_target
 import gen_rule_target
+import java_jar_target
 import java_targets
 import py_targets
 import thrift_library
@@ -90,7 +90,7 @@ def enable_if(cond, true_value, false_value=None):
         ret = []
     return ret
 
-build_globals.register_build_function(enable_if)
+build_rules.register_function(enable_if)
 
 
 IGNORE_IF_FAIL = 0
@@ -116,7 +116,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     global build_target
     if build_target is None:
         build_target = TargetAttributes(blade.get_options())
-        build_globals.register_build_global('build_target', build_target)
+        build_rules.register_variable('build_target', build_target)
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
@@ -134,7 +134,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, build_globals.get_all(), None)
+            execfile(build_file, build_rules.get_all(), None)
         except SystemExit:
             console.error_exit("%s: fatal error, exit..." % build_file)
         except:

@@ -9,19 +9,19 @@
 """
 
 
-__build_globals = {}
+__build_rules = {}
 
 
-def register_build_global(name, value):
+def register_variable(name, value):
     """Register a variable that accessiable in BUILD file """
-    __build_globals[name] = value
+    __build_rules[name] = value
 
 
-def register_build_function(f):
+def register_function(f):
     """Register a function as a build function that callable in BUILD file """
-    register_build_global(f.__name__, f)
+    register_variable(f.__name__, f)
 
 
 def get_all():
     """Get the globals dict"""
-    return __build_globals
+    return __build_rules
