@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the blade module which mainly holds the global database and
  do the coordination work between classes.
 
@@ -58,17 +58,12 @@ class Blade(object):
         command line targets.
         target_database = {}
 
-        related targets after loading the build files and exec BUILD files
-        as python script
+        related targets after loading the build files
         related_targets = {}
 
         The map used by build rules to ensure that a source file occurres in
         exactly one rule/target(only library target).
         target_srcs_map = {}
-
-        The scons cache manager class string, which should be output to
-        scons script if ccache is not installed
-        scache_manager_class_str = ''
 
         The targets keys list after sorting by topological sorting method.
         sorted_targets_keys = []
@@ -83,40 +78,6 @@ class Blade(object):
 
         The scons target objects registered into blade manager
         scons_targets_map = {}
-
-        The vars which are depended by python binary
-        {key : 'python_files'}
-        self.python_binary_dep_source_cmd = {}
-
-        The files which are depended by python binary
-        {key : 'python_files'}
-        python_binary_dep_source_map = {}
-
-        The files which are depended by java jar file
-        {key : 'java_files'}
-        java_jar_dep_source_map = {}
-
-        The files which should be packed into java jar
-        {key : 'packing_files'}
-        java_jar_files_packing_map = {}
-
-        The jar files map
-        {key : 'jar_files_generated'}
-        java_jars_map = {}
-
-        The java compiling classpath parameter map
-        java_classpath_map = {}
-        {key : 'target_path'}
-
-        The java_jar dep var map, which should be added to dependency chain
-        java_jar_dep_vars = {}
-
-        The cc objects pool, a map to hold all the objects name.
-        cc_objects_pool = {}
-
-        The gen rule files map, which is used to generate the explict dependency
-        relationtion ship between gen_rule target and other targets
-        gen_rule_files_map = {}
 
         The direct targets that are used for analyzing
         direct_targets = []
@@ -134,10 +95,6 @@ class Blade(object):
         The sources files that are needed to perform explict dependency
         sources_explict_dependency_map = {}
 
-        The prebuilt cc_library file map which is needed to establish
-        symbolic links while testing
-        prebuilt_cc_library_file_map = {}
-
         """
         self.command_targets = command_targets
         self.direct_targets = []
@@ -149,30 +106,18 @@ class Blade(object):
         self.target_database = {}
         self.related_targets = {}
         self.target_srcs_map = {}
-        self.scache_manager_class_str = ''
         self.options = blade_options
         self.sorted_targets_keys = []
         self.target_deps_expanded = False
         self.all_targets_expanded = {}
         self.scons_targets_map = {}
-        self.java_jar_dep_source_map = {}
-        self.java_jar_files_packing_map = {}
-        self.java_jars_map = {}
-        self.java_classpath_map = {}
-        self.java_jar_dep_vars = {}
-        self.python_binary_dep_source_cmd = {}
-        self.python_binary_dep_source_map = {}
-        self.cc_objects_pool = {}
 
         self.deps_expander = None
         self.build_rules_generator = None
 
-        self.gen_rule_files_map = {}
-
         self.scons_platform = SconsPlatform()
         self.ccflags_manager = CcFlagsManager(self.options)
         self.sources_explict_dependency_map = {}
-        self.prebuilt_cc_library_file_map = {}
 
         self.distcc_enabled = configparse.blade_config.get_config(
                 'distcc_config')['enabled']
@@ -249,7 +194,6 @@ class Blade(object):
         key = self._get_normpath_target(target)
         runner = BinaryRunner(self.all_targets_expanded,
                               self.options,
-                              self.prebuilt_cc_library_file_map,
                               self.target_database)
         return runner.run_target(key)
 
@@ -257,7 +201,6 @@ class Blade(object):
         """Run tests. """
         test_runner = TestRunner(self.all_targets_expanded,
                                  self.options,
-                                 self.prebuilt_cc_library_file_map,
                                  self.target_database,
                                  self.direct_targets)
         return test_runner.run()
@@ -424,54 +367,27 @@ class Blade(object):
         """Get the global command options. """
         return self.options
 
-    def get_expanded(self):
+    def is_expanded(self):
         """Whether the targets are expanded. """
         return self.target_deps_expanded
 
-    def register_scons_target(self, target_key, scons_target):
+    def register_target(self, target):
         """Register scons targets into the scons targets map.
 
         It is used to do quick looking.
 
         """
+        target_key = target.key
         # check that whether there is already a key in database
         if target_key in self.scons_targets_map.keys():
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (
                         target_key[1], target_key[0]))
-        self.scons_targets_map[target_key] = scons_target
+        self.scons_targets_map[target_key] = target
 
     def get_scons_target(self, target_key):
         """Get scons target according to the key. """
         return self.scons_targets_map.get(target_key, None)
-
-    def get_java_jar_dep_source_map(self):
-        """The map mainly to hold the java files from swig or proto rules.
-
-        These files maybe depended by java_jar target.
-
-        """
-        return self.java_jar_dep_source_map
-
-    def get_java_jar_files_packing_map(self):
-        """The map to hold the files that should be packed into java jar. """
-        return  self.java_jar_files_packing_map
-
-    def get_java_jars_map(self):
-        """The map to hold the java jar files generated by blade. """
-        return self.java_jars_map
-
-    def get_java_classpath_map(self):
-        """The classpath list which is needed by java compling. """
-        return self.java_classpath_map
-
-    def get_java_jar_dep_vars(self):
-        """The vars map which is prerequiste of the java jar target. """
-        return self.java_jar_dep_vars
-
-    def get_cc_objects_pool(self):
-        """The cc objects pool which is used when generating the cc object rules. """
-        return self.cc_objects_pool
 
     def _is_scons_object_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
@@ -501,20 +417,11 @@ class Blade(object):
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test_targets and (target['type'] == 'cc_test' or
-                                      target['type'] == 'dynamic_cc_test'):
+            if skip_test_targets and target['type'] == 'cc_test':
                 continue
             scons_object.scons_rules()
             rules_buf += scons_object.get_rules()
         return rules_buf
-
-    def set_gen_rule_files_map(self, files_map):
-        """Set the gen_rule files map. """
-        self.gen_rule_files_map = dict(files_map)
-
-    def get_gen_rule_files_map(self):
-        """Get the gen_rule files map. """
-        return self.gen_rule_files_map
 
     def get_scons_platform(self):
         """Return handle of the platform class. """
@@ -538,10 +445,6 @@ class Blade(object):
     def get_sources_explict_dependency_map(self):
         """Returns the handle of sources_explict_dependency_map. """
         return self.sources_explict_dependency_map
-
-    def get_prebuilt_cc_library_file_map(self):
-        """Returns the prebuilt_cc_library_file_map. """
-        return self.prebuilt_cc_library_file_map
 
     def tune_parallel_jobs_num(self):
         """Tune the jobs num. """

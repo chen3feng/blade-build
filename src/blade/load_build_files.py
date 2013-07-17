@@ -18,26 +18,19 @@
 import os
 import traceback
 
+import build_rules
 import console
 from blade_util import relative_path
-from cc_targets import cc_binary
-from cc_targets import cc_library
-from cc_targets import cc_plugin
-from cc_targets import cc_test
-from cc_targets import cc_benchmark
-from cc_targets import lex_yacc_library
-from cc_targets import proto_library
-from cc_targets import resource_library
-from cc_targets import swig_library
-from gen_rule_target import gen_rule
-from java_jar_target import java_jar
-from py_targets import py_binary
-from thrift_library import thrift_library
 
 
-IGNORE_IF_FAIL = 0
-WARN_IF_FAIL = 1
-ABORT_IF_FAIL = 2
+# import these modules make build functions registered into build_rules
+# TODO(chen3feng): Load build modules dynamically to enable extension.
+import cc_targets
+import gen_rule_target
+import java_jar_target
+import java_targets
+import py_targets
+import thrift_library
 
 
 class TargetAttributes(object):
@@ -88,7 +81,7 @@ def _report_not_exist(source_dir, path, blade):
 
 
 def enable_if(cond, true_value, false_value=None):
-    """A global function can be called in BUILD to filter srcs by target"""
+    """A global function can be called in BUILD to filter srcs/deps by target"""
     if cond:
         ret = true_value
     else:
@@ -96,6 +89,13 @@ def enable_if(cond, true_value, false_value=None):
     if ret is None:
         ret = []
     return ret
+
+build_rules.register_function(enable_if)
+
+
+IGNORE_IF_FAIL = 0
+WARN_IF_FAIL = 1
+ABORT_IF_FAIL = 2
 
 
 def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
@@ -116,6 +116,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     global build_target
     if build_target is None:
         build_target = TargetAttributes(blade.get_options())
+        build_rules.register_variable('build_target', build_target)
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
@@ -133,7 +134,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, globals(), None)
+            execfile(build_file, build_rules.get_all(), None)
         except SystemExit:
             console.error_exit("%s: fatal error, exit..." % build_file)
         except:

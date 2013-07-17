@@ -70,8 +70,7 @@ class DependenciesAnalyzer(object):
             self.targets[target_id]['deps'] = self._find_all_deps(target_id)
             # Handle the special case: dependencies of a dynamic_cc_binary
             # must be built as dynamic libraries.
-            if (self.targets[target_id]['type'] == 'dynamic_cc_binary') or (
-                self.targets[target_id]['type'] == 'dynamic_cc_test'):
+            if self.targets[target_id]['options'].get('dynamic_link'):
                 for dep in self.targets[target_id]['deps']:
                     self.targets[dep]['options']['build_dynamic'] = True
             elif self.targets[target_id]['type'] == 'swig_library':
@@ -80,18 +79,10 @@ class DependenciesAnalyzer(object):
                         self.targets[dep]['options']['generate_php'] = True
             elif self.targets[target_id]['type'] == 'py_binary':
                 for dep in self.targets[target_id]['deps']:
-                    if self.targets[dep]['type'] == 'proto_library':
-                        self.targets[dep]['options']['generate_python'] = True
-                    elif self.targets[dep]['type'] == 'thrift_library':
-                        self.targets[dep]['options']['generate_python'] = True
+                    self.targets[dep]['options']['generate_python'] = True
             elif self.targets[target_id]['type'] == 'java_jar':
                 for dep in self.targets[target_id]['deps']:
-                    if self.targets[dep]['type'] == 'proto_library':
-                        self.targets[dep]['options']['generate_java'] = True
-                    elif self.targets[dep]['type'] == 'thrift_library':
-                        self.targets[dep]['options']['generate_java'] = True
-                    elif self.targets[dep]['type'] == 'swig_library':
-                        self.targets[dep]['options']['generate_java'] = True
+                    self.targets[dep]['options']['generate_java'] = True
 
         self.blade.set_all_targets_expanded(self.targets)
 

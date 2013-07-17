@@ -108,7 +108,6 @@ _UNRECOGNIZED_ARGS_ATTR = '_unrecognized_args'
 # Utility functions and classes
 # =============================
 
-
 class _AttributeHolder(object):
     """Abstract base class that provides __repr__.
 
@@ -654,13 +653,13 @@ class ArgumentDefaultsHelpFormatter(HelpFormatter):
     """
 
     def _get_help_string(self, action):
-        help_msg = action.help
+        help = action.help
         if '%(default)' not in action.help:
             if action.default is not SUPPRESS:
                 defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
-                    help_msg += ' (default: %(default)s)'
-        return help_msg
+                    help += ' (default: %(default)s)'
+        return help
 
 
 # =====================
@@ -693,11 +692,11 @@ class ArgumentError(Exception):
 
     def __str__(self):
         if self.argument_name is None:
-            format_str = '%(message)s'
+            format = '%(message)s'
         else:
-            format_str = 'argument %(argument_name)s: %(message)s'
-        return format_str % dict(message=self.message,
-                                 argument_name=self.argument_name)
+            format = 'argument %(argument_name)s: %(message)s'
+        return format % dict(message=self.message,
+                             argument_name=self.argument_name)
 
 
 class ArgumentTypeError(Exception):
@@ -1081,7 +1080,7 @@ class _SubParsersAction(Action):
             parser = self._name_parser_map[parser_name]
         except KeyError:
             tup = parser_name, ', '.join(self._name_parser_map)
-            msg = _('unknown parser %r (choices: %s)' % tup)
+            msg = _('unknown parser %r (choices: %s)') % tup
             raise ArgumentError(self, msg)
 
         # parse all the remaining options into the namespace
@@ -1110,7 +1109,7 @@ class FileType(object):
             the builtin open() function.
     """
 
-    def __init__(self, mode='r', bufsize=None):
+    def __init__(self, mode='r', bufsize=-1):
         self._mode = mode
         self._bufsize = bufsize
 
@@ -1122,24 +1121,24 @@ class FileType(object):
             elif 'w' in self._mode:
                 return _sys.stdout
             else:
-                msg = _('argument "-" with mode %r' % self._mode)
+                msg = _('argument "-" with mode %r') % self._mode
                 raise ValueError(msg)
 
         # all other arguments are used as file names
-        if self._bufsize:
+        try:
             return open(string, self._mode, self._bufsize)
-        else:
-            return open(string, self._mode)
+        except IOError as e:
+            message = _("can't open '%s': %s")
+            raise ArgumentTypeError(message % (string, e))
 
     def __repr__(self):
-        args = [self._mode, self._bufsize]
-        args_str = ', '.join([repr(arg) for arg in args if arg is not None])
+        args = self._mode, self._bufsize
+        args_str = ', '.join(repr(arg) for arg in args if arg != -1)
         return '%s(%s)' % (type(self).__name__, args_str)
 
 # ===========================
 # Optional and Positional Parsing
 # ===========================
-
 
 class Namespace(_AttributeHolder):
     """Simple object for storing attributes.
@@ -1243,6 +1242,7 @@ class _ActionsContainer(object):
                 return action.default
         return self._defaults.get(dest, None)
 
+
     # =======================
     # Adding argument actions
     # =======================
@@ -1276,13 +1276,20 @@ class _ActionsContainer(object):
         # create the action object, and add it to the parser
         action_class = self._pop_action_class(kwargs)
         if not _callable(action_class):
-            raise ValueError('unknown action "%s"' % action_class)
+            raise ValueError('unknown action "%s"' % (action_class,))
         action = action_class(**kwargs)
 
         # raise an error if the action type is not callable
         type_func = self._registry_get('type', action.type, action.type)
         if not _callable(type_func):
-            raise ValueError('%r is not callable' % type_func)
+            raise ValueError('%r is not callable' % (type_func,))
+
+        # raise an error if the metavar does not match the type
+        if hasattr(self, "_get_formatter"):
+            try:
+                self._get_formatter()._format_args(action, None)
+            except TypeError:
+                raise ValueError("length of metavar tuple does not match nargs")
 
         return self._add_action(action)
 
@@ -1482,6 +1489,7 @@ class _ArgumentGroup(_ActionsContainer):
         self._defaults = container._defaults
         self._has_negative_number_optionals = \
             container._has_negative_number_optionals
+        self._mutually_exclusive_groups = container._mutually_exclusive_groups
 
     def _add_action(self, action):
         action = super(_ArgumentGroup, self)._add_action(action)
@@ -1589,12 +1597,12 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
             default_prefix = prefix_chars[0]
         if self.add_help:
             self.add_argument(
-                default_prefix + 'h', default_prefix * 2 + 'help',
+                default_prefix+'h', default_prefix*2+'help',
                 action='help', default=SUPPRESS,
                 help=_('show this help message and exit'))
         if self.version:
             self.add_argument(
-                default_prefix + 'v', default_prefix * 2 + 'version',
+                default_prefix+'v', default_prefix*2+'version',
                 action='version', default=SUPPRESS,
                 version=self.version,
                 help=_("show program's version number and exit"))

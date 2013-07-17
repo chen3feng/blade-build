@@ -99,7 +99,7 @@ class Target(object):
 
         """
         target_srcs_map = self.blade.get_target_srcs_map()
-        allow_dup_src_type_list = ['cc_binary', 'cc_test', 'dynamic_cc_binary']
+        allow_dup_src_type_list = ['cc_binary', 'cc_test']
         for s in self.data['srcs']:
             if '..' in s or s.startswith('/'):
                 raise Exception, (
@@ -125,8 +125,8 @@ class Target(object):
             dkey = self._convert_string_to_target_helper(dep)
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
-            if dkey not in self.target_database[self.key]['deps']:
-                self.target_database[self.key]['deps'].append(dkey)
+            if dkey not in self.data['deps']:
+                self.data['deps'].append(dkey)
 
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
@@ -183,11 +183,11 @@ class Target(object):
                 dkey = (os.path.normpath('%s/%s' % (
                                           self.current_source_path, path)), lib)
 
-            if dkey not in self.target_database[self.key]['deps']:
-                self.target_database[self.key]['deps'].append(dkey)
+            if dkey not in self.data['deps']:
+                self.data['deps'].append(dkey)
 
-            if dkey not in self.target_database[self.key]['direct_deps']:
-                self.target_database[self.key]['direct_deps'].append(dkey)
+            if dkey not in self.data['direct_deps']:
+                self.data['direct_deps'].append(dkey)
 
     def _check_deps_in_build_file(self, name, deps):
         """_check_deps_in_build_file.
@@ -331,10 +331,11 @@ class Target(object):
         env_name = self._env_name()
         files = var_to_list(target_files)
         files_str = ",".join(["%s" % f for f in files])
-        if not self.blade.get_expanded():
+        if not self.blade.is_expanded():
             console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
         targets = self.blade.get_all_targets_expanded()
-        files_map = self.blade.get_gen_rule_files_map()
+        import gen_rule_target
+        files_map = gen_rule_target._files_map
         deps = targets[self.key]['deps']
         for d in deps:
             dep_target = targets[d]

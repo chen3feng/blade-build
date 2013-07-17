@@ -47,4 +47,5 @@
 	* Th install command support zsh.
 	* Integrate cpplint in to blade, thanks to yehsunping.
 	* Update Documentations.
+
 Copyright 2012, 2013 Tencent, Inc.

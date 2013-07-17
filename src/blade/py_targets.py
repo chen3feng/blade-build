@@ -14,9 +14,20 @@
 import os
 import blade
 
+import build_rules
 import console
+
 from blade_util import var_to_list
 from target import Target
+
+
+# The vars which are depended by python binary
+# {key : 'python_files'}
+binary_dep_source_cmd = {}
+
+# The files which are depended by python binary
+# {key : 'python_files'}
+binary_dep_source_map = {}
 
 
 class PythonBinaryTarget(Target):
@@ -85,10 +96,10 @@ class PythonBinaryTarget(Target):
         dep_var_list = []
         self.targets = self.blade.get_all_targets_expanded()
         for dep in self.targets[self.key]['deps']:
-            if dep in self.blade.python_binary_dep_source_map.keys():
-                for f in self.blade.python_binary_dep_source_map[dep]:
+            if dep in binary_dep_source_map.keys():
+                for f in binary_dep_source_map[dep]:
                     binary_files.append(f)
-                for cmd in self.blade.python_binary_dep_source_cmd[dep]:
+                for cmd in binary_dep_source_cmd[dep]:
                     dep_var_list.append(cmd)
 
         target_egg_file = "%s.egg" % self._target_file_path()
@@ -116,4 +127,7 @@ def py_binary(name,
                                 prebuilt,
                                 blade.blade,
                                 kwargs)
-    blade.blade.register_scons_target(target.key, target)
+    blade.blade.register_target(target)
+
+
+build_rules.register_function(py_binary)
