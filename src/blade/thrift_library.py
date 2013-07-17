@@ -18,6 +18,10 @@ import blade
 import configparse
 import console
 
+import build_rules
+import java_jar_target
+import py_targets
+
 from blade_util import var_to_list
 from cc_targets import CcTarget
 from thrift_helper import ThriftHelper
@@ -26,7 +30,7 @@ from thrift_helper import ThriftHelper
 class ThriftLibrary(CcTarget):
     """A scons thrift library target subclass.
 
-    This class is derived from SconsCcTarget.
+    This class is derived from CcTarget.
 
     """
     def __init__(self,
@@ -128,7 +132,7 @@ class ThriftLibrary(CcTarget):
 
         """
 
-        java_jar_dep_source_map = self.blade.get_java_jar_dep_source_map()
+        java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
         self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
         self.sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
@@ -155,8 +159,8 @@ class ThriftLibrary(CcTarget):
 
         """
 
-        self.blade.python_binary_dep_source_map[self.key] = []
-        self.blade.python_binary_dep_source_cmd[self.key] = []
+        py_targets.binary_dep_source_map[self.key] = []
+        py_targets.binary_dep_source_cmd[self.key] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             thrift_py_src_files = self._thrift_gen_py_files(self.data['path'], src)
@@ -167,8 +171,8 @@ class ThriftLibrary(CcTarget):
                     self._env_name(),
                     str(thrift_py_src_files),
                     src_path))
-            self.blade.python_binary_dep_source_cmd[self.key].append(py_cmd_var)
-            self.blade.python_binary_dep_source_map[self.key].extend(
+            py_targets.binary_dep_source_cmd[self.key].append(py_cmd_var)
+            py_targets.binary_dep_source_map[self.key].extend(
                     thrift_py_src_files)
 
     def scons_rules(self):
@@ -247,5 +251,7 @@ def thrift_library(name,
                                           deprecated,
                                           blade.blade,
                                           kwargs)
-    blade.blade.register_scons_target(thrift_library_target.key,
-                                      thrift_library_target)
+    blade.blade.register_target(thrift_library_target)
+
+
+build_rules.register_function(thrift_library)

@@ -13,9 +13,17 @@
 
 
 import os
+
 import blade
+import build_rules
+import java_jar_target
 from blade_util import var_to_list
 from target import Target
+
+
+# The gen rule files map, which is used to generate the explict dependency
+# relationtion ship between gen_rule target and other targets
+_files_map = {}
 
 
 class GenRuleTarget(Target):
@@ -97,12 +105,11 @@ class GenRuleTarget(Target):
                 srcs_str,
                 cmd))
 
-        gen_rule_files_map = self.blade.get_gen_rule_files_map()
-        gen_rule_files_map[(self.data['path'], self.data['name'])] = var_name
+        _files_map[(self.data['path'], self.data['name'])] = var_name
         self._generate_target_explict_dependency(var_name)
 
         self.targets = self.blade.get_all_targets_expanded()
-        self.java_jars_map = self.blade.get_java_jars_map()
+        self.java_jars_map = java_jar_target.get_java_jars_map()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
         for i in self.data['deps']:
@@ -143,4 +150,8 @@ def gen_rule(name,
                                     cmd,
                                     blade.blade,
                                     kwargs)
-    blade.blade.register_scons_target(gen_rule_target.key, gen_rule_target)
+    blade.blade.register_target(gen_rule_target)
+
+
+build_rules.register_function(gen_rule)
+

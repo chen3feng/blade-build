@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 
+import cc_targets
 import console
 
 from blade_util import environ_add_path
@@ -26,16 +27,13 @@ from blade_util import environ_add_path
 
 class BinaryRunner(object):
     """BinaryRunner. """
-    def __init__(self, targets, options, prebuilt_file_map, target_database):
+    def __init__(self, targets, options, target_database):
         """Init method. """
         self.targets = targets
         self.build_dir = "build%s_%s" % (options.m, options.profile)
         self.options = options
         self.run_list = ['cc_binary',
-                         'dynamic_cc_binary',
-                         'cc_test',
-                         'dynamic_cc_test']
-        self.prebuilt_file_map = prebuilt_file_map
+                         'cc_test']
         self.target_database = target_database
 
     def _executable(self, target):
@@ -62,7 +60,7 @@ class BinaryRunner(object):
         for dep in self.target_database.get(target_key, {}).get('deps', []):
             target_type = self.target_database.get(dep, {}).get('type', '')
             if target_type == 'prebuilt_cc_library':
-                prebuilt_file = self.prebuilt_file_map.get(dep, None)
+                prebuilt_file = cc_targets.prebuilt_cc_library_file_map.get(dep)
                 if prebuilt_file:
                     file_list.append(prebuilt_file)
         return file_list
@@ -172,8 +170,7 @@ class BinaryRunner(object):
     def _clean_env(self):
         """clean test environment. """
         for target in self.targets.values():
-            if not (target['type'] == 'cc_test' or
-                    target['type'] == 'dynamic_cc_test'):
+            if target['type'] != 'cc_test':
                 continue
             self._clean_target(target)
 
