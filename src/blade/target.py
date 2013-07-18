@@ -117,8 +117,10 @@ class Target(object):
                     self.data['type'], self.current_source_path, self.data['name'])
             if src_key in Target.__src_target_map:
                 value_existed = Target.__src_target_map[src_key]
-                if not (value_existed.split(': ')[0] in allow_dup_src_type_list and
-                       self.data['type'] in allow_dup_src_type_list):
+                  # May insert multiple time in test because of not unloading module
+                if (value_existed != src_value and
+                    not (value_existed.split(': ')[0] in allow_dup_src_type_list and
+                        self.data['type'] in allow_dup_src_type_list)):
                     # Just warn here, not raising exception
                     console.warning('Source file %s belongs to both %s and %s' % (
                             s, Target.__src_target_map[src_key], src_value))

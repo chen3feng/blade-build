@@ -13,7 +13,7 @@ Implement java_library, java_binary and java_test
 import os
 import blade
 
-import build_globals
+import build_rules
 import console
 import configparse
 
@@ -152,7 +152,7 @@ def java_test(name,
     blade.blade.register_target(target)
 
 
-build_globals.register_build_function(java_binary)
-build_globals.register_build_function(java_library)
-build_globals.register_build_function(java_test)
+build_rules.register_function(java_binary)
+build_rules.register_function(java_library)
+build_rules.register_function(java_test)
 
