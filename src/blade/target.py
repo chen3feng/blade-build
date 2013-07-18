@@ -370,6 +370,14 @@ class Target(object):
         """
         self.scons_rule_buf.append('%s\n' % rule)
 
+    def scons_rules(self):
+        """scons_rules.
+
+        This method should be impolemented in subclass.
+
+        """
+        console.error_exit('should be subclassing')
+
     def get_rules(self):
         """get_rules.
 
@@ -387,24 +395,6 @@ class Target(object):
 
         """
         return self.scons_rule_buf
-
-    def get(self, key=''):
-        """get.
-
-        Parameters
-        -----------
-        key: the key of the target's data
-
-        Returns
-        -----------
-        The item(value) in target's data
-
-        Description
-        -----------
-        Returns the target's data value when the key is in target's data map.
-
-        """
-        return self.data.get(key, None)
 
     def _convert_string_to_target_helper(self, target_string):
         """

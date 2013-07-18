@@ -582,14 +582,6 @@ class CcTarget(Target):
         self._write_rule("%s = [%s]" % (objs_name, ','.join(objs)))
         return sources
 
-    def scons_rules(self):
-        """scons_rules.
-
-        This method should be impolemented in subclass.
-
-        """
-        console.error_exit('cc_target should be subclassing')
-
 
 class CcLibrary(CcTarget):
     """A cc target subclass.
