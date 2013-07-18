@@ -20,9 +20,9 @@ from blade_util import var_to_list
 
 
 class Target(object):
-    """A scons target father class.
+    """Abstract target class.
 
-    This class should be derived by subclass like cc_library cc_binary
+    This class should be derived by subclass like CcLibrary CcBinary
     targets, etc.
 
     """
@@ -82,6 +82,12 @@ class Target(object):
             console.warning("//%s:%s: unrecognized options %s" % (
                     self.data['path'], self.data['name'], kwargs))
 
+    # Keep the relationship of all src -> target.
+    # Used by build rules to ensure that a source file occurres in
+    # exactly one target(only library target).
+    __src_target_map = {}
+
+
     def _check_srcs(self):
         """Check source files.
 
@@ -98,7 +104,6 @@ class Target(object):
         It will warn if one file belongs to two different targets.
 
         """
-        target_srcs_map = self.blade.get_target_srcs_map()
         allow_dup_src_type_list = ['cc_binary', 'cc_test']
         for s in self.data['srcs']:
             if '..' in s or s.startswith('/'):
@@ -110,14 +115,14 @@ class Target(object):
             src_key = os.path.normpath('%s/%s' % (self.data['path'], s))
             src_value = '%s %s:%s' % (
                     self.data['type'], self.current_source_path, self.data['name'])
-            if src_key in target_srcs_map:
-                value_existed = target_srcs_map[src_key]
+            if src_key in Target.__src_target_map:
+                value_existed = Target.__src_target_map[src_key]
                 if not (value_existed.split(': ')[0] in allow_dup_src_type_list and
                        self.data['type'] in allow_dup_src_type_list):
                     # Just warn here, not raising exception
                     console.warning('Source file %s belongs to both %s and %s' % (
-                            s, target_srcs_map[src_key], src_value))
-            target_srcs_map[src_key] = src_value
+                            s, Target.__src_target_map[src_key], src_value))
+            Target.__src_target_map[src_key] = src_value
 
     def _add_hardcode_library(self, hardcode_dep_list):
         """Add hardcode dep list to key's deps. """

@@ -563,27 +563,22 @@ class CcTarget(Target):
         objs = []
         sources = []
         for src in self.data['srcs']:
-            src_name = self._generate_variable_name(path, src)
-            src_name = '%s_%s' % (src_name, self.data['name'])
-            if src_name not in _objects_pool:
-                _objects_pool[src_name] = (
-                        "%s_%s_object" % (
-                                self._generate_variable_name(path, src),
-                                self._regular_variable_name(self.data['name'])))
-                target_path = os.path.join(
-                        self.build_path, path, '%s.objs' % self.data['name'], src)
-                self._write_rule(
-                        "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
-                        ", source = '%s')" % (_objects_pool[src_name],
-                                              env_name,
-                                              target_path,
-                                              self._target_file_path(path, src)))
-                self._write_rule("%s.Depends(%s, '%s')" % (
-                                 env_name,
-                                 _objects_pool[src_name],
-                                 self._target_file_path(path, src)))
+            obj = "%s_%s_object" % (self._generate_variable_name(path, src),
+                                    self._regular_variable_name(self.data['name']))
+            target_path = os.path.join(
+                    self.build_path, path, '%s.objs' % self.data['name'], src)
+            self._write_rule(
+                    "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
+                    ", source = '%s')" % (obj,
+                                          env_name,
+                                          target_path,
+                                          self._target_file_path(path, src)))
+            self._write_rule("%s.Depends(%s, '%s')" % (
+                             env_name,
+                             obj,
+                             self._target_file_path(path, src)))
             sources.append(self._target_file_path(path, src))
-            objs.append(_objects_pool[src_name])
+            objs.append(obj)
         self._write_rule("%s = [%s]" % (objs_name, ','.join(objs)))
         return sources
 

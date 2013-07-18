@@ -61,10 +61,6 @@ class Blade(object):
         related targets after loading the build files
         related_targets = {}
 
-        The map used by build rules to ensure that a source file occurres in
-        exactly one rule/target(only library target).
-        target_srcs_map = {}
-
         The targets keys list after sorting by topological sorting method.
         sorted_targets_keys = []
 
@@ -105,7 +101,6 @@ class Blade(object):
         self.current_source_path = current_source_path
         self.target_database = {}
         self.related_targets = {}
-        self.target_srcs_map = {}
         self.options = blade_options
         self.sorted_targets_keys = []
         self.target_deps_expanded = False
@@ -354,14 +349,6 @@ class Blade(object):
     def get_all_targets_expanded(self):
         """Get all the targets that expaned. """
         return self.all_targets_expanded
-
-    def get_target_srcs_map(self):
-        """Get the targets source files map.
-
-        It is used in generating cc object rules.
-
-        """
-        return self.target_srcs_map
 
     def get_options(self):
         """Get the global command options. """
