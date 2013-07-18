@@ -140,7 +140,7 @@ class Target(object):
         if key not in self.target_database:
             self.target_database[key] = {
                                          'type': 'system_library',
-                                         'srcs': '',
+                                         'srcs': [],
                                          'deps': [],
                                          'path': self.current_source_path,
                                          'name': name,

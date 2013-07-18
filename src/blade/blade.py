@@ -108,7 +108,6 @@ class Blade(object):
         self.scons_targets_map = {}
 
         self.deps_expander = None
-        self.build_rules_generator = None
 
         self.scons_platform = SconsPlatform()
         self.ccflags_manager = CcFlagsManager(self.options)
@@ -172,9 +171,9 @@ class Blade(object):
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info("generating build rules...")
-        self.build_rules_generator = SconsRulesGenerator('SConstruct',
-                                                         self.blade_path, self)
-        rules_buf = self.build_rules_generator.generate_scons_script()
+        build_rules_generator = SconsRulesGenerator('SConstruct',
+                                                    self.blade_path, self)
+        rules_buf = build_rules_generator.generate_scons_script()
         console.info("generating done.")
         return rules_buf
 
@@ -385,10 +384,7 @@ class Blade(object):
         1. system_library
 
         """
-        if target_type == 'system_library':
-            return False
-        else:
-            return True
+        return target_type != 'system_library'
 
     def get_targets_rules(self):
         """Get the build rules and return to the object who queries this. """

@@ -237,7 +237,7 @@ def _main(blade_path):
     lock_file_fd = None
     locked_scons = False
     try:
-        lock_file_fd = open('.SConstruct.lock', 'w')
+        lock_file_fd = open('.Building.lock', 'w')
         old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
 
@@ -247,9 +247,7 @@ def _main(blade_path):
             if ret_code == errno.EAGAIN:
                 console.error_exit(
                         "There is already an active building in current source "
-                        "dir tree,\n"
-                        "or make sure there is no SConstruct file existed with "
-                        "BLADE_ROOT. Blade will exit...")
+                        "dir tree. Blade will exit...")
             else:
                 console.error_exit("Lock exception, please try it later.")
 
