@@ -309,12 +309,11 @@ class JavaJarTarget(Target):
         cmd_idx = 0
         cmd_var_id = ''
         cmd_list = []
-        self.jar_packing_map = get_java_jar_files_packing_map()
+        jar_packing_map = get_java_jar_files_packing_map()
         java_jars_map[self.key] = []
-        current_source_path = self.blade.get_current_source_path()
+        build_file = os.path.join(self.blade.get_root_dir(), 'BLADE_ROOT')
         for class_path in pack_list:
             # need to place one dummy file into the source folder for user builder
-            build_file = os.path.join(current_source_path, 'BLADE_ROOT')
             build_file_dst = os.path.join(class_path, 'BLADE_ROOT')
             if not build_file_dst in self.java_jar_cmd_list:
                 self._write_rule('%s = %s.Command("%s", "%s", [Copy("%s", "%s")])' % (
@@ -326,8 +325,8 @@ class JavaJarTarget(Target):
                         build_file))
                 cmd_list.append(cmd_jar)
                 self.java_jar_cmd_list.append(build_file_dst)
-            for key in self.jar_packing_map:
-                f = self.jar_packing_map[key]
+            for key in jar_packing_map:
+                f = jar_packing_map[key]
                 cmd_var_id = cmd_var + str(cmd_idx)
                 f_dst = os.path.join(class_path, os.path.basename(f[0]))
                 if not f_dst in self.java_jar_cmd_list:

@@ -39,88 +39,66 @@ class Blade(object):
                  blade_path,
                  working_dir,
                  build_path,
-                 current_source_path,
+                 blade_root_dir,
                  blade_options,
                  **kwargs):
         """init method.
 
-        Mainly to hold the global data.
-        The directory which changes during the runtime of blade, and
-        contains BUILD file under current focus.
-        current_source_dir = "."
-
-        Given some targets specified in the command line, Blade will load
-        BUILD files containing these command line targets; global target
-        functions, i.e., cc_libarary, cc_binary and etc, in these BUILD
-        files will register targets into target_database, which then becomes
-        the input to dependency analyzer and SCons rules generator.  It is
-        notable that not all targets in target_database are dependencies of
-        command line targets.
-        target_database = {}
-
-        related targets after loading the build files
-        related_targets = {}
-
-        The targets keys list after sorting by topological sorting method.
-        sorted_targets_keys = []
-
-        Inidcating that whether the deps list is expanded by expander or not
-        False - not expanded
-        True - expanded
-        target_deps_expanded
-
-        All targets after expanding their dependency
-        all_targets = {}
-
-        The scons target objects registered into blade manager
-        scons_targets_map = {}
-
-        The direct targets that are used for analyzing
-        direct_targets = []
-
-        All command targets, make sure that all targets specified with ...
-        are all in the list now
-        all_command_targets = []
-
-        The class to get platform info
-        SconsPlatform
-
-        The class to manage the cc flags
-        CcFlagsManager
-
-        The sources files that are needed to perform explict dependency
         sources_explict_dependency_map = {}
 
         """
         self.command_targets = command_targets
-        self.direct_targets = []
-        self.all_command_targets = []
         self.blade_path = blade_path
         self.working_dir = working_dir
         self.build_path = build_path
-        self.current_source_path = current_source_path
-        self.target_database = {}
-        self.related_targets = {}
+        self.root_dir = blade_root_dir
         self.options = blade_options
+        self.kwargs = kwargs
+
+        # Source dir of current loading BUILD file
+        self.current_source_path = blade_root_dir
+
+        # The direct targets that are used for analyzing
+        self.direct_targets = []
+
+        # All command targets, make sure that all targets specified with ...
+        # are all in the list now
+        self.all_command_targets = []
+
+        # Given some targets specified in the command line, Blade will load
+        # BUILD files containing these command line targets; global target
+        # functions, i.e., cc_libarary, cc_binary and etc, in these BUILD
+        # files will register targets into target_database, which then becomes
+        # the input to dependency analyzer and SCons rules generator.  It is
+        # notable that not all targets in target_database are dependencies of
+        # command line targets.
+        self.target_database = {}
+
+        # related targets after loading the build files
+        self.related_targets = {}
+
+        # The targets keys list after sorting by topological sorting method.
         self.sorted_targets_keys = []
+
+        # Inidcating that whether the deps list is expanded by expander or not
         self.target_deps_expanded = False
         self.all_targets_expanded = {}
+
+        # The scons target objects registered into blade manager
         self.scons_targets_map = {}
 
-        self.deps_expander = None
-
+        # The class to get platform info
         self.scons_platform = SconsPlatform()
-        self.ccflags_manager = CcFlagsManager(self.options)
+
+        #The sources files that are needed to perform explict dependency
         self.sources_explict_dependency_map = {}
 
         self.distcc_enabled = configparse.blade_config.get_config(
                 'distcc_config')['enabled']
 
-        self.build_environment = BuildEnvironment(self.current_source_path)
+        self.build_environment = BuildEnvironment(self.root_dir)
 
         self.svn_root_dirs = []
-
-        self.kwargs = kwargs
 
     def _get_normpath_target(self, command_target):
         """returns a tuple (path, name).
@@ -128,7 +106,7 @@ class Blade(object):
         path is a full path from BLADE_ROOT
 
         """
-        target_path = relative_path(self.working_dir, self.current_source_path)
+        target_path = relative_path(self.working_dir, self.root_dir)
         path, name = command_target.split(':')
         if target_path != '.':
             if path:
@@ -142,7 +120,7 @@ class Blade(object):
         """Load the targets. """
         console.info("loading BUILDs...")
         if self.kwargs.get('blade_command', '') == 'query':
-            working_dir = self.current_source_path
+            working_dir = self.root_dir
 
             if '...' not in self.command_targets:
                 new_target_list = []
@@ -155,7 +133,7 @@ class Blade(object):
         (self.direct_targets,
          self.all_command_targets) = load_targets(self.command_targets,
                                                   working_dir,
-                                                  self.current_source_path,
+                                                  self.root_dir,
                                                   self)
         console.info("loading done.")
         return self.direct_targets, self.all_command_targets  # For test
@@ -274,7 +252,7 @@ class Blade(object):
         """Query the targets helper method. """
         all_targets = self.all_targets_expanded
         query_list = []
-        target_path = relative_path(self.working_dir, self.current_source_path)
+        target_path = relative_path(self.working_dir, self.root_dir)
         t_path = ''
         for t in targets:
             key = t.split(':')
@@ -304,6 +282,10 @@ class Blade(object):
     def get_build_path(self):
         """The current building path. """
         return self.build_path
+
+    def get_root_dir(self):
+        """Return the blade root path. """
+        return self.root_dir
 
     def set_current_source_path(self, current_source_path):
         """Set the current source path. """
@@ -406,10 +388,6 @@ class Blade(object):
     def get_scons_platform(self):
         """Return handle of the platform class. """
         return self.scons_platform
-
-    def get_ccflags_manager(self):
-        """Return handle of the ccflags manager class. """
-        return self.ccflags_manager
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.

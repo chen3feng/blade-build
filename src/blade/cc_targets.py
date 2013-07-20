@@ -158,7 +158,7 @@ class CcTarget(Target):
 
         keywords_list = self.blade.get_sources_keyword_list()
         for keyword in keywords_list:
-            if keyword in self.current_source_path:
+            if keyword in self.data['path']:
                 return
 
         illegal_path_list = []
@@ -1671,7 +1671,6 @@ class SwigLibrary(CcTarget):
         scons_platform = self.blade.get_scons_platform()
         self.php_inc_list = scons_platform.get_php_include()
         self.options = self.blade.get_options()
-        self.ccflags_manager = self.blade.get_ccflags_manager()
 
     def _pyswig_gen_python_file(self, path, src):
         """Generate swig python file for python. """

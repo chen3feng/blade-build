@@ -40,18 +40,15 @@ class Target(object):
         """
         self.blade = blade
         self.build_path = self.blade.get_build_path()
-        self.current_source_path = self.blade.get_current_source_path()
+        current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
-        srcs_list = srcs
 
-        self._check_deps_in_build_file(name, deps)
-
-        self.key = (self.current_source_path, name)
+        self.key = (current_source_path, name)
         self.data = {
                      'name': name,
-                     'path': self.current_source_path,
+                     'path': current_source_path,
                      'type': target_type,
-                     'srcs': srcs_list,
+                     'srcs': srcs,
                      'deps': [],
                      'options': {},
                      'direct_deps': []
@@ -61,6 +58,7 @@ class Target(object):
         self._check_name()
         self._check_kwargs(kwargs)
         self._check_srcs()
+        self._check_deps_in_build_file(deps)
         self._init_target_deps(deps)
         self.scons_rule_buf = []
 
@@ -114,7 +112,7 @@ class Target(object):
 
             src_key = os.path.normpath('%s/%s' % (self.data['path'], s))
             src_value = '%s %s:%s' % (
-                    self.data['type'], self.current_source_path, self.data['name'])
+                    self.data['type'], self.data['path'], self.data['name'])
             if src_key in Target.__src_target_map:
                 value_existed = Target.__src_target_map[src_key]
                   # May insert multiple time in test because of not unloading module
@@ -142,7 +140,7 @@ class Target(object):
                                          'type': 'system_library',
                                          'srcs': [],
                                          'deps': [],
-                                         'path': self.current_source_path,
+                                         'path': self.data['path'],
                                          'name': name,
                                          'options': {}
                                         }
@@ -166,12 +164,12 @@ class Target(object):
         for d in deps:
             if d[0] == ':':
                 # Depend on library in current directory
-                dkey = (os.path.normpath(self.current_source_path), d[1:])
+                dkey = (os.path.normpath(self.data['path']), d[1:])
             elif d.startswith('//'):
                 # Depend on library in remote directory
                 if not ':' in d:
                     raise Exception, 'Wrong format in %s:%s' % (
-                            self.current_source_path, self.data['name'])
+                            self.data['path'], self.data['name'])
                 (path, lib) = d[2:].rsplit(':', 1)
                 dkey = (os.path.normpath(path), lib)
             elif d.startswith('#'):
@@ -183,12 +181,12 @@ class Target(object):
                 # Depend on library in relative subdirectory
                 if not ':' in d:
                     raise Exception, 'Wrong format in %s:%s' % (
-                            self.current_source_path, self.data['name'])
+                            self.data['path'], self.data['name'])
                 (path, lib) = d.rsplit(':', 1)
                 if '..' in path:
                     raise Exception, "Don't use '..' in path"
                 dkey = (os.path.normpath('%s/%s' % (
-                                          self.current_source_path, path)), lib)
+                                          self.data['path'], path)), lib)
 
             if dkey not in self.data['deps']:
                 self.data['deps'].append(dkey)
@@ -196,7 +194,7 @@ class Target(object):
             if dkey not in self.data['direct_deps']:
                 self.data['direct_deps'].append(dkey)
 
-    def _check_deps_in_build_file(self, name, deps):
+    def _check_deps_in_build_file(self, deps):
         """_check_deps_in_build_file.
 
         Parameters
@@ -214,14 +212,15 @@ class Target(object):
         blade's rule.
 
         """
+        name = self.data['name']
         for dep in deps:
             if not (dep.startswith(':') or dep.startswith('#') or
                 dep.startswith('//') or dep.startswith('./')):
                 console.error_exit('%s/%s: Invalid dep in %s.' % (
-                    self.current_source_path, name, dep))
+                    self.data['path'], name, dep))
             if dep.count(':') > 1:
                 console.error_exit('%s/%s: Invalid dep %s, missing \',\' between 2 deps?' %
-                            (self.current_source_path, name, dep))
+                            (self.data['path'], name, dep))
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon deprecated target.
