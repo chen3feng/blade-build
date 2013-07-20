@@ -591,7 +591,7 @@ class SconsRulesGenerator(object):
         self.rules_buf += self.scons_rules_helper.get_rules()
 
         # Generate scons rules for each target
-        self.rules_buf += self.blade.get_targets_rules()
+        self.rules_buf += self.blade.gen_targets_rules()
 
         # Write to SConstruct
         self.scons_file_fd = open(self.scons_path, 'w')

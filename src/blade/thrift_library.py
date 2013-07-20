@@ -133,8 +133,8 @@ class ThriftLibrary(CcTarget):
         """
 
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
-        self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
-        self.sources_dependency_map[self.key] = []
+        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
+        sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             thrift_java_src_files = self._thrift_gen_java_files(self.data['path'],
@@ -150,7 +150,7 @@ class ThriftLibrary(CcTarget):
                      os.path.join(self.build_path, self.data['path']),
                      self.data['name'])
 
-            self.sources_dependency_map[self.key].extend(thrift_java_src_files)
+            sources_dependency_map[self.key].extend(thrift_java_src_files)
 
     def _thrift_python_rules(self):
         """_thrift_python_rules.

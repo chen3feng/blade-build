@@ -43,6 +43,9 @@ java_classpath_map = {}
 # The java_jar dep var map, which should be added to dependency chain
 java_jar_dep_vars = {}
 
+# The sources files that are needed to perform explict dependency
+sources_explict_dependency_map = {}
+
 
 def get_java_jar_dep_source_map():
     """The map mainly to hold the java files from swig or proto rules.
@@ -72,6 +75,10 @@ def get_java_jar_dep_vars():
     """The vars map which is prerequiste of the java jar target. """
     return java_jar_dep_vars
 
+
+def get_sources_explict_dependency_map():
+    """Returns the handle of sources_explict_dependency_map. """
+    return sources_explict_dependency_map
 
 class JavaJarTarget(Target):
     """A java jar target subclass.
@@ -110,7 +117,6 @@ class JavaJarTarget(Target):
         self.java_jar_after_dep_source_list = []
         self.targets_dependency_map = {}
         self.java_jar_dep_vars = {}
-        self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
 
     def _java_jar_gen_class_root(self, path, name):
         """Gen class root. """
@@ -164,7 +170,7 @@ class JavaJarTarget(Target):
 
         if dep_cmd_var:
             for dep in self.targets[self.key]['deps']:
-                explict_files_depended = self.sources_dependency_map.get(dep, [])
+                explict_files_depended = sources_explict_dependency_map.get(dep, [])
                 if explict_files_depended:
                     self._write_rule('%s.Depends(%s, %s)' % (
                                       env_name,
@@ -309,12 +315,11 @@ class JavaJarTarget(Target):
         cmd_idx = 0
         cmd_var_id = ''
         cmd_list = []
-        self.jar_packing_map = get_java_jar_files_packing_map()
+        jar_packing_map = get_java_jar_files_packing_map()
         java_jars_map[self.key] = []
-        current_source_path = self.blade.get_current_source_path()
+        build_file = os.path.join(self.blade.get_root_dir(), 'BLADE_ROOT')
         for class_path in pack_list:
             # need to place one dummy file into the source folder for user builder
-            build_file = os.path.join(current_source_path, 'BLADE_ROOT')
             build_file_dst = os.path.join(class_path, 'BLADE_ROOT')
             if not build_file_dst in self.java_jar_cmd_list:
                 self._write_rule('%s = %s.Command("%s", "%s", [Copy("%s", "%s")])' % (
@@ -326,8 +331,8 @@ class JavaJarTarget(Target):
                         build_file))
                 cmd_list.append(cmd_jar)
                 self.java_jar_cmd_list.append(build_file_dst)
-            for key in self.jar_packing_map:
-                f = self.jar_packing_map[key]
+            for key in jar_packing_map:
+                f = jar_packing_map[key]
                 cmd_var_id = cmd_var + str(cmd_idx)
                 f_dst = os.path.join(class_path, os.path.basename(f[0]))
                 if not f_dst in self.java_jar_cmd_list:
