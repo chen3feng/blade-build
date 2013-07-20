@@ -18,7 +18,7 @@ import configparse
 import console
 
 from blade_util import relative_path, cpu_count
-from dependency_analyzer import DependenciesAnalyzer
+from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
 from blade_platform import CcFlagsManager
 from blade_platform import SconsPlatform
@@ -158,15 +158,17 @@ class Blade(object):
                                                   self.current_source_path,
                                                   self)
         console.info("loading done.")
-        return self.direct_targets, self.all_command_targets
+        return self.direct_targets, self.all_command_targets  # For test
 
     def analyze_targets(self):
         """Expand the targets. """
         console.info("analyzing dependency graph...")
-        self.deps_analyzer = DependenciesAnalyzer(self)
-        self.deps_analyzer.analyze_deps()
+        related_targets_expanded, keys_list_sorted = analyze_deps(self.related_targets)
+        self.set_all_targets_expanded(related_targets_expanded)
+        self.set_sorted_targets_keys(keys_list_sorted)
+
         console.info("analyzing done.")
-        return self.all_targets_expanded
+        return self.all_targets_expanded  # For test
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
@@ -175,7 +177,6 @@ class Blade(object):
                                                     self.blade_path, self)
         rules_buf = build_rules_generator.generate_scons_script()
         console.info("generating done.")
-        return rules_buf
 
     def generate(self):
         """Build the targets. """
@@ -319,10 +320,6 @@ class Blade(object):
     def set_related_targets(self, related_targets):
         """Set the related targets. """
         self.related_targets = dict(related_targets)
-
-    def get_related_targets(self):
-        """Get the related targets. """
-        return self.related_targets
 
     def get_direct_targets(self):
         """Return the direct targets. """
