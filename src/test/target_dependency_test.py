@@ -13,59 +13,14 @@
 
 
 import os
-import sys
-sys.path.append('..')
-import unittest
-import traceback
-import blade.blade
-import blade.configparse
-from blade.blade import Blade
-from blade.configparse import BladeConfig
-from blade_namespace import Namespace
-from html_test_runner import HTMLTestRunner
+import blade_test
 
 
-class TestDepsAnalyzing(unittest.TestCase):
+class TestDepsAnalyzing(blade_test.TargetTest):
     """Test dependency analyzing. """
     def setUp(self):
         """setup method. """
-        self.command = 'build'
-        self.targets = ['test_dependency/...']
-        self.target_path = 'test_dependency'
-        self.cur_dir = os.getcwd()
-        os.chdir('./testdata')
-        self.blade_path = '.'
-        self.working_dir = '.'
-        self.current_building_path = '.'
-        self.current_source_dir = '.'
-        self.options = Namespace({'m' : '64', 'profile' : 'release'})
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.related_targets = {}
-
-        # Init global configuration manager
-        blade.configparse.blade_config = BladeConfig(self.current_source_dir)
-        blade.configparse.blade_config.parse()
-
-        blade.blade.blade = Blade(self.targets,
-                                  self.blade_path,
-                                  self.working_dir,
-                                  self.current_building_path,
-                                  self.current_source_dir,
-                                  self.options,
-                                  self.command)
-        self.blade = blade.blade.blade
-        (self.direct_targets,
-         self.all_command_targets) = self.blade.load_targets()
-
-    def tearDown(self):
-        """tear down method. """
-        os.chdir(self.cur_dir)
-
-    def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
-        self.assertEqual(self.direct_targets, [])
-        self.assertTrue(self.all_command_targets)
+        self.doSetUp('test_dependency')
 
     def testExpandedTargets(self):
         """Test that all targets dependency relationship are
@@ -73,11 +28,6 @@ class TestDepsAnalyzing(unittest.TestCase):
         populated correctly.
 
         """
-        self.all_targets = self.blade.analyze_targets()
-
-        sys.stdout.flush()
-        sys.stderr.flush()
-
         self.assertTrue(self.blade.is_expanded())
         self.assertTrue(self.all_targets)
 
@@ -129,8 +79,4 @@ class TestDepsAnalyzing(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    suite_test = unittest.TestSuite()
-    suite_test.addTests(
-            [unittest.defaultTestLoader.loadTestsFromTestCase(TestDepsAnalyzing)])
-    runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    blade_test.run(TestDepsAnalyzing)

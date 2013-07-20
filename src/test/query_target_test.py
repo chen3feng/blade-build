@@ -11,59 +11,16 @@
 """
 
 
-import os
-import sys
-sys.path.append('..')
-import unittest
-import subprocess
-import blade.blade
-from blade.blade import Blade
-from blade_namespace import Namespace
-from html_test_runner import HTMLTestRunner
+import blade_test
 
 
-class TestQuery(unittest.TestCase):
+class TestQuery(blade_test.TargetTest):
     """Test cc_library """
     def setUp(self):
         """setup method. """
-        self.command = 'query'
-        self.targets = ['...']
+        self.doSetUp('test_query', full_targets=['...'], command='query')
         self.query_targets = ['test_query:poppy']
-        self.target_path = 'test_query'
-        self.cur_dir = os.getcwd()
-        os.chdir('./testdata')
-        self.blade_path = '../../blade'
-        self.working_dir = '.'
-        self.current_building_path = 'build64_release'
-        self.current_source_dir = '.'
-        self.options = Namespace({'m' : '64',
-                                  'profile' : 'release',
-                                  'generate_dynamic' : True
-                                 })
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.related_targets = {}
-        blade.blade.blade = Blade(self.targets,
-                                  self.blade_path,
-                                  self.working_dir,
-                                  self.current_building_path,
-                                  self.current_source_dir,
-                                  self.options,
-                                  self.command)
-        self.blade = blade.blade.blade
-        (self.direct_targets,
-         self.all_command_targets) = self.blade.load_targets()
-        self.blade.analyze_targets()
         self.all_targets = self.blade.get_all_targets_expanded()
-
-    def tearDown(self):
-        """tear down method. """
-        os.chdir(self.cur_dir)
-
-    def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
-        self.assertEqual(self.direct_targets, [])
-        self.assertTrue(self.all_command_targets)
 
     def testQueryCorrectly(self):
         """Test query targets dependency relationship correctly. """
@@ -91,8 +48,4 @@ class TestQuery(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    suite_test = unittest.TestSuite()
-    suite_test.addTests(
-            [unittest.defaultTestLoader.loadTestsFromTestCase(TestQuery)])
-    runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    blade_test.run(TestQuery)

@@ -12,59 +12,14 @@
 """
 
 
-import os
-import sys
-sys.path.append('..')
-import unittest
-import blade.blade
-import blade.configparse
-from blade.blade import Blade
-from blade.configparse import BladeConfig
-from blade_namespace import Namespace
-from html_test_runner import HTMLTestRunner
+import blade_test
 
 
-class TestLoadBuilds(unittest.TestCase):
+class TestLoadBuilds(blade_test.TargetTest):
     """Test load builds. """
     def setUp(self):
         """setup method. """
-        self.command = 'build'
-        self.targets = ['test_loadbuilds/...']
-        self.target_path = 'test_loadbuilds'
-        self.cur_dir = os.getcwd()
-        os.chdir('./testdata')
-        self.blade_path = '.'
-        self.working_dir = '.'
-        self.current_building_path = '.'
-        self.current_source_dir = '.'
-        self.options = Namespace({'m' : '64', 'profile' : 'release'})
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.related_targets = {}
-
-        # Init global configuration manager
-        blade.configparse.blade_config = BladeConfig(self.current_source_dir)
-        blade.configparse.blade_config.parse()
-
-        blade.blade.blade = Blade(self.targets,
-                                  self.blade_path,
-                                  self.working_dir,
-                                  self.current_building_path,
-                                  self.current_source_dir,
-                                  self.options,
-                                  self.command)
-        self.blade = blade.blade.blade
-        (self.direct_targets,
-         self.all_command_targets) = self.blade.load_targets()
-
-    def tearDown(self):
-        """tear down method. """
-        os.chdir(self.cur_dir)
-
-    def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
-        self.assertEqual(self.direct_targets, [])
-        self.assertTrue(self.all_command_targets)
+        self.doSetUp('test_loadbuilds')
 
     def testAllCommandTargets(self):
         """Test that all targets in the test project BUILD files
@@ -108,8 +63,4 @@ class TestLoadBuilds(unittest.TestCase):
         self.assertEqual(target_count, 10)
 
 if __name__ == "__main__":
-    suite_test = unittest.TestSuite()
-    suite_test.addTests(
-            [unittest.defaultTestLoader.loadTestsFromTestCase(TestLoadBuilds)])
-    runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    blade_test.run(TestLoadBuilds)
