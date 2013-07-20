@@ -55,7 +55,7 @@ class TestCcBinary(unittest.TestCase):
                                   self.current_building_path,
                                   self.current_source_dir,
                                   self.options,
-                                  blade_command=self.command)
+                                  self.command)
         self.blade = blade.blade.blade
         (self.direct_targets,
          self.all_command_targets) = self.blade.load_targets()

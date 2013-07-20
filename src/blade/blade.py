@@ -41,7 +41,7 @@ class Blade(object):
                  build_path,
                  blade_root_dir,
                  blade_options,
-                 **kwargs):
+                 command):
         """init method.
 
         """
@@ -51,7 +51,7 @@ class Blade(object):
         self.__build_path = build_path
         self.__root_dir = blade_root_dir
         self.__options = blade_options
-        self.__kwargs = kwargs
+        self.__command = command
 
         # Source dir of current loading BUILD file
         self.__current_source_path = blade_root_dir
@@ -111,7 +111,7 @@ class Blade(object):
     def load_targets(self):
         """Load the targets. """
         console.info("loading BUILDs...")
-        if self.__kwargs.get('blade_command', '') == 'query':
+        if self.__command == 'query':
             working_dir = self.__root_dir
 
             if '...' not in self.__command_targets:

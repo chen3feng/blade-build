@@ -264,7 +264,7 @@ def _main(blade_path):
                             current_building_path,
                             blade_root_dir,
                             options,
-                            blade_command=command)
+                            command)
 
         # Build the targets
         blade.blade.generate()
