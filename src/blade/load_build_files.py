@@ -252,9 +252,7 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
         if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
             blade.svn_root_dirs.append(root_dir)
 
-    blade.set_related_targets(related_targets)
-
-    return direct_targets, all_command_targets
+    return direct_targets, all_command_targets, related_targets
 
 
 def find_blade_root_dir(working_dir):

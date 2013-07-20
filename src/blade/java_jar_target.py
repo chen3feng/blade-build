@@ -43,6 +43,9 @@ java_classpath_map = {}
 # The java_jar dep var map, which should be added to dependency chain
 java_jar_dep_vars = {}
 
+# The sources files that are needed to perform explict dependency
+sources_explict_dependency_map = {}
+
 
 def get_java_jar_dep_source_map():
     """The map mainly to hold the java files from swig or proto rules.
@@ -72,6 +75,10 @@ def get_java_jar_dep_vars():
     """The vars map which is prerequiste of the java jar target. """
     return java_jar_dep_vars
 
+
+def get_sources_explict_dependency_map():
+    """Returns the handle of sources_explict_dependency_map. """
+    return sources_explict_dependency_map
 
 class JavaJarTarget(Target):
     """A java jar target subclass.
@@ -110,7 +117,6 @@ class JavaJarTarget(Target):
         self.java_jar_after_dep_source_list = []
         self.targets_dependency_map = {}
         self.java_jar_dep_vars = {}
-        self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
 
     def _java_jar_gen_class_root(self, path, name):
         """Gen class root. """
@@ -164,7 +170,7 @@ class JavaJarTarget(Target):
 
         if dep_cmd_var:
             for dep in self.targets[self.key]['deps']:
-                explict_files_depended = self.sources_dependency_map.get(dep, [])
+                explict_files_depended = sources_explict_dependency_map.get(dep, [])
                 if explict_files_depended:
                     self._write_rule('%s.Depends(%s, %s)' % (
                                       env_name,

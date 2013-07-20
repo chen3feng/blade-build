@@ -1361,8 +1361,8 @@ class ProtoLibrary(CcTarget):
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
-        self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
-        self.sources_dependency_map[self.key] = []
+        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
+        sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             package_dir = self._get_java_package_name(src_path)
@@ -1379,7 +1379,7 @@ class ProtoLibrary(CcTarget):
                      os.path.dirname(proto_java_src_package),
                      os.path.join(self.build_path, self.data['path']),
                      self.data['name'])
-            self.sources_dependency_map[self.key].append(proto_java_src_package)
+            sources_dependency_map[self.key].append(proto_java_src_package)
 
     def _proto_php_rules(self):
         """Generate php files. """
@@ -1897,7 +1897,7 @@ class SwigLibrary(CcTarget):
         if java_includes:
             self._write_rule("%s.Append(CPPPATH=%s)" % (env_name, java_includes))
 
-        sources_dependency_map = self.blade.get_sources_explict_dependency_map()
+        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
         sources_dependency_map[self.key] = []
         dep_files = []
         for src in self.data['srcs']:
