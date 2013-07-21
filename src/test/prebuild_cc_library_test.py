@@ -40,7 +40,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         copy_lower_line = ''
         com_upper_line = ''
         upper_depends_libs = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'Copy' in line:
                 copy_lower_line = line
             if 'puppercase.cpp.o -c' in line:

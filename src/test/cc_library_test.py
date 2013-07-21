@@ -43,7 +43,7 @@ class TestCcLibrary(blade_test.TargetTest):
         com_upper_line = ''
         com_string_line = ''
         string_depends_libs = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'puppercase.cpp.o -c' in line:

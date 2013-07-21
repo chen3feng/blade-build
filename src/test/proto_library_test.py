@@ -48,7 +48,7 @@ class TestProtoLibrary(blade_test.TargetTest):
         meta_depends_libs = ''
         lower_depends_libs = ''
 
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'protobuf/bin/protoc' in line:

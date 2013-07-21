@@ -42,7 +42,7 @@ class TestLexYacc(blade_test.TargetTest):
         com_yy_static_line = ''
         com_yy_so_line = ''
         lex_yacc_depends_libs = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'bison -d -o' in line:

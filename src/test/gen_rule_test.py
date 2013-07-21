@@ -44,7 +44,7 @@ class TestGenRule(blade_test.TargetTest):
         upper_so_index = 0
         index = 0
 
-        for line in open(self.command_file):
+        for line in self.scons_output:
             index += 1
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line

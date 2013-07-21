@@ -41,7 +41,7 @@ class TestResourceLibrary(blade_test.TargetTest):
         lower_depends_libs = ''
         gen_forms_line = ''
         gen_poppy_line = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'forms_js_c.o -c' in line:

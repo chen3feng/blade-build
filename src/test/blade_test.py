@@ -68,13 +68,13 @@ class TargetTest(unittest.TestCase):
          self.all_command_targets) = self.blade.load_targets()
         self.blade.analyze_targets()
         self.all_targets = self.blade.get_all_targets_expanded()
-        self.command_file = 'cmds.tmp'
+        self.scons_output_file = 'scons_output.txt'
 
     def tearDown(self):
         """tear down method. """
         try:
             os.remove('./SConstruct')
-            os.remove(self.command_file)
+            os.remove(self.scons_output_file)
         except OSError:
             pass
 
@@ -86,11 +86,13 @@ class TargetTest(unittest.TestCase):
         self.assertTrue(self.all_command_targets)
 
     def dryRun(self):
-        p = subprocess.Popen("scons --dry-run > %s" % self.command_file,
-                             stdout=subprocess.PIPE,
+        # We can use pipe to capture stdout, but keep the output file make it
+        # easy debugging.
+        p = subprocess.Popen("scons --dry-run > %s" % self.scons_output_file,
                              shell=True)
         try:
             p.wait()
+            self.scons_output = open(self.scons_output_file)
             return p.returncode == 0
         except:
             print >>sys.stderr, "Failed while dry running:\n%s" % sys.exc_info()
