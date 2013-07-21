@@ -254,10 +254,6 @@ def _main(blade_path):
         if command == 'query' and (
                 hasattr(options, 'depended') and options.depended):
             targets = ['...']
-        console.warning('blade_path=%s' % blade_path)
-        console.warning('working_dir=%s' % working_dir)
-        console.warning('current_building_path=%s' % current_building_path)
-        console.warning('blade_root_dir=%s' % blade_root_dir)
         blade.blade = Blade(targets,
                             blade_path,
                             working_dir,
