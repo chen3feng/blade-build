@@ -38,9 +38,7 @@ class TestLexYacc(blade_test.TargetTest):
         com_bison_line = ''
         com_flex_line = ''
         com_ll_static_line = ''
-        com_ll_so_line = ''
         com_yy_static_line = ''
-        com_yy_so_line = ''
         lex_yacc_depends_libs = ''
         for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
@@ -49,14 +47,10 @@ class TestLexYacc(blade_test.TargetTest):
                 com_bison_line = line
             if 'flex -R -t' in line:
                 com_flex_line = line
-            if 'line_parser.ll.o -c' in line:
+            if 'line_parser.ll.cc.o -c' in line:
                 com_ll_static_line = line
-            if 'line_parser.yy.o -c' in line:
+            if 'line_parser.yy.cc.o -c' in line:
                 com_yy_static_line = line
-            if 'line_parser.ll.os -c' in line:
-                com_ll_so_line = line
-            if 'line_parser.yy.os -c' in line:
-                com_yy_so_line = line
             if 'libparser.so' in line:
                 lex_yacc_depends_libs = line
 
@@ -67,12 +61,10 @@ class TestLexYacc(blade_test.TargetTest):
 
         self.assertCxxFlags(com_ll_static_line)
         self.assertCxxFlags(com_yy_static_line)
-        self.assertCxxFlags(com_ll_so_line)
-        self.assertCxxFlags(com_yy_so_line)
 
         self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.ll.os' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.yy.os' in lex_yacc_depends_libs)
+        self.assertTrue('line_parser.ll.cc.o' in lex_yacc_depends_libs)
+        self.assertTrue('line_parser.yy.cc.o' in lex_yacc_depends_libs)
         self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 

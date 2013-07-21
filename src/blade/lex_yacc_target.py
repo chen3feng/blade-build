@@ -91,18 +91,28 @@ class LexYaccLibrary(CcTarget):
         self._write_rule("%s.Depends(lex_%s, yacc_%s)" % (env_name,
                                                           var_name, var_name))
 
-        self._write_rule('%s.Append(CPPFLAGS="-fPIC")' % env_name)
-        self._write_rule(
-            "%s = ['%s', '%s']" % (self._objs_name(),
-                                   lex_cc_file,
-                                   yacc_cc_file))
-        self._write_rule("%s = %s.Library('%s', %s)" % (
-                var_name,
-                env_name,
-                self._target_file_path(),
-                self._objs_name()))
-        self._generate_target_explict_dependency(var_name)
+        obj_names = []
+        obj_name = "%s_object" % self._generate_variable_name(
+                    self.data['path'], self.data['srcs'][0] + '.cc')
+        obj_names.append(obj_name)
+        self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
+                "source = '%s')" % (obj_name,
+                                    env_name,
+                                    lex_cc_file,
+                                    lex_cc_file))
 
+        obj_name = "%s_object" % self._generate_variable_name(
+                    self.data['path'], self.data['srcs'][1] + '.cc')
+        obj_names.append(obj_name)
+        self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
+                "source = '%s')" % (obj_name,
+                                    env_name,
+                                    yacc_cc_file,
+                                    yacc_cc_file))
+
+
+        self._write_rule("%s = [%s]" % (self._objs_name(), ','.join(obj_names)))
+        self._cc_library();
         options = self.blade.get_options()
         if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
             self.data.get('options', {}).get('build_dynamic', False)):
