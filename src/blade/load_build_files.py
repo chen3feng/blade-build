@@ -29,7 +29,11 @@ import cc_targets
 import gen_rule_target
 import java_jar_target
 import java_targets
+import lex_yacc_target
+import proto_library_target
 import py_targets
+import resource_library_target
+import swig_library_target
 import thrift_library
 
 
