@@ -18,7 +18,7 @@ import configparse
 import console
 
 from blade_util import relative_path, cpu_count
-from dependency_analyzer import DependenciesAnalyzer
+from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
 from blade_platform import CcFlagsManager
 from blade_platform import SconsPlatform
@@ -39,94 +39,58 @@ class Blade(object):
                  blade_path,
                  working_dir,
                  build_path,
-                 current_source_path,
+                 blade_root_dir,
                  blade_options,
-                 **kwargs):
+                 command):
         """init method.
 
-        Mainly to hold the global data.
-        The directory which changes during the runtime of blade, and
-        contains BUILD file under current focus.
-        current_source_dir = "."
-
-        Given some targets specified in the command line, Blade will load
-        BUILD files containing these command line targets; global target
-        functions, i.e., cc_libarary, cc_binary and etc, in these BUILD
-        files will register targets into target_database, which then becomes
-        the input to dependency analyzer and SCons rules generator.  It is
-        notable that not all targets in target_database are dependencies of
-        command line targets.
-        target_database = {}
-
-        related targets after loading the build files
-        related_targets = {}
-
-        The map used by build rules to ensure that a source file occurres in
-        exactly one rule/target(only library target).
-        target_srcs_map = {}
-
-        The targets keys list after sorting by topological sorting method.
-        sorted_targets_keys = []
-
-        Inidcating that whether the deps list is expanded by expander or not
-        False - not expanded
-        True - expanded
-        target_deps_expanded
-
-        All targets after expanding their dependency
-        all_targets = {}
-
-        The scons target objects registered into blade manager
-        scons_targets_map = {}
-
-        The direct targets that are used for analyzing
-        direct_targets = []
-
-        All command targets, make sure that all targets specified with ...
-        are all in the list now
-        all_command_targets = []
-
-        The class to get platform info
-        SconsPlatform
-
-        The class to manage the cc flags
-        CcFlagsManager
-
-        The sources files that are needed to perform explict dependency
-        sources_explict_dependency_map = {}
-
         """
-        self.command_targets = command_targets
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.blade_path = blade_path
-        self.working_dir = working_dir
-        self.build_path = build_path
-        self.current_source_path = current_source_path
-        self.target_database = {}
-        self.related_targets = {}
-        self.target_srcs_map = {}
-        self.options = blade_options
-        self.sorted_targets_keys = []
-        self.target_deps_expanded = False
-        self.all_targets_expanded = {}
-        self.scons_targets_map = {}
+        self.__command_targets = command_targets
+        self.__blade_path = blade_path
+        self.__working_dir = working_dir
+        self.__build_path = build_path
+        self.__root_dir = blade_root_dir
+        self.__options = blade_options
+        self.__command = command
 
-        self.deps_expander = None
-        self.build_rules_generator = None
+        # Source dir of current loading BUILD file
+        self.__current_source_path = blade_root_dir
 
-        self.scons_platform = SconsPlatform()
-        self.ccflags_manager = CcFlagsManager(self.options)
-        self.sources_explict_dependency_map = {}
+        # The direct targets that are used for analyzing
+        self.__direct_targets = []
 
-        self.distcc_enabled = configparse.blade_config.get_config(
-                'distcc_config')['enabled']
+        # All command targets, make sure that all targets specified with ...
+        # are all in the list now
+        self.__all_command_targets = []
 
-        self.build_environment = BuildEnvironment(self.current_source_path)
+        # Given some targets specified in the command line, Blade will load
+        # BUILD files containing these command line targets; global target
+        # functions, i.e., cc_libarary, cc_binary and etc, in these BUILD
+        # files will register targets into target_database, which then becomes
+        # the input to dependency analyzer and SCons rules generator.  It is
+        # notable that not all targets in target_database are dependencies of
+        # command line targets.
+        self.__target_database = {}
+
+        # related targets after loading the build files
+        self.__related_targets = {}
+
+        # The targets keys list after sorting by topological sorting method.
+        self.__sorted_targets_keys = []
+
+        # Inidcating that whether the deps list is expanded by expander or not
+        self.__target_deps_expanded = False
+        self.__all_targets_expanded = {}
+
+        # The scons target objects registered into blade manager
+        self.__scons_targets_map = {}
+
+        # The class to get platform info
+        self.__scons_platform = SconsPlatform()
+
+        self.build_environment = BuildEnvironment(self.__root_dir)
 
         self.svn_root_dirs = []
-
-        self.kwargs = kwargs
 
     def _get_normpath_target(self, command_target):
         """returns a tuple (path, name).
@@ -134,7 +98,7 @@ class Blade(object):
         path is a full path from BLADE_ROOT
 
         """
-        target_path = relative_path(self.working_dir, self.current_source_path)
+        target_path = relative_path(self.__working_dir, self.__root_dir)
         path, name = command_target.split(':')
         if target_path != '.':
             if path:
@@ -147,41 +111,43 @@ class Blade(object):
     def load_targets(self):
         """Load the targets. """
         console.info("loading BUILDs...")
-        if self.kwargs.get('blade_command', '') == 'query':
-            working_dir = self.current_source_path
+        if self.__command == 'query':
+            working_dir = self.__root_dir
 
-            if '...' not in self.command_targets:
+            if '...' not in self.__command_targets:
                 new_target_list = []
-                for target in self.command_targets:
+                for target in self.__command_targets:
                     new_target_list.append("%s:%s" %
                             self._get_normpath_target(target))
-                self.command_targets = new_target_list
+                self.__command_targets = new_target_list
         else:
-            working_dir = self.working_dir
-        (self.direct_targets,
-         self.all_command_targets) = load_targets(self.command_targets,
+            working_dir = self.__working_dir
+        (self.__direct_targets,
+         self.__all_command_targets,
+         self.__related_targets) = load_targets(self.__command_targets,
                                                   working_dir,
-                                                  self.current_source_path,
+                                                  self.__root_dir,
                                                   self)
         console.info("loading done.")
-        return self.direct_targets, self.all_command_targets
+        return self.__direct_targets, self.__all_command_targets  # For test
 
     def analyze_targets(self):
         """Expand the targets. """
         console.info("analyzing dependency graph...")
-        self.deps_analyzer = DependenciesAnalyzer(self)
-        self.deps_analyzer.analyze_deps()
+        related_targets_expanded, keys_list_sorted = analyze_deps(self.__related_targets)
+        self.set_all_targets_expanded(related_targets_expanded)
+        self.__sorted_targets_keys = keys_list_sorted
+
         console.info("analyzing done.")
-        return self.all_targets_expanded
+        return self.__all_targets_expanded  # For test
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info("generating build rules...")
-        self.build_rules_generator = SconsRulesGenerator('SConstruct',
-                                                         self.blade_path, self)
-        rules_buf = self.build_rules_generator.generate_scons_script()
+        build_rules_generator = SconsRulesGenerator('SConstruct',
+                                                    self.__blade_path, self)
+        rules_buf = build_rules_generator.generate_scons_script()
         console.info("generating done.")
-        return rules_buf
 
     def generate(self):
         """Build the targets. """
@@ -192,28 +158,28 @@ class Blade(object):
     def run(self, target):
         """Run the target. """
         key = self._get_normpath_target(target)
-        runner = BinaryRunner(self.all_targets_expanded,
-                              self.options,
-                              self.target_database)
+        runner = BinaryRunner(self.__all_targets_expanded,
+                              self.__options,
+                              self.__target_database)
         return runner.run_target(key)
 
     def test(self):
         """Run tests. """
-        test_runner = TestRunner(self.all_targets_expanded,
-                                 self.options,
-                                 self.target_database,
-                                 self.direct_targets)
+        test_runner = TestRunner(self.__all_targets_expanded,
+                                 self.__options,
+                                 self.__target_database,
+                                 self.__direct_targets)
         return test_runner.run()
 
     def query(self, targets):
         """Query the targets. """
-        print_deps = hasattr(self.options, 'deps') and (
-                        self.options.deps)
-        print_depended = hasattr(self.options, 'depended') and (
-                        self.options.depended)
+        print_deps = hasattr(self.__options, 'deps') and (
+                        self.__options.deps)
+        print_depended = hasattr(self.__options, 'depended') and (
+                        self.__options.depended)
         dot_file = ""
-        if hasattr(self.options, 'output-to-dot'):
-            dot_file = self.options.output_to_dot
+        if hasattr(self.__options, 'output-to-dot'):
+            dot_file = self.__options.output_to_dot
         result_map = self.query_helper(targets)
         if dot_file:
             print_mode = 0
@@ -222,7 +188,7 @@ class Blade(object):
             if print_depended:
                 print_mode = 1
             if not dot_file.startswith("/"):
-                dot_file = self.working_dir + "/" + dot_file
+                dot_file = self.__working_dir + "/" + dot_file
             self.output_dot(result_map, print_mode, dot_file)
         else:
             if print_deps:
@@ -251,7 +217,7 @@ class Blade(object):
                                                             node[1])
 
     def print_dot_deps(self, output_file, node, target_set):
-        targets = self.related_targets
+        targets = self.__related_targets
         deps = targets.get(node, {}).get('direct_deps', [])
         for i in deps:
             if not i in target_set:
@@ -277,9 +243,9 @@ class Blade(object):
 
     def query_helper(self, targets):
         """Query the targets helper method. """
-        all_targets = self.all_targets_expanded
+        all_targets = self.__all_targets_expanded
         query_list = []
-        target_path = relative_path(self.working_dir, self.current_source_path)
+        target_path = relative_path(self.__working_dir, self.__root_dir)
         t_path = ''
         for t in targets:
             key = t.split(':')
@@ -302,74 +268,46 @@ class Blade(object):
             result_map[key] = (list(deps), list(depended_by))
         return result_map
 
-    def get_blade_path(self):
-        """Return the blade archive path. """
-        return self.blade_path
-
     def get_build_path(self):
         """The current building path. """
-        return self.build_path
+        return self.__build_path
+
+    def get_root_dir(self):
+        """Return the blade root path. """
+        return self.__root_dir
 
     def set_current_source_path(self, current_source_path):
         """Set the current source path. """
-        self.current_source_path = current_source_path
+        self.__current_source_path = current_source_path
 
     def get_current_source_path(self):
         """Get the current source path. """
-        return self.current_source_path
+        return self.__current_source_path
 
     def get_target_database(self):
         """Get the whole target database that haven't been expanded. """
-        return self.target_database
-
-    def set_related_targets(self, related_targets):
-        """Set the related targets. """
-        self.related_targets = dict(related_targets)
-
-    def get_related_targets(self):
-        """Get the related targets. """
-        return self.related_targets
+        return self.__target_database
 
     def get_direct_targets(self):
         """Return the direct targets. """
-        return self.direct_targets
-
-    def get_all_command_targets(self):
-        """Return all command targets. """
-        return self.all_command_targets
-
-    def set_sorted_targets_keys(self, sorted_keys_list):
-        """Set the keys list from expaned targets. """
-        self.sorted_targets_keys = list(sorted_keys_list)
-
-    def get_sorted_targets_keys(self):
-        """Get the keys list from expaned targets. """
-        return self.sorted_targets_keys
+        return self.__direct_targets
 
     def set_all_targets_expanded(self, all_targets):
         """Set the targets that have been expanded by expander. """
-        self.all_targets_expanded = dict(all_targets)
-        self.target_deps_expanded = True
+        self.__all_targets_expanded = dict(all_targets)
+        self.__target_deps_expanded = True
 
     def get_all_targets_expanded(self):
         """Get all the targets that expaned. """
-        return self.all_targets_expanded
-
-    def get_target_srcs_map(self):
-        """Get the targets source files map.
-
-        It is used in generating cc object rules.
-
-        """
-        return self.target_srcs_map
+        return self.__all_targets_expanded
 
     def get_options(self):
         """Get the global command options. """
-        return self.options
+        return self.__options
 
     def is_expanded(self):
         """Whether the targets are expanded. """
-        return self.target_deps_expanded
+        return self.__target_deps_expanded
 
     def register_target(self, target):
         """Register scons targets into the scons targets map.
@@ -379,15 +317,11 @@ class Blade(object):
         """
         target_key = target.key
         # check that whether there is already a key in database
-        if target_key in self.scons_targets_map.keys():
+        if target_key in self.__scons_targets_map.keys():
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (
                         target_key[1], target_key[0]))
-        self.scons_targets_map[target_key] = target
-
-    def get_scons_target(self, target_key):
-        """Get scons target according to the key. """
-        return self.scons_targets_map.get(target_key, None)
+        self.__scons_targets_map[target_key] = target
 
     def _is_scons_object_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
@@ -398,22 +332,19 @@ class Blade(object):
         1. system_library
 
         """
-        if target_type == 'system_library':
-            return False
-        else:
-            return True
+        return target_type != 'system_library'
 
-    def get_targets_rules(self):
+    def gen_targets_rules(self):
         """Get the build rules and return to the object who queries this. """
         rules_buf = []
         skip_test_targets = False
-        if hasattr(self.options, 'no_test') and self.options.no_test:
+        if hasattr(self.__options, 'no_test') and self.__options.no_test:
             skip_test_targets = True
-        for k in self.sorted_targets_keys:
-            target = self.all_targets_expanded[k]
+        for k in self.__sorted_targets_keys:
+            target = self.__all_targets_expanded[k]
             if not self._is_scons_object_type(target['type']):
                 continue
-            scons_object = self.scons_targets_map.get(k, None)
+            scons_object = self.__scons_targets_map.get(k, None)
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
@@ -425,11 +356,7 @@ class Blade(object):
 
     def get_scons_platform(self):
         """Return handle of the platform class. """
-        return self.scons_platform
-
-    def get_ccflags_manager(self):
-        """Return handle of the ccflags manager class. """
-        return self.ccflags_manager
+        return self.__scons_platform
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.
@@ -442,29 +369,27 @@ class Blade(object):
         keywords = ['thirdparty']
         return keywords
 
-    def get_sources_explict_dependency_map(self):
-        """Returns the handle of sources_explict_dependency_map. """
-        return self.sources_explict_dependency_map
-
     def tune_parallel_jobs_num(self):
         """Tune the jobs num. """
-        user_jobs_num = self.options.jobs
+        user_jobs_num = self.__options.jobs
         jobs_num = 0
         cpu_core_num = cpu_count()
-        if self.distcc_enabled and self.build_environment.distcc_env_prepared:
+        distcc_enabled = configparse.blade_config.get_config('distcc_config')['enabled']
+
+        if distcc_enabled and self.build_environment.distcc_env_prepared:
             jobs_num = int(1.5 * len(self.build_environment.get_distcc_hosts_list())) + 1
             if jobs_num > 20:
                 jobs_num = 20
-            if jobs_num and self.options.jobs != jobs_num:
-                self.options.jobs = jobs_num
-        elif self.options.jobs < 1:
+            if jobs_num and self.__options.jobs != jobs_num:
+                self.__options.jobs = jobs_num
+        elif self.__options.jobs < 1:
             if cpu_core_num <= 4:
-                self.options.jobs = 2 * cpu_core_num
+                self.__options.jobs = 2 * cpu_core_num
             else:
-                self.options.jobs = cpu_core_num
-                if self.options.jobs > 8:
-                    self.options.jobs = 8
-        if self.options.jobs != user_jobs_num:
+                self.__options.jobs = cpu_core_num
+                if self.__options.jobs > 8:
+                    self.__options.jobs = 8
+        if self.__options.jobs != user_jobs_num:
             console.info("tunes the parallel jobs number(-j N) to be %d" % (
-                self.options.jobs))
-        return self.options.jobs
+                self.__options.jobs))
+        return self.__options.jobs

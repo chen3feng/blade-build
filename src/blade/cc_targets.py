@@ -158,7 +158,7 @@ class CcTarget(Target):
 
         keywords_list = self.blade.get_sources_keyword_list()
         for keyword in keywords_list:
-            if keyword in self.current_source_path:
+            if keyword in self.data['path']:
                 return
 
         illegal_path_list = []
@@ -563,37 +563,24 @@ class CcTarget(Target):
         objs = []
         sources = []
         for src in self.data['srcs']:
-            src_name = self._generate_variable_name(path, src)
-            src_name = '%s_%s' % (src_name, self.data['name'])
-            if src_name not in _objects_pool:
-                _objects_pool[src_name] = (
-                        "%s_%s_object" % (
-                                self._generate_variable_name(path, src),
-                                self._regular_variable_name(self.data['name'])))
-                target_path = os.path.join(
-                        self.build_path, path, '%s.objs' % self.data['name'], src)
-                self._write_rule(
-                        "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
-                        ", source = '%s')" % (_objects_pool[src_name],
-                                              env_name,
-                                              target_path,
-                                              self._target_file_path(path, src)))
-                self._write_rule("%s.Depends(%s, '%s')" % (
-                                 env_name,
-                                 _objects_pool[src_name],
-                                 self._target_file_path(path, src)))
+            obj = "%s_%s_object" % (self._generate_variable_name(path, src),
+                                    self._regular_variable_name(self.data['name']))
+            target_path = os.path.join(
+                    self.build_path, path, '%s.objs' % self.data['name'], src)
+            self._write_rule(
+                    "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
+                    ", source = '%s')" % (obj,
+                                          env_name,
+                                          target_path,
+                                          self._target_file_path(path, src)))
+            self._write_rule("%s.Depends(%s, '%s')" % (
+                             env_name,
+                             obj,
+                             self._target_file_path(path, src)))
             sources.append(self._target_file_path(path, src))
-            objs.append(_objects_pool[src_name])
+            objs.append(obj)
         self._write_rule("%s = [%s]" % (objs_name, ','.join(objs)))
         return sources
-
-    def scons_rules(self):
-        """scons_rules.
-
-        This method should be impolemented in subclass.
-
-        """
-        console.error_exit('cc_target should be subclassing')
 
 
 class CcLibrary(CcTarget):
@@ -1374,8 +1361,8 @@ class ProtoLibrary(CcTarget):
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
-        self.sources_dependency_map = self.blade.get_sources_explict_dependency_map()
-        self.sources_dependency_map[self.key] = []
+        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
+        sources_dependency_map[self.key] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             package_dir = self._get_java_package_name(src_path)
@@ -1392,7 +1379,7 @@ class ProtoLibrary(CcTarget):
                      os.path.dirname(proto_java_src_package),
                      os.path.join(self.build_path, self.data['path']),
                      self.data['name'])
-            self.sources_dependency_map[self.key].append(proto_java_src_package)
+            sources_dependency_map[self.key].append(proto_java_src_package)
 
     def _proto_php_rules(self):
         """Generate php files. """
@@ -1684,7 +1671,6 @@ class SwigLibrary(CcTarget):
         scons_platform = self.blade.get_scons_platform()
         self.php_inc_list = scons_platform.get_php_include()
         self.options = self.blade.get_options()
-        self.ccflags_manager = self.blade.get_ccflags_manager()
 
     def _pyswig_gen_python_file(self, path, src):
         """Generate swig python file for python. """
@@ -1911,7 +1897,7 @@ class SwigLibrary(CcTarget):
         if java_includes:
             self._write_rule("%s.Append(CPPPATH=%s)" % (env_name, java_includes))
 
-        sources_dependency_map = self.blade.get_sources_explict_dependency_map()
+        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
         sources_dependency_map[self.key] = []
         dep_files = []
         for src in self.data['srcs']:

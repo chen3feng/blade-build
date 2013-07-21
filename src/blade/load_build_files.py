@@ -127,7 +127,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     if not os.path.exists(source_dir):
         _report_not_exist(source_dir, source_dir, blade)
 
-    old_path_reserved = blade.get_current_source_path()
+    old_current_source_path = blade.get_current_source_path()
     blade.set_current_source_path(source_dir)
     build_file = os.path.join(source_dir, 'BUILD')
     if os.path.exists(build_file):
@@ -144,7 +144,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         if action_if_fail == ABORT_IF_FAIL:
             _report_not_exist(source_dir, build_file, blade)
 
-    blade.set_current_source_path(old_path_reserved)
+    blade.set_current_source_path(old_current_source_path)
 
 
 def _find_depender(dkey, blade):
@@ -252,9 +252,7 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
         if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
             blade.svn_root_dirs.append(root_dir)
 
-    blade.set_related_targets(related_targets)
-
-    return direct_targets, all_command_targets
+    return direct_targets, all_command_targets, related_targets
 
 
 def find_blade_root_dir(working_dir):
