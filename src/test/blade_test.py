@@ -98,6 +98,34 @@ class TargetTest(unittest.TestCase):
             print >>sys.stderr, "Failed while dry running:\n%s" % sys.exc_info()
         return False
 
+    def _assertCxxCommonFlags(self, cmdline):
+        self.assertTrue('-g' in cmdline)
+        self.assertTrue('-fPIC' in cmdline, cmdline)
+
+    def _assertCxxWarningFlags(self, cmdline):
+        self.assertTrue('-Wall -Wextra' in cmdline)
+        self.assertTrue('-Wframe-larger-than=69632' in cmdline)
+        self.assertTrue('-Werror=overloaded-virtual' in cmdline)
+
+    def _assertCxxNoWarningFlags(self, cmdline):
+        self.assertTrue('-Wall -Wextra' not in cmdline)
+        self.assertTrue('-Wframe-larger-than=69632' not in cmdline)
+        self.assertTrue('-Werror=overloaded-virtual' not in cmdline)
+
+    def assertCxxFlags(self, cmdline):
+        self._assertCxxCommonFlags(cmdline)
+        self._assertCxxWarningFlags(cmdline)
+
+    def assertNoWarningCxxFlags(self, cmdline):
+        self._assertCxxCommonFlags(cmdline)
+        self._assertCxxNoWarningFlags(cmdline)
+
+    def assertLinkFlags(self, cmdline):
+        self.assertTrue('-static-libgcc -static-libstdc++' in cmdline)
+
+    def assertDynamicLinkFlags(self, cmdline):
+        self.assertTrue('-shared' in cmdline)
+
 def run(class_name):
     suite_test = unittest.TestSuite()
     suite_test.addTests(

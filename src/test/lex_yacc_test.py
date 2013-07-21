@@ -60,33 +60,21 @@ class TestLexYacc(blade_test.TargetTest):
             if 'libparser.so' in line:
                 lex_yacc_depends_libs = line
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
+        self.assertCxxFlags(com_lower_line)
 
         self.assertTrue('line_parser.yy.cc' in com_bison_line)
         self.assertTrue('line_parser.ll.cc' in com_flex_line)
 
-        self.assertTrue('-Woverloaded-virtual' in com_ll_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_ll_static_line)
-        self.assertTrue('-fPIC -Wall -Wextra' in com_ll_so_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_ll_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_ll_so_line)
-
-        self.assertTrue('-Woverloaded-virtual' in com_yy_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_yy_static_line)
-        self.assertTrue('-fPIC -Wall -Wextra' in com_yy_so_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_yy_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_yy_so_line)
+        self.assertCxxFlags(com_ll_static_line)
+        self.assertCxxFlags(com_yy_static_line)
+        self.assertCxxFlags(com_ll_so_line)
+        self.assertCxxFlags(com_yy_so_line)
 
         self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)
         self.assertTrue('line_parser.ll.os' in lex_yacc_depends_libs)
         self.assertTrue('line_parser.yy.os' in lex_yacc_depends_libs)
+        self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 
 if __name__ == "__main__":
-    suite_test = unittest.TestSuite()
-    suite_test.addTests(
-            [unittest.defaultTestLoader.loadTestsFromTestCase(TestLexYacc)])
-    runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    blade_test.run(TestLexYacc)

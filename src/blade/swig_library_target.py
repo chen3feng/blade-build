@@ -168,7 +168,6 @@ class SwigLibrary(CcTarget):
                     '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
 
         if self.data['srcs'] or self.data['deps']:
-            self._write_rule('%s.Append(LINKFLAGS=["-fPIC"])' % env_name)
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s, SHLIBPREFIX = '')"
                     % (var_name,
                        env_name,
@@ -433,7 +432,6 @@ class SwigLibrary(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
 
         if self.data['srcs'] or self.data['deps']:
-            self._write_rule('%s.Append(LINKFLAGS=["-fPIC"])' % env_name)
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s, SHLIBPREFIX='')" % (
                     var_name,
                     env_name,

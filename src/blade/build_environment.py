@@ -104,22 +104,15 @@ class BuildEnvironment(object):
             return True
         return False
 
-    def setup_ccache_env(self, env_list):
+    def setup_ccache_env(self):
         """Generates ccache rules. """
-        if not self.ccache_installed:
-            return
-        ccache_basedir = 'CCACHE_BASEDIR = "%s"' % self.blade_root_dir
-        for env in env_list:
-            self._add_rule('%s.Append(%s)' % (env, ccache_basedir))
+        if self.ccache_installed:
+            self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
 
-    def setup_distcc_env(self, env_list):
+    def setup_distcc_env(self):
         """Generates distcc rules. """
-        if not self.distcc_installed:
-            return
-        for env in env_list:
-            self._add_rule('%s.Append(%s)' % (
-                           env,
-                           'DISTCC_HOSTS="%s"' % self.distcc_host_list))
+        if self.distcc_installed:
+            self._add_rule('top_env.Append(DISTCC_HOSTS="%s")' % self.distcc_host_list)
 
     def get_distcc_hosts_list(self):
         """Returns the hosts list. """

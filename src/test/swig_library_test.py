@@ -60,23 +60,16 @@ class TestSwigLibrary(blade_test.TargetTest):
             if 'libpoppy_client_java.so -m64' in line:
                 swig_java_so = line
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
+        self.assertCxxFlags(com_lower_line)
 
         self.assertTrue('poppy_client_pywrap.cxx' in com_swig_python)
         self.assertTrue('poppy_client_javawrap.cxx' in com_swig_java)
 
-        self.assertTrue('-fno-omit-frame-pointer' in com_swig_python_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_python_cxx)
-        self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_python_cxx)
+        self.assertCxxFlags(com_swig_python_cxx)
+        self.assertCxxFlags(com_swig_java_cxx)
 
-        self.assertTrue('-fno-omit-frame-pointer' in com_swig_java_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_java_cxx)
-        self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_java_cxx)
-
-        self.assertTrue(swig_python_so)
-        self.assertTrue(swig_java_so)
+        self.assertDynamicLinkFlags(swig_python_so)
+        self.assertDynamicLinkFlags(swig_java_so)
 
 
 if __name__ == "__main__":

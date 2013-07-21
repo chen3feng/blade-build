@@ -91,6 +91,7 @@ class LexYaccLibrary(CcTarget):
         self._write_rule("%s.Depends(lex_%s, yacc_%s)" % (env_name,
                                                           var_name, var_name))
 
+        self._write_rule('%s.Append(CPPFLAGS="-fPIC")' % env_name)
         self._write_rule(
             "%s = ['%s', '%s']" % (self._objs_name(),
                                    lex_cc_file,

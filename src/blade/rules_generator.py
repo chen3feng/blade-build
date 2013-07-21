@@ -34,16 +34,10 @@ def _incs_list_to_string(incs):
     return ' '.join(['-I ' + path for path in incs])
 
 
-class SconsRules(object):
-    """The super scons rules class that generates scons rules.
-
-    This class is different from the scons target class,  the former is to used
-    to generate the basic rules or functions, the latter one is to used to
-    generate the scons target rules, like cc object, java jar.
-
-    """
+class SconsFileHeaderGenerator(object):
+    """SconsFileHeaderGenerator class"""
     def __init__(self, options, build_dir, gcc_version,
-                 python_inc, build_environment):
+                 python_inc, build_environment, svn_roots):
         """Init method. """
         self.rules_buf = []
         self.options = options
@@ -54,28 +48,12 @@ class SconsRules(object):
         self.ccflags_manager = CcFlagsManager(options)
         self.env_list = ['env_with_error', 'env_no_warning']
 
-    def _add_rule(self, rule):
-        """Append one rule to buffer. """
-        self.rules_buf.append('%s\n' % rule)
-
-    def get_rules(self):
-        """Return rules buffer. """
-        return self.rules_buf
-
-
-class SconsRulesHelper(SconsRules):
-    """One subclass of SconsRules. """
-    def __init__(self, options, build_dir, gcc_version,
-                 python_inc, build_environment, svn_roots=[]):
-        """Init method. """
-        SconsRules.__init__(self, options, build_dir,
-                            gcc_version, python_inc, build_environment)
         self.svn_roots = svn_roots
         self.svn_info_map = {}
 
         self.version_cpp_compile_template = string.Template("""
 env_version = Environment(ENV = os.environ)
-env_version.Append(SHCXXCOMSTR = '$updateinfo')
+env_version.Append(SHCXXCOMSTR = '%s$updateinfo%s' % (colors('cyan'), colors('end')))
 env_version.Append(CPPFLAGS = '-m$m')
 version_obj = env_version.SharedObject('$filename')
 """)
@@ -84,6 +62,10 @@ version_obj = env_version.SharedObject('$filename')
                               'distcc_config').get('enabled', False)
         self.dccc_enabled = self.blade_config.get_config(
                               'link_config').get('enable_dccc', False)
+
+    def _add_rule(self, rule):
+        """Append one rule to buffer. """
+        self.rules_buf.append('%s\n' % rule)
 
     def _append_prefix_to_building_var(
                 self,
@@ -159,7 +141,7 @@ version_obj = env_version.SharedObject('$filename')
 
         self._add_rule("VariantDir('%s', '.', duplicate=0)" % self.build_dir)
         self._add_rule(self.version_cpp_compile_template.substitute(
-            updateinfo="version information updated",
+            updateinfo="Version information updated",
             m=self.options.m,
             filename="%s/version.cpp" % self.build_dir))
 
@@ -185,6 +167,7 @@ import scons_helper
 
 from build_environment import ScacheManager
 from scons_helper import MakeAction
+from scons_helper import colors
 from scons_helper import create_fast_link_builders
 from scons_helper import echospawn
 from scons_helper import error_colorize
@@ -209,78 +192,71 @@ from scons_helper import generate_resource_header
         """Generates color and verbose message. """
         self._add_rule("top_env.Decider('MD5-timestamp')")
         self._add_rule("console.color_enabled=%s" % console.color_enabled)
-        self._add_rule("colors = scons_helper.colors")
 
-        if not console.color_enabled:
-            self._add_rule(
-                """
-for key in colors:
-    colors[key] = ''
-""")
         if hasattr(self.options, 'verbose') and not self.options.verbose:
             self._add_rule("top_env['SPAWN'] = echospawn")
 
         self._add_rule(
                 """
 compile_proto_cc_message = '%sCompiling %s$SOURCE%s to cc source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_proto_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_proto_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_proto_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_thrift_cc_message = '%sCompiling %s$SOURCE%s to cc source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_thrift_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_thrift_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_resource_header_message = '%sGenerating resource header %s$TARGET%s%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_resource_message = '%sCompiling %s$SOURCE%s as resource file%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_source_message = '%sCompiling %s$SOURCE%s%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 link_program_message = '%sLinking Program %s$TARGET%s%s' % \
-    (colors['green'], colors['purple'], colors['green'], colors['end'])
+    (colors('green'), colors('purple'), colors('green'), colors('end'))
 
 link_library_message = '%sCreating Static Library %s$TARGET%s%s' % \
-    (colors['green'], colors['purple'], colors['green'], colors['end'])
+    (colors('green'), colors('purple'), colors('green'), colors('end'))
 
 ranlib_library_message = '%sRanlib Library %s$TARGET%s%s' % \
-    (colors['green'], colors['purple'], colors['green'], colors['end']) \
+    (colors('green'), colors('purple'), colors('green'), colors('end')) \
 
 link_shared_library_message = '%sLinking Shared Library %s$TARGET%s%s' % \
-    (colors['green'], colors['purple'], colors['green'], colors['end'])
+    (colors('green'), colors('purple'), colors('green'), colors('end'))
 
 compile_java_jar_message = '%sGenerating java jar %s$TARGET%s%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_python_binary_message = '%sGenerating python binary %s$TARGET%s%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_yacc_message = '%sYacc %s$SOURCE%s to $TARGET%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_swig_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_swig_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
-    (colors['cyan'], colors['purple'], colors['cyan'], colors['end'])
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 """)
 
         if hasattr(self.options, 'verbose') and not self.options.verbose:
@@ -426,11 +402,6 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         self.ccflags_manager.set_cpp_str(cpp_str)
 
-        (warnings, cxx_warnings, c_warnings) = self.ccflags_manager.get_warning_flags()
-
-        (cppflags_except_warning,
-         linkflags) = self.ccflags_manager.get_flags_except_warning()
-
         # To modify CC, CXX, LD according to the building environment and
         # project configuration
         build_with_distcc = (self.distcc_enabled and
@@ -472,106 +443,88 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         if not extra_incs_str:
             extra_incs_str = "''"
 
-        for env in self.env_list:
-            self._add_rule("%s = top_env.Clone()" % env)
+        (cppflags_except_warning, linkflags) = self.ccflags_manager.get_flags_except_warning()
 
-        self._add_rule("""
-%s.Replace(%s,
-          CPPPATH=[%s, '%s', '%s'],
-          CPPFLAGS=%s,
-          CFLAGS=%s,
-          CXXFLAGS=%s,
-          %s,
-          LINKFLAGS=%s)
-""" % (self.env_list[0], cc_env_str,
-       extra_incs_str, self.build_dir, self.python_inc,
-       cc_config['cppflags'] + warnings + cppflags_except_warning,
-       cc_config['cflags'] + c_warnings,
-       cc_config['cxxflags'] + cxx_warnings,
-       ld_env_str,
-       linkflags))
+        self._add_rule("top_env.Replace(%s,"
+                       "CPPPATH=[%s, '%s', '%s'],"
+                       "CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s,"
+                       " %s, LINKFLAGS=%s)" % (cc_env_str,
+            extra_incs_str, self.build_dir, self.python_inc,
+            cc_config['cppflags'] + cppflags_except_warning,
+            cc_config['cflags'],
+            cc_config['cxxflags'],
+            ld_env_str, linkflags))
 
-        self._add_rule("""
-%s.Replace(%s,
-          CPPPATH=[%s, '%s', '%s'],
-          CPPFLAGS=%s,
-          CFLAGS=%s,
-          CXXFLAGS=%s,
-          %s,
-          LINKFLAGS=%s)
-""" % (self.env_list[1], cc_env_str,
-       extra_incs_str, self.build_dir, self.python_inc,
-       cc_config['cppflags'] + cppflags_except_warning,
-       cc_config['cflags'],
-       cc_config['cxxflags'],
-       ld_env_str,
-       linkflags))
 
-        if hasattr(self.options, 'cache_dir') and self.options.cache_dir:
-            if not self.build_environment.ccache_installed:
-                self._add_rule("CacheDir('%s')" % self.options.cache_dir)
-                self._add_rule("console.info('using cache directory %s')" % (
-                        self.options.cache_dir))
-                if hasattr(self.options, 'cache_size') and (
-                        self.options.cache_size != -1):
-                    self._add_rule("scache_manager = ScacheManager('%s', cache_limit=%s)" % (
-                            self.options.cache_dir, self.options.cache_size))
-                    self._add_rule("Progress(scache_manager, interval=100)")
-                    self._add_rule("console.info('scache size %d')" % (
-                                   self.options.cache_size))
-
-        if not self.build_environment.ccache_installed:
-            if hasattr(self.options, 'cache_dir') and (
-                        not self.options.cache_dir):
-                default_cache_dir = os.path.expanduser("~/.bladescache")
-                default_cache_size = 1024 * 1024 * 1024
-                console.warning("there is no ccache and you don't have scache enabled, "
-                        "use %s as current scache dir, scache size 1G" % (
-                        default_cache_dir))
-                self._add_rule("CacheDir('%s')" % default_cache_dir)
-                self._add_rule("console.info('using cache directory %s')" % (
-                               default_cache_dir))
-                self._add_rule("scache_manager = ScacheManager('%s', "
-                               "cache_limit=%d)" % (
-                            default_cache_dir, default_cache_size))
-                self._add_rule("Progress(scache_manager, interval=100)")
-
-        if build_with_ccache:
-            self.build_environment.setup_ccache_env(self.env_list)
+        self._setup_cache()
 
         if build_with_distcc:
-            self.build_environment.setup_distcc_env(self.env_list)
+            self.build_environment.setup_distcc_env()
 
         for rule in self.build_environment.get_rules():
             self._add_rule(rule)
 
-    def generate_all(self, blade_path):
+        self._setup_warnings()
+
+    def _setup_warnings(self):
+        for env in self.env_list:
+            self._add_rule("%s = top_env.Clone()" % env)
+
+        (warnings, cxx_warnings, c_warnings) = self.ccflags_manager.get_warning_flags()
+        self._add_rule("%s.Append(CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s)" % (
+            self.env_list[0],
+            warnings, c_warnings, cxx_warnings))
+
+    def _setup_cache(self):
+        if self.build_environment.ccache_installed:
+            self.build_environment.setup_ccache_env()
+        else:
+            cache_dir = os.path.expanduser("~/.bladescache")
+            cache_size = 4 * 1024 * 1024 * 1024
+            if hasattr(self.options, 'cache_dir'):
+                if not self.options.cache_dir:
+                    return
+                cache_dir = self.options.cache_dir
+            else:
+                console.info('using default cache dir: %s' % cache_dir)
+
+            if hasattr(self.options, 'cache_size') and (self.options.cache_size != -1):
+                cache_size = self.options.cache_size
+
+            self._add_rule("CacheDir('%s')" % self.options.cache_dir)
+            self._add_rule("scache_manager = ScacheManager('%s', cache_limit=%d)" % (
+                        cache_dir, cache_size))
+            self._add_rule("Progress(scache_manager, interval=100)")
+
+            self._add_rule("console.info('using cache directory %s')" % (cache_dir))
+            self._add_rule("console.info('scache size %d')" % ( cache_size))
+
+    def generate(self, blade_path):
         """Generates all rules. """
         self.generate_imports_functions(blade_path)
-        self.generate_version_file()
         self.generate_top_level_env()
         self.generate_compliation_verbose()
+        self.generate_version_file()
         self.generate_builders()
         self.generate_compliation_flags()
+        return self.rules_buf
 
 
 class SconsRulesGenerator(object):
     """The main class to generate scons rules and outputs rules to SConstruct. """
     def __init__(self, scons_path, blade_path, blade):
         """Init method. """
+        self.scons_path = scons_path
         self.blade_path = blade_path
         self.blade = blade
-        self.targets = self.blade.get_all_targets_expanded()
         self.scons_platform = self.blade.get_scons_platform()
-        self.rules_buf = []
-        self.scons_path = scons_path
 
         build_dir = self.blade.get_build_path()
         options = self.blade.get_options()
         gcc_version = self.scons_platform.get_gcc_version()
         python_inc = self.scons_platform.get_python_include()
 
-        self.scons_rules_helper = SconsRulesHelper(options,
+        self.scons_file_header_generator = SconsFileHeaderGenerator(options,
                                                    build_dir,
                                                    gcc_version,
                                                    python_inc,
@@ -585,16 +538,11 @@ class SconsRulesGenerator(object):
 
     def generate_scons_script(self):
         """Generates SConstruct script. """
-        # Generate headers for SConstruct
-        self.scons_rules_helper.generate_all(self.blade_path)
-
-        self.rules_buf += self.scons_rules_helper.get_rules()
-
-        # Generate scons rules for each target
-        self.rules_buf += self.blade.gen_targets_rules()
+        rules_buf = self.scons_file_header_generator.generate(self.blade_path)
+        rules_buf += self.blade.gen_targets_rules()
 
         # Write to SConstruct
         self.scons_file_fd = open(self.scons_path, 'w')
-        self.scons_file_fd.writelines(self.rules_buf)
+        self.scons_file_fd.writelines(rules_buf)
         self.scons_file_fd.close()
-        return self.rules_buf
+        return rules_buf

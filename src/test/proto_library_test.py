@@ -72,23 +72,15 @@ class TestProtoLibrary(blade_test.TargetTest):
             if 'liblowercase.so -m64' in line:
                 lower_depends_libs = line
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
+        self.assertCxxFlags(com_lower_line)
 
         self.assertTrue(com_proto_cpp_option)
         self.assertTrue(com_proto_cpp_meta)
         self.assertTrue(com_proto_java_option)
         self.assertTrue(com_proto_java_meta)
 
-        self.assertTrue('-fPIC' in com_proto_option_cc)
-        self.assertTrue('-Wall' not in com_proto_option_cc)
-        self.assertTrue('-Wframe-larger-than=' not in com_proto_option_cc)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_proto_option_cc)
-
-        self.assertTrue('-fPIC -Wall -Wextra' not in com_proto_meta_cc)
-        self.assertTrue('-Wframe-larger-than=' not in com_proto_meta_cc)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_proto_meta_cc)
+        self.assertNoWarningCxxFlags(com_proto_option_cc)
+        self.assertNoWarningCxxFlags(com_proto_meta_cc)
 
         self.assertTrue(meta_depends_libs)
         self.assertTrue('librpc_option_proto.so' in meta_depends_libs)

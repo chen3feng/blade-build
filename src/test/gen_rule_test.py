@@ -57,13 +57,8 @@ class TestGenRule(blade_test.TargetTest):
             if 'libuppercase.so -m64' in line:
                 upper_so_index = index
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
-
-        self.assertTrue('-fPIC -Wall -Wextra' in com_upper_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
+        self.assertCxxFlags(com_lower_line)
+        self.assertCxxFlags(com_upper_line)
 
         self.assertTrue(gen_rule_index > lower_so_index)
         self.assertTrue(upper_so_index, gen_rule_index)

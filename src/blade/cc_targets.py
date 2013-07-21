@@ -940,8 +940,6 @@ class CcPlugin(CcTarget):
                     '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
 
         if self.targets[self.key]['srcs'] or self.targets[self.key]['deps']:
-            self._write_rule('%s.Append(LINKFLAGS=["-fPIC"])'
-                             % env_name)
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
                     var_name,
                     env_name,

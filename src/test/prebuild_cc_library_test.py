@@ -51,7 +51,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         self.assertTrue('test_prebuild_cc_library/liblowercase.so' in copy_lower_line)
         self.assertTrue('lib64_release/liblowercase.so' in copy_lower_line)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_upper_line)
+        self.assertTrue('-Wall -Wextra' in com_upper_line)
         self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
         self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
 
