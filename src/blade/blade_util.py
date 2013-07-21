@@ -84,6 +84,7 @@ def relative_path(a_path, reference_path):
     # Count the number of segments shared by reference_path and a_path.
     reference_list = os.path.abspath(reference_path).split(os.path.sep)
     path_list = os.path.abspath(a_path).split(os.path.sep)
+    i = 0
     for i in range(min(len(reference_list), len(path_list))):
         # TODO(yiwang): Why use lower here?
         if reference_list[i].lower() != path_list[i].lower():

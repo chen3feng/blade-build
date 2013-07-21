@@ -20,7 +20,6 @@ import console
 from blade_util import relative_path, cpu_count
 from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
-from blade_platform import CcFlagsManager
 from blade_platform import SconsPlatform
 from build_environment import BuildEnvironment
 from rules_generator import SconsRulesGenerator
@@ -148,6 +147,7 @@ class Blade(object):
                                                     self.__blade_path, self)
         rules_buf = build_rules_generator.generate_scons_script()
         console.info("generating done.")
+        return rules_buf
 
     def generate(self):
         """Build the targets. """

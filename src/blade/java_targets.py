@@ -14,10 +14,7 @@ import os
 import blade
 
 import build_rules
-import console
-import configparse
 
-from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
 
@@ -90,7 +87,7 @@ class JavaTarget(Target):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, prebuilt, **kwargs):
+    def __init__(self, name, srcs, deps, prebuilt, **kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -99,14 +96,14 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, **kwargs):
+    def __init__(self, name, srcs, deps, **kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
 
 class JavaTest(JavaBinary):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, **kwargs):
+    def __init__(self, name, srcs, deps, **kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
