@@ -56,8 +56,9 @@ def _expand_deps(targets):
     Fill the related options according to different targets.
 
     """
+    deps_map_cache = {}  # Cache expanded target deps to avoid redundant expand
     for target_id in targets.keys():
-        targets[target_id]['deps'] = _find_all_deps(target_id, targets)
+        targets[target_id]['deps'] = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
         if targets[target_id]['options'].get('dynamic_link'):
@@ -75,24 +76,22 @@ def _expand_deps(targets):
                 targets[dep]['options']['generate_java'] = True
 
 
-def _find_all_deps(target_id, targets, root_targets=None, deps_map_cache=None):
+def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
     """_find_all_deps.
 
     Return all targets depended by target_id directly and/or indirectly.
     We need the parameter root_target_id to check loopy dependency.
 
     """
-    if root_targets is None:
-        root_targets = []
-    if deps_map_cache is None:
-        deps_map_cache = {}
-
-    root_targets.append(target_id)
-
-    new_deps_list = deps_map_cache.get(target_id, [])
+    new_deps_list = deps_map_cache.get(target_id)
     if new_deps_list:
-        root_targets.pop()
         return new_deps_list
+
+    if root_targets is None:
+        root_targets = set()
+
+    root_targets.add(target_id)
+    new_deps_list = []
 
     for d in targets[target_id]['deps']:
         # loop dependency
@@ -109,7 +108,7 @@ def _find_all_deps(target_id, targets, root_targets=None, deps_map_cache=None):
                                                         target_id[1],
                                                         d[0],
                                                         d[1]))
-        new_deps_piece += _find_all_deps(d, targets, root_targets, deps_map_cache)
+        new_deps_piece += _find_all_deps(d, targets, deps_map_cache, root_targets)
         # Append new_deps_piece to new_deps_list, be aware of
         # de-duplication:
         for nd in new_deps_piece:
@@ -118,7 +117,7 @@ def _find_all_deps(target_id, targets, root_targets=None, deps_map_cache=None):
             new_deps_list.append(nd)
     deps_map_cache[target_id] = new_deps_list
 
-    root_targets.pop()
+    root_targets.remove(target_id)
     return new_deps_list
 
 
