@@ -166,8 +166,8 @@ import console
 import scons_helper
 
 from build_environment import ScacheManager
+from console import colors
 from scons_helper import MakeAction
-from scons_helper import colors
 from scons_helper import create_fast_link_builders
 from scons_helper import echospawn
 from scons_helper import error_colorize

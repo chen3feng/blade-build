@@ -22,11 +22,31 @@ color_enabled = (sys.stdout.isatty() and
                  os.environ['TERM'] not in ('emacs', 'dumb'))
 
 
+# _colors
+_colors = {}
+_colors['red']    = '\033[1;31m'
+_colors['green']  = '\033[1;32m'
+_colors['yellow'] = '\033[1;33m'
+_colors['blue']   = '\033[1;34m'
+_colors['purple'] = '\033[1;35m'
+_colors['cyan']   = '\033[1;36m'
+_colors['white']  = '\033[1;37m'
+_colors['gray']   = '\033[1;38m'
+_colors['end']    = '\033[0m'
+
+
+def colors(name):
+    """Return ansi console control sequence from color name"""
+    if color_enabled:
+        return _colors[name]
+    return ''
+
+
 def error(msg):
     """dump error message. """
     msg = "Blade(error): " + msg
     if color_enabled:
-        msg = '\033[1;31m' + msg + '\033[0m'
+        msg = _colors['red'] + msg + _colors['end']
     print >>sys.stderr, msg
 
 
@@ -40,7 +60,7 @@ def warning(msg):
     """dump warning message but continue. """
     msg = "Blade(warning): " + msg
     if color_enabled:
-        msg = '\033[1;33m' + msg + '\033[0m'
+        msg = _colors['yellow'] + msg + _colors['end']
     print >>sys.stderr, msg
 
 
@@ -49,5 +69,5 @@ def info(msg, prefix=True):
     if prefix:
         msg = "Blade(info): " + msg
     if color_enabled:
-        msg = '\033[1;36m' + msg + '\033[0m'
+        msg = _colors['cyan'] + msg + _colors['end']
     print >>sys.stderr, msg
