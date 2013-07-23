@@ -23,6 +23,7 @@ from target import Target
 
 # The gen rule files map, which is used to generate the explict dependency
 # relationtion ship between gen_rule target and other targets
+# TODO(chen3feng): Put into menber of GenRuleTarget object
 _files_map = {}
 
 

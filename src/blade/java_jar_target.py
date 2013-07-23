@@ -38,6 +38,7 @@ java_jars_map = {}
 
 # The java compiling classpath parameter map
 # {key : 'target_path'}
+# TODO(chen3feng): Put into target as member
 java_classpath_map = {}
 
 # The java_jar dep var map, which should be added to dependency chain
