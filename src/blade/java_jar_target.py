@@ -428,7 +428,7 @@ class JavaJarTarget(Target):
         class_root = self._java_jar_gen_class_root(self.data['path'],
                                                    self.data['name'])
 
-        self.targets = self.blade.get_all_targets_expanded()
+        self.targets = self.blade.get_build_targets()
 
         for key in java_jar_dep_vars:
             if key in self.targets[self.key]['deps']:

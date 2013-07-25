@@ -41,12 +41,10 @@ def analyze_deps(related_targets):
            {(target_path, target_name) : (target_data with deps expanded), ...}
 
     """
-    related_targets_expanded = dict(related_targets)
+    _expand_deps(related_targets)
+    keys_list_sorted = _topological_sort(related_targets)
 
-    _expand_deps(related_targets_expanded)
-    keys_list_sorted = _topological_sort(related_targets_expanded)
-
-    return related_targets_expanded, keys_list_sorted
+    return keys_list_sorted
 
 
 def _expand_deps(targets):

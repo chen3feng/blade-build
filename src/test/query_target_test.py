@@ -20,14 +20,14 @@ class TestQuery(blade_test.TargetTest):
         """setup method. """
         self.doSetUp('test_query', full_targets=['...'], command='query')
         self.query_targets = ['test_query:poppy']
-        self.all_targets = self.blade.get_all_targets_expanded()
+        self.all_targets = self.blade.get_build_targets()
 
     def testQueryCorrectly(self):
         """Test query targets dependency relationship correctly. """
         self.assertTrue(self.all_targets)
         result_map = {}
         result_map = self.blade.query_helper(self.query_targets)
-        all_targets = self.blade.get_all_targets_expanded()
+        all_targets = self.blade.get_build_targets()
         query_key = ('test_query', 'poppy')
         self.assertTrue(query_key in result_map.keys())
         deps = result_map.get(query_key, [])[0]

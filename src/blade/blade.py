@@ -71,22 +71,20 @@ class Blade(object):
         # command line targets.
         self.__target_database = {}
 
-        # related targets after loading the build files
-        self.__related_targets = {}
-
-        # The targets keys list after sorting by topological sorting method.
-        self.__sorted_targets_keys = []
-
-        # Inidcating that whether the deps list is expanded by expander or not
-        self.__target_deps_expanded = False
-        self.__all_targets_expanded = {}
-
         # The scons target objects registered into blade manager
         self.__scons_targets_map = {}
 
-        # The class to get platform info
-        self.__scons_platform = SconsPlatform()
+        # targets to build after loading the build files.
+        self.__build_targets = {}
 
+        # The targets keys list after sorting by topological sorting method.
+        # Used to generate build rules in correct order.
+        self.__sorted_targets_keys = []
+
+        # Inidcating that whether the deps list is expanded by expander or not
+        self.__targets_expanded = False
+
+        self.__scons_platform = SconsPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
 
         self.svn_root_dirs = []
@@ -123,7 +121,7 @@ class Blade(object):
             working_dir = self.__working_dir
         (self.__direct_targets,
          self.__all_command_targets,
-         self.__related_targets) = load_targets(self.__command_targets,
+         self.__build_targets) = load_targets(self.__command_targets,
                                                   working_dir,
                                                   self.__root_dir,
                                                   self)
@@ -133,12 +131,11 @@ class Blade(object):
     def analyze_targets(self):
         """Expand the targets. """
         console.info("analyzing dependency graph...")
-        related_targets_expanded, keys_list_sorted = analyze_deps(self.__related_targets)
-        self.set_all_targets_expanded(related_targets_expanded)
-        self.__sorted_targets_keys = keys_list_sorted
+        self.__sorted_targets_keys = analyze_deps(self.__build_targets)
+        self.__targets_expanded = True
 
         console.info("analyzing done.")
-        return self.__all_targets_expanded  # For test
+        return self.__build_targets  # For test
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
@@ -150,7 +147,7 @@ class Blade(object):
         return rules_buf
 
     def generate(self):
-        """Build the targets. """
+        """Generate the build script. """
         self.load_targets()
         self.analyze_targets()
         self.generate_build_rules()
@@ -158,14 +155,14 @@ class Blade(object):
     def run(self, target):
         """Run the target. """
         key = self._get_normpath_target(target)
-        runner = BinaryRunner(self.__all_targets_expanded,
+        runner = BinaryRunner(self.__build_targets,
                               self.__options,
                               self.__target_database)
         return runner.run_target(key)
 
     def test(self):
         """Run tests. """
-        test_runner = TestRunner(self.__all_targets_expanded,
+        test_runner = TestRunner(self.__build_targets,
                                  self.__options,
                                  self.__target_database,
                                  self.__direct_targets)
@@ -217,7 +214,7 @@ class Blade(object):
                                                             node[1])
 
     def print_dot_deps(self, output_file, node, target_set):
-        targets = self.__related_targets
+        targets = self.__build_targets
         deps = targets.get(node, {}).get('direct_deps', [])
         for i in deps:
             if not i in target_set:
@@ -243,7 +240,7 @@ class Blade(object):
 
     def query_helper(self, targets):
         """Query the targets helper method. """
-        all_targets = self.__all_targets_expanded
+        all_targets = self.__build_targets
         query_list = []
         target_path = relative_path(self.__working_dir, self.__root_dir)
         t_path = ''
@@ -292,14 +289,9 @@ class Blade(object):
         """Return the direct targets. """
         return self.__direct_targets
 
-    def set_all_targets_expanded(self, all_targets):
-        """Set the targets that have been expanded by expander. """
-        self.__all_targets_expanded = dict(all_targets)
-        self.__target_deps_expanded = True
-
-    def get_all_targets_expanded(self):
-        """Get all the targets that expaned. """
-        return self.__all_targets_expanded
+    def get_build_targets(self):
+        """Get all the targets to be build. """
+        return self.__build_targets
 
     def get_options(self):
         """Get the global command options. """
@@ -307,7 +299,7 @@ class Blade(object):
 
     def is_expanded(self):
         """Whether the targets are expanded. """
-        return self.__target_deps_expanded
+        return self.__targets_expanded
 
     def register_target(self, target):
         """Register scons targets into the scons targets map.
@@ -341,7 +333,7 @@ class Blade(object):
         if hasattr(self.__options, 'no_test') and self.__options.no_test:
             skip_test_targets = True
         for k in self.__sorted_targets_keys:
-            target = self.__all_targets_expanded[k]
+            target = self.__build_targets[k]
             if not self._is_scons_object_type(target['type']):
                 continue
             scons_object = self.__scons_targets_map.get(k, None)

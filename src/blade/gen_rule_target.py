@@ -109,7 +109,7 @@ class GenRuleTarget(Target):
         _files_map[(self.data['path'], self.data['name'])] = var_name
         self._generate_target_explict_dependency(var_name)
 
-        targets = self.blade.get_all_targets_expanded()
+        targets = self.blade.get_build_targets()
         java_jars_map = java_jar_target.get_java_jars_map()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']

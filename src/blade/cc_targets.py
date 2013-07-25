@@ -309,7 +309,7 @@ class CcTarget(Target):
         """
         if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_all_targets_expanded()
+        self.targets = self.blade.get_build_targets()
         if not self.targets:
             console.error_exit('logic error in blade, no expanded targets')
         deps = self.targets[self.key]['deps']
@@ -348,7 +348,7 @@ class CcTarget(Target):
         """
         if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_all_targets_expanded()
+        self.targets = self.blade.get_build_targets()
         if not self.targets:
             console.error_exit('logic error in blade, no expanded targets')
         deps = self.targets[self.key]['deps']
@@ -391,7 +391,7 @@ class CcTarget(Target):
         """
         if not self.blade.is_expanded():
             console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_all_targets_expanded()
+        self.targets = self.blade.get_build_targets()
         if not self.targets:
             console.error_exit('logic error in blade, no expanded targets')
         deps = self.targets[self.key]['deps']
@@ -443,7 +443,7 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library(self, dynamic=0):
         """prebuilt cc library rules. """
-        self.targets = self.blade.get_all_targets_expanded()
+        self.targets = self.blade.get_build_targets()
         prebuilt_target_file = ''
         prebuilt_src_file = ''
         prebuilt_symlink = ''

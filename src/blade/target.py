@@ -339,7 +339,7 @@ class Target(object):
         files_str = ",".join(["%s" % f for f in files])
         if not self.blade.is_expanded():
             console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
-        targets = self.blade.get_all_targets_expanded()
+        targets = self.blade.get_build_targets()
         import gen_rule_target
         files_map = gen_rule_target._files_map
         deps = targets[self.key]['deps']

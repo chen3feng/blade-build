@@ -67,7 +67,7 @@ class TargetTest(unittest.TestCase):
         (self.direct_targets,
          self.all_command_targets) = self.blade.load_targets()
         self.blade.analyze_targets()
-        self.all_targets = self.blade.get_all_targets_expanded()
+        self.all_targets = self.blade.get_build_targets()
         self.scons_output_file = 'scons_output.txt'
 
     def tearDown(self):
