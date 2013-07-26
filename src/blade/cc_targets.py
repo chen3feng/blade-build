@@ -892,6 +892,7 @@ class CcPlugin(CcTarget):
                  optimize,
                  prebuilt,
                  extra_cppflags,
+                 extra_linkflags,
                  blade,
                  kwargs):
         """Init method.
@@ -910,7 +911,7 @@ class CcPlugin(CcTarget):
                           export_incs,
                           optimize,
                           extra_cppflags,
-                          [],
+                          extra_linkflags,
                           blade,
                           kwargs)
         if prebuilt:
@@ -964,6 +965,7 @@ def cc_plugin(name,
               prebuilt=False,
               pre_build=False,
               extra_cppflags=[],
+              extra_linkflags=[],
               **kwargs):
     """cc_plugin target. """
     target = CcPlugin(name,
@@ -976,6 +978,7 @@ def cc_plugin(name,
                       optimize,
                       prebuilt or pre_build,
                       extra_cppflags,
+                      extra_linkflags,
                       blade.blade,
                       kwargs)
     if pre_build:
