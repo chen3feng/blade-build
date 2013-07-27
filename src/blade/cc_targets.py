@@ -82,8 +82,6 @@ class CcTarget(Target):
         self.data['options']['extra_cppflags'] = extra_cppflags
         self.data['options']['extra_linkflags'] = extra_linkflags
 
-        self.targets = None
-
         self._check_defs()
         self._check_incorrect_no_warning()
 
@@ -300,19 +298,15 @@ class CcTarget(Target):
         Whether this dep target is library or not.
 
         """
-        target_type = self.targets[dep].get('type')
+        build_targets = self.blade.get_build_targets()
+        target_type = build_targets[dep].get('type')
         return ('library' in target_type or 'plugin' in target_type)
 
     def _export_incs_list(self):
         """_export_incs_list.
         TODO
         """
-        if not self.blade.is_expanded():
-            console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_build_targets()
-        if not self.targets:
-            console.error_exit('logic error in blade, no expanded targets')
-        deps = self.targets[self.key]['deps']
+        deps = self.data['deps']
         inc_list = []
         for lib in deps:
             # lib is (path, libname) pair.
@@ -346,32 +340,22 @@ class CcTarget(Target):
         It will find the libs needed to be linked into the target statically.
 
         """
-        if not self.blade.is_expanded():
-            console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_build_targets()
-        if not self.targets:
-            console.error_exit('logic error in blade, no expanded targets')
-        deps = self.targets[self.key]['deps']
+        build_targets = self.blade.get_build_targets()
+        deps = self.data['deps']
         lib_list = []
         link_all_symbols_lib_list = []
-        for lib in deps:
-            # lib is (path, libname) pair.
-            if not lib:
-                continue
-
-            if not self._dep_is_library(lib):
+        for dep in deps:
+            if not self._dep_is_library(dep):
                 continue
 
             # system lib
-            if lib[0] == "#":
-                lib_name = "'%s'" % lib[1]
-                lib_path = lib[1]
+            if dep[0] == "#":
+                lib_name = "'%s'" % dep[1]
             else:
-                lib_name = self._generate_variable_name(lib[0], lib[1])
-                lib_path = self._target_file_path(lib[0], 'lib%s.a' % lib[1])
+                lib_name = self._generate_variable_name(dep[0], dep[1])
 
-            if self.targets[lib].get('options', {}).get('link_all_symbols', 0):
-                link_all_symbols_lib_list.append((lib_path, lib_name))
+            if build_targets[dep]['options'].get('link_all_symbols'):
+                link_all_symbols_lib_list.append(lib_name)
             else:
                 lib_list.append(lib_name)
 
@@ -389,23 +373,15 @@ class CcTarget(Target):
         It will find the libs needed to be linked into the target dynamically.
 
         """
-        if not self.blade.is_expanded():
-            console.error_exit('logic error in blade, expand targets at first')
-        self.targets = self.blade.get_build_targets()
-        if not self.targets:
-            console.error_exit('logic error in blade, no expanded targets')
-        deps = self.targets[self.key]['deps']
+        build_targets = self.blade.get_build_targets()
+        deps = self.data['deps']
         lib_list = []
         for lib in deps:
-            # lib is (path, libname) pair.
-            if not lib:
-                continue
-
             if not self._dep_is_library(lib):
                 continue
 
-            if (self.targets[lib]['type'] == 'cc_library' and
-                not self.targets[lib]['srcs']):
+            if (build_targets[lib]['type'] == 'cc_library' and
+                not build_targets[lib]['srcs']):
                 continue
             # system lib
             if lib[0] == "#":
@@ -422,16 +398,14 @@ class CcTarget(Target):
     def _get_static_deps_lib_list(self):
         """Returns a tuple that needed to write static deps rules. """
         (link_all_symbols_lib_list, lib_list) = self._static_deps_list()
-        lib_str = "LIBS=[]"
-        if lib_list:
-            lib_str = 'LIBS=[%s]' % ','.join(lib_list)
+        lib_str = 'LIBS=[%s]' % ','.join(lib_list)
         whole_link_flags = []
         if link_all_symbols_lib_list:
-            whole_link_flags = ["-Wl,--whole-archive"]
+            whole_link_flags = ['"-Wl,--whole-archive"']
             for i in link_all_symbols_lib_list:
-                whole_link_flags.append(i[0])
-            whole_link_flags.append('-Wl,--no-whole-archive')
-        return (link_all_symbols_lib_list, lib_str, whole_link_flags)
+                whole_link_flags.append(i)
+            whole_link_flags.append('"-Wl,--no-whole-archive"')
+        return (link_all_symbols_lib_list, lib_str, ', '.join(whole_link_flags))
 
     def _get_dynamic_deps_lib_list(self):
         """Returns the libs string. """
@@ -443,7 +417,7 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library(self, dynamic=0):
         """prebuilt cc library rules. """
-        self.targets = self.blade.get_build_targets()
+        build_targets = self.blade.get_build_targets()
         prebuilt_target_file = ''
         prebuilt_src_file = ''
         prebuilt_symlink = ''
@@ -453,9 +427,9 @@ class CcTarget(Target):
                                    'cc_benchmark',
                                    'cc_plugin',
                                    'swig_library']
-        for key in self.targets.keys():
-            if self.key in self.targets[key].get('deps', []) and (
-                    self.targets[key].get('type', None) in need_static_lib_targets):
+        for key in build_targets.keys():
+            if self.key in build_targets[key].get('deps', []) and (
+                    build_targets[key].get('type', None) in need_static_lib_targets):
                 allow_only_dynamic = False
 
         var_name = self._generate_variable_name(self.data['path'],
@@ -523,7 +497,7 @@ class CcTarget(Target):
                                                 'dynamic')
 
         lib_str = self._get_dynamic_deps_lib_list()
-        if self.targets[self.key]['srcs'] or self.targets[self.key]['deps']:
+        if self.data['srcs'] or self.data['deps']:
             self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
                              % self._env_name())
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
@@ -761,7 +735,7 @@ class CcBinary(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
+                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
         if self.data.get('options', {}).get('export_dynamic', False):
             self._write_rule(
@@ -781,9 +755,9 @@ class CcBinary(CcTarget):
             self._objs_name()))
         self._generate_target_explict_dependency(var_name)
 
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
-                    env_name, var_name, i[1]))
+        if link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, [%s])" % (
+                    env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule("%s.Requires(%s, version_obj)" % (
@@ -791,25 +765,28 @@ class CcBinary(CcTarget):
 
     def _dynamic_cc_binary(self):
         """_dynamic_cc_binary. """
+        env_name = self._env_name()
         var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-
         if self.data.get('options', {}).get('export_dynamic', False):
-            self._write_rule(
-                "%s.Append(LINKFLAGS='-rdynamic')" % self._env_name())
+            self._write_rule("%s.Append(LINKFLAGS='-rdynamic')" % env_name)
 
         self._setup_extra_link_flags()
 
         lib_str = self._get_dynamic_deps_lib_list()
         self._write_rule("%s = %s.Program('%s', %s, %s)" % (
             var_name,
-            self._env_name(),
+            env_name,
             self._target_file_path(),
             self._objs_name(),
             lib_str))
         self._write_rule("%s.Depends(%s, %s)" % (
-            self._env_name(),
+            env_name,
             var_name,
             self._objs_name()))
+        self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
+        self._write_rule("%s.Requires(%s, version_obj)" % (
+                         env_name, var_name))
+
         self._generate_target_explict_dependency(var_name)
 
     def scons_rules(self):
@@ -938,9 +915,9 @@ class CcPlugin(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
+                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
-        if self.targets[self.key]['srcs'] or self.targets[self.key]['deps']:
+        if self.data['srcs'] or self.data['deps']:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
                     var_name,
                     env_name,
@@ -948,8 +925,9 @@ class CcPlugin(CcTarget):
                     self._objs_name(),
                     lib_str))
 
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (env_name, var_name, i[1]))
+        if link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, [%s])" % (
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._generate_target_explict_dependency(var_name)
 

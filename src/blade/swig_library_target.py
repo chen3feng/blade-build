@@ -165,7 +165,7 @@ class SwigLibrary(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=%s)' % (env_name, whole_link_flags))
+                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
         if self.data['srcs'] or self.data['deps']:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s, SHLIBPREFIX = '')"
@@ -178,9 +178,9 @@ class SwigLibrary(CcTarget):
                     "%s.so" % target_path_py)
             py_targets.binary_dep_source_cmd[self.key].append(var_name)
 
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
-                    env_name, var_name, i[1]))
+        if link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, [%s])" % (
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._generate_target_explict_dependency(var_name)
 
@@ -344,9 +344,9 @@ class SwigLibrary(CcTarget):
                     objs_name_java,
                     lib_str))
 
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
-                    env_name, var_name, i[1]))
+        if link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, [%s])" % (
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._generate_target_explict_dependency(var_name)
 
@@ -439,9 +439,9 @@ class SwigLibrary(CcTarget):
                     objs_name_php,
                     lib_str))
 
-        for i in link_all_symbols_lib_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
-                    env_name, var_name, i[1]))
+        if link_all_symbols_lib_list:
+            self._write_rule("%s.Depends(%s, [%s])" % (
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._generate_target_explict_dependency(var_name)
 

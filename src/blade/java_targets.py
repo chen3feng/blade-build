@@ -56,7 +56,8 @@ class JavaTarget(Target):
 
     def _dep_is_jar_to_compile(self, dep):
         """Check the target is java_jar target or not. """
-        target_type = self.targets[dep].get('type')
+        targets = self.blade.get_build_targets()
+        target_type = targets[dep].get('type')
         return ('java_jar' in target_type and 'prebuilt' not in target_type)
 
     def _java_jar_deps_list(self, deps):

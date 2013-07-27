@@ -125,7 +125,8 @@ class JavaJarTarget(Target):
 
     def _dep_is_jar_to_compile(self, dep):
         """Check the target is java_jar target or not. """
-        target_type = self.targets[dep].get('type')
+        targets = self.blade.get_build_targets()
+        target_type = targets[dep].get('type')
         return ('java_jar' in target_type and 'prebuilt' not in target_type)
 
     def _java_jar_rules_prepare_dep(self, new_src):
@@ -170,7 +171,7 @@ class JavaJarTarget(Target):
             self.cmd_var_list.append(cmd_var_id)
 
         if dep_cmd_var:
-            for dep in self.targets[self.key]['deps']:
+            for dep in self.data['deps']:
                 explict_files_depended = sources_explict_dependency_map.get(dep, [])
                 if explict_files_depended:
                     self._write_rule('%s.Depends(%s, %s)' % (
@@ -205,7 +206,7 @@ class JavaJarTarget(Target):
         env_name = self._env_name()
         class_root = self._java_jar_gen_class_root(self.data['path'],
                                                    self.data['name'])
-        jar_list = self._java_jar_deps_list(self.targets[self.key]['deps'])
+        jar_list = self._java_jar_deps_list(self.data['deps'])
         classpath_list = self.java_classpath_list
         classpath = ':'.join(classpath_list + jar_list)
 
@@ -285,7 +286,7 @@ class JavaJarTarget(Target):
                 cmd))
 
         # Find out the java_jar depends
-        for dep in self.targets[self.key]['deps']:
+        for dep in self.data['deps']:
             if dep in java_jars_map.keys():
                 dep_java_jar_list = java_jars_map[dep]
                 self._write_rule("%s.Depends(%s, %s)" % (
@@ -428,22 +429,20 @@ class JavaJarTarget(Target):
         class_root = self._java_jar_gen_class_root(self.data['path'],
                                                    self.data['name'])
 
-        self.targets = self.blade.get_build_targets()
-
         for key in java_jar_dep_vars:
-            if key in self.targets[self.key]['deps']:
+            if key in self.data['deps']:
                 self.cmd_var_list += java_jar_dep_vars[key]
 
         dep_source_map = get_java_jar_dep_source_map()
         self.java_jar_dep_source_list = []
         for key in dep_source_map:
-            if key in self.targets[self.key]['deps']:
+            if key in self.data['deps']:
                 self.java_jar_dep_source_list.append(dep_source_map[key])
 
         classpath_map = get_java_classpath_map()
         self.java_classpath_list = []
         for key in classpath_map:
-            if key in self.targets[self.key]['deps']:
+            if key in self.data['deps']:
                 self.java_classpath_list.append(classpath_map[key])
 
         # make unique

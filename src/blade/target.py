@@ -337,12 +337,10 @@ class Target(object):
         env_name = self._env_name()
         files = var_to_list(target_files)
         files_str = ",".join(["%s" % f for f in files])
-        if not self.blade.is_expanded():
-            console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
         targets = self.blade.get_build_targets()
         import gen_rule_target
         files_map = gen_rule_target._files_map
-        deps = targets[self.key]['deps']
+        deps = self.data['deps']
         for d in deps:
             dep_target = targets[d]
             if dep_target['type'] == 'gen_rule':
