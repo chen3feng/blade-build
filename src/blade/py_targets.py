@@ -61,14 +61,6 @@ class PythonBinaryTarget(Target):
     def scons_rules(self):
         """scons_rules.
 
-        Parameters
-        -----------
-        None
-
-        Returns
-        -----------
-        None
-
         Description
         -----------
         It outputs the scons rules according to user options.
