@@ -64,8 +64,8 @@ class ResourceLibrary(CcTarget):
         (out_dir, res_file_name) = self._resource_library_rules_helper()
 
         self.data['res_srcs'] = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
             src_base = os.path.basename(src_path)
             src_base_name = '%s.c' % self._regular_variable_name(src_base)
             new_src_path = os.path.join(out_dir, src_base_name)
@@ -79,8 +79,8 @@ class ResourceLibrary(CcTarget):
         self._cc_library()
 
         options = self.blade.get_options()
-        if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('build_dynamic', False)):
+        if (getattr(options, 'generate_dynamic', False) or
+            self.data.get('build_dynamic')):
             self._dynamic_cc_library()
 
     def _resource_library_rules_objects(self):
@@ -93,18 +93,18 @@ class ResourceLibrary(CcTarget):
         objs = []
         res_srcs = self.data['res_srcs']
         res_objects = {}
-        path = self.data['path']
+        path = self.path
         for src in res_srcs:
             base_src_name = self._regular_variable_name(os.path.basename(src))
-            src_name = base_src_name + '_' + self.data['name'] + '_res'
+            src_name = base_src_name + '_' + self.name + '_res'
             if src_name not in res_objects:
                 res_objects[src_name] = (
                         "%s_%s_object" % (
                                 base_src_name,
-                                self._regular_variable_name(self.data['name'])))
+                                self._regular_variable_name(self.name)))
                 target_path = os.path.join(self.build_path,
                                            path,
-                                           '%s.objs' % self.data['name'],
+                                           '%s.objs' % self.name,
                                            base_src_name)
                 self._write_rule(
                         "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
@@ -118,15 +118,15 @@ class ResourceLibrary(CcTarget):
     def _resource_library_rules_helper(self):
         """The helper method to generate scons resource rules, mainly applies builder.  """
         env_name = self._env_name()
-        out_dir = os.path.join(self.build_path, self.data['path'])
-        res_name = self._regular_variable_name(self.data['name'])
+        out_dir = os.path.join(self.build_path, self.path)
+        res_name = self._regular_variable_name(self.name)
         res_file_name = res_name
         res_file_header = res_file_name + '.h'
         res_header_path = os.path.join(out_dir, res_file_header)
 
         src_list = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
             src_list.append(src_path)
 
         cmd_bld = '%s_header_cmd_bld' % res_name

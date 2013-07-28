@@ -131,13 +131,13 @@ class TestRunner(binary_runner.BinaryRunner):
             related_file_list.append(test_file_name)
 
         if target.data['dynamic_link']:
-            target_key = (target.data['path'], target.data['name'])
-            for dep in self.target_database[target_key].data['deps']:
+            target_key = (target.path, target.name)
+            for dep in self.target_database[target_key].expanded_deps:
                 dep_target = self.target_database[dep]
-                if 'cc_library' in dep_target.data['type']:
-                    lib_name = 'lib%s.so' % dep_target.data['name']
+                if 'cc_library' in dep_target.type:
+                    lib_name = 'lib%s.so' % dep_target.name
                     lib_path = os.path.join(self.build_dir,
-                                            dep_target.data['path'],
+                                            dep_target.path,
                                             lib_name)
                     abs_lib_path = os.path.abspath(lib_path)
                     if os.path.exists(abs_lib_path):
@@ -155,7 +155,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 data_target_path = os.path.abspath(data_target)
             else:
                 data_target_path = os.path.abspath("%s/%s" % (
-                                                   target.data['path'], data_target))
+                                                   target.path, data_target))
             if os.path.exists(data_target_path):
                 related_file_data_list.append(data_target_path)
 
@@ -179,9 +179,9 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
-            if target.data['type'] != 'cc_test':
+            if target.type != 'cc_test':
                 continue
-            target_key = (target.data['path'], target.data['name'])
+            target_key = (target.path, target.name)
             test_file_name = os.path.abspath(self._executable(target))
             self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
             if self.run_all_reason:
@@ -304,11 +304,11 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_inctest_run_list()
         tests_run_list = []
         for target in self.targets.values():
-            if target.data['type'] != 'cc_test':
+            if target.type != 'cc_test':
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
-                if not target.data.get('always_run', False):
-                    self.skipped_tests.append((target.data['path'], target.data['name']))
+                if not target.data.get('always_run'):
+                    self.skipped_tests.append((target.path, target.name))
                     continue
             self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
@@ -344,7 +344,7 @@ class TestRunner(binary_runner.BinaryRunner):
             console.error("%d tests failed:" % len(failed_targets))
             for target in failed_targets:
                 print "%s:%s, exit code: %s" % (
-                    target.data['path'], target.data['name'], target.data['test_exit_code'])
+                    target.path, target.name, target.data['test_exit_code'])
                 test_file_name = os.path.abspath(self._executable(target))
                 # Do not skip failed test by default
                 if test_file_name in self.test_stamp['md5']:

@@ -251,8 +251,7 @@ def _main(blade_path):
             else:
                 console.error_exit("Lock exception, please try it later.")
 
-        if command == 'query' and (
-                hasattr(options, 'depended') and options.depended):
+        if command == 'query' and getattr(options, 'depended', None):
             targets = ['...']
         blade.blade = Blade(targets,
                             blade_path,
@@ -283,7 +282,7 @@ def _main(blade_path):
                  }[command](options)
         return action
     finally:
-        if (hasattr(options, 'scons_only') and not options.scons_only) or (
+        if (getattr(options, 'scons_only', False) or
                 command == 'clean' or command == 'query'):
             try:
                 if locked_scons:

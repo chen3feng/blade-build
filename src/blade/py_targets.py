@@ -56,7 +56,7 @@ class PythonBinaryTarget(Target):
                         kwargs)
 
         if prebuilt:
-            self.data['type'] = 'prebuilt_py_binary'
+            self.type = 'prebuilt_py_binary'
 
     def scons_rules(self):
         """scons_rules.
@@ -68,13 +68,13 @@ class PythonBinaryTarget(Target):
         """
         self._clone_env()
 
-        if self.data['type'] == 'prebuilt_py_binary':
+        if self.type == 'prebuilt_py_binary':
             return
 
         env_name = self._env_name()
 
-        setup_file = os.path.join(self.data['path'], "setup.py")
-        python_package = os.path.join(self.data['path'], self.data['name'])
+        setup_file = os.path.join(self.path, "setup.py")
+        python_package = os.path.join(self.path, self.name)
         init_file = os.path.join(python_package, '__init__.py')
 
         binary_files = []
@@ -87,7 +87,7 @@ class PythonBinaryTarget(Target):
 
         dep_var_list = []
         self.targets = self.blade.get_build_targets()
-        for dep in self.data['deps']:
+        for dep in self.expanded_deps:
             if dep in binary_dep_source_map.keys():
                 for f in binary_dep_source_map[dep]:
                     binary_files.append(f)
@@ -96,7 +96,7 @@ class PythonBinaryTarget(Target):
 
         target_egg_file = "%s.egg" % self._target_file_path()
         python_binary_var = "%s_python_binary_var" % (
-            self._generate_variable_name(self.data['path'], self.data['name']))
+            self._generate_variable_name(self.path, self.name))
         self._write_rule("%s = %s.PythonBinary(['%s'], %s)" % (
                           python_binary_var,
                           env_name,

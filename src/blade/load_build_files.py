@@ -67,10 +67,10 @@ def _find_dir_depender(dir, blade):
     """
     target_database = blade.get_target_database()
     for key in target_database:
-        for dkey in target_database[key].data['deps']:
+        for dkey in target_database[key].expanded_deps:
             if dkey[0] == dir:
-                return "//%s:%s" % (target_database[key].data['path'],
-                                target_database[key].data['name'])
+                return "//%s:%s" % (target_database[key].path,
+                                target_database[key].name)
     return None
 
 
@@ -157,9 +157,9 @@ def _find_depender(dkey, blade):
     """
     target_database = blade.get_target_database()
     for key in target_database:
-        if dkey in target_database[key].data['deps']:
-            return "//%s:%s" % (target_database[key].data['path'],
-                                target_database[key].data['name'])
+        if dkey in target_database[key].expanded_deps:
+            return "//%s:%s" % (target_database[key].path,
+                                target_database[key].name)
     return None
 
 
@@ -246,7 +246,7 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
                 _find_depender(target_id, blade), source_dir, target_name))
 
         related_targets[target_id] = target_database[target_id]
-        for key in related_targets[target_id].data['deps']:
+        for key in related_targets[target_id].expanded_deps:
             if key not in related_targets:
                 cited_targets.add(key)
 

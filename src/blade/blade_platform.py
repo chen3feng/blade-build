@@ -171,11 +171,11 @@ class CcFlagsManager(object):
                 "-D__STDC_LIMIT_MACROS",
         ]
 
-        if hasattr(self.options, 'gprof') and self.options.gprof:
+        if getattr(self.options, 'gprof', False):
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
-        if hasattr(self.options, 'gcov') and self.options.gcov:
+        if getattr(self.options, 'gcov', False):
             if SconsPlatform().gcc_version > '4.1':
                 flags_except_warning.append('--coverage')
                 linkflags.append('--coverage')

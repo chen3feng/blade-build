@@ -73,7 +73,7 @@ class ThriftLibrary(CcTarget):
         self.thrift_helpers = {}
         for src in srcs:
             self.thrift_helpers[src] = ThriftHelper(
-                    os.path.join(self.data['path'], src))
+                    os.path.join(self.path, src))
 
     def _check_thrift_srcs_name(self, srcs):
         """_check_thrift_srcs_name.
@@ -135,9 +135,9 @@ class ThriftLibrary(CcTarget):
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
         sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
         sources_dependency_map[self.key] = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
-            thrift_java_src_files = self._thrift_gen_java_files(self.data['path'],
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
+            thrift_java_src_files = self._thrift_gen_java_files(self.path,
                                                                 src)
 
             self._write_rule("%s.ThriftJava(%s, '%s')" % (
@@ -147,8 +147,8 @@ class ThriftLibrary(CcTarget):
 
             java_jar_dep_source_map[self.key] = (
                      os.path.dirname(thrift_java_src_files[0]),
-                     os.path.join(self.build_path, self.data['path']),
-                     self.data['name'])
+                     os.path.join(self.build_path, self.path),
+                     self.name)
 
             sources_dependency_map[self.key].extend(thrift_java_src_files)
 
@@ -161,11 +161,11 @@ class ThriftLibrary(CcTarget):
 
         py_targets.binary_dep_source_map[self.key] = []
         py_targets.binary_dep_source_cmd[self.key] = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
-            thrift_py_src_files = self._thrift_gen_py_files(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
+            thrift_py_src_files = self._thrift_gen_py_files(self.path, src)
             py_cmd_var = "%s_python" % self._generate_variable_name(
-                    self.data['path'], self.data['name'])
+                    self.path, self.name)
             self._write_rule("%s = %s.ThriftPython(%s, '%s')" % (
                     py_cmd_var,
                     self._env_name(),
@@ -189,34 +189,32 @@ class ThriftLibrary(CcTarget):
         self.options = self.blade.get_options()
         self.direct_targets = self.blade.get_direct_targets()
 
-        if (hasattr(self.options, 'generate_java')
-                and self.options.generate_java) or (
-                       self.data.get('generate_java', False) or (
-                              self.key in self.direct_targets)):
+        if (getattr(self.options, 'generate_java', False) or
+            self.data.get('generate_java') or
+            self.key in self.direct_targets):
             self._thrift_java_rules()
 
-        if (hasattr(self.options, 'generate_python')
-                and self.options.generate_python) or (
-                    self.data.get('generate_python', False) or (
-                              self.key in self.direct_targets)):
+        if (getattr(self.options, 'generate_python', False) or
+            self.data.get('generate_python') or
+            self.key in self.direct_targets):
             self._thrift_python_rules()
 
         self._setup_cc_flags()
 
         sources = []
         obj_names = []
-        for src in self.data['srcs']:
-            thrift_cpp_files = self._thrift_gen_cpp_files(self.data['path'], src)
+        for src in self.srcs:
+            thrift_cpp_files = self._thrift_gen_cpp_files(self.path, src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
 
             self._write_rule("%s.Thrift(%s, '%s')" % (
                     env_name,
                     str(thrift_cpp_files),
-                    os.path.join(self.data['path'], src)))
+                    os.path.join(self.path, src)))
 
             for thrift_cpp_src in thrift_cpp_src_files:
                 obj_name = "%s_object" % self._generate_variable_name(
-                    self.data['path'], thrift_cpp_src)
+                    self.path, thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
                     "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
@@ -232,8 +230,8 @@ class ThriftLibrary(CcTarget):
 
         self._cc_library()
         options = self.blade.get_options()
-        if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('build_dynamic', False)):
+        if (getattr(options, 'generate_dynamic', False) or
+            self.data.get('build_dynamic')):
             self._dynamic_cc_library()
 
 

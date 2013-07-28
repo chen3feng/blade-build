@@ -56,21 +56,22 @@ def _expand_deps(targets):
     """
     deps_map_cache = {}  # Cache expanded target deps to avoid redundant expand
     for target_id in targets.keys():
-        targets[target_id].data['deps'] = _find_all_deps(target_id, targets, deps_map_cache)
+        target = targets[target_id]
+        target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
-        if targets[target_id].data.get('dynamic_link'):
-            for dep in targets[target_id].data['deps']:
+        if target.data.get('dynamic_link'):
+            for dep in target.expanded_deps:
                 targets[dep].data['build_dynamic'] = True
-        elif targets[target_id].data['type'] == 'swig_library':
-            for dep in targets[target_id].data['deps']:
-                if targets[dep].data['type'] == 'proto_library':
+        elif target.type == 'swig_library':
+            for dep in target.expanded_deps:
+                if targets[dep].type == 'proto_library':
                     targets[dep].data['generate_php'] = True
-        elif targets[target_id].data['type'] == 'py_binary':
-            for dep in targets[target_id].data['deps']:
+        elif target.type == 'py_binary':
+            for dep in target.expanded_deps:
                 targets[dep].data['generate_python'] = True
-        elif targets[target_id].data['type'] == 'java_jar':
-            for dep in targets[target_id].data['deps']:
+        elif target.type == 'java_jar':
+            for dep in target.expanded_deps:
                 targets[dep].data['generate_java'] = True
 
 
@@ -91,7 +92,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
     root_targets.add(target_id)
     new_deps_list = []
 
-    for d in targets[target_id].data['deps']:
+    for d in targets[target_id].expanded_deps:
         # loop dependency
         if d in root_targets:
             err_msg = ''
@@ -126,7 +127,7 @@ def _topological_sort(pairlist):
     for second, target in pairlist.items():
         if second not in numpreds:
             numpreds[second] = 0
-        deps = target.data['deps']
+        deps = target.expanded_deps
         for first in deps:
             # make sure every elt is a key in numpreds
             if first not in numpreds:

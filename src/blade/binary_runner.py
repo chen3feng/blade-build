@@ -38,7 +38,7 @@ class BinaryRunner(object):
 
     def _executable(self, target):
         """Returns the executable path. """
-        return "%s/%s/%s" % (self.build_dir, target.data['path'], target.data['name'])
+        return "%s/%s/%s" % (self.build_dir, target.path, target.name)
 
     def _runfiles_dir(self, target):
         """Returns runfiles dir. """
@@ -56,8 +56,8 @@ class BinaryRunner(object):
     def _get_prebuilt_files(self, target):
         """Get prebuilt files for one target that it depends. """
         file_list = []
-        for dep in target.data['deps']:
-            target_type = self.target_database[dep].data['type']
+        for dep in target.expanded_deps:
+            target_type = self.target_database[dep].type
             if target_type == 'prebuilt_cc_library':
                 prebuilt_file = cc_targets.prebuilt_cc_library_file_map.get(dep)
                 if prebuilt_file:
@@ -124,10 +124,10 @@ class BinaryRunner(object):
             err_msg, item = self.__check_link_name(link_name, link_name_list)
             if err_msg == "AMBIGUOUS":
                 console.error_exit("Ambiguous testdata of //%s:%s: %s, exit..." % (
-                             target.data['path'], target.data['name'], link_name))
+                             target.path, target.name, link_name))
             elif err_msg == "INCOMPATIBLE":
                 console.error_exit("%s could not exist with %s in testdata of //%s:%s" % (
-                           link_name, item, target.data['path'], target.data['name']))
+                           link_name, item, target.path, target.name))
             link_name_list.append(link_name)
             try:
                 os.makedirs(os.path.dirname('%s/%s' % (
@@ -142,8 +142,8 @@ class BinaryRunner(object):
                 if os.path.exists(symlink_name):
                     symlink_valid = True
                     console.warning("%s already existed, could not prepare "
-                            "testdata for //%s:%s" % (link_name, target.data['path'],
-                                target.data['name']))
+                            "testdata for //%s:%s" % (link_name, target.path,
+                                target.name))
                 else:
                     os.remove(symlink_name)
                     console.warning("%s already existed, but it is a broken "
@@ -153,7 +153,7 @@ class BinaryRunner(object):
                 data_target = data_target[2:]
                 dest_data_file = os.path.abspath(data_target)
             else:
-                dest_data_file = os.path.abspath("%s/%s" % (target.data['path'], data_target))
+                dest_data_file = os.path.abspath("%s/%s" % (target.path, data_target))
 
             if not symlink_valid:
                 os.symlink(dest_data_file,
@@ -169,14 +169,14 @@ class BinaryRunner(object):
     def _clean_env(self):
         """clean test environment. """
         for target in self.targets.values():
-            if target.data['type'] != 'cc_test':
+            if target.type != 'cc_test':
                 continue
             self._clean_target(target)
 
     def run_target(self, target_key):
         """Run one single target. """
         target = self.targets[target_key]
-        if target.data['type'] not in self.run_list:
+        if target.type not in self.run_list:
             console.error_exit("target %s:%s is not a target that could run" % (
                        target_key[0], target_key[1]))
         self._prepare_env(target)

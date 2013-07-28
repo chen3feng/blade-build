@@ -60,23 +60,23 @@ class LexYaccLibrary(CcTarget):
 
         env_name = self._env_name()
 
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-        lex_source_file = self._target_file_path(self.data['path'],
-                                                 self.data['srcs'][0])
+        var_name = self._generate_variable_name(self.path, self.name)
+        lex_source_file = self._target_file_path(self.path,
+                                                 self.srcs[0])
         lex_cc_file = '%s.cc' % lex_source_file
 
         lex_flags = []
-        if self.data.get('recursive', False):
+        if self.data.get('recursive'):
             lex_flags.append('-R')
-        prefix = self.data.get('prefix', None)
+        prefix = self.data.get('prefix')
         if prefix:
             lex_flags.append('-P %s' % prefix)
         self._write_rule(
             "lex_%s = %s.CXXFile(LEXFLAGS=%s, target='%s', source='%s');" % (
                 var_name, env_name, lex_flags, lex_cc_file, lex_source_file))
         yacc_source_file = os.path.join(self.build_path,
-                                        self.data['path'],
-                                        self.data['srcs'][1])
+                                        self.path,
+                                        self.srcs[1])
         yacc_cc_file = '%s.cc' % yacc_source_file
         yacc_hh_file = '%s.hh' % yacc_source_file
 
@@ -93,7 +93,7 @@ class LexYaccLibrary(CcTarget):
 
         obj_names = []
         obj_name = "%s_object" % self._generate_variable_name(
-                    self.data['path'], self.data['srcs'][0] + '.cc')
+                    self.path, self.srcs[0] + '.cc')
         obj_names.append(obj_name)
         self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                 "source = '%s')" % (obj_name,
@@ -102,7 +102,7 @@ class LexYaccLibrary(CcTarget):
                                     lex_cc_file))
 
         obj_name = "%s_object" % self._generate_variable_name(
-                    self.data['path'], self.data['srcs'][1] + '.cc')
+                    self.path, self.srcs[1] + '.cc')
         obj_names.append(obj_name)
         self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
                 "source = '%s')" % (obj_name,
@@ -114,7 +114,7 @@ class LexYaccLibrary(CcTarget):
         self._write_rule("%s = [%s]" % (self._objs_name(), ','.join(obj_names)))
         self._cc_library();
         options = self.blade.get_options()
-        if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
+        if (getattr(options, 'generate_dynamic', False) or
             self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
 

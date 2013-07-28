@@ -112,7 +112,7 @@ class JavaJarTarget(Target):
                         kwargs)
 
         if prebuilt:
-            self.data['type'] = 'prebuilt_java_jar'
+            self.type = 'prebuilt_java_jar'
         self.java_jar_cmd_list = []
         self.cmd_var_list = []
         self.java_jar_after_dep_source_list = []
@@ -126,7 +126,7 @@ class JavaJarTarget(Target):
     def _dep_is_jar_to_compile(self, dep):
         """Check the target is java_jar target or not. """
         targets = self.blade.get_build_targets()
-        target_type = targets[dep].data['type']
+        target_type = targets[dep].type
         return ('java_jar' in target_type and 'prebuilt' not in target_type)
 
     def _java_jar_rules_prepare_dep(self, new_src):
@@ -134,7 +134,7 @@ class JavaJarTarget(Target):
         env_name = self._env_name()
 
         new_dep_source_list = []
-        cmd_var = '%s_cmd_dep_var_' % self.data['name']
+        cmd_var = '%s_cmd_dep_var_' % self.name
         dep_cmd_var = ''
         cmd_var_idx = 0
         for dep_src in self.java_jar_dep_source_list:
@@ -171,7 +171,7 @@ class JavaJarTarget(Target):
             self.cmd_var_list.append(cmd_var_id)
 
         if dep_cmd_var:
-            for dep in self.data['deps']:
+            for dep in self.expanded_deps:
                 explict_files_depended = sources_explict_dependency_map.get(dep, [])
                 if explict_files_depended:
                     self._write_rule('%s.Depends(%s, %s)' % (
@@ -204,21 +204,21 @@ class JavaJarTarget(Target):
                                     classes_var_list):
         """Compile the java sources. """
         env_name = self._env_name()
-        class_root = self._java_jar_gen_class_root(self.data['path'],
-                                                   self.data['name'])
-        jar_list = self._java_jar_deps_list(self.data['deps'])
+        class_root = self._java_jar_gen_class_root(self.path,
+                                                   self.name)
+        jar_list = self._java_jar_deps_list(self.expanded_deps)
         classpath_list = self.java_classpath_list
         classpath = ':'.join(classpath_list + jar_list)
 
         new_target_source_list = []
         for src_dir in target_source_list:
-            rel_path = relative_path(src_dir, self.data['path'])
+            rel_path = relative_path(src_dir, self.path)
             pos = rel_path.find('/')
             package = rel_path[pos + 1:]
             new_src_path = os.path.join(new_src, package)
             new_target_source_list.append(new_src_path)
 
-            cmd_var = '%s_cmd_src_var_' % self.data['name']
+            cmd_var = '%s_cmd_src_var_' % self.name
             cmd_var_idx = 0
             if not new_src_path in self.java_jar_cmd_list:
                 cmd_var_id = cmd_var + str(cmd_var_idx)
@@ -243,7 +243,7 @@ class JavaJarTarget(Target):
 
         new_target_idx = 0
         classes_var = '%s_classes' % (
-        self._generate_variable_name(self.data['path'], self.data['name']))
+        self._generate_variable_name(self.path, self.name))
 
         java_config = configparse.blade_config.get_config('java_config')
         source_version = java_config['source_version']
@@ -276,7 +276,7 @@ class JavaJarTarget(Target):
         cmd = javac_cmd + javac_class_path + javac_classes_out
         cmd += javac_source_path + " " + " ".join(source_files_list)
         dummy_file = '%s_dummy_file_%s' % (
-                self.data['name'], str(new_target_idx))
+                self.name, str(new_target_idx))
         new_target_idx += 1
         class_root_dummy = os.path.join(class_root, dummy_file)
         self._write_rule('%s = %s.Command("%s", "", ["%s"])' % (
@@ -286,7 +286,7 @@ class JavaJarTarget(Target):
                 cmd))
 
         # Find out the java_jar depends
-        for dep in self.data['deps']:
+        for dep in self.expanded_deps:
             if dep in java_jars_map.keys():
                 dep_java_jar_list = java_jars_map[dep]
                 self._write_rule("%s.Depends(%s, %s)" % (
@@ -310,10 +310,10 @@ class JavaJarTarget(Target):
     def _java_jar_rules_make_jar(self, pack_list, classes_var_list):
         """Make the java jar files, pack the files that the target needs. """
         env_name = self._env_name()
-        target_base_dir = os.path.join(self.build_path, self.data['path'])
+        target_base_dir = os.path.join(self.build_path, self.path)
 
-        cmd_jar = '%s_cmd_jar' % self.data['name']
-        cmd_var = '%s_cmd_jar_var_' % self.data['name']
+        cmd_jar = '%s_cmd_jar' % self.name
+        cmd_var = '%s_cmd_jar_var_' % self.name
         cmd_idx = 0
         cmd_var_id = ''
         cmd_list = []
@@ -351,7 +351,7 @@ class JavaJarTarget(Target):
             rel_path = relative_path(class_path, target_base_dir)
             class_path_name = rel_path.replace('/', '_')
             jar_var = '%s_%s_jar' % (
-                self._generate_variable_name(self.data['path'], self.data['name']),
+                self._generate_variable_name(self.path, self.name),
                     class_path_name)
             jar_target = '%s.jar' % self._target_file_path()
             jar_target_object = '%s.jar' % jar_target
@@ -386,13 +386,13 @@ class JavaJarTarget(Target):
     def _prebuilt_java_jar_build_path(self):
         """The build path for pre build java jar. """
         return os.path.join(self.build_path,
-                            self.data['path'],
-                            '%s.jar' % self.data['name'])
+                            self.path,
+                            '%s.jar' % self.name)
 
     def _prebuilt_java_jar_src_path(self):
         """The source path for pre build java jar. """
-        return os.path.join(self.data['path'],
-                            '%s.jar' % self.data['name'])
+        return os.path.join(self.path,
+                            '%s.jar' % self.name)
 
     def _prebuilt_java_jar(self):
         """The pre build java jar rules. """
@@ -401,7 +401,7 @@ class JavaJarTarget(Target):
                 self._prebuilt_java_jar_build_path(),
                 self._prebuilt_java_jar_src_path()))
 
-        java_classpath_map[(self.data['path'], self.data['name'])] = self._prebuilt_java_jar_src_path()
+        java_classpath_map[(self.path, self.name)] = self._prebuilt_java_jar_src_path()
 
     def scons_rules(self):
         """scons_rules.
@@ -413,28 +413,28 @@ class JavaJarTarget(Target):
         """
         self._clone_env()
 
-        if self.data['type'] == 'prebuilt_java_jar':
+        if self.type == 'prebuilt_java_jar':
             self._prebuilt_java_jar()
             return
 
         env_name = self._env_name()
-        class_root = self._java_jar_gen_class_root(self.data['path'],
-                                                   self.data['name'])
+        class_root = self._java_jar_gen_class_root(self.path,
+                                                   self.name)
 
         for key in java_jar_dep_vars:
-            if key in self.data['deps']:
+            if key in self.expanded_deps:
                 self.cmd_var_list += java_jar_dep_vars[key]
 
         dep_source_map = get_java_jar_dep_source_map()
         self.java_jar_dep_source_list = []
         for key in dep_source_map:
-            if key in self.data['deps']:
+            if key in self.expanded_deps:
                 self.java_jar_dep_source_list.append(dep_source_map[key])
 
         classpath_map = get_java_classpath_map()
         self.java_classpath_list = []
         for key in classpath_map:
-            if key in self.data['deps']:
+            if key in self.expanded_deps:
                 self.java_classpath_list.append(classpath_map[key])
 
         # make unique
@@ -446,14 +446,14 @@ class JavaJarTarget(Target):
             self.java_jar_cmd_list.append(class_root)
 
         target_source_list = []
-        for src_dir in self.data['srcs']:
-            java_src = os.path.join(self.data['path'], src_dir)
+        for src_dir in self.srcs:
+            java_src = os.path.join(self.path, src_dir)
             if not java_src in target_source_list:
                 target_source_list.append(java_src)
 
         new_src_dir = ''
-        src_dir = '%s_src' % self.data['name']
-        new_src_dir = os.path.join(self.build_path, self.data['path'], src_dir)
+        src_dir = '%s_src' % self.name
+        new_src_dir = os.path.join(self.build_path, self.path, src_dir)
         if not new_src_dir in self.java_jar_cmd_list:
             self._write_rule('%s.Command("%s", "", [Mkdir("%s")])' % (
                     env_name,
@@ -489,8 +489,8 @@ def java_jar(name,
                            kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.data['path'],
-                                                   target.data['name']))
+                        "please use 'prebuilt'" % (target.path,
+                                                   target.name))
     blade.blade.register_target(target)
 
 

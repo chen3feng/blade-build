@@ -51,8 +51,8 @@ class TestDepsAnalyzing(blade_test.TargetTest):
 
         self.assertTrue(cc_library_poppy in self.all_targets.keys())
 
-        poppy_deps = self.all_targets[cc_library_poppy].data['deps']
-        poppy_mock_deps = self.all_targets[cc_lib_poppy_mock].data['deps']
+        poppy_deps = self.all_targets[cc_library_poppy].expanded_deps
+        poppy_mock_deps = self.all_targets[cc_lib_poppy_mock].expanded_deps
         self.assertTrue(poppy_deps)
         self.assertTrue(poppy_mock_deps)
 
@@ -63,13 +63,13 @@ class TestDepsAnalyzing(blade_test.TargetTest):
         self.assertTrue(cc_library_poppy in poppy_mock_deps)
         self.assertTrue(proto_lib_meta in poppy_mock_deps)
 
-        poppy_client_deps  = self.all_targets[swig_library].data['deps']
+        poppy_client_deps  = self.all_targets[swig_library].expanded_deps
         self.assertTrue(poppy_client_deps)
         self.assertTrue(cc_library_poppy in poppy_client_deps)
         self.assertTrue(cc_lib_prebuild  in poppy_client_deps)
 
         self.assertTrue(java_jar in self.all_targets)
-        java_jar_deps = self.all_targets[java_jar].data['deps']
+        java_jar_deps = self.all_targets[java_jar].expanded_deps
         self.assertTrue(java_jar_deps)
 
         self.assertTrue(proto_lib_option in java_jar_deps)

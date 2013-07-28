@@ -167,13 +167,9 @@ class Blade(object):
 
     def query(self, targets):
         """Query the targets. """
-        print_deps = hasattr(self.__options, 'deps') and (
-                        self.__options.deps)
-        print_depended = hasattr(self.__options, 'depended') and (
-                        self.__options.depended)
-        dot_file = ""
-        if hasattr(self.__options, 'output-to-dot'):
-            dot_file = self.__options.output_to_dot
+        print_deps = getattr(self.__options, 'deps', False)
+        print_depended = getattr(self.__options, 'depended', False)
+        dot_file = getattr(self.__options, 'output_to_dot', '')
         result_map = self.query_helper(targets)
         if dot_file:
             print_mode = 0
@@ -212,7 +208,7 @@ class Blade(object):
 
     def print_dot_deps(self, output_file, node, target_set):
         targets = self.__build_targets
-        deps = targets.get(node, {}).get('direct_deps', [])
+        deps = targets[node].deps
         for i in deps:
             if not i in target_set:
                 continue
@@ -252,11 +248,11 @@ class Blade(object):
         result_map = {}
         for key in query_list:
             result_map[key] = ([], [])
-            deps = all_targets[key].data['deps']
+            deps = all_targets[key].expanded_deps
             deps.sort(key=lambda x: x, reverse=False)
             depended_by = []
             for tkey in all_targets.keys():
-                if key in all_targets[tkey].data['deps']:
+                if key in all_targets[tkey].expanded_deps:
                     depended_by.append(tkey)
             depended_by.sort(key=lambda x: x, reverse=False)
             result_map[key] = (list(deps), list(depended_by))
@@ -310,7 +306,7 @@ class Blade(object):
             print self.__target_database
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (
-                        target.data['name'], target.data['path']))
+                        target.name, target.path))
         self.__target_database[target_key] = target
 
     def _is_scons_object_type(self, target_type):
@@ -328,17 +324,17 @@ class Blade(object):
         """Get the build rules and return to the object who queries this. """
         rules_buf = []
         skip_test_targets = False
-        if hasattr(self.__options, 'no_test') and self.__options.no_test:
+        if getattr(self.__options, 'no_test', False):
             skip_test_targets = True
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            if not self._is_scons_object_type(target.data['type']):
+            if not self._is_scons_object_type(target.type):
                 continue
             scons_object = self.__target_database.get(k, None)
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test_targets and target.data['type'] == 'cc_test':
+            if skip_test_targets and target.type == 'cc_test':
                 continue
             scons_object.scons_rules()
             rules_buf += scons_object.get_rules()

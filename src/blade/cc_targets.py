@@ -87,18 +87,18 @@ class CcTarget(Target):
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon a deprecated library. """
-        for dep in self.data['direct_deps']:
+        for dep in self.deps:
             target = self.target_database.get(dep, {})
-            if target.data.get('deprecated', False):
-                replaced_targets = target.data['direct_deps']
+            if target.data.get('deprecated'):
+                replaced_targets = target.deps
                 replaced_target = ''
                 if replaced_targets:
                     replaced_target = replaced_targets[0]
                 console.warning("//%s:%s : "
                                 "//%s:%s has been deprecated, "
                                 "please depends on //%s:%s" % (
-                                self.data['path'], self.data['name'],
-                                target.data['path'], target.data['name'],
+                                self.path, self.name,
+                                target.path, target.name,
                                 replaced_target[0], replaced_target[1]))
 
     def _prepare_to_generate_rule(self):
@@ -148,13 +148,13 @@ class CcTarget(Target):
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
         warning = self.data.get('warning', 'yes')
-        srcs = self.data['srcs']
+        srcs = self.srcs
         if not srcs or warning != 'no':
             return
 
         keywords_list = self.blade.get_sources_keyword_list()
         for keyword in keywords_list:
-            if keyword in self.data['path']:
+            if keyword in self.path:
                 return
 
         illegal_path_list = []
@@ -172,15 +172,15 @@ class CcTarget(Target):
         Concatinating target path, target name to be objs var and returns.
 
         """
-        return "objs_%s" % self._generate_variable_name(self.data['path'],
-                                                        self.data['name'])
+        return "objs_%s" % self._generate_variable_name(self.path,
+                                                        self.name)
 
     def _prebuilt_cc_library_build_path(self, path='', name='', dynamic=0):
         """Returns the build path of the prebuilt cc library. """
         if not path:
-            path = self.data['path']
+            path = self.path
         if not name:
-            name = self.data['name']
+            name = self.name
         suffix = 'a'
         if dynamic:
             suffix = 'so'
@@ -189,9 +189,9 @@ class CcTarget(Target):
     def _prebuilt_cc_library_src_path(self, path='', name='', dynamic=0):
         """Returns the source path of the prebuilt cc library. """
         if not path:
-            path = self.data['path']
+            path = self.path
         if not name:
-            name = self.data['name']
+            name = self.name
         options = self.blade.get_options()
         suffix = 'a'
         if dynamic:
@@ -210,7 +210,7 @@ class CcTarget(Target):
 
     def _setup_extra_link_flags(self):
         """extra_linkflags. """
-        extra_linkflags = self.data.get('extra_linkflags', [])
+        extra_linkflags = self.data.get('extra_linkflags')
         if extra_linkflags:
             self._write_rule("%s.Append(LINKFLAGS=%s)" % (self._env_name(), extra_linkflags))
 
@@ -275,7 +275,7 @@ class CcTarget(Target):
         incs = self.data.get('incs', [])
         if not incs:
             incs = self.data.get('export_incs', [])
-        new_incs_list = [os.path.join(self.data['path'], inc) for inc in incs]
+        new_incs_list = [os.path.join(self.path, inc) for inc in incs]
         new_incs_list += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
         incs_list = []
@@ -299,14 +299,14 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        target_type = build_targets[dep].data['type']
+        target_type = build_targets[dep].type
         return ('library' in target_type or 'plugin' in target_type)
 
     def _export_incs_list(self):
         """_export_incs_list.
         TODO
         """
-        deps = self.data['deps']
+        deps = self.expanded_deps
         inc_list = []
         for lib in deps:
             # lib is (path, libname) pair.
@@ -341,7 +341,7 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        deps = self.data['deps']
+        deps = self.expanded_deps
         lib_list = []
         link_all_symbols_lib_list = []
         for dep in deps:
@@ -374,14 +374,14 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        deps = self.data['deps']
+        deps = self.expanded_deps
         lib_list = []
         for lib in deps:
             if not self._dep_is_library(lib):
                 continue
 
-            if (build_targets[lib].data['type'] == 'cc_library' and
-                not build_targets[lib].data['srcs']):
+            if (build_targets[lib].type == 'cc_library' and
+                not build_targets[lib].srcs):
                 continue
             # system lib
             if lib[0] == "#":
@@ -428,12 +428,12 @@ class CcTarget(Target):
                                    'cc_plugin',
                                    'swig_library']
         for key in build_targets.keys():
-            if (self.key in build_targets[key].data['deps'] and
-                build_targets[key].data['type'] in need_static_lib_targets):
+            if (self.key in build_targets[key].expanded_deps and
+                build_targets[key].type in need_static_lib_targets):
                 allow_only_dynamic = False
 
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'])
+        var_name = self._generate_variable_name(self.path,
+                                                self.name)
         if not allow_only_dynamic:
             self._write_rule(
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
@@ -444,19 +444,19 @@ class CcTarget(Target):
                              self._prebuilt_cc_library_build_path()))
         if dynamic:
             prebuilt_target_file = self._prebuilt_cc_library_build_path(
-                                            self.data['path'],
-                                            self.data['name'],
+                                            self.path,
+                                            self.name,
                                             dynamic=1)
             prebuilt_src_file = self._prebuilt_cc_library_src_path(
-                                            self.data['path'],
-                                            self.data['name'],
+                                            self.path,
+                                            self.name,
                                             dynamic=1)
             self._write_rule(
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
                      prebuilt_target_file,
                      prebuilt_src_file))
-            var_name = self._generate_variable_name(self.data['path'],
-                                                    self.data['name'],
+            var_name = self._generate_variable_name(self.path,
+                                                    self.name,
                                                     "dynamic")
             self._write_rule("%s = top_env.File('%s')" % (
                         var_name,
@@ -472,7 +472,7 @@ class CcTarget(Target):
         It will output the cc_library rule into the buffer.
 
         """
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+        var_name = self._generate_variable_name(self.path, self.name)
         self._write_rule("%s = %s.Library('%s', %s)" % (
                 var_name,
                 self._env_name(),
@@ -492,12 +492,12 @@ class CcTarget(Target):
         """
         self._setup_extra_link_flags()
 
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'],
+        var_name = self._generate_variable_name(self.path,
+                                                self.name,
                                                 'dynamic')
 
         lib_str = self._get_dynamic_deps_lib_list()
-        if self.data['srcs'] or self.data['deps']:
+        if self.srcs or self.expanded_deps:
             self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
                              % self._env_name())
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
@@ -523,10 +523,10 @@ class CcTarget(Target):
                         "cc_test",
                         "cc_plugin"]
 
-        if not self.data['type'] in target_types:
-            console.error_exit("logic error, type %s err in object rule" % self.data['type'])
+        if not self.type in target_types:
+            console.error_exit("logic error, type %s err in object rule" % self.type)
 
-        path = self.data['path']
+        path = self.path
         objs_name = self._objs_name()
         env_name = self._env_name()
 
@@ -534,11 +534,11 @@ class CcTarget(Target):
 
         objs = []
         sources = []
-        for src in self.data['srcs']:
+        for src in self.srcs:
             obj = "%s_%s_object" % (self._generate_variable_name(path, src),
-                                    self._regular_variable_name(self.data['name']))
+                                    self._regular_variable_name(self.name))
             target_path = os.path.join(
-                    self.build_path, path, '%s.objs' % self.data['name'], src)
+                    self.build_path, path, '%s.objs' % self.name, src)
             self._write_rule(
                     "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
                     ", source = '%s')" % (obj,
@@ -599,8 +599,8 @@ class CcLibrary(CcTarget):
                           blade,
                           kwargs)
         if prebuilt:
-            self.data['type'] = 'prebuilt_cc_library'
-            self.data['srcs'] = []
+            self.type = 'prebuilt_cc_library'
+            self.srcs = []
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
@@ -613,18 +613,16 @@ class CcLibrary(CcTarget):
         """
         self._prepare_to_generate_rule()
 
-        building_dynamic = 0
         options = self.blade.get_options()
-        if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('build_dynamic', False)):
-            building_dynamic = 1
+        build_dynamic = (getattr(options, 'generate_dynamic', False) or
+                         self.data.get('build_dynamic'))
 
-        if self.data['type'] == 'prebuilt_cc_library':
-            self._prebuilt_cc_library(building_dynamic)
+        if self.type == 'prebuilt_cc_library':
+            self._prebuilt_cc_library(build_dynamic)
         else:
             self._cc_objects_rules()
             self._cc_library()
-            if building_dynamic:
+            if build_dynamic:
                 self._dynamic_cc_library()
 
 
@@ -663,8 +661,8 @@ def cc_library(name,
                        kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                           "please use 'prebuilt'" % (target.data['path'],
-                                                      target.data['name']))
+                           "please use 'prebuilt'" % (target.path,
+                                                      target.name))
     blade.blade.register_target(target)
 
 
@@ -723,7 +721,7 @@ class CcBinary(CcTarget):
     def _cc_binary(self):
         """_cc_binary rules. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+        var_name = self._generate_variable_name(self.path, self.name)
 
         platform = self.blade.get_scons_platform()
         if platform.get_gcc_version() > '4.5':
@@ -737,7 +735,7 @@ class CcBinary(CcTarget):
             self._write_rule(
                     '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
-        if self.data.get('export_dynamic', False):
+        if self.data.get('export_dynamic'):
             self._write_rule(
                 "%s.Append(LINKFLAGS='-rdynamic')" % env_name)
 
@@ -766,8 +764,8 @@ class CcBinary(CcTarget):
     def _dynamic_cc_binary(self):
         """_dynamic_cc_binary. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-        if self.data.get('export_dynamic', False):
+        var_name = self._generate_variable_name(self.path, self.name)
+        if self.data.get('export_dynamic'):
             self._write_rule("%s.Append(LINKFLAGS='-rdynamic')" % env_name)
 
         self._setup_extra_link_flags()
@@ -892,8 +890,8 @@ class CcPlugin(CcTarget):
                           blade,
                           kwargs)
         if prebuilt:
-            self.data['type'] = 'prebuilt_cc_library'
-            self.data['srcs'] = []
+            self.type = 'prebuilt_cc_library'
+            self.srcs = []
 
     def scons_rules(self):
         """scons_rules.
@@ -904,8 +902,8 @@ class CcPlugin(CcTarget):
         self._prepare_to_generate_rule()
 
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'],
+        var_name = self._generate_variable_name(self.path,
+                                                self.name,
                                                 'dynamic')
 
         self._cc_objects_rules()
@@ -917,7 +915,7 @@ class CcPlugin(CcTarget):
             self._write_rule(
                     '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
-        if self.data['srcs'] or self.data['deps']:
+        if self.srcs or self.expanded_deps:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
                     var_name,
                     env_name,
@@ -961,8 +959,8 @@ def cc_plugin(name,
                       kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.data['path'],
-                                                   target.data['name']))
+                        "please use 'prebuilt'" % (target.path,
+                                                   target.name))
     blade.blade.register_target(target)
 
 
@@ -1031,7 +1029,7 @@ class CcTest(CcBinary):
                           export_dynamic,
                           blade,
                           kwargs)
-        self.data['type'] = 'cc_test'
+        self.type = 'cc_test'
         self.data['testdata'] = var_to_list(testdata)
         self.data['always_run'] = always_run
         self.data['exclusive'] = exclusive
@@ -1048,7 +1046,7 @@ class CcTest(CcBinary):
         else:
             if heap_check not in HEAP_CHECK_VALUES:
                 console.error_exit("//%s:%s: heap_check can only be in %s" % (
-                    self.data['path'], self.data['name'], HEAP_CHECK_VALUES))
+                    self.path, self.name, HEAP_CHECK_VALUES))
 
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])

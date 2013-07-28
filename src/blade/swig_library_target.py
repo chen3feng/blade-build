@@ -90,8 +90,8 @@ class SwigLibrary(CcTarget):
         """_swig_library_rules_py.
         """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'],
+        var_name = self._generate_variable_name(self.path,
+                                                self.name,
                                                 'dynamic_py')
 
         obj_names_py = []
@@ -121,17 +121,17 @@ class SwigLibrary(CcTarget):
         py_targets.binary_dep_source_cmd[self.key] = []
         dep_files = []
         dep_files_map = {}
-        for src in self.data['srcs']:
-            pyswig_src = self._pyswig_gen_file(self.data['path'], src)
+        for src in self.srcs:
+            pyswig_src = self._pyswig_gen_file(self.path, src)
             self._write_rule('%s.%s(["%s"], "%s")' % (
                     env_name,
                     builder_alias,
                     pyswig_src,
-                    os.path.join(self.data['path'], src)))
+                    os.path.join(self.path, src)))
             py_targets.binary_dep_source_map[self.key].append(
-                    self._pyswig_gen_python_file(self.data['path'], src))
+                    self._pyswig_gen_python_file(self.path, src))
             obj_name_py = "%s_object" % self._generate_variable_name(
-                self.data['path'], src, 'python')
+                self.path, src, 'python')
             obj_names_py.append(obj_name_py)
 
             self._write_rule(
@@ -143,12 +143,12 @@ class SwigLibrary(CcTarget):
             py_targets.binary_dep_source_cmd[self.key].append(
                     obj_name_py)
             dep_files = self._swig_extract_dependency_files(
-                                os.path.join(self.data['path'], src))
+                                os.path.join(self.path, src))
             self._write_rule("%s.Depends('%s', %s)" % (
                              env_name,
                              pyswig_src,
                              dep_files))
-            dep_files_map[os.path.join(self.data['path'], src)] = dep_files
+            dep_files_map[os.path.join(self.path, src)] = dep_files
 
         objs_name = self._objs_name()
         objs_name_py = "%s_py" % objs_name
@@ -167,7 +167,7 @@ class SwigLibrary(CcTarget):
             self._write_rule(
                     '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
-        if self.data['srcs'] or self.data['deps']:
+        if self.srcs or self.expanded_deps:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s, SHLIBPREFIX = '')"
                     % (var_name,
                        env_name,
@@ -189,32 +189,26 @@ class SwigLibrary(CcTarget):
     def _swig_library_rules_java(self, dep_files_map):
         """_swig_library_rules_java. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'],
+        var_name = self._generate_variable_name(self.path,
+                                                self.name,
                                                 'dynamic_java')
         self.java_jar_dep_vars = java_jar_target.get_java_jar_dep_vars()
         self.java_jar_dep_vars[self.key] = []
 
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
 
-        build_jar = False
-        java_lib_packed = False
         # Append -fno-strict-aliasing flag to cxxflags and cppflags
         self._write_rule('%s.Append(CPPFLAGS = ["-fno-strict-aliasing"])' % env_name)
-        if self.data.get('generate_java', False):
-            build_jar = True
+        build_jar = self.data.get('generate_java')
 
         flag_list = []
-        flag_list.append(('cpperraswarn',
-                          self.data.get('cpperraswarn', '')))
-        flag_list.append(('package',
-                          self.data.get('java_package', '')))
+        flag_list.append(('cpperraswarn', self.data.get('cpperraswarn', '')))
+        flag_list.append(('package', self.data.get('java_package', '')))
         java_lib_packed = self.data.get('java_lib_packed', False)
-        flag_list.append(('java_lib_packed',
-                          self.data.get('java_lib_packed', False)))
+        flag_list.append(('java_lib_packed', java_lib_packed))
         javaswig_flags = ''
         depend_outdir = False
-        out_dir = os.path.join(self.build_path, self.data['path'])
+        out_dir = os.path.join(self.build_path, self.path)
         for flag in flag_list:
             if flag[0] == 'cpperraswarn':
                 if flag[1] == 'yes':
@@ -227,7 +221,7 @@ class SwigLibrary(CcTarget):
                     javaswig_flags += ' -package %s' % flag[1]
                     package_dir = flag[1].replace('.', '/')
                     out_dir = os.path.join(self.build_path,
-                                           self.data['path'], package_dir)
+                                           self.path, package_dir)
                     out_dir_dummy = os.path.join(out_dir, 'dummy_file')
                     javaswig_flags += ' -outdir %s' % out_dir
                     swig_outdir_cmd = '%s_swig_out_cmd_var' % var_name
@@ -242,8 +236,8 @@ class SwigLibrary(CcTarget):
                     if build_jar:
                         java_jar_dep_source_map[self.key] = (
                                 out_dir,
-                                os.path.join(self.build_path, self.data['path']),
-                                self.data['name'])
+                                os.path.join(self.build_path, self.path),
+                                self.name)
 
         builder_name = '%s_bld' % var_name
         builder_alias = '%s_bld_alias' % var_name
@@ -266,8 +260,8 @@ class SwigLibrary(CcTarget):
                                         builder_alias,
                                         dep_files_map):
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'],
-                                                self.data['name'],
+        var_name = self._generate_variable_name(self.path,
+                                                self.name,
                                                 'dynamic_java')
         depend_outdir = dep_outdir
         build_jar = java_build_jar
@@ -284,8 +278,8 @@ class SwigLibrary(CcTarget):
         sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
         sources_dependency_map[self.key] = []
         dep_files = []
-        for src in self.data['srcs']:
-            javaswig_src = self._javaswig_gen_file(self.data['path'], src)
+        for src in self.srcs:
+            javaswig_src = self._javaswig_gen_file(self.path, src)
             src_basename = os.path.basename(src)
             javaswig_var = "%s_%s" % (
                     var_name, self._regular_variable_name(src_basename))
@@ -294,7 +288,7 @@ class SwigLibrary(CcTarget):
                     env_name,
                     builder_alias,
                     javaswig_src,
-                    os.path.join(self.data['path'], src)))
+                    os.path.join(self.path, src)))
             sources_dependency_map[self.key].append(javaswig_src)
             if depend_outdir:
                 self._write_rule('%s.Depends(%s, "%s")' % (
@@ -304,7 +298,7 @@ class SwigLibrary(CcTarget):
             self.java_jar_dep_vars[self.key].append(javaswig_var)
 
             obj_name_java = "%s_object" % self._generate_variable_name(
-                    self.data['path'], src, 'dynamic_java')
+                    self.path, src, 'dynamic_java')
             obj_names_java.append(obj_name_java)
 
             self._write_rule(
@@ -315,7 +309,7 @@ class SwigLibrary(CcTarget):
                             javaswig_src,
                             javaswig_src))
 
-            dep_key = os.path.join(self.data['path'], src)
+            dep_key = os.path.join(self.path, src)
             if dep_key in dep_files_map.keys():
                 dep_files = dep_files_map[dep_key]
             else:
@@ -336,7 +330,7 @@ class SwigLibrary(CcTarget):
          lib_str,
          whole_link_flags) = self._get_static_deps_lib_list()
 
-        if self.data['srcs'] or self.data['deps']:
+        if self.srcs or self.expanded_deps:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s)" % (
                     var_name,
                     env_name,
@@ -356,11 +350,11 @@ class SwigLibrary(CcTarget):
             lib_name = os.path.basename(target_path_java)
             lib_name = 'lib%s.so' % lib_name
             jar_files_packing_map[self.key] = (
-                    os.path.join(lib_dir, lib_name), self.data['name'])
+                    os.path.join(lib_dir, lib_name), self.name)
 
     def _swig_library_rules_php(self, dep_files_map):
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+        var_name = self._generate_variable_name(self.path, self.name)
         obj_names_php = []
 
         flag_list = []
@@ -374,8 +368,8 @@ class SwigLibrary(CcTarget):
                     phpswig_flags += ' -cpperraswarn'
         self.phpswig_flags = phpswig_flags
 
-        builder_name = '%s_php_bld' % self._regular_variable_name(self.data['name'])
-        builder_alias = '%s_php_bld_alias' % self._regular_variable_name(self.data['name'])
+        builder_name = '%s_php_bld' % self._regular_variable_name(self.name)
+        builder_alias = '%s_php_bld_alias' % self._regular_variable_name(self.name)
         swig_bld_cmd = "swig -php %s -c++ -I%s -o $TARGET $SOURCE" % (
                        phpswig_flags, self.build_path)
 
@@ -390,15 +384,15 @@ class SwigLibrary(CcTarget):
 
         dep_files = []
         dep_files_map = {}
-        for src in self.data['srcs']:
-            phpswig_src = self._phpswig_gen_file(self.data['path'], src)
+        for src in self.srcs:
+            phpswig_src = self._phpswig_gen_file(self.path, src)
             self._write_rule('%s.%s(["%s"], "%s")' % (
                     env_name,
                     builder_alias,
                     phpswig_src,
-                    os.path.join(self.data['path'], src)))
+                    os.path.join(self.path, src)))
             obj_name_php = "%s_object" % self._generate_variable_name(
-                self.data['path'], src, 'php')
+                self.path, src, 'php')
             obj_names_php.append(obj_name_php)
 
             self._write_rule(
@@ -408,7 +402,7 @@ class SwigLibrary(CcTarget):
                                     phpswig_src,
                                     phpswig_src))
 
-            dep_key = os.path.join(self.data['path'], src)
+            dep_key = os.path.join(self.path, src)
             if dep_key in dep_files_map.keys():
                 dep_files = dep_files_map[dep_key]
             else:
@@ -423,7 +417,7 @@ class SwigLibrary(CcTarget):
 
         self._write_rule("%s = [%s]" % (objs_name_php, ','.join(obj_names_php)))
 
-        target_path = self._target_file_path(self.data['path'], self.data['name'])
+        target_path = self._target_file_path(self.path, self.name)
         target_lib = os.path.basename(target_path)
         target_path_php = os.path.join(os.path.dirname(target_path), target_lib)
 
@@ -431,7 +425,7 @@ class SwigLibrary(CcTarget):
          lib_str,
          whole_link_flags) = self._get_static_deps_lib_list()
 
-        if self.data['srcs'] or self.data['deps']:
+        if self.srcs or self.expanded_deps:
             self._write_rule("%s = %s.SharedLibrary('%s', %s, %s, SHLIBPREFIX='')" % (
                     var_name,
                     env_name,
@@ -455,14 +449,13 @@ class SwigLibrary(CcTarget):
 
         dep_files_map = {}
         dep_files_map = self._swig_library_rules_py()
-        if (hasattr(self.options, 'generate_java')
-                and self.options.generate_java) or (
-                        self.data.get('generate_java', False)):
+        if (getattr(self.options, 'generate_java', False) or
+            self.data.get('generate_java')):
             self._swig_library_rules_java(dep_files_map)
-        if hasattr(self.options, 'generate_php') and self.options.generate_php:
+        if getattr(self.options, 'generate_php', False):
             if not self.php_inc_list:
                 console.error_exit("failed to build //%s:%s, please install php modules" % (
-                           self.data['path'], self.data['name']))
+                           self.path, self.name))
             else:
                 self._swig_library_rules_php(dep_files_map)
 

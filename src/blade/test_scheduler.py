@@ -125,7 +125,7 @@ class TestScheduler(object):
     def _run_job_redirect(self, job):
         """run job, redirect the output. """
         (target, run_dir, test_env, cmd) = job
-        test_name = "%s:%s" % (target.data['path'], target.data['name'])
+        test_name = "%s:%s" % (target.path, target.name)
 
         console.info("Running %s" % cmd)
         p = subprocess.Popen(cmd,
@@ -150,7 +150,7 @@ class TestScheduler(object):
         p.wait()
         result = self.__get_result(p.returncode)
         console.info("%s/%s finished : %s\n" % (
-             target.data['path'], target.data['name'], result))
+             target.path, target.name, result))
 
         return p.returncode
 
@@ -163,7 +163,7 @@ class TestScheduler(object):
         while not job_queue.empty():
             job = job_queue.get()
             target = job[0]
-            target_key = "%s:%s" % (target.data['path'], target.data['name'])
+            target_key = "%s:%s" % (target.path, target.name)
             start_time = time.time()
 
             try:
@@ -217,7 +217,7 @@ class TestScheduler(object):
 
         for i in self.tests_list:
             target = i[0]
-            if target.data.get('exclusive', False):
+            if target.data.get('exclusive'):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)

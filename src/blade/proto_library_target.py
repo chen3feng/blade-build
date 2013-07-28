@@ -141,10 +141,10 @@ class ProtoLibrary(CcTarget):
         java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
         sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
         sources_dependency_map[self.key] = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
             package_dir = self._get_java_package_name(src_path)
-            proto_java_src_package = self._proto_java_gen_file(self.data['path'],
+            proto_java_src_package = self._proto_java_gen_file(self.path,
                                                                src,
                                                                package_dir)
 
@@ -155,15 +155,15 @@ class ProtoLibrary(CcTarget):
 
             java_jar_dep_source_map[self.key] = (
                      os.path.dirname(proto_java_src_package),
-                     os.path.join(self.build_path, self.data['path']),
-                     self.data['name'])
+                     os.path.join(self.build_path, self.path),
+                     self.name)
             sources_dependency_map[self.key].append(proto_java_src_package)
 
     def _proto_php_rules(self):
         """Generate php files. """
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
-            proto_php_src = self._proto_gen_php_file(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
+            proto_php_src = self._proto_gen_php_file(self.path, src)
             self._write_rule("%s.ProtoPhp(['%s'], '%s')" % (
                     self._env_name(),
                     proto_php_src,
@@ -173,11 +173,11 @@ class ProtoLibrary(CcTarget):
         """Generate python files. """
         py_targets.binary_dep_source_map[self.key] = []
         py_targets.binary_dep_source_cmd[self.key] = []
-        for src in self.data['srcs']:
-            src_path = os.path.join(self.data['path'], src)
-            proto_python_src = self._proto_gen_python_file(self.data['path'], src)
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
+            proto_python_src = self._proto_gen_python_file(self.path, src)
             py_cmd_var = "%s_python" % self._generate_variable_name(
-                    self.data['path'], self.data['name'])
+                    self.path, self.name)
             self._write_rule("%s = %s.ProtoPython(['%s'], '%s')" % (
                     py_cmd_var,
                     self._env_name(),
@@ -201,38 +201,35 @@ class ProtoLibrary(CcTarget):
         self.options = self.blade.get_options()
         self.direct_targets = self.blade.get_direct_targets()
 
-        if (hasattr(self.options, 'generate_java')
-                and self.options.generate_java) or (
-                       self.data.get('generate_java', False) or (
-                              self.key in self.direct_targets)):
+        if (getattr(self.options, 'generate_java', False) or
+            self.data.get('generate_java') or
+            self.key in self.direct_targets):
             self._proto_java_rules()
 
-        if (hasattr(self.options, 'generate_php')
-                and self.options.generate_php) and (
-                       self.data.get('generate_php', False) or (
-                              self.key in self.direct_targets)):
+        if (getattr(self.options, 'generate_php', False) or
+            self.data.get('generate_php') or
+            self.key in self.direct_targets):
             self._proto_php_rules()
 
-        if (hasattr(self.options, 'generate_python')
-                and self.options.generate_python) or (
-                    self.data.get('generate_python', False) or (
-                              self.key in self.direct_targets)):
+        if (getattr(self.options, 'generate_python', False) or
+            self.data.get('generate_python') or
+            self.key in self.direct_targets):
             self._proto_python_rules()
 
         self._setup_cc_flags()
 
         sources = []
         obj_names = []
-        for src in self.data['srcs']:
-            (proto_src, proto_hdr) = self._proto_gen_files(self.data['path'], src)
+        for src in self.srcs:
+            (proto_src, proto_hdr) = self._proto_gen_files(self.path, src)
 
             self._write_rule("%s.Proto(['%s', '%s'], '%s')" % (
                     env_name,
                     proto_src,
                     proto_hdr,
-                    os.path.join(self.data['path'], src)))
+                    os.path.join(self.path, src)))
             obj_name = "%s_object" % self._generate_variable_name(
-                self.data['path'], src)
+                self.path, src)
             obj_names.append(obj_name)
             self._write_rule(
                 "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
@@ -247,7 +244,7 @@ class ProtoLibrary(CcTarget):
 
         self._cc_library()
         options = self.blade.get_options()
-        if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
+        if (getattr(options, 'generate_dynamic', False) or
             self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
 

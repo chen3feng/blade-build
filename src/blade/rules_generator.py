@@ -176,7 +176,7 @@ from scons_helper import generate_resource_file
 from scons_helper import generate_resource_header
 """)
 
-        if hasattr(self.options, 'verbose') and self.options.verbose:
+        if getattr(self.options, 'verbose', False):
             self._add_rule("scons_helper.option_verbose = True")
 
         self._add_rule((
@@ -193,7 +193,7 @@ from scons_helper import generate_resource_header
         self._add_rule("top_env.Decider('MD5-timestamp')")
         self._add_rule("console.color_enabled=%s" % console.color_enabled)
 
-        if hasattr(self.options, 'verbose') and not self.options.verbose:
+        if getattr(self.options, 'verbose', False):
             self._add_rule("top_env['SPAWN'] = echospawn")
 
         self._add_rule(
@@ -259,7 +259,7 @@ compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 """)
 
-        if hasattr(self.options, 'verbose') and not self.options.verbose:
+        if not getattr(self.options, 'verbose', False):
             self._add_rule(
             r"""
 top_env.Append(
