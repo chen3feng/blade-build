@@ -47,8 +47,8 @@ class LexYaccLibrary(CcTarget):
                           [], [], [], [], [], [],
                           blade,
                           kwargs)
-        self.data['options']['recursive'] = recursive
-        self.data['options']['prefix'] = prefix
+        self.data['recursive'] = recursive
+        self.data['prefix'] = prefix
 
     def scons_rules(self):
         """scons_rules.
@@ -66,9 +66,9 @@ class LexYaccLibrary(CcTarget):
         lex_cc_file = '%s.cc' % lex_source_file
 
         lex_flags = []
-        if self.data.get('options', {}).get('recursive', False):
+        if self.data.get('recursive', False):
             lex_flags.append('-R')
-        prefix = self.data.get('options', {}).get('prefix', None)
+        prefix = self.data.get('prefix', None)
         if prefix:
             lex_flags.append('-P %s' % prefix)
         self._write_rule(
@@ -115,7 +115,7 @@ class LexYaccLibrary(CcTarget):
         self._cc_library();
         options = self.blade.get_options()
         if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('options', {}).get('build_dynamic', False)):
+            self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
 
 

@@ -59,19 +59,19 @@ def _expand_deps(targets):
         targets[target_id].data['deps'] = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
-        if targets[target_id].data['options'].get('dynamic_link'):
+        if targets[target_id].data.get('dynamic_link'):
             for dep in targets[target_id].data['deps']:
-                targets[dep].data['options']['build_dynamic'] = True
+                targets[dep].data['build_dynamic'] = True
         elif targets[target_id].data['type'] == 'swig_library':
             for dep in targets[target_id].data['deps']:
                 if targets[dep].data['type'] == 'proto_library':
-                    targets[dep].data['options']['generate_php'] = True
+                    targets[dep].data['generate_php'] = True
         elif targets[target_id].data['type'] == 'py_binary':
             for dep in targets[target_id].data['deps']:
-                targets[dep].data['options']['generate_python'] = True
+                targets[dep].data['generate_python'] = True
         elif targets[target_id].data['type'] == 'java_jar':
             for dep in targets[target_id].data['deps']:
-                targets[dep].data['options']['generate_java'] = True
+                targets[dep].data['generate_java'] = True
 
 
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):

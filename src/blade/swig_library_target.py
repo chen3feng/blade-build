@@ -49,9 +49,9 @@ class SwigLibrary(CcTarget):
                           [], [], [], optimize, extra_swigflags, [],
                           blade,
                           kwargs)
-        self.data['options']['cpperraswarn'] = warning
-        self.data['options']['java_package'] = java_package
-        self.data['options']['java_lib_packed'] = java_lib_packed
+        self.data['cpperraswarn'] = warning
+        self.data['java_package'] = java_package
+        self.data['java_lib_packed'] = java_lib_packed
 
         scons_platform = self.blade.get_scons_platform()
         self.php_inc_list = scons_platform.get_php_include()
@@ -96,7 +96,7 @@ class SwigLibrary(CcTarget):
 
         obj_names_py = []
         flag_list = []
-        warning = self.data.get('options', {}).get('cpperraswarn', '')
+        warning = self.data.get('cpperraswarn', '')
         flag_list.append(('cpperraswarn', warning))
         pyswig_flags = ''
         for flag in flag_list:
@@ -201,17 +201,17 @@ class SwigLibrary(CcTarget):
         java_lib_packed = False
         # Append -fno-strict-aliasing flag to cxxflags and cppflags
         self._write_rule('%s.Append(CPPFLAGS = ["-fno-strict-aliasing"])' % env_name)
-        if self.data.get('options', {}).get('generate_java', False):
+        if self.data.get('generate_java', False):
             build_jar = True
 
         flag_list = []
         flag_list.append(('cpperraswarn',
-                          self.data.get('options', {}).get('cpperraswarn', '')))
+                          self.data.get('cpperraswarn', '')))
         flag_list.append(('package',
-                          self.data.get('options', {}).get('java_package', '')))
-        java_lib_packed = self.data.get('options', {}).get('java_lib_packed', False)
+                          self.data.get('java_package', '')))
+        java_lib_packed = self.data.get('java_lib_packed', False)
         flag_list.append(('java_lib_packed',
-                          self.data.get('options', {}).get('java_lib_packed', False)))
+                          self.data.get('java_lib_packed', False)))
         javaswig_flags = ''
         depend_outdir = False
         out_dir = os.path.join(self.build_path, self.data['path'])
@@ -364,7 +364,7 @@ class SwigLibrary(CcTarget):
         obj_names_php = []
 
         flag_list = []
-        warning = self.data.get('options', {}).get('cpperraswarn', '')
+        warning = self.data.get('cpperraswarn', '')
         flag_list.append(('cpperraswarn', warning))
         self.phpswig_flags = ''
         phpswig_flags = ''
@@ -457,7 +457,7 @@ class SwigLibrary(CcTarget):
         dep_files_map = self._swig_library_rules_py()
         if (hasattr(self.options, 'generate_java')
                 and self.options.generate_java) or (
-                        self.data.get('options', {}).get('generate_java', False)):
+                        self.data.get('generate_java', False)):
             self._swig_library_rules_java(dep_files_map)
         if hasattr(self.options, 'generate_php') and self.options.generate_php:
             if not self.php_inc_list:

@@ -108,10 +108,10 @@ class BinaryRunner(object):
         self._prepare_test_data(target)
 
     def _prepare_test_data(self, target):
-        if 'testdata' not in target.data['options']:
+        if 'testdata' not in target.data:
             return
         link_name_list = []
-        for i in target.data['options']['testdata']:
+        for i in target.data['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
                 link_name = i[1]

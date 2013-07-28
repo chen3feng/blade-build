@@ -63,7 +63,7 @@ class ResourceLibrary(CcTarget):
         env_name = self._env_name()
         (out_dir, res_file_name) = self._resource_library_rules_helper()
 
-        self.data['options']['res_srcs'] = []
+        self.data['res_srcs'] = []
         for src in self.data['srcs']:
             src_path = os.path.join(self.data['path'], src)
             src_base = os.path.basename(src_path)
@@ -72,7 +72,7 @@ class ResourceLibrary(CcTarget):
             cmd_bld = '%s_bld' % self._regular_variable_name(new_src_path)
             self._write_rule('%s = %s.ResourceFile("%s", "%s")' % (
                          cmd_bld, env_name, new_src_path, src_path))
-            self.data['options']['res_srcs'].append(new_src_path)
+            self.data['res_srcs'].append(new_src_path)
 
         self._resource_library_rules_objects()
 
@@ -80,7 +80,7 @@ class ResourceLibrary(CcTarget):
 
         options = self.blade.get_options()
         if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('options', {}).get('build_dynamic', False)):
+            self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
 
     def _resource_library_rules_objects(self):
@@ -91,7 +91,7 @@ class ResourceLibrary(CcTarget):
         self._setup_cc_flags()
 
         objs = []
-        res_srcs = self.data.get('options', {}).get('res_srcs', [])
+        res_srcs = self.data['res_srcs']
         res_objects = {}
         path = self.data['path']
         for src in res_srcs:

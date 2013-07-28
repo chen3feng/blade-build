@@ -130,7 +130,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target.data['options']['dynamic_link']:
+        if target.data['dynamic_link']:
             target_key = (target.data['path'], target.data['name'])
             for dep in self.target_database[target_key].data['deps']:
                 dep_target = self.target_database[dep]
@@ -143,7 +143,7 @@ class TestRunner(binary_runner.BinaryRunner):
                     if os.path.exists(abs_lib_path):
                         related_file_list.append(abs_lib_path)
 
-        for i in target.data['options']['testdata']:
+        for i in target.data['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
             else:
@@ -307,7 +307,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if target.data['type'] != 'cc_test':
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
-                if not target.data.get('options', {}).get('always_run', False):
+                if not target.data.get('always_run', False):
                     self.skipped_tests.append((target.data['path'], target.data['name']))
                     continue
             self._prepare_env(target)
@@ -323,7 +323,7 @@ class TestRunner(binary_runner.BinaryRunner):
             else:
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
-            test_env['HEAPCHECK'] = target.data.get('options', {}).get('heap_check', '')
+            test_env['HEAPCHECK'] = target.data.get('heap_check', '')
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,

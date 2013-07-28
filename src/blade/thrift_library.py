@@ -65,8 +65,8 @@ class ThriftLibrary(CcTarget):
         self._add_hardcode_library(thrift_lib)
 
         # Link all the symbols by default
-        self.data['options']['link_all_symbols'] = True
-        self.data['options']['deprecated'] = deprecated
+        self.data['link_all_symbols'] = True
+        self.data['deprecated'] = deprecated
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.
@@ -191,13 +191,13 @@ class ThriftLibrary(CcTarget):
 
         if (hasattr(self.options, 'generate_java')
                 and self.options.generate_java) or (
-                       self.data.get('options', {}).get('generate_java', False) or (
+                       self.data.get('generate_java', False) or (
                               self.key in self.direct_targets)):
             self._thrift_java_rules()
 
         if (hasattr(self.options, 'generate_python')
                 and self.options.generate_python) or (
-                    self.data.get('options', {}).get('generate_python', False) or (
+                    self.data.get('generate_python', False) or (
                               self.key in self.direct_targets)):
             self._thrift_python_rules()
 
@@ -233,7 +233,7 @@ class ThriftLibrary(CcTarget):
         self._cc_library()
         options = self.blade.get_options()
         if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('options', {}).get('build_dynamic', False)):
+            self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
 
 

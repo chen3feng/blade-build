@@ -217,7 +217,7 @@ class TestScheduler(object):
 
         for i in self.tests_list:
             target = i[0]
-            if target.data.get('options', {}).get('exclusive', False):
+            if target.data.get('exclusive', False):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)

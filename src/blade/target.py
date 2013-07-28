@@ -51,7 +51,6 @@ class Target(object):
                      'type': target_type,
                      'srcs': srcs,
                      'deps': [],
-                     'options': {},
                      'direct_deps': []
                     }
 

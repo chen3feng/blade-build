@@ -74,13 +74,13 @@ class CcTarget(Target):
                         blade,
                         kwargs)
 
-        self.data['options']['warning'] = warning
-        self.data['options']['defs'] = defs
-        self.data['options']['incs'] = incs
-        self.data['options']['export_incs'] = export_incs
-        self.data['options']['optimize'] = opt
-        self.data['options']['extra_cppflags'] = extra_cppflags
-        self.data['options']['extra_linkflags'] = extra_linkflags
+        self.data['warning'] = warning
+        self.data['defs'] = defs
+        self.data['incs'] = incs
+        self.data['export_incs'] = export_incs
+        self.data['optimize'] = opt
+        self.data['extra_cppflags'] = extra_cppflags
+        self.data['extra_linkflags'] = extra_linkflags
 
         self._check_defs()
         self._check_incorrect_no_warning()
@@ -89,7 +89,7 @@ class CcTarget(Target):
         """check that whether it depends upon a deprecated library. """
         for dep in self.data.get('direct_deps', []):
             target = self.target_database.get(dep, {})
-            if target.data.get('options', {}).get('deprecated', False):
+            if target.data.get('deprecated', False):
                 replaced_targets = target.data.get('deps', [])
                 replaced_target = ''
                 if replaced_targets:
@@ -109,7 +109,7 @@ class CcTarget(Target):
     def _clone_env(self):
         """Select env. """
         env_name = self._env_name()
-        warning = self.data.get('options', {}).get('warning', '')
+        warning = self.data.get('warning', '')
         if warning == 'yes':
             self._write_rule("%s = env_with_error.Clone()" % env_name)
         else:
@@ -137,7 +137,7 @@ class CcTarget(Target):
             "true", "try", "typedef", "typeid", "typename", "union",
             "unsigned", "using", "virtual", "void", "volatile", "wchar_t",
             "while", "xor", "xor_eq"]
-        defs_list = self.data.get('options', {}).get('defs', [])
+        defs_list = self.data.get('defs', [])
         for macro in defs_list:
             pos = macro.find('=')
             if pos != -1:
@@ -147,7 +147,7 @@ class CcTarget(Target):
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
-        warning = self.data.get('options', {}).get('warning', 'yes')
+        warning = self.data.get('warning', 'yes')
         srcs = self.data.get('srcs', [])
         if not srcs or warning != 'no':
             return
@@ -210,7 +210,7 @@ class CcTarget(Target):
 
     def _setup_extra_link_flags(self):
         """extra_linkflags. """
-        extra_linkflags = self.data.get('options', {}).get('extra_linkflags', [])
+        extra_linkflags = self.data.get('extra_linkflags', [])
         if extra_linkflags:
             self._write_rule("%s.Append(LINKFLAGS=%s)" % (self._env_name(), extra_linkflags))
 
@@ -227,7 +227,7 @@ class CcTarget(Target):
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
         oflags = []
-        opt_list = self.data['options'].get('optimize')
+        opt_list = self.data.get('optimize')
         if not opt_list:
             cc_config = configparse.blade_config.get_config('cc_config')
             opt_list = cc_config['optimize']
@@ -250,17 +250,17 @@ class CcTarget(Target):
         cpp_flags = []
 
         # Warnings
-        if self.data['options'].get('warning', '') == 'no':
+        if self.data.get('warning', '') == 'no':
             cpp_flags.append('-w')
 
         # Defs
-        defs = self.data['options'].get('defs', [])
+        defs = self.data.get('defs', [])
         cpp_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
 
         if (self.blade.get_options().profile == 'release' or
-            self.data['options'].get('always_optimize')):
+            self.data.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
 
         # Add the compliation flags here
@@ -269,12 +269,12 @@ class CcTarget(Target):
         blade_gcc_flags_checked = self._check_gcc_flag(blade_gcc_flags)
         cpp_flags += list(set(blade_gcc_flags_checked).difference(set(cpp_flags)))
 
-        cpp_flags += self.data['options'].get('extra_cppflags', [])
+        cpp_flags += self.data.get('extra_cppflags', [])
 
         # Incs
-        incs = self.data['options'].get('incs', [])
+        incs = self.data.get('incs', [])
         if not incs:
-            incs = self.data['options'].get('export_incs', [])
+            incs = self.data.get('export_incs', [])
         new_incs_list = [os.path.join(self.data['path'], inc) for inc in incs]
         new_incs_list += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
@@ -321,7 +321,7 @@ class CcTarget(Target):
                 continue
 
             target = self.target_database[lib]
-            for inc in target.data['options'].get('export_incs', []):
+            for inc in target.data.get('export_incs', []):
                 path = os.path.normpath('%s/%s' % (lib[0], inc))
                 inc_list.append(path)
 
@@ -354,7 +354,7 @@ class CcTarget(Target):
             else:
                 lib_name = self._generate_variable_name(dep[0], dep[1])
 
-            if build_targets[dep].data['options'].get('link_all_symbols'):
+            if build_targets[dep].data.get('link_all_symbols'):
                 link_all_symbols_lib_list.append(lib_name)
             else:
                 lib_list.append(lib_name)
@@ -601,9 +601,9 @@ class CcLibrary(CcTarget):
         if prebuilt:
             self.data['type'] = 'prebuilt_cc_library'
             self.data['srcs'] = []
-        self.data['options']['link_all_symbols'] = link_all_symbols
-        self.data['options']['always_optimize'] = always_optimize
-        self.data['options']['deprecated'] = deprecated
+        self.data['link_all_symbols'] = link_all_symbols
+        self.data['always_optimize'] = always_optimize
+        self.data['deprecated'] = deprecated
 
     def scons_rules(self):
         """scons_rules.
@@ -616,7 +616,7 @@ class CcLibrary(CcTarget):
         building_dynamic = 0
         options = self.blade.get_options()
         if (hasattr(options, 'generate_dynamic') and options.generate_dynamic) or (
-            self.data.get('options', {}).get('build_dynamic', False)):
+            self.data.get('build_dynamic', False)):
             building_dynamic = 1
 
         if self.data['type'] == 'prebuilt_cc_library':
@@ -712,8 +712,8 @@ class CcBinary(CcTarget):
                           extra_linkflags,
                           blade,
                           kwargs)
-        self.data['options']['dynamic_link'] = dynamic_link
-        self.data['options']['export_dynamic'] = export_dynamic
+        self.data['dynamic_link'] = dynamic_link
+        self.data['export_dynamic'] = export_dynamic
 
         cc_binary_config = configparse.blade_config.get_config('cc_binary_config')
         # add extra link library
@@ -737,7 +737,7 @@ class CcBinary(CcTarget):
             self._write_rule(
                     '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
-        if self.data.get('options', {}).get('export_dynamic', False):
+        if self.data.get('export_dynamic', False):
             self._write_rule(
                 "%s.Append(LINKFLAGS='-rdynamic')" % env_name)
 
@@ -767,7 +767,7 @@ class CcBinary(CcTarget):
         """_dynamic_cc_binary. """
         env_name = self._env_name()
         var_name = self._generate_variable_name(self.data['path'], self.data['name'])
-        if self.data.get('options', {}).get('export_dynamic', False):
+        if self.data.get('export_dynamic', False):
             self._write_rule("%s.Append(LINKFLAGS='-rdynamic')" % env_name)
 
         self._setup_extra_link_flags()
@@ -799,7 +799,7 @@ class CcBinary(CcTarget):
 
         self._cc_objects_rules()
 
-        if self.data['options']['dynamic_link']:
+        if self.data['dynamic_link']:
             self._dynamic_cc_binary()
         else:
             self._cc_binary()
@@ -1032,9 +1032,9 @@ class CcTest(CcBinary):
                           blade,
                           kwargs)
         self.data['type'] = 'cc_test'
-        self.data['options']['testdata'] = var_to_list(testdata)
-        self.data['options']['always_run'] = always_run
-        self.data['options']['exclusive'] = exclusive
+        self.data['testdata'] = var_to_list(testdata)
+        self.data['always_run'] = always_run
+        self.data['exclusive'] = exclusive
 
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
@@ -1053,7 +1053,7 @@ class CcTest(CcBinary):
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])
         if heap_check:
-            self.data['options']['heap_check'] = heap_check
+            self.data['heap_check'] = heap_check
 
             if heap_check_debug:
                 perftools_lib_list = perftools_debug_lib
