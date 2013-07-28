@@ -90,7 +90,7 @@ class CcTarget(Target):
         for dep in self.data['direct_deps']:
             target = self.target_database.get(dep, {})
             if target.data.get('deprecated', False):
-                replaced_targets = target.data['deps']
+                replaced_targets = target.data['direct_deps']
                 replaced_target = ''
                 if replaced_targets:
                     replaced_target = replaced_targets[0]
