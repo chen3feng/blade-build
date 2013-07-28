@@ -37,9 +37,6 @@ from test_target_test import TestTestRunner
 
 def _main():
     """main method. """
-    generate_html = False
-    if len(sys.argv) > 1 and sys.argv[1].startswith('html'):
-        generate_html = True
     suite_test = unittest.TestSuite()
     suite_test.addTests([
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcLibrary),
@@ -59,6 +56,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestPrebuildCcLibrary)
         ])
 
+    generate_html = len(sys.argv) > 1 and sys.argv[1].startswith('html')
     if generate_html:
         runner = HTMLTestRunner(title="Blade unit test report")
         runner.run(suite_test)
