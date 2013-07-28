@@ -70,7 +70,7 @@ class Target(object):
         console.error_exit("_prepare_to_generate_rule should be overridden in subclasses")
 
     def _check_name(self):
-        if '/' in self.data.get('name', ''):
+        if '/' in self.data['name']:
             console.error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
                 self.data['path'], self.data['name']))
 

@@ -252,7 +252,7 @@ class Blade(object):
         result_map = {}
         for key in query_list:
             result_map[key] = ([], [])
-            deps = all_targets.get(key, {}).data.get('deps', [])
+            deps = all_targets[key].data['deps']
             deps.sort(key=lambda x: x, reverse=False)
             depended_by = []
             for tkey in all_targets.keys():

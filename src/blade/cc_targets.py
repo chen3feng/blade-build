@@ -87,10 +87,10 @@ class CcTarget(Target):
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon a deprecated library. """
-        for dep in self.data.get('direct_deps', []):
+        for dep in self.data['direct_deps']:
             target = self.target_database.get(dep, {})
             if target.data.get('deprecated', False):
-                replaced_targets = target.data.get('deps', [])
+                replaced_targets = target.data['deps']
                 replaced_target = ''
                 if replaced_targets:
                     replaced_target = replaced_targets[0]
@@ -148,7 +148,7 @@ class CcTarget(Target):
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
         warning = self.data.get('warning', 'yes')
-        srcs = self.data.get('srcs', [])
+        srcs = self.data['srcs']
         if not srcs or warning != 'no':
             return
 
@@ -299,7 +299,7 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        target_type = build_targets[dep].data.get('type')
+        target_type = build_targets[dep].data['type']
         return ('library' in target_type or 'plugin' in target_type)
 
     def _export_incs_list(self):
