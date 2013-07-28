@@ -310,7 +310,7 @@ class SwigLibrary(CcTarget):
                             javaswig_src))
 
             dep_key = os.path.join(self.path, src)
-            if dep_key in dep_files_map.keys():
+            if dep_key in dep_files_map:
                 dep_files = dep_files_map[dep_key]
             else:
                 dep_files = self._swig_extract_dependency_files(dep_key)
@@ -403,7 +403,7 @@ class SwigLibrary(CcTarget):
                                     phpswig_src))
 
             dep_key = os.path.join(self.path, src)
-            if dep_key in dep_files_map.keys():
+            if dep_key in dep_files_map:
                 dep_files = dep_files_map[dep_key]
             else:
                 dep_files = self._swig_extract_dependency_files(dep_key)

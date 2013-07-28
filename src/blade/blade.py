@@ -182,7 +182,7 @@ class Blade(object):
             self.output_dot(result_map, print_mode, dot_file)
         else:
             if print_deps:
-                for key in result_map.keys():
+                for key in result_map:
                     print "\n"
                     deps = result_map[key][0]
                     console.info("//%s:%s depends on the following targets:" % (
@@ -190,7 +190,7 @@ class Blade(object):
                     for d in deps:
                         print "%s:%s" % (d[0], d[1])
             if print_depended:
-                for key in result_map.keys():
+                for key in result_map:
                     print "\n"
                     depended_by = result_map[key][1]
                     console.info("//%s:%s is depended by the following targets:" % (
@@ -251,7 +251,7 @@ class Blade(object):
             deps = all_targets[key].expanded_deps
             deps.sort(key=lambda x: x, reverse=False)
             depended_by = []
-            for tkey in all_targets.keys():
+            for tkey in all_targets:
                 if key in all_targets[tkey].expanded_deps:
                     depended_by.append(tkey)
             depended_by.sort(key=lambda x: x, reverse=False)
@@ -302,7 +302,7 @@ class Blade(object):
         """
         target_key = target.key
         # check that whether there is already a key in database
-        if target_key in self.__target_database.keys():
+        if target_key in self.__target_database:
             print self.__target_database
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (

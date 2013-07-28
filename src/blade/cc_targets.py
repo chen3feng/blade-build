@@ -427,7 +427,7 @@ class CcTarget(Target):
                                    'cc_benchmark',
                                    'cc_plugin',
                                    'swig_library']
-        for key in build_targets.keys():
+        for key in build_targets:
             if (self.key in build_targets[key].expanded_deps and
                 build_targets[key].type in need_static_lib_targets):
                 allow_only_dynamic = False

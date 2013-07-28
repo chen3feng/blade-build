@@ -88,7 +88,7 @@ class PythonBinaryTarget(Target):
         dep_var_list = []
         self.targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
-            if dep in binary_dep_source_map.keys():
+            if dep in binary_dep_source_map:
                 for f in binary_dep_source_map[dep]:
                     binary_files.append(f)
                 for cmd in binary_dep_source_cmd[dep]:

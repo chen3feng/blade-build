@@ -55,7 +55,7 @@ def _expand_deps(targets):
 
     """
     deps_map_cache = {}  # Cache expanded target deps to avoid redundant expand
-    for target_id in targets.keys():
+    for target_id in targets:
         target = targets[target_id]
         target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary

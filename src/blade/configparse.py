@@ -126,7 +126,7 @@ class BladeConfig(object):
             console.error('%s: %s: append must be a dict' %
                     (self.current_file_name, section_name))
         else:
-            for k in append.keys():
+            for k in append:
                 if k in config:
                     if isinstance(config[k], list):
                         config[k] += var_to_list(append[k])
@@ -140,7 +140,7 @@ class BladeConfig(object):
 
     def _replace_config(self, section_name, config, user_config):
         """Replace config section items"""
-        for k in user_config.keys():
+        for k in user_config:
             if k in config:
                 if isinstance(config[k], list):
                     user_config[k] = var_to_list(user_config[k])

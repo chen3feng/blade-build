@@ -106,7 +106,7 @@ version_obj = env_version.SharedObject('$filename')
     def generate_version_file(self):
         """Generate version information files. """
         self._get_version_info()
-        svn_info_len = len(self.svn_info_map.keys())
+        svn_info_len = len(self.svn_info_map)
 
         if not os.path.exists(self.build_dir):
             os.mkdir(self.build_dir)

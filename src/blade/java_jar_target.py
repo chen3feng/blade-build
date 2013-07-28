@@ -287,7 +287,7 @@ class JavaJarTarget(Target):
 
         # Find out the java_jar depends
         for dep in self.expanded_deps:
-            if dep in java_jars_map.keys():
+            if dep in java_jars_map:
                 dep_java_jar_list = java_jars_map[dep]
                 self._write_rule("%s.Depends(%s, %s)" % (
                     env_name,

@@ -256,12 +256,12 @@ class TestRunner(binary_runner.BinaryRunner):
     def _show_tests_detail(self):
         """show the tests detail after scheduling them. """
         sort_buf = []
-        for key in self.tests_run_map.keys():
+        for key in self.tests_run_map:
             costtime = self.tests_run_map.get(key, {}).get('costtime', 0)
             sort_buf.append((key, costtime))
         sort_buf.sort(key=lambda x: x[1])
 
-        if self.tests_run_map.keys():
+        if self.tests_run_map:
             console.info("%s Testing detail %s" % (self.title_str, self.title_str))
         for key, costtime in sort_buf:
             reason = self.tests_run_map.get(key, {}).get('reason', 'UNKNOWN')
