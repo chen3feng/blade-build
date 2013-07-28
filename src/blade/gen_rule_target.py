@@ -115,20 +115,20 @@ class GenRuleTarget(Target):
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
         for i in self.data['deps']:
             dep_target = targets[i]
-            if dep_target['type'] in dep_skip_list:
+            if dep_target.data['type'] in dep_skip_list:
                 continue
-            elif dep_target['type'] == 'swig_library':
+            elif dep_target.data['type'] == 'swig_library':
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'], 'dynamic_py')
+                        dep_target.data['path'], dep_target.data['name'], 'dynamic_py')
                 dep_var_list.append(dep_var_name)
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'], 'dynamic_java')
+                        dep_target.data['path'], dep_target.data['name'], 'dynamic_java')
                 dep_var_list.append(dep_var_name)
-            elif dep_target['type'] == 'java_jar':
-                dep_var_list += java_jars_map.get(dep_target['name'], [])
+            elif dep_target.data['type'] == 'java_jar':
+                dep_var_list += java_jars_map.get(dep_target.data['name'], [])
             else:
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'])
+                        dep_target.data['path'], dep_target.data['name'])
                 dep_var_list.append(dep_var_name)
 
         for dep_var_name in dep_var_list:

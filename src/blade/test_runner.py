@@ -105,8 +105,8 @@ class TestRunner(binary_runner.BinaryRunner):
                 old_env = {}
             if new_env != old_env:
                 self.run_all_reason = 'ENVIRONMENT'
-                (new, old) = _diff_env(new_env, old_env)
                 console.info("all tests will run due to test environments changed:")
+                (new, old) = _diff_env(new_env, old_env)
                 if new:
                     console.info("new environments: %s" % new)
                 if old:
@@ -130,20 +130,20 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target['options']['dynamic_link']:
-            target_key = (target['path'], target['name'])
-            for dep in self.target_database.get(target_key, {}).get('deps', []):
-                dep_target = self.target_database.get(dep, {})
-                if 'cc_library' in dep_target.get('type', ''):
-                    lib_name = 'lib%s.so' % dep_target['name']
+        if target.data['options']['dynamic_link']:
+            target_key = (target.data['path'], target.data['name'])
+            for dep in self.target_database[target_key].data['deps']:
+                dep_target = self.target_database[dep]
+                if 'cc_library' in dep_target.data['type']:
+                    lib_name = 'lib%s.so' % dep_target.data['name']
                     lib_path = os.path.join(self.build_dir,
-                                            dep_target['path'],
+                                            dep_target.data['path'],
                                             lib_name)
                     abs_lib_path = os.path.abspath(lib_path)
                     if os.path.exists(abs_lib_path):
                         related_file_list.append(abs_lib_path)
 
-        for i in target['options']['testdata']:
+        for i in target.data['options']['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
             else:
@@ -155,7 +155,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 data_target_path = os.path.abspath(data_target)
             else:
                 data_target_path = os.path.abspath("%s/%s" % (
-                                                   target['path'], data_target))
+                                                   target.data['path'], data_target))
             if os.path.exists(data_target_path):
                 related_file_data_list.append(data_target_path)
 
@@ -179,9 +179,9 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
-            if target['type'] != 'cc_test':
+            if target.data['type'] != 'cc_test':
                 continue
-            target_key = (target['path'], target['name'])
+            target_key = (target.data['path'], target.data['name'])
             test_file_name = os.path.abspath(self._executable(target))
             self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
             if self.run_all_reason:
@@ -269,8 +269,8 @@ class TestRunner(binary_runner.BinaryRunner):
                                                          'INTERRUPTED')
             if 'SIG' in result:
                 result = "with %s" % result
-            console.info("%s triggered by %s, exit(%s), cost %.2f s" % (
-                         key, reason, result, costtime), prefix=False)
+            console.info("%s:%s triggered by %s, exit(%s), cost %.2f s" % (
+                         key[0], key[1], reason, result, costtime), prefix=False)
 
     def _finish_tests(self):
         """finish some work before return from runner. """
@@ -304,11 +304,11 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_inctest_run_list()
         tests_run_list = []
         for target in self.targets.values():
-            if target['type'] != 'cc_test':
+            if target.data['type'] != 'cc_test':
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
-                if not target.get('options', {}).get('always_run', False):
-                    self.skipped_tests.append((target['path'], target['name']))
+                if not target.data.get('options', {}).get('always_run', False):
+                    self.skipped_tests.append((target.data['path'], target.data['name']))
                     continue
             self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
@@ -323,7 +323,7 @@ class TestRunner(binary_runner.BinaryRunner):
             else:
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
-            test_env['HEAPCHECK'] = target.get('options', {}).get('heap_check', '')
+            test_env['HEAPCHECK'] = target.data.get('options', {}).get('heap_check', '')
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,
@@ -342,10 +342,10 @@ class TestRunner(binary_runner.BinaryRunner):
         failed_targets = scheduler.failed_targets
         if failed_targets:
             console.error("%d tests failed:" % len(failed_targets))
-            for i in failed_targets:
-                print "%s/%s, exit code: %s" % (
-                    i["path"], i["name"], i["test_exit_code"])
-                test_file_name = os.path.abspath(self._executable(i))
+            for target in failed_targets:
+                print "%s:%s, exit code: %s" % (
+                    target.data['path'], target.data['name'], target.data['test_exit_code'])
+                test_file_name = os.path.abspath(self._executable(target))
                 # Do not skip failed test by default
                 if test_file_name in self.test_stamp['md5']:
                     self.test_stamp['md5'][test_file_name] = (0, 0)

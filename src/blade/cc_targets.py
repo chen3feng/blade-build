@@ -89,8 +89,8 @@ class CcTarget(Target):
         """check that whether it depends upon a deprecated library. """
         for dep in self.data.get('direct_deps', []):
             target = self.target_database.get(dep, {})
-            if target.get('options', {}).get('deprecated', False):
-                replaced_targets = target.get('deps', [])
+            if target.data.get('options', {}).get('deprecated', False):
+                replaced_targets = target.data.get('deps', [])
                 replaced_target = ''
                 if replaced_targets:
                     replaced_target = replaced_targets[0]
@@ -98,7 +98,7 @@ class CcTarget(Target):
                                 "//%s:%s has been deprecated, "
                                 "please depends on //%s:%s" % (
                                 self.data['path'], self.data['name'],
-                                target['path'], target['name'],
+                                target.data['path'], target.data['name'],
                                 replaced_target[0], replaced_target[1]))
 
     def _prepare_to_generate_rule(self):
@@ -299,7 +299,7 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        target_type = build_targets[dep].get('type')
+        target_type = build_targets[dep].data.get('type')
         return ('library' in target_type or 'plugin' in target_type)
 
     def _export_incs_list(self):
@@ -321,7 +321,7 @@ class CcTarget(Target):
                 continue
 
             target = self.target_database[lib]
-            for inc in target['options'].get('export_incs', []):
+            for inc in target.data['options'].get('export_incs', []):
                 path = os.path.normpath('%s/%s' % (lib[0], inc))
                 inc_list.append(path)
 
@@ -354,7 +354,7 @@ class CcTarget(Target):
             else:
                 lib_name = self._generate_variable_name(dep[0], dep[1])
 
-            if build_targets[dep]['options'].get('link_all_symbols'):
+            if build_targets[dep].data['options'].get('link_all_symbols'):
                 link_all_symbols_lib_list.append(lib_name)
             else:
                 lib_list.append(lib_name)
@@ -380,8 +380,8 @@ class CcTarget(Target):
             if not self._dep_is_library(lib):
                 continue
 
-            if (build_targets[lib]['type'] == 'cc_library' and
-                not build_targets[lib]['srcs']):
+            if (build_targets[lib].data['type'] == 'cc_library' and
+                not build_targets[lib].data['srcs']):
                 continue
             # system lib
             if lib[0] == "#":
@@ -428,8 +428,8 @@ class CcTarget(Target):
                                    'cc_plugin',
                                    'swig_library']
         for key in build_targets.keys():
-            if self.key in build_targets[key].get('deps', []) and (
-                    build_targets[key].get('type', None) in need_static_lib_targets):
+            if (self.key in build_targets[key].data['deps'] and
+                build_targets[key].data['type'] in need_static_lib_targets):
                 allow_only_dynamic = False
 
         var_name = self._generate_variable_name(self.data['path'],
@@ -961,8 +961,8 @@ def cc_plugin(name,
                       kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                           "please use 'prebuilt'" % (target.data['path'],
-                                                      target.data['name']))
+                        "please use 'prebuilt'" % (target.data['path'],
+                                                   target.data['name']))
     blade.blade.register_target(target)
 
 

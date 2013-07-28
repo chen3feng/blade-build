@@ -44,6 +44,7 @@ class Target(object):
         self.target_database = self.blade.get_target_database()
 
         self.key = (current_source_path, name)
+        self.fullname = '%s:%s' % self.key
         self.data = {
                      'name': name,
                      'path': current_source_path,
@@ -53,7 +54,6 @@ class Target(object):
                      'options': {},
                      'direct_deps': []
                     }
-        self.target_database[self.key] = self.data
 
         self._check_name()
         self._check_kwargs(kwargs)
@@ -136,14 +136,8 @@ class Target(object):
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
         if key not in self.target_database:
-            self.target_database[key] = {
-                                         'type': 'system_library',
-                                         'srcs': [],
-                                         'deps': [],
-                                         'path': self.data['path'],
-                                         'name': name,
-                                         'options': {}
-                                        }
+            lib = SystemLibrary(name, self.blade)
+            self.blade.register_target(lib)
 
     def _init_target_deps(self, deps):
         """Init the target deps.
@@ -151,10 +145,6 @@ class Target(object):
         Parameters
         -----------
         deps: the deps list in BUILD file.
-
-        Returns
-        -----------
-        None
 
         Description
         -----------
@@ -343,8 +333,8 @@ class Target(object):
         deps = self.data['deps']
         for d in deps:
             dep_target = targets[d]
-            if dep_target['type'] == 'gen_rule':
-                srcs_list = files_map[(dep_target['path'], dep_target['name'])]
+            if dep_target.data['type'] == 'gen_rule':
+                srcs_list = files_map[(dep_target.data['path'], dep_target.data['name'])]
                 if srcs_list:
                     self._write_rule("%s.Depends([%s], [%s])" % (
                         env_name,
@@ -418,3 +408,12 @@ class Target(object):
         if bad_format:
             console.error_exit("invalid target lib format: %s, "
                        "should be #lib_name or lib_path:lib_name" % target_string)
+
+
+class SystemLibrary(Target):
+    def __init__(self, name, blade):
+        name = name[1:]
+        Target.__init__(self, name, 'system_library', [], [], blade, {})
+        self.key = ('#', name)
+        self.fullname = '%s:%s' % self.key
+        self.data['path'] = '#'

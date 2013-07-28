@@ -56,22 +56,22 @@ def _expand_deps(targets):
     """
     deps_map_cache = {}  # Cache expanded target deps to avoid redundant expand
     for target_id in targets.keys():
-        targets[target_id]['deps'] = _find_all_deps(target_id, targets, deps_map_cache)
+        targets[target_id].data['deps'] = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
-        if targets[target_id]['options'].get('dynamic_link'):
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['build_dynamic'] = True
-        elif targets[target_id]['type'] == 'swig_library':
-            for dep in targets[target_id]['deps']:
-                if targets[dep]['type'] == 'proto_library':
-                    targets[dep]['options']['generate_php'] = True
-        elif targets[target_id]['type'] == 'py_binary':
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['generate_python'] = True
-        elif targets[target_id]['type'] == 'java_jar':
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['generate_java'] = True
+        if targets[target_id].data['options'].get('dynamic_link'):
+            for dep in targets[target_id].data['deps']:
+                targets[dep].data['options']['build_dynamic'] = True
+        elif targets[target_id].data['type'] == 'swig_library':
+            for dep in targets[target_id].data['deps']:
+                if targets[dep].data['type'] == 'proto_library':
+                    targets[dep].data['options']['generate_php'] = True
+        elif targets[target_id].data['type'] == 'py_binary':
+            for dep in targets[target_id].data['deps']:
+                targets[dep].data['options']['generate_python'] = True
+        elif targets[target_id].data['type'] == 'java_jar':
+            for dep in targets[target_id].data['deps']:
+                targets[dep].data['options']['generate_java'] = True
 
 
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
@@ -91,7 +91,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
     root_targets.add(target_id)
     new_deps_list = []
 
-    for d in targets[target_id]['deps']:
+    for d in targets[target_id].data['deps']:
         # loop dependency
         if d in root_targets:
             err_msg = ''
@@ -123,10 +123,10 @@ def _topological_sort(pairlist):
     """Sort the targets. """
     numpreds = {}    # elt -> # of predecessors
     successors = {}  # elt -> list of successors
-    for second, options in pairlist.items():
+    for second, target in pairlist.items():
         if second not in numpreds:
             numpreds[second] = 0
-        deps = options['deps']
+        deps = target.data['deps']
         for first in deps:
             # make sure every elt is a key in numpreds
             if first not in numpreds:

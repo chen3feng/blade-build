@@ -38,7 +38,7 @@ class BinaryRunner(object):
 
     def _executable(self, target):
         """Returns the executable path. """
-        return "%s/%s/%s" % (self.build_dir, target['path'], target['name'])
+        return "%s/%s/%s" % (self.build_dir, target.data['path'], target.data['name'])
 
     def _runfiles_dir(self, target):
         """Returns runfiles dir. """
@@ -56,9 +56,9 @@ class BinaryRunner(object):
     def _get_prebuilt_files(self, target):
         """Get prebuilt files for one target that it depends. """
         file_list = []
-        target_key = (target['path'], target['name'])
-        for dep in self.target_database.get(target_key, {}).get('deps', []):
-            target_type = self.target_database.get(dep, {}).get('type', '')
+        target_key = (target.data['path'], target.data['name'])
+        for dep in self.target_database.get(target_key, {}).data.get('deps', []):
+            target_type = self.target_database.get(dep, {}).data.get('type', '')
             if target_type == 'prebuilt_cc_library':
                 prebuilt_file = cc_targets.prebuilt_cc_library_file_map.get(dep)
                 if prebuilt_file:
@@ -109,10 +109,10 @@ class BinaryRunner(object):
         self._prepare_test_data(target)
 
     def _prepare_test_data(self, target):
-        if 'testdata' not in target['options']:
+        if 'testdata' not in target.data['options']:
             return
         link_name_list = []
-        for i in target['options']['testdata']:
+        for i in target.data['options']['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
                 link_name = i[1]
@@ -125,10 +125,10 @@ class BinaryRunner(object):
             err_msg, item = self.__check_link_name(link_name, link_name_list)
             if err_msg == "AMBIGUOUS":
                 console.error_exit("Ambiguous testdata of //%s:%s: %s, exit..." % (
-                             target['path'], target['name'], link_name))
+                             target.data['path'], target.data['name'], link_name))
             elif err_msg == "INCOMPATIBLE":
                 console.error_exit("%s could not exist with %s in testdata of //%s:%s" % (
-                           link_name, item, target['path'], target['name']))
+                           link_name, item, target.data['path'], target.data['name']))
             link_name_list.append(link_name)
             try:
                 os.makedirs(os.path.dirname('%s/%s' % (
@@ -143,8 +143,8 @@ class BinaryRunner(object):
                 if os.path.exists(symlink_name):
                     symlink_valid = True
                     console.warning("%s already existed, could not prepare "
-                            "testdata for //%s:%s" % (link_name, target['path'],
-                                target['name']))
+                            "testdata for //%s:%s" % (link_name, target.data['path'],
+                                target.data['name']))
                 else:
                     os.remove(symlink_name)
                     console.warning("%s already existed, but it is a broken "
@@ -154,7 +154,7 @@ class BinaryRunner(object):
                 data_target = data_target[2:]
                 dest_data_file = os.path.abspath(data_target)
             else:
-                dest_data_file = os.path.abspath("%s/%s" % (target['path'], data_target))
+                dest_data_file = os.path.abspath("%s/%s" % (target.data['path'], data_target))
 
             if not symlink_valid:
                 os.symlink(dest_data_file,
@@ -170,14 +170,14 @@ class BinaryRunner(object):
     def _clean_env(self):
         """clean test environment. """
         for target in self.targets.values():
-            if target['type'] != 'cc_test':
+            if target.data['type'] != 'cc_test':
                 continue
             self._clean_target(target)
 
     def run_target(self, target_key):
         """Run one single target. """
         target = self.targets[target_key]
-        if target['type'] not in self.run_list:
+        if target.data['type'] not in self.run_list:
             console.error_exit("target %s:%s is not a target that could run" % (
                        target_key[0], target_key[1]))
         self._prepare_env(target)

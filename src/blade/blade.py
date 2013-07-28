@@ -71,9 +71,6 @@ class Blade(object):
         # command line targets.
         self.__target_database = {}
 
-        # The scons target objects registered into blade manager
-        self.__scons_targets_map = {}
-
         # targets to build after loading the build files.
         self.__build_targets = {}
 
@@ -255,11 +252,11 @@ class Blade(object):
         result_map = {}
         for key in query_list:
             result_map[key] = ([], [])
-            deps = all_targets.get(key, {}).get('deps', [])
+            deps = all_targets.get(key, {}).data.get('deps', [])
             deps.sort(key=lambda x: x, reverse=False)
             depended_by = []
             for tkey in all_targets.keys():
-                if key in all_targets[tkey]['deps']:
+                if key in all_targets[tkey].data['deps']:
                     depended_by.append(tkey)
             depended_by.sort(key=lambda x: x, reverse=False)
             result_map[key] = (list(deps), list(depended_by))
@@ -309,11 +306,12 @@ class Blade(object):
         """
         target_key = target.key
         # check that whether there is already a key in database
-        if target_key in self.__scons_targets_map.keys():
+        if target_key in self.__target_database.keys():
+            print self.__target_database
             console.error_exit(
                     "target name %s is duplicate in //%s/BUILD" % (
-                        target_key[1], target_key[0]))
-        self.__scons_targets_map[target_key] = target
+                        target.data['name'], target.data['path']))
+        self.__target_database[target_key] = target
 
     def _is_scons_object_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
@@ -334,13 +332,13 @@ class Blade(object):
             skip_test_targets = True
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            if not self._is_scons_object_type(target['type']):
+            if not self._is_scons_object_type(target.data['type']):
                 continue
-            scons_object = self.__scons_targets_map.get(k, None)
+            scons_object = self.__target_database.get(k, None)
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test_targets and target['type'] == 'cc_test':
+            if skip_test_targets and target.data['type'] == 'cc_test':
                 continue
             scons_object.scons_rules()
             rules_buf += scons_object.get_rules()

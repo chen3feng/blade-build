@@ -119,12 +119,13 @@ class TestScheduler(object):
         result = 'SUCCESS'
         if returncode:
             result = signal_map.get(returncode, 'FAILED')
+            result = '%s:%s' % (result, returncode)
         return result
 
     def _run_job_redirect(self, job):
         """run job, redirect the output. """
         (target, run_dir, test_env, cmd) = job
-        test_name = "%s/%s" % (target['path'], target['name'])
+        test_name = "%s:%s" % (target.data['path'], target.data['name'])
 
         console.info("Running %s" % cmd)
         p = subprocess.Popen(cmd,
@@ -149,7 +150,7 @@ class TestScheduler(object):
         p.wait()
         result = self.__get_result(p.returncode)
         console.info("%s/%s finished : %s\n" % (
-             target['path'], target['name'], result))
+             target.data['path'], target.data['name'], result))
 
         return p.returncode
 
@@ -162,7 +163,7 @@ class TestScheduler(object):
         while not job_queue.empty():
             job = job_queue.get()
             target = job[0]
-            target_key = "%s:%s" % (target['path'], target['name'])
+            target_key = "%s:%s" % (target.data['path'], target.data['name'])
             start_time = time.time()
 
             try:
@@ -178,13 +179,13 @@ class TestScheduler(object):
             costtime = time.time() - start_time
 
             if returncode:
-                target["test_exit_code"] = returncode
+                target.data["test_exit_code"] = returncode
                 self.failed_targets_lock.acquire()
                 self.failed_targets.append(target)
                 self.failed_targets_lock.release()
 
             self.tests_run_map_lock.acquire()
-            run_item_map = self.tests_run_map.get(target_key, {})
+            run_item_map = self.tests_run_map.get(target.key, {})
             if run_item_map:
                 run_item_map['result'] = self.__get_result(returncode)
                 run_item_map['costtime'] = costtime
@@ -216,7 +217,7 @@ class TestScheduler(object):
 
         for i in self.tests_list:
             target = i[0]
-            if target.get('options', {}).get('exclusive', False):
+            if target.data.get('options', {}).get('exclusive', False):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)
