@@ -104,14 +104,14 @@ class Blade(object):
 
     def load_targets(self):
         """Load the targets. """
-        console.info("loading BUILDs...")
+        console.info('loading BUILDs...')
         if self.__command == 'query':
             working_dir = self.__root_dir
 
             if '...' not in self.__command_targets:
                 new_target_list = []
                 for target in self.__command_targets:
-                    new_target_list.append("%s:%s" %
+                    new_target_list.append('%s:%s' %
                             self._get_normpath_target(target))
                 self.__command_targets = new_target_list
         else:
@@ -122,25 +122,25 @@ class Blade(object):
                                                   working_dir,
                                                   self.__root_dir,
                                                   self)
-        console.info("loading done.")
+        console.info('loading done.')
         return self.__direct_targets, self.__all_command_targets  # For test
 
     def analyze_targets(self):
         """Expand the targets. """
-        console.info("analyzing dependency graph...")
+        console.info('analyzing dependency graph...')
         self.__sorted_targets_keys = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
 
-        console.info("analyzing done.")
+        console.info('analyzing done.')
         return self.__build_targets  # For test
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
-        console.info("generating build rules...")
+        console.info('generating build rules...')
         build_rules_generator = SconsRulesGenerator('SConstruct',
                                                     self.__blade_path, self)
         rules_buf = build_rules_generator.generate_scons_script()
-        console.info("generating done.")
+        console.info('generating done.')
         return rules_buf
 
     def generate(self):
@@ -177,27 +177,26 @@ class Blade(object):
                 print_mode = 0
             if print_depended:
                 print_mode = 1
-            if not dot_file.startswith("/"):
-                dot_file = self.__working_dir + "/" + dot_file
+            dot_file = os.path.join(self.__working_dir, dot_file)
             self.output_dot(result_map, print_mode, dot_file)
         else:
             if print_deps:
                 for key in result_map:
-                    print "\n"
+                    print '\n'
                     deps = result_map[key][0]
-                    console.info("//%s:%s depends on the following targets:" % (
+                    console.info('//%s:%s depends on the following targets:' % (
                             key[0], key[1]))
                     for d in deps:
-                        print "%s:%s" % (d[0], d[1])
+                        print '%s:%s' % (d[0], d[1])
             if print_depended:
                 for key in result_map:
-                    print "\n"
+                    print '\n'
                     depended_by = result_map[key][1]
-                    console.info("//%s:%s is depended by the following targets:" % (
+                    console.info('//%s:%s is depended by the following targets:' % (
                             key[0], key[1]))
                     depended_by.sort(key=lambda x: x, reverse=False)
                     for d in depended_by:
-                        print "%s:%s" % (d[0], d[1])
+                        print '%s:%s' % (d[0], d[1])
         return 0
 
     def print_dot_node(self, output_file, node):
@@ -223,12 +222,12 @@ class Blade(object):
         nodes = set(targets)
         for key in targets:
             nodes |= set(result_map[key][print_mode])
-        print >>f, "digraph blade {"
+        print >>f, 'digraph blade {'
         for i in nodes:
             self.print_dot_node(f, i)
         for i in nodes:
             self.print_dot_deps(f, i, nodes)
-        print >>f, "}"
+        print >>f, '}'
         f.close()
 
     def query_helper(self, targets):
@@ -305,7 +304,7 @@ class Blade(object):
         if target_key in self.__target_database:
             print self.__target_database
             console.error_exit(
-                    "target name %s is duplicate in //%s/BUILD" % (
+                    'target name %s is duplicate in //%s/BUILD' % (
                         target.name, target.path))
         self.__target_database[target_key] = target
 
@@ -376,6 +375,6 @@ class Blade(object):
                 if self.__options.jobs > 8:
                     self.__options.jobs = 8
         if self.__options.jobs != user_jobs_num:
-            console.info("tunes the parallel jobs number(-j N) to be %d" % (
+            console.info('tunes the parallel jobs number(-j N) to be %d' % (
                 self.__options.jobs))
         return self.__options.jobs

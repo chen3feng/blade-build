@@ -36,8 +36,8 @@ class LexYaccLibrary(CcTarget):
 
         """
         if len(srcs) != 2:
-            raise Exception, ("'srcs' for lex_yacc_library should "
-                              "be a pair of (lex_source, yacc_source)")
+            raise Exception, ('"srcs" for lex_yacc_library should '
+                              'be a pair of (lex_source, yacc_source)')
         CcTarget.__init__(self,
                           name,
                           'lex_yacc_library',
@@ -72,7 +72,7 @@ class LexYaccLibrary(CcTarget):
         if prefix:
             lex_flags.append('-P %s' % prefix)
         self._write_rule(
-            "lex_%s = %s.CXXFile(LEXFLAGS=%s, target='%s', source='%s');" % (
+            'lex_%s = %s.CXXFile(LEXFLAGS=%s, target="%s", source="%s")' % (
                 var_name, env_name, lex_flags, lex_cc_file, lex_source_file))
         yacc_source_file = os.path.join(self.build_path,
                                         self.path,
@@ -85,34 +85,34 @@ class LexYaccLibrary(CcTarget):
             yacc_flags.append('-p %s' % prefix)
 
         self._write_rule(
-            "yacc_%s = %s.Yacc(YACCFLAGS=%s, target=['%s', '%s'], source='%s');" % (
+            'yacc_%s = %s.Yacc(YACCFLAGS=%s, target=["%s", "%s"], source="%s")' % (
                 var_name, env_name, yacc_flags,
                 yacc_cc_file, yacc_hh_file, yacc_source_file))
-        self._write_rule("%s.Depends(lex_%s, yacc_%s)" % (env_name,
+        self._write_rule('%s.Depends(lex_%s, yacc_%s)' % (env_name,
                                                           var_name, var_name))
 
         obj_names = []
-        obj_name = "%s_object" % self._generate_variable_name(
+        obj_name = '%s_object' % self._generate_variable_name(
                     self.path, self.srcs[0] + '.cc')
         obj_names.append(obj_name)
-        self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
-                "source = '%s')" % (obj_name,
-                                    env_name,
-                                    lex_cc_file,
-                                    lex_cc_file))
+        self._write_rule('%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
+                         'source="%s")' % (obj_name,
+                                             env_name,
+                                             lex_cc_file,
+                                             lex_cc_file))
 
-        obj_name = "%s_object" % self._generate_variable_name(
+        obj_name = '%s_object' % self._generate_variable_name(
                     self.path, self.srcs[1] + '.cc')
         obj_names.append(obj_name)
-        self._write_rule("%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
-                "source = '%s')" % (obj_name,
-                                    env_name,
-                                    yacc_cc_file,
-                                    yacc_cc_file))
+        self._write_rule('%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
+                         'source="%s")' % (obj_name,
+                                             env_name,
+                                             yacc_cc_file,
+                                             yacc_cc_file))
 
 
-        self._write_rule("%s = [%s]" % (self._objs_name(), ','.join(obj_names)))
-        self._cc_library();
+        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
+        self._cc_library()
         options = self.blade.get_options()
         if (getattr(options, 'generate_dynamic', False) or
             self.data.get('build_dynamic', False)):

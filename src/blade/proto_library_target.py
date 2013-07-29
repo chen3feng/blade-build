@@ -77,7 +77,7 @@ class ProtoLibrary(CcTarget):
             if file_suffix != 'proto':
                 err = 1
             if err == 1:
-                console.error_exit("invalid proto file name %s" % src)
+                console.error_exit('invalid proto file name %s' % src)
 
     def _proto_gen_files(self, path, src):
         """_proto_gen_files. """
@@ -100,7 +100,7 @@ class ProtoLibrary(CcTarget):
         package_name_java = 'java_package'
         package_name = 'package'
         if not os.path.isfile(src):
-            return ""
+            return ''
         package_line = ''
         package = ''
         normal_package_line = ''
@@ -148,7 +148,7 @@ class ProtoLibrary(CcTarget):
                                                                src,
                                                                package_dir)
 
-            self._write_rule("%s.ProtoJava(['%s'], '%s')" % (
+            self._write_rule('%s.ProtoJava(["%s"], "%s")' % (
                     self._env_name(),
                     proto_java_src_package,
                     src_path))
@@ -164,7 +164,7 @@ class ProtoLibrary(CcTarget):
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_php_src = self._proto_gen_php_file(self.path, src)
-            self._write_rule("%s.ProtoPhp(['%s'], '%s')" % (
+            self._write_rule('%s.ProtoPhp(["%s"], "%s")' % (
                     self._env_name(),
                     proto_php_src,
                     src_path))
@@ -176,9 +176,9 @@ class ProtoLibrary(CcTarget):
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_python_src = self._proto_gen_python_file(self.path, src)
-            py_cmd_var = "%s_python" % self._generate_variable_name(
+            py_cmd_var = '%s_python' % self._generate_variable_name(
                     self.path, self.name)
-            self._write_rule("%s = %s.ProtoPython(['%s'], '%s')" % (
+            self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
                     py_cmd_var,
                     self._env_name(),
                     proto_python_src,
@@ -223,7 +223,7 @@ class ProtoLibrary(CcTarget):
         for src in self.srcs:
             (proto_src, proto_hdr) = self._proto_gen_files(self.path, src)
 
-            self._write_rule("%s.Proto(['%s', '%s'], '%s')" % (
+            self._write_rule('%s.Proto(["%s", "%s"], "%s")' % (
                     env_name,
                     proto_src,
                     proto_hdr,
@@ -232,14 +232,14 @@ class ProtoLibrary(CcTarget):
                 self.path, src)
             obj_names.append(obj_name)
             self._write_rule(
-                "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
-                "source = '%s')" % (obj_name,
+                '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
+                'source="%s")' % (obj_name,
                                     env_name,
                                     proto_src,
                                     proto_src))
             sources.append(proto_src)
-        self._write_rule("%s = [%s]" % (self._objs_name(), ','.join(obj_names)))
-        self._write_rule("%s.Depends(%s, %s)" % (
+        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
+        self._write_rule('%s.Depends(%s, %s)' % (
                          env_name, self._objs_name(), sources))
 
         self._cc_library()

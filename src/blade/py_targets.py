@@ -73,7 +73,7 @@ class PythonBinaryTarget(Target):
 
         env_name = self._env_name()
 
-        setup_file = os.path.join(self.path, "setup.py")
+        setup_file = os.path.join(self.path, 'setup.py')
         python_package = os.path.join(self.path, self.name)
         init_file = os.path.join(python_package, '__init__.py')
 
@@ -82,7 +82,7 @@ class PythonBinaryTarget(Target):
             binary_files.append(setup_file)
 
         if not os.path.exists(init_file):
-            console.error_exit("The __init__.py not existed in %s" % python_package)
+            console.error_exit('The __init__.py not existed in %s' % python_package)
         binary_files.append(init_file)
 
         dep_var_list = []
@@ -94,16 +94,16 @@ class PythonBinaryTarget(Target):
                 for cmd in binary_dep_source_cmd[dep]:
                     dep_var_list.append(cmd)
 
-        target_egg_file = "%s.egg" % self._target_file_path()
-        python_binary_var = "%s_python_binary_var" % (
+        target_egg_file = '%s.egg' % self._target_file_path()
+        python_binary_var = '%s_python_binary_var' % (
             self._generate_variable_name(self.path, self.name))
-        self._write_rule("%s = %s.PythonBinary(['%s'], %s)" % (
+        self._write_rule('%s = %s.PythonBinary(["%s"], %s)' % (
                           python_binary_var,
                           env_name,
                           target_egg_file,
                           binary_files))
         for var in dep_var_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
+            self._write_rule('%s.Depends(%s, %s)' % (
                              env_name, python_binary_var, var))
 
 

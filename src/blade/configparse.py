@@ -34,7 +34,7 @@ class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
     def __init__(self, current_source_dir):
         self.current_source_dir = current_source_dir
-        self.current_file_name = ""
+        self.current_file_name = ''
         self.configs = {
             'cc_test_config': {
                 'dynamic_link': False,
@@ -100,13 +100,13 @@ class BladeConfig(object):
             if os.path.exists(filename):
                 execfile(filename)
         except:
-            console.error_exit("Parse error in config file %s, exit...\n%s" %
+            console.error_exit('Parse error in config file %s, exit...\n%s' %
                        (filename, traceback.format_exc()))
 
     def parse(self):
         """load the configuration file and parse. """
-        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), "blade.conf"))
-        self._try_parse_file(os.path.expanduser("~/.bladerc"))
+        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+        self._try_parse_file(os.path.expanduser('~/.bladerc'))
         self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
 
     def update_config(self, section_name, append, user_config):
@@ -117,7 +117,7 @@ class BladeConfig(object):
                 self._append_config(section_name, config, append)
             self._replace_config(section_name, config, user_config)
         else:
-            console.error("%s: %s: unknown config section name" % (
+            console.error('%s: %s: unknown config section name' % (
                           self.current_file_name, section_name))
 
     def _append_config(self, section_name, config, append):

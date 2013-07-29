@@ -62,11 +62,11 @@ class Target(object):
 
     def _clone_env(self):
         """Clone target's environment. """
-        self._write_rule("%s = top_env.Clone()" % self._env_name())
+        self._write_rule('%s = top_env.Clone()' % self._env_name())
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        console.error_exit("_prepare_to_generate_rule should be overridden in subclasses")
+        console.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
         if '/' in self.name:
@@ -75,7 +75,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.warning("//%s:%s: unrecognized options %s" % (
+            console.warning('//%s:%s: unrecognized options %s' % (
                     self.path, self.name, kwargs))
 
     # Keep the relationship of all src -> target.
@@ -221,7 +221,7 @@ class Target(object):
         Replace the chars that scons doesn't regconize.
 
         """
-        return var.translate(string.maketrans(",-/.+*", "______"))
+        return var.translate(string.maketrans(',-/.+*', '______'))
 
     def _generate_variable_name(self, path='', name='', suffix=''):
         """_generate_variable_name.
@@ -241,10 +241,10 @@ class Target(object):
         Concatinating target path, target name and suffix and returns.
 
         """
-        suffix_str = ""
+        suffix_str = ''
         if suffix:
-            suffix_str = "_suFFix_%s" % suffix
-        return "v_%s_mAgIc_%s%s" % (self._regular_variable_name(path),
+            suffix_str = '_suFFix_%s' % suffix
+        return 'v_%s_mAgIc_%s%s' % (self._regular_variable_name(path),
                                     self._regular_variable_name(name),
                                     suffix_str)
 
@@ -260,7 +260,7 @@ class Target(object):
         Concatinating target path, target name to be environment var and returns.
 
         """
-        return "env_%s" % self._generate_variable_name(self.path,
+        return 'env_%s' % self._generate_variable_name(self.path,
                                                        self.name)
 
     def __fill_path_name(self, path, name):
@@ -307,7 +307,7 @@ class Target(object):
             return
         env_name = self._env_name()
         files = var_to_list(target_files)
-        files_str = ",".join(["%s" % f for f in files])
+        files_str = ','.join(['%s' % f for f in files])
         targets = self.blade.get_build_targets()
         import gen_rule_target
         files_map = gen_rule_target._files_map
@@ -317,7 +317,7 @@ class Target(object):
             if dep_target.type == 'gen_rule':
                 srcs_list = files_map[(dep_target.path, dep_target.name)]
                 if srcs_list:
-                    self._write_rule("%s.Depends([%s], [%s])" % (
+                    self._write_rule('%s.Depends([%s], [%s])' % (
                         env_name,
                         files_str,
                         srcs_list))
@@ -366,11 +366,11 @@ class Target(object):
         bad_format = False
         if target_string:
             if target_string.startswith('#'):
-                return ("#", target_string[1:])
-            elif target_string.find(":") != -1:
-                path, name = target_string.split(":")
+                return ('#', target_string[1:])
+            elif target_string.find(':') != -1:
+                path, name = target_string.split(':')
                 path = path.strip()
-                if path.startswith("//"):
+                if path.startswith('//'):
                     path = path[2:]
                 return (path, name.strip())
             else:
@@ -379,8 +379,8 @@ class Target(object):
             bad_format = True
 
         if bad_format:
-            console.error_exit("invalid target lib format: %s, "
-                       "should be #lib_name or lib_path:lib_name" % target_string)
+            console.error_exit('invalid target lib format: %s, '
+                       'should be #lib_name or lib_path:lib_name' % target_string)
 
 
 class SystemLibrary(Target):

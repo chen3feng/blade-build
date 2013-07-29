@@ -63,7 +63,7 @@ class GenRuleTarget(Target):
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
-        return ','.join(["'%s'" % os.path.join(self.build_path, path, src)
+        return ','.join(['"%s"' % os.path.join(self.build_path, path, src)
             for src in srcs])
 
     def scons_rules(self):
@@ -80,17 +80,17 @@ class GenRuleTarget(Target):
         env_name = self._env_name()
         var_name = self._generate_variable_name(self.path, self.name)
 
-        srcs_str = ""
+        srcs_str = ''
         if not self.srcs:
             srcs_str = 'time_value'
         else:
             srcs_str = self._srcs_list(self.path, self.srcs)
         cmd = self.data['cmd']
-        cmd = cmd.replace("$SRCS", '$SOURCES')
-        cmd = cmd.replace("$OUTS", '$TARGETS')
-        cmd = cmd.replace("$FIRST_SRC", '$SOURCE')
-        cmd = cmd.replace("$FIRST_OUT", '$TARGET')
-        cmd = cmd.replace("$BUILD_DIR", self.build_path)
+        cmd = cmd.replace('$SRCS', '$SOURCES')
+        cmd = cmd.replace('$OUTS', '$TARGETS')
+        cmd = cmd.replace('$FIRST_SRC', '$SOURCE')
+        cmd = cmd.replace('$FIRST_OUT', '$TARGET')
+        cmd = cmd.replace('$BUILD_DIR', self.build_path)
         self._write_rule('%s = %s.Command([%s], [%s], "%s")' % (
                 var_name,
                 env_name,
@@ -124,7 +124,7 @@ class GenRuleTarget(Target):
                 dep_var_list.append(dep_var_name)
 
         for dep_var_name in dep_var_list:
-            self._write_rule("%s.Depends(%s, %s)" % (env_name,
+            self._write_rule('%s.Depends(%s, %s)' % (env_name,
                                                      var_name,
                                                      dep_var_name))
 
@@ -133,7 +133,7 @@ def gen_rule(name,
              srcs=[],
              deps=[],
              outs=[],
-             cmd="",
+             cmd='',
              **kwargs):
     """scons_gen_rule. """
     gen_rule_target = GenRuleTarget(name,
@@ -147,4 +147,3 @@ def gen_rule(name,
 
 
 build_rules.register_function(gen_rule)
-

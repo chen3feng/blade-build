@@ -270,11 +270,11 @@ class JavaJarTarget(Target):
 
         source_files_list = []
         for src_dir in no_dup_source_list:
-            srcs = os.path.join(src_dir, "*.java")
+            srcs = os.path.join(src_dir, '*.java')
             source_files_list.append(srcs)
 
         cmd = javac_cmd + javac_class_path + javac_classes_out
-        cmd += javac_source_path + " " + " ".join(source_files_list)
+        cmd += javac_source_path + ' ' + ' '.join(source_files_list)
         dummy_file = '%s_dummy_file_%s' % (
                 self.name, str(new_target_idx))
         new_target_idx += 1
@@ -289,7 +289,7 @@ class JavaJarTarget(Target):
         for dep in self.expanded_deps:
             if dep in java_jars_map:
                 dep_java_jar_list = java_jars_map[dep]
-                self._write_rule("%s.Depends(%s, %s)" % (
+                self._write_rule('%s.Depends(%s, %s)' % (
                     env_name,
                     classes_var,
                     dep_java_jar_list
@@ -355,7 +355,7 @@ class JavaJarTarget(Target):
                     class_path_name)
             jar_target = '%s.jar' % self._target_file_path()
             jar_target_object = '%s.jar' % jar_target
-            cmd_remove_var = "cmd_remove_%s" % jar_var
+            cmd_remove_var = 'cmd_remove_%s' % jar_var
             removed = False
             if (not jar_target in self.java_jar_cmd_list) and (
                 os.path.exists(jar_target)):
@@ -488,8 +488,8 @@ def java_jar(name,
                            blade.blade,
                            kwargs)
     if pre_build:
-        console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.path,
+        console.warning('//%s:%s: "pre_build" has been deprecated, '
+                        'please use "prebuilt"' % (target.path,
                                                    target.name))
     blade.blade.register_target(target)
 

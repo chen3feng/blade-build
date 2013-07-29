@@ -155,7 +155,7 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
                 status_cmd = 'git status --porcelain %s' % (git_subdir)
                 output = os.popen(status_cmd).read().split('\n')
             else:
-                console.warning("unknown source client type, NOT svn OR git")
+                console.warning('unknown source client type, NOT svn OR git')
         for f in output:
             seg = f.strip().split(' ')
             if seg[0] != 'M' and seg[0] != 'A':
@@ -171,8 +171,8 @@ def _check_code_style(opened_files):
     if not opened_files:
         return 0
     cpplint = configparse.blade_config.configs['cc_config']['cpplint']
-    console.info("Begin to check code style for changed source code")
-    p = subprocess.Popen(("%s %s" % (cpplint, ' '.join(opened_files))), shell=True)
+    console.info('Begin to check code style for changed source code')
+    p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(opened_files))), shell=True)
     try:
         p.wait()
         if p.returncode:
@@ -182,7 +182,7 @@ def _check_code_style(opened_files):
                        "'cc_config' section of blade.conf or BLADE_ROOT, or "
                        "make sure '{0}' command is correct.").format(cpplint)
             else:
-                msg = "Please fixing style warnings before submitting the code!"
+                msg = 'Please fixing style warnings before submitting the code!'
             console.warning(msg)
     except KeyboardInterrupt, e:
         console.error(str(e))
@@ -232,7 +232,7 @@ def _main(blade_path):
         _check_code_style(opened_files)
 
     # Init global blade manager.
-    current_building_path = "build%s_%s" % (options.m, options.profile)
+    current_building_path = 'build%s_%s' % (options.m, options.profile)
 
     lock_file_fd = None
     locked_scons = False
@@ -246,10 +246,10 @@ def _main(blade_path):
         if not locked_scons:
             if ret_code == errno.EAGAIN:
                 console.error_exit(
-                        "There is already an active building in current source "
-                        "dir tree. Blade will exit...")
+                        'There is already an active building in current source '
+                        'dir tree. Blade will exit...')
             else:
-                console.error_exit("Lock exception, please try it later.")
+                console.error_exit('Lock exception, please try it later.')
 
         if command == 'query' and getattr(options, 'depended', None):
             targets = ['...']
@@ -303,11 +303,11 @@ def _build(options):
     if options.keep_going:
         scons_options += ' -k'
 
-    p = subprocess.Popen("scons %s" % scons_options, shell=True)
+    p = subprocess.Popen('scons %s' % scons_options, shell=True)
     try:
         p.wait()
         if p.returncode:
-            console.error("building failure")
+            console.error('building failure')
             return p.returncode
     except:  # KeyboardInterrupt
         return 1
@@ -333,12 +333,12 @@ def test(options):
 
 
 def clean(options):
-    console.info("cleaning...(hint: please specify --generate-dynamic to "
-                 "clean your so)")
-    p = subprocess.Popen(
-    "scons --duplicate=soft-copy -c -s --cache-show", shell=True)
+    console.info('cleaning...(hint: please specify --generate-dynamic to '
+                 'clean your so)')
+    p = subprocess.Popen('scons --duplicate=soft-copy -c -s --cache-show',
+                         shell=True)
     p.wait()
-    console.info("cleaning done.")
+    console.info('cleaning done.')
     return p.returncode
 
 
@@ -353,8 +353,7 @@ def main(blade_path):
     except SystemExit, e:
         exit_code = e.code
     except KeyboardInterrupt:
-        console.error_exit("keyboard interrupted", -signal.SIGINT)
+        console.error_exit('keyboard interrupted', -signal.SIGINT)
     except:
         console.error_exit(traceback.format_exc())
     sys.exit(exit_code)
-

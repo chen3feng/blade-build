@@ -99,7 +99,7 @@ class ResourceLibrary(CcTarget):
             src_name = base_src_name + '_' + self.name + '_res'
             if src_name not in res_objects:
                 res_objects[src_name] = (
-                        "%s_%s_object" % (
+                        '%s_%s_object' % (
                                 base_src_name,
                                 self._regular_variable_name(self.name)))
                 target_path = os.path.join(self.build_path,
@@ -107,8 +107,8 @@ class ResourceLibrary(CcTarget):
                                            '%s.objs' % self.name,
                                            base_src_name)
                 self._write_rule(
-                        "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX']"
-                        ", source = '%s')" % (res_objects[src_name],
+                        '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"]'
+                        ', source="%s")' % (res_objects[src_name],
                                               env_name,
                                               target_path,
                                               src))

@@ -86,14 +86,14 @@ class ThriftLibrary(CcTarget):
             base_name = os.path.basename(src)
             pos = base_name.rfind('.')
             if pos == -1:
-                console.error("invalid thrift file name %s" % src)
+                console.error('invalid thrift file name %s' % src)
                 error += 1
             file_suffix = base_name[pos + 1:]
             if file_suffix != 'thrift':
-                console.error("invalid thrift file name %s" % src)
+                console.error('invalid thrift file name %s' % src)
                 error += 1
         if error > 0:
-            console.error_exit("invalid thrift file names found.")
+            console.error_exit('invalid thrift file names found.')
 
     def _thrift_gen_cpp_files(self, path, src):
         """_thrift_gen_cpp_files.
@@ -140,7 +140,7 @@ class ThriftLibrary(CcTarget):
             thrift_java_src_files = self._thrift_gen_java_files(self.path,
                                                                 src)
 
-            self._write_rule("%s.ThriftJava(%s, '%s')" % (
+            self._write_rule('%s.ThriftJava(%s, "%s")' % (
                     self._env_name(),
                     str(thrift_java_src_files),
                     src_path))
@@ -164,9 +164,9 @@ class ThriftLibrary(CcTarget):
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             thrift_py_src_files = self._thrift_gen_py_files(self.path, src)
-            py_cmd_var = "%s_python" % self._generate_variable_name(
+            py_cmd_var = '%s_python' % self._generate_variable_name(
                     self.path, self.name)
-            self._write_rule("%s = %s.ThriftPython(%s, '%s')" % (
+            self._write_rule('%s = %s.ThriftPython(%s, "%s")' % (
                     py_cmd_var,
                     self._env_name(),
                     str(thrift_py_src_files),
@@ -207,25 +207,25 @@ class ThriftLibrary(CcTarget):
             thrift_cpp_files = self._thrift_gen_cpp_files(self.path, src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
 
-            self._write_rule("%s.Thrift(%s, '%s')" % (
+            self._write_rule('%s.Thrift(%s, "%s")' % (
                     env_name,
                     str(thrift_cpp_files),
                     os.path.join(self.path, src)))
 
             for thrift_cpp_src in thrift_cpp_src_files:
-                obj_name = "%s_object" % self._generate_variable_name(
+                obj_name = '%s_object' % self._generate_variable_name(
                     self.path, thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
-                    "%s = %s.SharedObject(target = '%s' + top_env['OBJSUFFIX'], "
-                    "source = '%s')" % (obj_name,
-                                        env_name,
-                                        thrift_cpp_src,
-                                        thrift_cpp_src))
+                    '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
+                    'source="%s")' % (obj_name,
+                                      env_name,
+                                      thrift_cpp_src,
+                                      thrift_cpp_src))
                 sources.append(thrift_cpp_src)
 
-        self._write_rule("%s = [%s]" % (self._objs_name(), ','.join(obj_names)))
-        self._write_rule("%s.Depends(%s, %s)" % (
+        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
+        self._write_rule('%s.Depends(%s, %s)' % (
                          env_name, self._objs_name(), sources))
 
         self._cc_library()

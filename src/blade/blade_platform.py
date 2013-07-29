@@ -23,7 +23,7 @@ class SconsPlatform(object):
     """The scons platform class that it handles and gets the platform info. """
     def __init__(self):
         """Init. """
-        self.gcc_version = self._get_gcc_version("gcc")
+        self.gcc_version = self._get_gcc_version('gcc')
         self.python_inc = self._get_python_include()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
@@ -32,7 +32,7 @@ class SconsPlatform(object):
     def _get_gcc_version(compiler):
         """Get the gcc version. """
         p = subprocess.Popen(
-            compiler + " --version",
+            compiler + ' --version',
             env=os.environ,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -43,13 +43,13 @@ class SconsPlatform(object):
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
             return version
-        return ""
+        return ''
 
     @staticmethod
     def _get_python_include():
         """Get the python include dir. """
         p = subprocess.Popen(
-            "python-config --includes",
+            'python-config --includes',
             env=os.environ,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -60,12 +60,12 @@ class SconsPlatform(object):
             include_line = stdout.splitlines(True)[0]
             header = include_line.split()[0][2:]
             return header
-        return ""
+        return ''
 
     @staticmethod
     def _get_php_include():
         p = subprocess.Popen(
-            "php-config --includes",
+            'php-config --includes',
             env=os.environ,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -88,7 +88,7 @@ class SconsPlatform(object):
             include_list.append('%s/include/linux' % java_home)
             return include_list
         p = subprocess.Popen(
-            "java -version",
+            'java -version',
             env=os.environ,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -146,7 +146,7 @@ class CcFlagsManager(object):
 
         ret_flag_list = []
         for flag in flag_list_var:
-            cmd_str = "echo '' | %s %s %s >/dev/null 2>&1" % (
+            cmd_str = 'echo "" | %s %s %s >/dev/null 2>&1' % (
                       self.cpp_str, option, flag)
             if subprocess.call(cmd_str, shell=True) == 0:
                 ret_flag_list.append(flag)
@@ -158,17 +158,17 @@ class CcFlagsManager(object):
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
-        flags_except_warning = ["-m%s" % self.options.m, "-mcx16", "-pipe"]
-        linkflags = ["-m%s" % self.options.m]
+        flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
+        linkflags = ['-m%s' % self.options.m]
         if self.options.profile == 'debug':
-            flags_except_warning += ["-ggdb3", "-fstack-protector"]
+            flags_except_warning += ['-ggdb3', '-fstack-protector']
         elif self.options.profile == 'release':
-            flags_except_warning += ["-g", "-DNDEBUG"]
+            flags_except_warning += ['-g', '-DNDEBUG']
         flags_except_warning += [
-                "-D_FILE_OFFSET_BITS=64",
-                "_D__STDC_CONSTANT_MACROS",
-                "-D__STDC_FORMAT_MACROS",
-                "-D__STDC_LIMIT_MACROS",
+                '-D_FILE_OFFSET_BITS=64',
+                '_D__STDC_CONSTANT_MACROS',
+                '-D__STDC_FORMAT_MACROS',
+                '-D__STDC_LIMIT_MACROS',
         ]
 
         if getattr(self.options, 'gprof', False):

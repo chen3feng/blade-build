@@ -44,7 +44,7 @@ def colors(name):
 
 def error(msg):
     """dump error message. """
-    msg = "Blade(error): " + msg
+    msg = 'Blade(error): ' + msg
     if color_enabled:
         msg = _colors['red'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -58,7 +58,7 @@ def error_exit(msg, code=1):
 
 def warning(msg):
     """dump warning message but continue. """
-    msg = "Blade(warning): " + msg
+    msg = 'Blade(warning): ' + msg
     if color_enabled:
         msg = _colors['yellow'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -67,7 +67,7 @@ def warning(msg):
 def info(msg, prefix=True):
     """dump info message. """
     if prefix:
-        msg = "Blade(info): " + msg
+        msg = 'Blade(info): ' + msg
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
     print >>sys.stderr, msg

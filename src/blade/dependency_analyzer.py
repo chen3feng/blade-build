@@ -97,8 +97,8 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
         if d in root_targets:
             err_msg = ''
             for t in root_targets:
-                err_msg += "//%s:%s --> " % (t[0], t[1])
-            console.error_exit("loop dependency found: //%s:%s --> [%s]" % (
+                err_msg += '//%s:%s --> ' % (t[0], t[1])
+            console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
                        d[0], d[1], err_msg))
         new_deps_piece = [d]
         if d not in targets:
