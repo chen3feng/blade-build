@@ -57,6 +57,8 @@ class ThriftLibrary(CcTarget):
                           [], [], [], optimize, [], [],
                           blade,
                           kwargs)
+        self.data['python_vars'] = []
+        self.data['python_sources'] = []
 
         thrift_config = configparse.blade_config.get_config('thrift_config')
         thrift_lib = var_to_list(thrift_config['thrift_libs'])
@@ -67,6 +69,7 @@ class ThriftLibrary(CcTarget):
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
+        self.data['java_sources_explict_dependency'] = []
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.
@@ -132,9 +135,6 @@ class ThriftLibrary(CcTarget):
 
         """
 
-        java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
-        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
-        sources_dependency_map[self.key] = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             thrift_java_src_files = self._thrift_gen_java_files(self.path,
@@ -145,12 +145,12 @@ class ThriftLibrary(CcTarget):
                     str(thrift_java_src_files),
                     src_path))
 
-            java_jar_dep_source_map[self.key] = (
+            self.data['java_sources']  = (
                      os.path.dirname(thrift_java_src_files[0]),
                      os.path.join(self.build_path, self.path),
                      self.name)
 
-            sources_dependency_map[self.key].extend(thrift_java_src_files)
+            self.data['java_sources_explict_dependency'] += thrift_java_src_files
 
     def _thrift_python_rules(self):
         """_thrift_python_rules.
@@ -158,9 +158,6 @@ class ThriftLibrary(CcTarget):
         Generate python files.
 
         """
-
-        py_targets.binary_dep_source_map[self.key] = []
-        py_targets.binary_dep_source_cmd[self.key] = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             thrift_py_src_files = self._thrift_gen_py_files(self.path, src)
@@ -171,9 +168,8 @@ class ThriftLibrary(CcTarget):
                     self._env_name(),
                     str(thrift_py_src_files),
                     src_path))
-            py_targets.binary_dep_source_cmd[self.key].append(py_cmd_var)
-            py_targets.binary_dep_source_map[self.key].extend(
-                    thrift_py_src_files)
+            self.data['python_vars'].append(py_cmd_var)
+            self.data['python_sources'] += thrift_py_src_files
 
     def scons_rules(self):
         """scons_rules.

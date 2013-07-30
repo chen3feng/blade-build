@@ -60,6 +60,9 @@ class ProtoLibrary(CcTarget):
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
+        self.data['java_sources_explict_dependency'] = []
+        self.data['python_vars'] = []
+        self.data['python_sources'] = []
 
     def _check_proto_srcs_name(self, srcs_list):
         """_check_proto_srcs_name.
@@ -138,9 +141,6 @@ class ProtoLibrary(CcTarget):
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
-        java_jar_dep_source_map = java_jar_target.get_java_jar_dep_source_map()
-        sources_dependency_map = java_jar_target.get_sources_explict_dependency_map()
-        sources_dependency_map[self.key] = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             package_dir = self._get_java_package_name(src_path)
@@ -153,11 +153,11 @@ class ProtoLibrary(CcTarget):
                     proto_java_src_package,
                     src_path))
 
-            java_jar_dep_source_map[self.key] = (
+            self.data['java_sources']  = (
                      os.path.dirname(proto_java_src_package),
                      os.path.join(self.build_path, self.path),
                      self.name)
-            sources_dependency_map[self.key].append(proto_java_src_package)
+            self.data['java_sources_explict_dependency'].append(proto_java_src_package)
 
     def _proto_php_rules(self):
         """Generate php files. """
@@ -183,9 +183,8 @@ class ProtoLibrary(CcTarget):
                     self._env_name(),
                     proto_python_src,
                     src_path))
-            py_targets.binary_dep_source_cmd[self.key].append(py_cmd_var)
-            py_targets.binary_dep_source_map[self.key].append(
-                    proto_python_src)
+            self.data['python_vars'].append(py_cmd_var)
+            self.data['python_sources'].append(proto_python_src)
 
     def scons_rules(self):
         """scons_rules.

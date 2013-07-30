@@ -22,15 +22,6 @@ from blade_util import var_to_list
 from target import Target
 
 
-# The prebuilt cc_library file map which is needed to establish
-# symbolic links while testing
-prebuilt_cc_library_file_map = {}
-
-
-# The cc objects pool, a map to hold all the objects name.
-_objects_pool = {}
-
-
 class CcTarget(Target):
     """A scons cc target subclass.
 
@@ -464,8 +455,9 @@ class CcTarget(Target):
                         prebuilt_target_file))
             prebuilt_symlink = os.path.realpath(prebuilt_src_file)
             prebuilt_symlink = os.path.basename(prebuilt_symlink)
-            prebuilt_cc_library_file_map[self.key] = (prebuilt_target_file,
-                                                prebuilt_symlink)
+            self.file_and_link = (prebuilt_target_file, prebuilt_symlink)
+        else:
+            self.file_and_link = None
 
     def _cc_library(self):
         """_cc_library.

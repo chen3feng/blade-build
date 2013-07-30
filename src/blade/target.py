@@ -309,12 +309,11 @@ class Target(object):
         files_str = ','.join(['%s' % f for f in files])
         targets = self.blade.get_build_targets()
         import gen_rule_target
-        files_map = gen_rule_target._files_map
         deps = self.expanded_deps
         for d in deps:
             dep_target = targets[d]
             if dep_target.type == 'gen_rule':
-                srcs_list = files_map[(dep_target.path, dep_target.name)]
+                srcs_list = dep_target.var_name
                 if srcs_list:
                     self._write_rule('%s.Depends([%s], [%s])' % (
                         env_name,

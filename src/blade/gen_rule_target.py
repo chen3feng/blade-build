@@ -21,12 +21,6 @@ from blade_util import var_to_list
 from target import Target
 
 
-# The gen rule files map, which is used to generate the explict dependency
-# relationtion ship between gen_rule target and other targets
-# TODO(chen3feng): Put into menber of GenRuleTarget object
-_files_map = {}
-
-
 class GenRuleTarget(Target):
     """A scons gen rule target subclass.
 
@@ -98,11 +92,10 @@ class GenRuleTarget(Target):
                 srcs_str,
                 cmd))
 
-        _files_map[(self.path, self.name)] = var_name
+        self.var_name = var_name
         self._generate_target_explict_dependency(var_name)
 
         targets = self.blade.get_build_targets()
-        java_jars_map = java_jar_target.get_java_jars_map()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
         for i in self.expanded_deps:
@@ -117,7 +110,7 @@ class GenRuleTarget(Target):
                         dep_target.path, dep_target.name, 'dynamic_java')
                 dep_var_list.append(dep_var_name)
             elif dep_target.type == 'java_jar':
-                dep_var_list += java_jars_map.get(dep_target.name, [])
+                dep_var_list += dep_target.data.get('java_jars', [])
             else:
                 dep_var_name = self._generate_variable_name(
                         dep_target.path, dep_target.name)

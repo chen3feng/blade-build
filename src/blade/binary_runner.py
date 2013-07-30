@@ -57,9 +57,9 @@ class BinaryRunner(object):
         """Get prebuilt files for one target that it depends. """
         file_list = []
         for dep in target.expanded_deps:
-            target_type = self.target_database[dep].type
-            if target_type == 'prebuilt_cc_library':
-                prebuilt_file = cc_targets.prebuilt_cc_library_file_map.get(dep)
+            dep_target = self.target_database[dep]
+            if dep_target.type == 'prebuilt_cc_library':
+                prebuilt_file = dep_target.file_and_link
                 if prebuilt_file:
                     file_list.append(prebuilt_file)
         return file_list

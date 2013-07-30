@@ -21,15 +21,6 @@ from blade_util import var_to_list
 from target import Target
 
 
-# The vars which are depended by python binary
-# {key : 'python_files'}
-binary_dep_source_cmd = {}
-
-# The files which are depended by python binary
-# {key : 'python_files'}
-binary_dep_source_map = {}
-
-
 class PythonBinaryTarget(Target):
     """A python egg target subclass.
 
@@ -88,11 +79,8 @@ class PythonBinaryTarget(Target):
         dep_var_list = []
         self.targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
-            if dep in binary_dep_source_map:
-                for f in binary_dep_source_map[dep]:
-                    binary_files.append(f)
-                for cmd in binary_dep_source_cmd[dep]:
-                    dep_var_list.append(cmd)
+            binary_files += targets[dep].data.get('python_sources', [])
+            dep_var_list += targets[dep].data.get('python_vars', [])
 
         target_egg_file = '%s.egg' % self._target_file_path()
         python_binary_var = '%s_python_binary_var' % (
