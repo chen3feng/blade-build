@@ -39,12 +39,12 @@ class TargetTest(unittest.TestCase):
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
         options = {
-                'm' : '64',
-                'profile' : 'release',
-                'generate_dynamic' : True,
-                'generate_java' : True,
-                'generate_php' : generate_php,
-                'verbose' : True
+                'm': '64',
+                'profile': 'release',
+                'generate_dynamic': True,
+                'generate_java': True,
+                'generate_php': generate_php,
+                'verbose': True
                 }
         options.update(kwargs)
         self.options = Namespace(options)
@@ -125,6 +125,7 @@ class TargetTest(unittest.TestCase):
 
     def assertDynamicLinkFlags(self, cmdline):
         self.assertTrue('-shared' in cmdline)
+
 
 def run(class_name):
     suite_test = unittest.TestSuite()

@@ -55,6 +55,7 @@ class TestCcPlugin(blade_test.TargetTest):
         self.assertCxxFlags(com_string_line)
 
         self.assertDynamicLinkFlags(string_plugin_depends_libs)
+        self.assertTrue('-Wl,-Bsymbolic' in string_plugin_depends_libs)
         self.assertTrue('liblowercase.a' in string_plugin_depends_libs)
         self.assertTrue('libuppercase.a' in string_plugin_depends_libs)
 

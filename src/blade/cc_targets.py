@@ -908,6 +908,7 @@ class CcPlugin(CcTarget):
                                                 'dynamic')
 
         self._cc_objects_rules()
+        self._setup_extra_link_flags()
 
         (link_all_symbols_lib_list,
          lib_str,
