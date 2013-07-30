@@ -275,8 +275,8 @@ def _main(blade_path):
         # Switch case due to different sub command
         action = {
                  'build': build,
-                 'run':   run,
-                 'test':  test,
+                 'run': run,
+                 'test': test,
                  'clean': clean,
                  'query': query
                  }[command](options)

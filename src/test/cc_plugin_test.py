@@ -60,5 +60,5 @@ class TestCcPlugin(blade_test.TargetTest):
         self.assertTrue('libuppercase.a' in string_plugin_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestCcPlugin)

@@ -68,5 +68,5 @@ class TestLexYacc(blade_test.TargetTest):
         self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestLexYacc)

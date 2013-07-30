@@ -30,6 +30,7 @@ and then provide the query interface to users by blade manager.
 
 """
 
+
 def analyze_deps(related_targets):
     """analyze the dependency relationship between targets.
 

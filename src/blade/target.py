@@ -83,7 +83,6 @@ class Target(object):
     # exactly one target(only library target).
     __src_target_map = {}
 
-
     def _check_srcs(self):
         """Check source files.
         Description

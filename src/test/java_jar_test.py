@@ -18,7 +18,8 @@ class TestJavaJar(blade_test.TargetTest):
     """Test java_jar """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_java_jar/java', ':poppy_java_client', generate_php=False)
+        self.doSetUp('test_java_jar/java', ':poppy_java_client',
+                     generate_php=False)
         self.upper_target_path = 'test_java_jar'
 
     def testLoadBuildsNotNone(self):
@@ -133,13 +134,13 @@ class TestJavaJar(blade_test.TargetTest):
         self.assertTrue('com/soso/poppy/swig/*.java' in java_com_line)
         self.assertTrue('com/soso/poppy/*.java' in java_com_line)
 
-        whole_archive = ("--whole-archive build64_release/test_java_jar/"
-                         "librpc_meta_info_proto.a build64_release/test_java_jar/"
-                         "librpc_option_proto.a -Wl,--no-whole-archive")
+        whole_archive = ('--whole-archive build64_release/test_java_jar/'
+                         'librpc_meta_info_proto.a build64_release/test_java_jar/'
+                         'librpc_option_proto.a -Wl,--no-whole-archive')
         self.assertTrue(whole_archive in java_so_line)
         self.assertTrue(jar_idx > java_com_idx)
         self.assertTrue(jar_idx > java_so_idx)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestJavaJar)

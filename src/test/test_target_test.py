@@ -31,7 +31,7 @@ class TestTestRunner(blade_test.TargetTest):
         """Test query targets dependency relationship correctly. """
         self.assertTrue(self.all_targets)
         self.rules_buf = self.blade.generate_build_rules()
-        test_env_dir = "./build%s_%s/test_test_runner" % (
+        test_env_dir = './build%s_%s/test_test_runner' % (
                 self.options.m, self.options.profile)
         if not os.path.exists(test_env_dir):
             os.mkdir(test_env_dir)
@@ -70,5 +70,5 @@ class TestTestRunner(blade_test.TargetTest):
         self.assertEqual(ret_code, 1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestTestRunner)

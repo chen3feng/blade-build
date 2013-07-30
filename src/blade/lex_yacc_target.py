@@ -110,7 +110,6 @@ class LexYaccLibrary(CcTarget):
                                              yacc_cc_file,
                                              yacc_cc_file))
 
-
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._cc_library()
         options = self.blade.get_options()
@@ -137,4 +136,3 @@ def lex_yacc_library(name,
 
 
 build_rules.register_function(lex_yacc_library)
-

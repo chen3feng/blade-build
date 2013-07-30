@@ -60,6 +60,5 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         self.assertTrue('liblowercase.so' in upper_depends_libs)
 
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestPrebuildCcLibrary)

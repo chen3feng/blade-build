@@ -15,6 +15,7 @@ import os
 import sys
 import blade_test
 
+
 class TestProtoLibrary(blade_test.TargetTest):
     """Test proto_library """
     def setUp(self):
@@ -90,5 +91,5 @@ class TestProtoLibrary(blade_test.TargetTest):
         self.assertTrue('librpc_option_proto.so' in lower_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestProtoLibrary)

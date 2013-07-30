@@ -64,5 +64,5 @@ class TestGenRule(blade_test.TargetTest):
         self.assertTrue(upper_so_index, gen_rule_index)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestGenRule)

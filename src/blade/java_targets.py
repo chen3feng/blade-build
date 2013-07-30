@@ -153,4 +153,3 @@ def java_test(name,
 build_rules.register_function(java_binary)
 build_rules.register_function(java_library)
 build_rules.register_function(java_test)
-

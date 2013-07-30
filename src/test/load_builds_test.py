@@ -62,5 +62,5 @@ class TestLoadBuilds(blade_test.TargetTest):
 
         self.assertEqual(target_count, 10)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestLoadBuilds)

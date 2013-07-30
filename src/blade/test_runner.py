@@ -196,8 +196,8 @@ class TestRunner(binary_runner.BinaryRunner):
                 self.inctest_run_list.append(target)
                 self.tests_run_map[target_key] = {
                         'runfile': test_file_name,
-                        'result':  '',
-                        'reason':  'EXPLICIT',
+                        'result': '',
+                        'reason': 'EXPLICIT',
                         'costtime': 0}
                 continue
 
@@ -217,9 +217,9 @@ class TestRunner(binary_runner.BinaryRunner):
                 else:
                     reason = 'STALE'
                 self.tests_run_map[target_key] = {
-                        'runfile':  test_file_name,
-                        'result':   '',
-                        'reason':   reason,
+                        'runfile': test_file_name,
+                        'result': '',
+                        'reason': reason,
                         'costtime': 0}
 
         # Append old md5sum that not existed into new

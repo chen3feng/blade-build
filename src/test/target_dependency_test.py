@@ -63,7 +63,7 @@ class TestDepsAnalyzing(blade_test.TargetTest):
         self.assertTrue(cc_library_poppy in poppy_mock_deps)
         self.assertTrue(proto_lib_meta in poppy_mock_deps)
 
-        poppy_client_deps  = self.all_targets[swig_library].expanded_deps
+        poppy_client_deps = self.all_targets[swig_library].expanded_deps
         self.assertTrue(poppy_client_deps)
         self.assertTrue(cc_library_poppy in poppy_client_deps)
         self.assertTrue(cc_lib_prebuild  in poppy_client_deps)
@@ -78,5 +78,5 @@ class TestDepsAnalyzing(blade_test.TargetTest):
         self.assertTrue(cc_library_poppy not in java_jar_deps)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestDepsAnalyzing)

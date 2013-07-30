@@ -81,6 +81,7 @@ def get_sources_explict_dependency_map():
     """Returns the handle of sources_explict_dependency_map. """
     return sources_explict_dependency_map
 
+
 class JavaJarTarget(Target):
     """A java jar target subclass.
 

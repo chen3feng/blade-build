@@ -58,11 +58,11 @@ def _main():
 
     generate_html = len(sys.argv) > 1 and sys.argv[1].startswith('html')
     if generate_html:
-        runner = HTMLTestRunner(title="Blade unit test report")
+        runner = HTMLTestRunner(title='Blade unit test report')
         runner.run(suite_test)
     else:
         runner = unittest.TextTestRunner()
         runner.run(suite_test)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     _main()

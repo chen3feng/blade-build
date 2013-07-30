@@ -72,5 +72,5 @@ class TestSwigLibrary(blade_test.TargetTest):
         self.assertDynamicLinkFlags(swig_java_so)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestSwigLibrary)

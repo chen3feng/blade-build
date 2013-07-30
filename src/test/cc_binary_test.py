@@ -58,5 +58,5 @@ class TestCcBinary(blade_test.TargetTest):
         self.assertTrue('libuppercase.a' in string_main_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestCcBinary)

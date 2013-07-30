@@ -72,5 +72,5 @@ class TestResourceLibrary(blade_test.TargetTest):
         self.assertTrue('libstatic_resource.so' in lower_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestResourceLibrary)

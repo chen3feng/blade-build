@@ -267,4 +267,3 @@ def proto_library(name,
 
 
 build_rules.register_function(proto_library)
-

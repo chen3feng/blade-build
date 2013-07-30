@@ -47,5 +47,5 @@ class TestQuery(blade_test.TargetTest):
         self.assertTrue(depended_second_key in depended_by)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestQuery)

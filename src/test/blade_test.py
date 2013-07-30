@@ -18,7 +18,7 @@ import blade.blade
 import blade.configparse
 from blade.blade import Blade
 from blade.configparse import BladeConfig
-from blade_namespace import Namespace
+from blade.argparse import Namespace
 
 
 class TargetTest(unittest.TestCase):
@@ -47,7 +47,7 @@ class TargetTest(unittest.TestCase):
                 'verbose': True
                 }
         options.update(kwargs)
-        self.options = Namespace(options)
+        self.options = Namespace(**options)
         self.direct_targets = []
         self.all_command_targets = []
         self.related_targets = {}
@@ -88,14 +88,14 @@ class TargetTest(unittest.TestCase):
     def dryRun(self):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
-        p = subprocess.Popen("scons --dry-run > %s" % self.scons_output_file,
+        p = subprocess.Popen('scons --dry-run > %s' % self.scons_output_file,
                              shell=True)
         try:
             p.wait()
             self.scons_output = open(self.scons_output_file)
             return p.returncode == 0
         except:
-            print >>sys.stderr, "Failed while dry running:\n%s" % sys.exc_info()
+            print >>sys.stderr, 'Failed while dry running:\n%s' % sys.exc_info()
         return False
 
     def _assertCxxCommonFlags(self, cmdline):
@@ -122,6 +122,9 @@ class TargetTest(unittest.TestCase):
 
     def assertLinkFlags(self, cmdline):
         self.assertTrue('-static-libgcc -static-libstdc++' in cmdline)
+
+    def assertStaticLinkFlags(self, cmdline):
+        self.assertTrue('-shared' not in cmdline)
 
     def assertDynamicLinkFlags(self, cmdline):
         self.assertTrue('-shared' in cmdline)

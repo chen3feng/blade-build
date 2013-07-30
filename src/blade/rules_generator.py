@@ -453,7 +453,6 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
             cc_config['cxxflags'],
             ld_env_str, linkflags))
 
-
         self._setup_cache()
 
         if build_with_distcc:
