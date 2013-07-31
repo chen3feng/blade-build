@@ -1,17 +1,18 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Huan Yu <huanyu@tencent.com>
+#         Feng chen <phongchen@tencent.com>
+#         Yi Wang <yiwang@tencent.com>
+#         Chong peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Huan Yu <huanyu@tencent.com>
-         Feng chen <phongchen@tencent.com>
-         Yi Wang <yiwang@tencent.com>
-         Chong peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the util module which provides command functions.
 
 """
+
 
 import os
 import sys

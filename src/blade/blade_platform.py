@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Chong Peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Chong Peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the blade_platform module which dues with the environment
  variable.
 

@@ -1,11 +1,11 @@
+# Copyright (c) 2012 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   February 29, 2012
+
+
 """
-
- Copyright (c) 2012 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   February 29, 2012
-
  This is a thread module for blade which is used to spawn
  threads to finish some kind of work.
 

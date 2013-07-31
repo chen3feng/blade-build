@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Huan Yu <huanyu@tencent.com>
+#         Feng Chen <phongchen@tencent.com>
+#         Yi Wang <yiwang@tencent.com>
+#         Chong Peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Huan Yu <huanyu@tencent.com>
-         Feng Chen <phongchen@tencent.com>
-         Yi Wang <yiwang@tencent.com>
-         Chong Peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the dependencies expander module which accepts the targets loaded
  from BUILD files and will find all of the targets needed by the target and
  add extra options according to different target types.

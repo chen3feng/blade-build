@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Authors: Huan Yu <huanyu@tencent.com>
+#          Feng Chen <phongchen@tencent.com>
+#          Yi Wang <yiwang@tencent.com>
+#          Chong Peng <michaelpeng@tencent.com>
+# Date: October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Authors: Huan Yu <huanyu@tencent.com>
-          Feng Chen <phongchen@tencent.com>
-          Yi Wang <yiwang@tencent.com>
-          Chong Peng <michaelpeng@tencent.com>
- Date: October 20, 2011
-
  This is the TestRunner module which executes the test programs.
 
 """

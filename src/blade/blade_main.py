@@ -1,11 +1,11 @@
+# Copyright 2011 Tencent Inc.
+#
+# Authors: Huan Yu <huanyu@tencent.com>
+#          Feng Chen <phongchen@tencent.com>
+#          Yi Wang <yiwang@tencent.com>
+#          Chong Peng <michaelpeng@tencent.com>
+
 """
- Copyright 2011 Tencent Inc.
-
- Authors: Huan Yu <huanyu@tencent.com>
-          Feng Chen <phongchen@tencent.com>
-          Yi Wang <yiwang@tencent.com>
-          Chong Peng <michaelpeng@tencent.com>
-
  Blade is a software building system built upon SCons, but restricts
  the generality and flexibility of SCons to prevent unnecessary
  error-prone complexity.  With Blade, users wrote a BUILD file and

@@ -1,14 +1,10 @@
-"""
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- This is the test module for proto_library target.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
-"""
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# This is the test module for proto_library target.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
 
 
 import os
