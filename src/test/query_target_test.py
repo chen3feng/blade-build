@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the test module to test query function of blade.
 
 """
@@ -20,14 +20,14 @@ class TestQuery(blade_test.TargetTest):
         """setup method. """
         self.doSetUp('test_query', full_targets=['...'], command='query')
         self.query_targets = ['test_query:poppy']
-        self.all_targets = self.blade.get_all_targets_expanded()
+        self.all_targets = self.blade.get_build_targets()
 
     def testQueryCorrectly(self):
         """Test query targets dependency relationship correctly. """
         self.assertTrue(self.all_targets)
         result_map = {}
         result_map = self.blade.query_helper(self.query_targets)
-        all_targets = self.blade.get_all_targets_expanded()
+        all_targets = self.blade.get_build_targets()
         query_key = ('test_query', 'poppy')
         self.assertTrue(query_key in result_map.keys())
         deps = result_map.get(query_key, [])[0]
@@ -47,5 +47,5 @@ class TestQuery(blade_test.TargetTest):
         self.assertTrue(depended_second_key in depended_by)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestQuery)

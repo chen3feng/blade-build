@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Huan Yu <huanyu@tencent.com>
+#         Feng Chen <phongchen@tencent.com>
+#         Yi Wang <yiwang@tencent.com>
+#         Chong Peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Huan Yu <huanyu@tencent.com>
-         Feng Chen <phongchen@tencent.com>
-         Yi Wang <yiwang@tencent.com>
-         Chong Peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the dependencies expander module which accepts the targets loaded
  from BUILD files and will find all of the targets needed by the target and
  add extra options according to different target types.
@@ -30,6 +30,7 @@ and then provide the query interface to users by blade manager.
 
 """
 
+
 def analyze_deps(related_targets):
     """analyze the dependency relationship between targets.
 
@@ -41,12 +42,10 @@ def analyze_deps(related_targets):
            {(target_path, target_name) : (target_data with deps expanded), ...}
 
     """
-    related_targets_expanded = dict(related_targets)
+    _expand_deps(related_targets)
+    keys_list_sorted = _topological_sort(related_targets)
 
-    _expand_deps(related_targets_expanded)
-    keys_list_sorted = _topological_sort(related_targets_expanded)
-
-    return related_targets_expanded, keys_list_sorted
+    return keys_list_sorted
 
 
 def _expand_deps(targets):
@@ -56,60 +55,59 @@ def _expand_deps(targets):
     Fill the related options according to different targets.
 
     """
-    for target_id in targets.keys():
-        targets[target_id]['deps'] = _find_all_deps(target_id, targets)
+    deps_map_cache = {}  # Cache expanded target deps to avoid redundant expand
+    for target_id in targets:
+        target = targets[target_id]
+        target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
-        if targets[target_id]['options'].get('dynamic_link'):
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['build_dynamic'] = True
-        elif targets[target_id]['type'] == 'swig_library':
-            for dep in targets[target_id]['deps']:
-                if targets[dep]['type'] == 'proto_library':
-                    targets[dep]['options']['generate_php'] = True
-        elif targets[target_id]['type'] == 'py_binary':
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['generate_python'] = True
-        elif targets[target_id]['type'] == 'java_jar':
-            for dep in targets[target_id]['deps']:
-                targets[dep]['options']['generate_java'] = True
+        if target.data.get('dynamic_link'):
+            for dep in target.expanded_deps:
+                targets[dep].data['build_dynamic'] = True
+        elif target.type == 'swig_library':
+            for dep in target.expanded_deps:
+                if targets[dep].type == 'proto_library':
+                    targets[dep].data['generate_php'] = True
+        elif target.type == 'py_binary':
+            for dep in target.expanded_deps:
+                targets[dep].data['generate_python'] = True
+        elif target.type == 'java_jar':
+            for dep in target.expanded_deps:
+                targets[dep].data['generate_java'] = True
 
 
-def _find_all_deps(target_id, targets, root_targets=None, deps_map_cache=None):
+def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
     """_find_all_deps.
 
     Return all targets depended by target_id directly and/or indirectly.
     We need the parameter root_target_id to check loopy dependency.
 
     """
-    if root_targets is None:
-        root_targets = []
-    if deps_map_cache is None:
-        deps_map_cache = {}
-
-    root_targets.append(target_id)
-
-    new_deps_list = deps_map_cache.get(target_id, [])
+    new_deps_list = deps_map_cache.get(target_id)
     if new_deps_list:
-        root_targets.pop()
         return new_deps_list
 
-    for d in targets[target_id]['deps']:
+    if root_targets is None:
+        root_targets = set()
+
+    root_targets.add(target_id)
+    new_deps_list = []
+
+    for d in targets[target_id].expanded_deps:
         # loop dependency
         if d in root_targets:
             err_msg = ''
             for t in root_targets:
-                err_msg += "//%s:%s --> " % (t[0], t[1])
-            console.error_exit("loop dependency found: //%s:%s --> [%s]" % (
+                err_msg += '//%s:%s --> ' % (t[0], t[1])
+            console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
                        d[0], d[1], err_msg))
         new_deps_piece = [d]
         if d not in targets:
             console.error_exit('Target %s:%s depends on %s:%s, '
-                        'but it is missing, exit...' % (target_id[0],
-                                                        target_id[1],
-                                                        d[0],
-                                                        d[1]))
-        new_deps_piece += _find_all_deps(d, targets, root_targets, deps_map_cache)
+                               'but it is missing, exit...' % (
+                                   target_id[0], target_id[1],
+                                   d[0], d[1]))
+        new_deps_piece += _find_all_deps(d, targets, deps_map_cache, root_targets)
         # Append new_deps_piece to new_deps_list, be aware of
         # de-duplication:
         for nd in new_deps_piece:
@@ -118,7 +116,7 @@ def _find_all_deps(target_id, targets, root_targets=None, deps_map_cache=None):
             new_deps_list.append(nd)
     deps_map_cache[target_id] = new_deps_list
 
-    root_targets.pop()
+    root_targets.remove(target_id)
     return new_deps_list
 
 
@@ -126,10 +124,10 @@ def _topological_sort(pairlist):
     """Sort the targets. """
     numpreds = {}    # elt -> # of predecessors
     successors = {}  # elt -> list of successors
-    for second, options in pairlist.items():
+    for second, target in pairlist.items():
         if second not in numpreds:
             numpreds[second] = 0
-        deps = options['deps']
+        deps = target.expanded_deps
         for first in deps:
             # make sure every elt is a key in numpreds
             if first not in numpreds:

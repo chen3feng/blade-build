@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the test module for cc_gen_rule target.
 
 """
@@ -44,7 +44,7 @@ class TestGenRule(blade_test.TargetTest):
         upper_so_index = 0
         index = 0
 
-        for line in open(self.command_file):
+        for line in self.scons_output:
             index += 1
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
@@ -57,17 +57,12 @@ class TestGenRule(blade_test.TargetTest):
             if 'libuppercase.so -m64' in line:
                 upper_so_index = index
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
-
-        self.assertTrue('-fPIC -Wall -Wextra' in com_upper_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
+        self.assertCxxFlags(com_lower_line)
+        self.assertCxxFlags(com_upper_line)
 
         self.assertTrue(gen_rule_index > lower_so_index)
         self.assertTrue(upper_so_index, gen_rule_index)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestGenRule)

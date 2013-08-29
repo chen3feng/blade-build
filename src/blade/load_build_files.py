@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Huan Yu <huanyu@tencent.com>
+#         Feng Chen <phongchen@tencent.com>
+#         Yi Wang <yiwang@tencent.com>
+#         Chong Peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Huan Yu <huanyu@tencent.com>
-         Feng Chen <phongchen@tencent.com>
-         Yi Wang <yiwang@tencent.com>
-         Chong Peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the CmdOptions module which parses the users'
  input and provides hint for users.
 
@@ -29,7 +29,11 @@ import cc_targets
 import gen_rule_target
 import java_jar_target
 import java_targets
+import lex_yacc_target
+import proto_library_target
 import py_targets
+import resource_library_target
+import swig_library_target
 import thrift_library
 
 
@@ -63,10 +67,10 @@ def _find_dir_depender(dir, blade):
     """
     target_database = blade.get_target_database()
     for key in target_database:
-        for dkey in target_database[key]['deps']:
+        for dkey in target_database[key].expanded_deps:
             if dkey[0] == dir:
-                return "//%s:%s" % (target_database[key]["path"],
-                                target_database[key]["name"])
+                return '//%s:%s' % (target_database[key].path,
+                                    target_database[key].name)
     return None
 
 
@@ -136,7 +140,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
             # which can be loaded and executed by execfile().
             execfile(build_file, build_rules.get_all(), None)
         except SystemExit:
-            console.error_exit("%s: fatal error, exit..." % build_file)
+            console.error_exit('%s: fatal error, exit...' % build_file)
         except:
             console.error_exit('Parse error in %s, exit...\n%s' % (
                     build_file, traceback.format_exc()))
@@ -153,9 +157,9 @@ def _find_depender(dkey, blade):
     """
     target_database = blade.get_target_database()
     for key in target_database:
-        if dkey in target_database[key]['deps']:
-            return "//%s:%s" % (target_database[key]["path"],
-                                target_database[key]["name"])
+        if dkey in target_database[key].expanded_deps:
+            return '//%s:%s' % (target_database[key].path,
+                                target_database[key].name)
     return None
 
 
@@ -197,7 +201,7 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
         elif source_dir.endswith('...'):
             source_dir = source_dir[:-3]
             if not source_dir:
-                source_dir = "./"
+                source_dir = './'
             source_dirs.append((source_dir, WARN_IF_FAIL))
             for root, dirs, files in os.walk(source_dir):
                 # Skip over subdirs starting with '.', e.g., .svn.
@@ -238,17 +242,17 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
                          blade)
 
         if target_id not in target_database:
-            console.error_exit("%s: target //%s:%s does not exists" % (
+            console.error_exit('%s: target //%s:%s does not exists' % (
                 _find_depender(target_id, blade), source_dir, target_name))
 
         related_targets[target_id] = target_database[target_id]
-        for key in related_targets[target_id]['deps']:
+        for key in related_targets[target_id].expanded_deps:
             if key not in related_targets:
                 cited_targets.add(key)
 
     # Iterating to get svn root dirs
     for path, name in related_targets:
-        root_dir = path.split("/")[0].strip()
+        root_dir = path.split('/')[0].strip()
         if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
             blade.svn_root_dirs.append(root_dir)
 
@@ -266,13 +270,14 @@ def find_blade_root_dir(working_dir):
     blade_root_dir = working_dir
     if blade_root_dir.endswith('/'):
         blade_root_dir = blade_root_dir[:-1]
-    while blade_root_dir and blade_root_dir != "/":
-        if os.path.isfile(os.path.join(blade_root_dir, "BLADE_ROOT")):
+    while blade_root_dir and blade_root_dir != '/':
+        if os.path.isfile(os.path.join(blade_root_dir, 'BLADE_ROOT')):
             break
         blade_root_dir = os.path.dirname(blade_root_dir)
-    if not blade_root_dir or blade_root_dir == "/":
-        console.error_exit("Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
-                   "Blade need this file as a placeholder to locate the root source directory "
-                   "(aka the directory where you #include start from).\n"
-                   "You should create it manually at the first time.")
+    if not blade_root_dir or blade_root_dir == '/':
+        console.error_exit(
+                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+                "Blade need this file as a placeholder to locate the root source directory "
+                "(aka the directory where you #include start from).\n"
+                "You should create it manually at the first time.")
     return blade_root_dir

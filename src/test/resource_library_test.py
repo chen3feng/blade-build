@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the test module for resource_library target.
 
 """
@@ -41,7 +41,7 @@ class TestResourceLibrary(blade_test.TargetTest):
         lower_depends_libs = ''
         gen_forms_line = ''
         gen_poppy_line = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'forms_js_c.o -c' in line:
@@ -61,25 +61,16 @@ class TestResourceLibrary(blade_test.TargetTest):
         self.assertTrue(gen_forms_line)
         self.assertTrue(gen_poppy_line)
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
-
-        self.assertTrue('-fPIC' in com_forms_line)
-        self.assertTrue('-Wall -Wextra' not in com_forms_line)
-        self.assertTrue('-Wframe-larger-than=' not in com_forms_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_forms_line)
-
-        self.assertTrue('-fPIC' in com_poppy_line)
-        self.assertTrue('-Wall -Wextra' not in com_poppy_line)
-        self.assertTrue('-Wframe-larger-than=' not in com_poppy_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_poppy_line)
+        self.assertCxxFlags(com_lower_line)
+        self.assertNoWarningCxxFlags(com_forms_line)
+        self.assertNoWarningCxxFlags(com_poppy_line)
 
         self.assertTrue('forms_js_c.o' in static_so_line)
         self.assertTrue('poppy_html_c.o' in static_so_line)
 
+        self.assertDynamicLinkFlags(lower_depends_libs)
         self.assertTrue('libstatic_resource.so' in lower_depends_libs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestResourceLibrary)

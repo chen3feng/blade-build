@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   January 09, 2012
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   January 09, 2012
-
  This is the configuration parse module which parses
  the BLADE_ROOT as a configuration file.
 
@@ -34,7 +34,7 @@ class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
     def __init__(self, current_source_dir):
         self.current_source_dir = current_source_dir
-        self.current_file_name = ""
+        self.current_file_name = ''
         self.configs = {
             'cc_test_config': {
                 'dynamic_link': False,
@@ -100,13 +100,13 @@ class BladeConfig(object):
             if os.path.exists(filename):
                 execfile(filename)
         except:
-            console.error_exit("Parse error in config file %s, exit...\n%s" %
+            console.error_exit('Parse error in config file %s, exit...\n%s' %
                        (filename, traceback.format_exc()))
 
     def parse(self):
         """load the configuration file and parse. """
-        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), "blade.conf"))
-        self._try_parse_file(os.path.expanduser("~/.bladerc"))
+        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+        self._try_parse_file(os.path.expanduser('~/.bladerc'))
         self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
 
     def update_config(self, section_name, append, user_config):
@@ -117,7 +117,7 @@ class BladeConfig(object):
                 self._append_config(section_name, config, append)
             self._replace_config(section_name, config, user_config)
         else:
-            console.error("%s: %s: unknown config section name" % (
+            console.error('%s: %s: unknown config section name' % (
                           self.current_file_name, section_name))
 
     def _append_config(self, section_name, config, append):
@@ -126,7 +126,7 @@ class BladeConfig(object):
             console.error('%s: %s: append must be a dict' %
                     (self.current_file_name, section_name))
         else:
-            for k in append.keys():
+            for k in append:
                 if k in config:
                     if isinstance(config[k], list):
                         config[k] += var_to_list(append[k])
@@ -140,7 +140,7 @@ class BladeConfig(object):
 
     def _replace_config(self, section_name, config, user_config):
         """Replace config section items"""
-        for k in user_config.keys():
+        for k in user_config:
             if k in config:
                 if isinstance(config[k], list):
                     user_config[k] = var_to_list(user_config[k])
@@ -162,7 +162,7 @@ def cc_test_config(append=None, **kwargs):
     heap_check = kwargs.get('heap_check')
     if heap_check and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
-                   HEAP_CHECK_VALUES)
+                HEAP_CHECK_VALUES)
     blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -190,9 +190,9 @@ def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
     if path:
-        console.warning(('%s: proto_library_config: protobuf_include_path has been '
-                 'renamed to protobuf_incs, and become a list') %
-                blade_config.current_file_name)
+        console.warning(('%s: proto_library_config: protobuf_include_path has '
+                         'been renamed to protobuf_incs, and become a list') %
+                         blade_config.current_file_name)
         del kwargs['protobuf_include_path']
         if isinstance(path, basestring) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()

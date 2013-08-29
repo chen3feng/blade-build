@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is python egg target which generates python egg for user.
 
 """
@@ -19,15 +19,6 @@ import console
 
 from blade_util import var_to_list
 from target import Target
-
-
-# The vars which are depended by python binary
-# {key : 'python_files'}
-binary_dep_source_cmd = {}
-
-# The files which are depended by python binary
-# {key : 'python_files'}
-binary_dep_source_map = {}
 
 
 class PythonBinaryTarget(Target):
@@ -56,18 +47,10 @@ class PythonBinaryTarget(Target):
                         kwargs)
 
         if prebuilt:
-            self.data['type'] = 'prebuilt_py_binary'
+            self.type = 'prebuilt_py_binary'
 
     def scons_rules(self):
         """scons_rules.
-
-        Parameters
-        -----------
-        None
-
-        Returns
-        -----------
-        None
 
         Description
         -----------
@@ -76,13 +59,13 @@ class PythonBinaryTarget(Target):
         """
         self._clone_env()
 
-        if self.data['type'] == 'prebuilt_py_binary':
+        if self.type == 'prebuilt_py_binary':
             return
 
         env_name = self._env_name()
 
-        setup_file = os.path.join(self.data['path'], "setup.py")
-        python_package = os.path.join(self.data['path'], self.data['name'])
+        setup_file = os.path.join(self.path, 'setup.py')
+        python_package = os.path.join(self.path, self.name)
         init_file = os.path.join(python_package, '__init__.py')
 
         binary_files = []
@@ -90,28 +73,25 @@ class PythonBinaryTarget(Target):
             binary_files.append(setup_file)
 
         if not os.path.exists(init_file):
-            console.error_exit("The __init__.py not existed in %s" % python_package)
+            console.error_exit('The __init__.py not existed in %s' % python_package)
         binary_files.append(init_file)
 
         dep_var_list = []
-        self.targets = self.blade.get_all_targets_expanded()
-        for dep in self.targets[self.key]['deps']:
-            if dep in binary_dep_source_map.keys():
-                for f in binary_dep_source_map[dep]:
-                    binary_files.append(f)
-                for cmd in binary_dep_source_cmd[dep]:
-                    dep_var_list.append(cmd)
+        self.targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            binary_files += targets[dep].data.get('python_sources', [])
+            dep_var_list += targets[dep].data.get('python_vars', [])
 
-        target_egg_file = "%s.egg" % self._target_file_path()
-        python_binary_var = "%s_python_binary_var" % (
-            self._generate_variable_name(self.data['path'], self.data['name']))
-        self._write_rule("%s = %s.PythonBinary(['%s'], %s)" % (
+        target_egg_file = '%s.egg' % self._target_file_path()
+        python_binary_var = '%s_python_binary_var' % (
+            self._generate_variable_name(self.path, self.name))
+        self._write_rule('%s = %s.PythonBinary(["%s"], %s)' % (
                           python_binary_var,
                           env_name,
                           target_egg_file,
                           binary_files))
         for var in dep_var_list:
-            self._write_rule("%s.Depends(%s, %s)" % (
+            self._write_rule('%s.Depends(%s, %s)' % (
                              env_name, python_binary_var, var))
 
 

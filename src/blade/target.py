@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the target module which is the super class
  of all of the scons targets.
 
@@ -44,16 +44,14 @@ class Target(object):
         self.target_database = self.blade.get_target_database()
 
         self.key = (current_source_path, name)
-        self.data = {
-                     'name': name,
-                     'path': current_source_path,
-                     'type': target_type,
-                     'srcs': srcs,
-                     'deps': [],
-                     'options': {},
-                     'direct_deps': []
-                    }
-        self.target_database[self.key] = self.data
+        self.fullname = '%s:%s' % self.key
+        self.name = name
+        self.path = current_source_path
+        self.type = target_type
+        self.srcs = srcs
+        self.deps = []
+        self.expanded_deps = []
+        self.data = {}
 
         self._check_name()
         self._check_kwargs(kwargs)
@@ -64,61 +62,51 @@ class Target(object):
 
     def _clone_env(self):
         """Clone target's environment. """
-        self._write_rule("%s = top_env.Clone()" % self._env_name())
+        self._write_rule('%s = top_env.Clone()' % self._env_name())
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        console.error_exit("_prepare_to_generate_rule should be overridden in subclasses")
+        console.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
-        if '/' in self.data.get('name', ''):
+        if '/' in self.name:
             console.error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
-                self.data['path'], self.data['name']))
+                self.path, self.name))
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.warning("//%s:%s: unrecognized options %s" % (
-                    self.data['path'], self.data['name'], kwargs))
+            console.warning('//%s:%s: unrecognized options %s' % (
+                    self.path, self.name, kwargs))
 
     # Keep the relationship of all src -> target.
     # Used by build rules to ensure that a source file occurres in
     # exactly one target(only library target).
     __src_target_map = {}
 
-
     def _check_srcs(self):
         """Check source files.
-
-        Parameters
-        -----------
-        None
-
-        Returns
-        -----------
-        None
-
         Description
         -----------
         It will warn if one file belongs to two different targets.
 
         """
         allow_dup_src_type_list = ['cc_binary', 'cc_test']
-        for s in self.data['srcs']:
+        for s in self.srcs:
             if '..' in s or s.startswith('/'):
                 raise Exception, (
                     'Invalid source file path: %s. '
                     'can only be relative path, and must in current directory or '
                     'subdirectories') % s
 
-            src_key = os.path.normpath('%s/%s' % (self.data['path'], s))
+            src_key = os.path.normpath('%s/%s' % (self.path, s))
             src_value = '%s %s:%s' % (
-                    self.data['type'], self.data['path'], self.data['name'])
+                    self.type, self.path, self.name)
             if src_key in Target.__src_target_map:
                 value_existed = Target.__src_target_map[src_key]
                   # May insert multiple time in test because of not unloading module
                 if (value_existed != src_value and
                     not (value_existed.split(': ')[0] in allow_dup_src_type_list and
-                        self.data['type'] in allow_dup_src_type_list)):
+                         self.type in allow_dup_src_type_list)):
                     # Just warn here, not raising exception
                     console.warning('Source file %s belongs to both %s and %s' % (
                             s, Target.__src_target_map[src_key], src_value))
@@ -130,20 +118,14 @@ class Target(object):
             dkey = self._convert_string_to_target_helper(dep)
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
-            if dkey not in self.data['deps']:
-                self.data['deps'].append(dkey)
+            if dkey not in self.expanded_deps:
+                self.expanded_deps.append(dkey)
 
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
         if key not in self.target_database:
-            self.target_database[key] = {
-                                         'type': 'system_library',
-                                         'srcs': [],
-                                         'deps': [],
-                                         'path': self.data['path'],
-                                         'name': name,
-                                         'options': {}
-                                        }
+            lib = SystemLibrary(name, self.blade)
+            self.blade.register_target(lib)
 
     def _init_target_deps(self, deps):
         """Init the target deps.
@@ -151,10 +133,6 @@ class Target(object):
         Parameters
         -----------
         deps: the deps list in BUILD file.
-
-        Returns
-        -----------
-        None
 
         Description
         -----------
@@ -164,12 +142,12 @@ class Target(object):
         for d in deps:
             if d[0] == ':':
                 # Depend on library in current directory
-                dkey = (os.path.normpath(self.data['path']), d[1:])
+                dkey = (os.path.normpath(self.path), d[1:])
             elif d.startswith('//'):
                 # Depend on library in remote directory
                 if not ':' in d:
                     raise Exception, 'Wrong format in %s:%s' % (
-                            self.data['path'], self.data['name'])
+                            self.path, self.name)
                 (path, lib) = d[2:].rsplit(':', 1)
                 dkey = (os.path.normpath(path), lib)
             elif d.startswith('#'):
@@ -181,18 +159,18 @@ class Target(object):
                 # Depend on library in relative subdirectory
                 if not ':' in d:
                     raise Exception, 'Wrong format in %s:%s' % (
-                            self.data['path'], self.data['name'])
+                            self.path, self.name)
                 (path, lib) = d.rsplit(':', 1)
                 if '..' in path:
                     raise Exception, "Don't use '..' in path"
                 dkey = (os.path.normpath('%s/%s' % (
-                                          self.data['path'], path)), lib)
+                                          self.path, path)), lib)
 
-            if dkey not in self.data['deps']:
-                self.data['deps'].append(dkey)
+            if dkey not in self.expanded_deps:
+                self.expanded_deps.append(dkey)
 
-            if dkey not in self.data['direct_deps']:
-                self.data['direct_deps'].append(dkey)
+            if dkey not in self.deps:
+                self.deps.append(dkey)
 
     def _check_deps_in_build_file(self, deps):
         """_check_deps_in_build_file.
@@ -202,25 +180,21 @@ class Target(object):
         name: the target's name
         deps: the deps list in BUILD file
 
-        Returns
-        -----------
-        None
-
         Description
         -----------
         Checks that whether users' build file is consistent with
         blade's rule.
 
         """
-        name = self.data['name']
+        name = self.name
         for dep in deps:
             if not (dep.startswith(':') or dep.startswith('#') or
-                dep.startswith('//') or dep.startswith('./')):
+                    dep.startswith('//') or dep.startswith('./')):
                 console.error_exit('%s/%s: Invalid dep in %s.' % (
-                    self.data['path'], name, dep))
+                    self.path, name, dep))
             if dep.count(':') > 1:
                 console.error_exit('%s/%s: Invalid dep %s, missing \',\' between 2 deps?' %
-                            (self.data['path'], name, dep))
+                            (self.path, name, dep))
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon deprecated target.
@@ -246,7 +220,7 @@ class Target(object):
         Replace the chars that scons doesn't regconize.
 
         """
-        return var.translate(string.maketrans(",-/.+*", "______"))
+        return var.translate(string.maketrans(',-/.+*', '______'))
 
     def _generate_variable_name(self, path='', name='', suffix=''):
         """_generate_variable_name.
@@ -266,19 +240,15 @@ class Target(object):
         Concatinating target path, target name and suffix and returns.
 
         """
-        suffix_str = ""
+        suffix_str = ''
         if suffix:
-            suffix_str = "_suFFix_%s" % suffix
-        return "v_%s_mAgIc_%s%s" % (self._regular_variable_name(path),
+            suffix_str = '_suFFix_%s' % suffix
+        return 'v_%s_mAgIc_%s%s' % (self._regular_variable_name(path),
                                     self._regular_variable_name(name),
                                     suffix_str)
 
     def _env_name(self):
         """_env_name.
-
-        Parameters
-        -----------
-        None
 
         Returns
         -----------
@@ -289,15 +259,15 @@ class Target(object):
         Concatinating target path, target name to be environment var and returns.
 
         """
-        return "env_%s" % self._generate_variable_name(self.data['path'],
-                                                       self.data['name'])
+        return 'env_%s' % self._generate_variable_name(self.path,
+                                                       self.name)
 
     def __fill_path_name(self, path, name):
         """fill the path and name to make them not None. """
         if not path:
-            path = self.data['path']
+            path = self.path
         if not name:
-            name = self.data['name']
+            name = self.name
         return path, name
 
     def _target_file_path(self, path='', name=''):
@@ -336,19 +306,16 @@ class Target(object):
             return
         env_name = self._env_name()
         files = var_to_list(target_files)
-        files_str = ",".join(["%s" % f for f in files])
-        if not self.blade.is_expanded():
-            console.error_exit("logic error in Blade, error in _generate_target_explict_dependency")
-        targets = self.blade.get_all_targets_expanded()
+        files_str = ','.join(['%s' % f for f in files])
+        targets = self.blade.get_build_targets()
         import gen_rule_target
-        files_map = gen_rule_target._files_map
-        deps = targets[self.key]['deps']
+        deps = self.expanded_deps
         for d in deps:
             dep_target = targets[d]
-            if dep_target['type'] == 'gen_rule':
-                srcs_list = files_map[(dep_target['path'], dep_target['name'])]
+            if dep_target.type == 'gen_rule':
+                srcs_list = dep_target.var_name
                 if srcs_list:
-                    self._write_rule("%s.Depends([%s], [%s])" % (
+                    self._write_rule('%s.Depends([%s], [%s])' % (
                         env_name,
                         files_str,
                         srcs_list))
@@ -359,10 +326,6 @@ class Target(object):
         Parameters
         -----------
         rule: the rule generated by certain target
-
-        Returns
-        -----------
-        None
 
         Description
         -----------
@@ -377,14 +340,10 @@ class Target(object):
         This method should be impolemented in subclass.
 
         """
-        console.error_exit('should be subclassing')
+        console.error_exit('%s: should be subclassing' % self.type)
 
     def get_rules(self):
         """get_rules.
-
-        Parameters
-        -----------
-        None.
 
         Returns
         -----------
@@ -405,11 +364,11 @@ class Target(object):
         bad_format = False
         if target_string:
             if target_string.startswith('#'):
-                return ("#", target_string[1:])
-            elif target_string.find(":") != -1:
-                path, name = target_string.split(":")
+                return ('#', target_string[1:])
+            elif target_string.find(':') != -1:
+                path, name = target_string.split(':')
                 path = path.strip()
-                if path.startswith("//"):
+                if path.startswith('//'):
                     path = path[2:]
                 return (path, name.strip())
             else:
@@ -418,5 +377,15 @@ class Target(object):
             bad_format = True
 
         if bad_format:
-            console.error_exit("invalid target lib format: %s, "
-                       "should be #lib_name or lib_path:lib_name" % target_string)
+            console.error_exit('invalid target lib format: %s, '
+                               'should be #lib_name or lib_path:lib_name' %
+                               target_string)
+
+
+class SystemLibrary(Target):
+    def __init__(self, name, blade):
+        name = name[1:]
+        Target.__init__(self, name, 'system_library', [], [], blade, {})
+        self.key = ('#', name)
+        self.fullname = '%s:%s' % self.key
+        self.path = '#'

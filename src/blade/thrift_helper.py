@@ -1,15 +1,17 @@
+# Copyright (c) 2012 iQIYI Inc.
+# Copyright (c) 2013 Tencent Inc.
+# All rights reserved.
+#
+# Author: Jingxu Chen <chenjingxu@qiyi.com>
+#         Feng Chen <chen3feng@gmail.com>
+# Date:   October 13, 2012
+
+
 """
- Copyright (c) 2012 iQIYI Inc.
- Copyright (c) 2013 Tencent Inc.
- All rights reserved.
-
- Author: Jingxu Chen <chenjingxu@qiyi.com>
-         Feng Chen <chen3feng@gmail.com>
- Date:   October 13, 2012
-
  A helper class to get the files generated from thrift IDL files.
 
 """
+
 
 import os
 import re
