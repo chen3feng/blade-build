@@ -104,10 +104,9 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
         new_deps_piece = [d]
         if d not in targets:
             console.error_exit('Target %s:%s depends on %s:%s, '
-                        'but it is missing, exit...' % (target_id[0],
-                                                        target_id[1],
-                                                        d[0],
-                                                        d[1]))
+                               'but it is missing, exit...' % (
+                                   target_id[0], target_id[1],
+                                   d[0], d[1]))
         new_deps_piece += _find_all_deps(d, targets, deps_map_cache, root_targets)
         # Append new_deps_piece to new_deps_list, be aware of
         # de-duplication:

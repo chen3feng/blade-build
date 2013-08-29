@@ -98,9 +98,10 @@ class BinaryRunner(object):
             dst = os.path.join(self._runfiles_dir(target), prebuilt_file[1])
             if os.path.lexists(dst):
                 console.warning('trying to make duplicate prebuilt symlink:\n'
-                        '%s -> %s\n'
-                        '%s -> %s already exists\n'
-                        'skipped, should check duplicate prebuilt libraries'
+                                '%s -> %s\n'
+                                '%s -> %s already exists\n'
+                                'skipped, should check duplicate prebuilt '
+                                'libraries'
                         % (dst, src, dst, os.path.realpath(dst)))
                 continue
             os.symlink(src, dst)
@@ -142,13 +143,13 @@ class BinaryRunner(object):
                 if os.path.exists(symlink_name):
                     symlink_valid = True
                     console.warning('%s already existed, could not prepare '
-                            'testdata for //%s:%s' % (link_name, target.path,
-                                target.name))
+                                    'testdata for //%s:%s' % (
+                                        link_name, target.path, target.name))
                 else:
                     os.remove(symlink_name)
                     console.warning('%s already existed, but it is a broken '
-                            'symbolic link, blade will remove it and '
-                            'make a new one.' % link_name)
+                                    'symbolic link, blade will remove it and '
+                                    'make a new one.' % link_name)
             if data_target.startswith('//'):
                 data_target = data_target[2:]
                 dest_data_file = os.path.abspath(data_target)

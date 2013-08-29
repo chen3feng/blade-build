@@ -44,7 +44,8 @@ def generate_python_binary(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):
         console.warning('setup.py not existed to generate target %s, '
-                'blade will generate a default one for you' % str(target[0]))
+                        'blade will generate a default one for you' %
+                        str(target[0]))
     else:
         setup_file = str(source[0])
     init_file = ''
@@ -401,7 +402,8 @@ def create_fast_link_builders(env):
     usage = int(usage.replace('%', ''))
     if usage > 90:
         console.warning('you have link on tmp enabled, '
-                'but there is not enough space on %s to make it.' % linking_tmp_dir)
+                        'but there is not enough space on %s to make it.' %
+                        linking_tmp_dir)
         return
 
     console.info('building in link on tmpfs mode')

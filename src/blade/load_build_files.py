@@ -70,7 +70,7 @@ def _find_dir_depender(dir, blade):
         for dkey in target_database[key].expanded_deps:
             if dkey[0] == dir:
                 return '//%s:%s' % (target_database[key].path,
-                                target_database[key].name)
+                                    target_database[key].name)
     return None
 
 
@@ -275,8 +275,9 @@ def find_blade_root_dir(working_dir):
             break
         blade_root_dir = os.path.dirname(blade_root_dir)
     if not blade_root_dir or blade_root_dir == '/':
-        console.error_exit("Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
-                   "Blade need this file as a placeholder to locate the root source directory "
-                   "(aka the directory where you #include start from).\n"
-                   "You should create it manually at the first time.")
+        console.error_exit(
+                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+                "Blade need this file as a placeholder to locate the root source directory "
+                "(aka the directory where you #include start from).\n"
+                "You should create it manually at the first time.")
     return blade_root_dir

@@ -106,7 +106,7 @@ class Target(object):
                   # May insert multiple time in test because of not unloading module
                 if (value_existed != src_value and
                     not (value_existed.split(': ')[0] in allow_dup_src_type_list and
-                        self.type in allow_dup_src_type_list)):
+                         self.type in allow_dup_src_type_list)):
                     # Just warn here, not raising exception
                     console.warning('Source file %s belongs to both %s and %s' % (
                             s, Target.__src_target_map[src_key], src_value))
@@ -189,7 +189,7 @@ class Target(object):
         name = self.name
         for dep in deps:
             if not (dep.startswith(':') or dep.startswith('#') or
-                dep.startswith('//') or dep.startswith('./')):
+                    dep.startswith('//') or dep.startswith('./')):
                 console.error_exit('%s/%s: Invalid dep in %s.' % (
                     self.path, name, dep))
             if dep.count(':') > 1:
@@ -378,7 +378,8 @@ class Target(object):
 
         if bad_format:
             console.error_exit('invalid target lib format: %s, '
-                       'should be #lib_name or lib_path:lib_name' % target_string)
+                               'should be #lib_name or lib_path:lib_name' %
+                               target_string)
 
 
 class SystemLibrary(Target):

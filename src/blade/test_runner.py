@@ -235,9 +235,8 @@ class TestRunner(binary_runner.BinaryRunner):
         """
         if os.path.exists(self.inctest_md5_file):
             if os.path.getsize(self.inctest_md5_file) > 2 * 1024 * 1024 * 1024:
-                console.warning('Will remove the md5sum file for incremental test '
-                        'for it is oversized'
-                        )
+                console.warning('Will remove the md5sum file for incremental '
+                                'test for it is oversized')
                 os.remove(self.inctest_md5_file)
 
     def _write_test_history(self):

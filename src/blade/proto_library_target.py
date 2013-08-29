@@ -153,7 +153,7 @@ class ProtoLibrary(CcTarget):
                     proto_java_src_package,
                     src_path))
 
-            self.data['java_sources']  = (
+            self.data['java_sources'] = (
                      os.path.dirname(proto_java_src_package),
                      os.path.join(self.build_path, self.path),
                      self.name)

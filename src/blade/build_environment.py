@@ -38,7 +38,7 @@ class BuildEnvironment(object):
             self.distcc_env_prepared = True
         if self.distcc_installed and not self.distcc_host_list:
             console.warning('DISTCC_HOSTS not set but you have '
-                    'distcc installed, will just build locally')
+                            'distcc installed, will just build locally')
         self.distcc_log_file = os.environ.get('DISTCC_LOG', '')
         if self.distcc_log_file:
             console.info('distcc log: %s' % self.distcc_log_file)
@@ -51,8 +51,9 @@ class BuildEnvironment(object):
         if self.dccc_installed:
             if not self.dccc_master and not self.dccc_hosts_list:
                 self.dccc_env_prepared = False
-                console.warning('MASTER_HOSTS and DISTLD_HOSTS not set '
-                        'but you have dccc installed, will just build locally')
+                console.warning('MASTER_HOSTS and DISTLD_HOSTS not set but '
+                                'you have dccc installed, will just build '
+                                'locally')
         else:
             self.dccc_env_prepared = False
 

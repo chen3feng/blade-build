@@ -146,7 +146,7 @@ class ThriftLibrary(CcTarget):
                     str(thrift_java_src_files),
                     src_path))
 
-            self.data['java_sources']  = (
+            self.data['java_sources'] = (
                      os.path.dirname(thrift_java_src_files[0]),
                      os.path.join(self.build_path, self.path),
                      self.name)
@@ -233,11 +233,11 @@ class ThriftLibrary(CcTarget):
 
 
 def thrift_library(name,
-                  srcs=[],
-                  deps=[],
-                  optimize=[],
-                  deprecated=False,
-                  **kwargs):
+                   srcs=[],
+                   deps=[],
+                   optimize=[],
+                   deprecated=False,
+                   **kwargs):
     """thrift_library target. """
     thrift_library_target = ThriftLibrary(name,
                                           srcs,

@@ -88,9 +88,9 @@ class CcTarget(Target):
                 console.warning('//%s:%s : '
                                 '//%s:%s has been deprecated, '
                                 'please depends on //%s:%s' % (
-                                self.path, self.name,
-                                target.path, target.name,
-                                replaced_target[0], replaced_target[1]))
+                                    self.path, self.name,
+                                    target.path, target.name,
+                                    replaced_target[0], replaced_target[1]))
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -155,8 +155,8 @@ class CcTarget(Target):
 
         if illegal_path_list:
             console.warning("//%s:%s : warning='no' is only allowed "
-                    "for code in thirdparty." % (
-                     self.key[0], self.key[1]))
+                            "for code in thirdparty." % (
+                                self.key[0], self.key[1]))
 
     def _objs_name(self):
         """_objs_name.

@@ -189,7 +189,7 @@ class JavaJarTarget(Target):
 
         new_target_idx = 0
         classes_var = '%s_classes' % (
-        self._generate_variable_name(self.path, self.name))
+                self._generate_variable_name(self.path, self.name))
 
         java_config = configparse.blade_config.get_config('java_config')
         source_version = java_config['source_version']
@@ -239,8 +239,7 @@ class JavaJarTarget(Target):
                 self._write_rule('%s.Depends(%s, %s)' % (
                     env_name,
                     classes_var,
-                    dep_java_jar_list
-                    ))
+                    dep_java_jar_list))
 
         self._generate_target_explict_dependency(classes_var)
 
@@ -345,8 +344,8 @@ class JavaJarTarget(Target):
         """The pre build java jar rules. """
         self._write_rule(
                 'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                self._prebuilt_java_jar_build_path(),
-                self._prebuilt_java_jar_src_path()))
+                    self._prebuilt_java_jar_build_path(),
+                    self._prebuilt_java_jar_src_path()))
 
     def scons_rules(self):
         """scons_rules.

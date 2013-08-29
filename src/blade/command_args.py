@@ -341,23 +341,29 @@ class CmdArguments(object):
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
 
-        sub_parser = arg_parser.add_subparsers(dest='command',
-                        help='Available subcommands')
+        sub_parser = arg_parser.add_subparsers(
+            dest='command',
+            help='Available subcommands')
 
-        build_parser = sub_parser.add_parser('build',
-                        help='Build specified targets')
+        build_parser = sub_parser.add_parser(
+            'build',
+            help='Build specified targets')
 
-        run_parser = sub_parser.add_parser('run',
-                        help='Build and runs a single target')
+        run_parser = sub_parser.add_parser(
+            'run',
+            help='Build and runs a single target')
 
-        test_parser = sub_parser.add_parser('test',
-                        help='Build the specified targets and runs tests')
+        test_parser = sub_parser.add_parser(
+            'test',
+            help='Build the specified targets and runs tests')
 
-        clean_parser = sub_parser.add_parser('clean',
-                        help='Remove all Blade-created output')
+        clean_parser = sub_parser.add_parser(
+            'clean',
+            help='Remove all Blade-created output')
 
-        query_parser = sub_parser.add_parser('query',
-                        help='Execute a dependency graph query')
+        query_parser = sub_parser.add_parser(
+            'query',
+            help='Execute a dependency graph query')
 
         self._add_build_arguments(build_parser)
         self._add_build_arguments(run_parser)

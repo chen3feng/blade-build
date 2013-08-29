@@ -162,7 +162,7 @@ def cc_test_config(append=None, **kwargs):
     heap_check = kwargs.get('heap_check')
     if heap_check and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
-                   HEAP_CHECK_VALUES)
+                HEAP_CHECK_VALUES)
     blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -190,9 +190,9 @@ def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
     if path:
-        console.warning(('%s: proto_library_config: protobuf_include_path has been '
-                 'renamed to protobuf_incs, and become a list') %
-                blade_config.current_file_name)
+        console.warning(('%s: proto_library_config: protobuf_include_path has '
+                         'been renamed to protobuf_incs, and become a list') %
+                         blade_config.current_file_name)
         del kwargs['protobuf_include_path']
         if isinstance(path, basestring) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()

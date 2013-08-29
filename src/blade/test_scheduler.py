@@ -173,7 +173,7 @@ class TestScheduler(object):
                     returncode = self._run_job(job)
             except OSError, e:
                 console.error('%s: Create test process error: %s' %
-                        (target_key, str(e)))
+                              (target_key, str(e)))
                 returncode = 255
 
             costtime = time.time() - start_time

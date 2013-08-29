@@ -114,8 +114,8 @@ class SwigLibrary(CcTarget):
                 pyswig_flags, self.build_path)
 
         self._write_rule('%s = Builder(action=MakeAction("%s", '
-                'compile_swig_python_message))' % (
-                builder_name, swig_bld_cmd))
+                         'compile_swig_python_message))' % (
+                             builder_name, swig_bld_cmd))
         self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
                 env_name, builder_alias, builder_name))
 
@@ -230,7 +230,7 @@ class SwigLibrary(CcTarget):
                                 out_dir))
                         self.data['java_dep_var'].append(swig_outdir_cmd)
                     if build_jar:
-                        self.data['java_sources']  = (
+                        self.data['java_sources'] = (
                                 out_dir,
                                 os.path.join(self.build_path, self.path),
                                 self.name)
@@ -240,8 +240,8 @@ class SwigLibrary(CcTarget):
         swig_bld_cmd = 'swig -java %s -c++ -I%s -o $TARGET $SOURCE' % (
                        javaswig_flags, self.build_path)
         self._write_rule('%s = Builder(action=MakeAction("%s", '
-                'compile_swig_java_message))' % (
-                builder_name, swig_bld_cmd))
+                         'compile_swig_java_message))' % (
+                             builder_name, swig_bld_cmd))
         self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
                 env_name, builder_alias, builder_name))
         self._swig_library_rules_java_helper(depend_outdir, build_jar,
@@ -316,7 +316,7 @@ class SwigLibrary(CcTarget):
         objs_name = self._objs_name()
         objs_name_java = '%s_dynamic_java' % objs_name
         self._write_rule('%s = [%s]' % (objs_name_java,
-                                    ','.join(obj_names_java)))
+                                        ','.join(obj_names_java)))
 
         target_path_java = '%s_java' % self._target_file_path()
 
@@ -367,8 +367,8 @@ class SwigLibrary(CcTarget):
                        phpswig_flags, self.build_path)
 
         self._write_rule('%s = Builder(action=MakeAction("%s", '
-                'compile_swig_php_message))' % (
-                builder_name, swig_bld_cmd))
+                         'compile_swig_php_message))' % (
+                             builder_name, swig_bld_cmd))
         self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
                           env_name, builder_alias, builder_name))
 

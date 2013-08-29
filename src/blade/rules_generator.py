@@ -132,7 +132,7 @@ version_obj = env_version.SharedObject('$filename')
         print >>version_cpp, 'extern const char kBuildTime[] = "%s";' % time.asctime()
         print >>version_cpp, 'extern const char kBuilderName[] = "%s";' % os.getenv('USER')
         print >>version_cpp, (
-        'extern const char kHostName[] = "%s";' % socket.gethostname())
+                'extern const char kHostName[] = "%s";' % socket.gethostname())
         compiler = 'GCC %s' % self.gcc_version
         print >>version_cpp, 'extern const char kCompiler[] = "%s";' % compiler
         print >>version_cpp, '}}'
@@ -261,7 +261,7 @@ compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
 
         if not getattr(self.options, 'verbose', False):
             self._add_rule(
-            r"""
+                    r"""
 top_env.Append(
     CXXCOMSTR = compile_source_message,
     CCCOMSTR = compile_source_message,
@@ -446,12 +446,13 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         self._add_rule('top_env.Replace(%s, '
                        'CPPPATH=[%s, "%s", "%s"], '
                        'CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s, '
-                       '%s, LINKFLAGS=%s)' % (cc_env_str,
-            extra_incs_str, self.build_dir, self.python_inc,
-            cc_config['cppflags'] + cppflags_except_warning,
-            cc_config['cflags'],
-            cc_config['cxxflags'],
-            ld_env_str, linkflags))
+                       '%s, LINKFLAGS=%s)' %
+                       (cc_env_str,
+                        extra_incs_str, self.build_dir, self.python_inc,
+                        cc_config['cppflags'] + cppflags_except_warning,
+                        cc_config['cflags'],
+                        cc_config['cxxflags'],
+                        ld_env_str, linkflags))
 
         self._setup_cache()
 
@@ -521,12 +522,13 @@ class SconsRulesGenerator(object):
         gcc_version = self.scons_platform.get_gcc_version()
         python_inc = self.scons_platform.get_python_include()
 
-        self.scons_file_header_generator = SconsFileHeaderGenerator(options,
-                                                   build_dir,
-                                                   gcc_version,
-                                                   python_inc,
-                                                   self.blade.build_environment,
-                                                   self.blade.svn_root_dirs)
+        self.scons_file_header_generator = SconsFileHeaderGenerator(
+                options,
+                build_dir,
+                gcc_version,
+                python_inc,
+                self.blade.build_environment,
+                self.blade.svn_root_dirs)
         try:
             os.remove('blade-bin')
         except os.error:
