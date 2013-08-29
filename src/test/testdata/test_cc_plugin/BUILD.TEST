@@ -35,6 +35,6 @@ cc_plugin(
          '#dl'
          ],
     defs=['BLADE_STR_DEF'],
-    extra_linkflags = '-Wl,-Bsymbolic',
+    extra_linkflags='-Wl,-Bsymbolic'
 )
 
