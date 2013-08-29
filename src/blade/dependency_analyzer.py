@@ -84,7 +84,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
 
     """
     new_deps_list = deps_map_cache.get(target_id)
-    if new_deps_list:
+    if new_deps_list is not None:
         return new_deps_list
 
     if root_targets is None:
@@ -114,9 +114,10 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
             if nd in new_deps_list:
                 new_deps_list.remove(nd)
             new_deps_list.append(nd)
-    deps_map_cache[target_id] = new_deps_list
 
+    deps_map_cache[target_id] = new_deps_list
     root_targets.remove(target_id)
+
     return new_deps_list
 
 
