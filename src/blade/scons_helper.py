@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Huan Yu <huanyu@tencent.com>
+#         Feng Chen <phongchen@tencent.com>
+#         Yi Wang <yiwang@tencent.com>
+#         Chong Peng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Huan Yu <huanyu@tencent.com>
-         Feng Chen <phongchen@tencent.com>
-         Yi Wang <yiwang@tencent.com>
-         Chong Peng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the scons rules helper module which should be
  imported by Scons script
 
@@ -35,28 +35,17 @@ import console
 # option_verbose to indicate print verbose or not
 option_verbose = False
 
-# colors
-colors = {}
-colors['red']    = '\033[1;31m'
-colors['green']  = '\033[1;32m'
-colors['yellow'] = '\033[1;33m'
-colors['blue']   = '\033[1;34m'
-colors['purple'] = '\033[1;35m'
-colors['cyan']   = '\033[1;36m'
-colors['white']  = '\033[1;37m'
-colors['gray']   = '\033[1;38m'
-colors['end']    = '\033[0m'
-
 
 # linking tmp dir
-linking_tmp_dir = ""
+linking_tmp_dir = ''
 
 
 def generate_python_binary(target, source, env):
     setup_file = ''
-    if not str(source[0]).endswith("setup.py"):
-        console.warning("setup.py not existed to generate target %s, "
-                "blade will generate a default one for you" % str(target[0]))
+    if not str(source[0]).endswith('setup.py'):
+        console.warning('setup.py not existed to generate target %s, '
+                        'blade will generate a default one for you' %
+                        str(target[0]))
     else:
         setup_file = str(source[0])
     init_file = ''
@@ -86,7 +75,7 @@ def generate_python_binary(target, source, env):
     else:
         target_name = os.path.basename(init_file_dir)
         if not target_name:
-            console.error_exit("invalid package for target %s" % str(target[0]))
+            console.error_exit('invalid package for target %s' % str(target[0]))
         # generate default setup.py for user
         setup_str = """
 #!/usr/bin/env python
@@ -102,7 +91,7 @@ setup(
       zip_safe=True
 )
 """ % target_name
-        default_setup_file = open(os.path.join(target_dir, 'setup.py'), "w")
+        default_setup_file = open(os.path.join(target_dir, 'setup.py'), 'w')
         default_setup_file.write(setup_str)
         default_setup_file.close()
 
@@ -110,7 +99,7 @@ setup(
     if os.path.exists(package_dir):
         shutil.rmtree(package_dir, ignore_errors=True)
 
-    cmd = "cp -r %s %s" % (init_file_dir, target_dir)
+    cmd = 'cp -r %s %s' % (init_file_dir, target_dir)
     p = subprocess.Popen(
             cmd,
             env={},
@@ -122,7 +111,7 @@ setup(
     if p.returncode:
         console.info(std_out)
         console.info(std_err)
-        console.error_exit("failed to copy source files from %s to %s" % (
+        console.error_exit('failed to copy source files from %s to %s' % (
                    init_file_dir, target_dir))
         return p.returncode
 
@@ -138,13 +127,13 @@ setup(
             package_sub_dir = os.path.join(package_dir, sub_dir)
             if not os.path.exists(package_sub_dir):
                 os.makedirs(package_sub_dir)
-            sub_init_file = os.path.join(package_sub_dir, "__init__.py")
+            sub_init_file = os.path.join(package_sub_dir, '__init__.py')
             if not os.path.exists(sub_init_file):
-                sub_f = open(sub_init_file, "w")
+                sub_f = open(sub_init_file, 'w')
                 sub_f.close()
             shutil.copyfile(f, os.path.join(package_sub_dir, dep_file_basename))
 
-    make_egg_cmd = "python setup.py bdist_egg"
+    make_egg_cmd = 'python setup.py bdist_egg'
     p = subprocess.Popen(
             make_egg_cmd,
             env={},
@@ -157,7 +146,7 @@ setup(
     if p.returncode:
         console.info(std_out)
         console.info(std_err)
-        console.error_exit("failed to generate python binary in %s" % target_dir)
+        console.error_exit('failed to generate python binary in %s' % target_dir)
         return p.returncode
     return 0
 
@@ -183,7 +172,7 @@ def generate_resource_header(target, source, env):
 def generate_resource_file(target, source, env):
     src_path = str(source[0])
     new_src_path = str(target[0])
-    cmd = "xxd -i %s | sed 's/unsigned char /const char RESOURCE_/g' > %s" % (
+    cmd = 'xxd -i %s | sed "s/unsigned char /const char RESOURCE_/g" > %s' % (
            src_path, new_src_path)
     p = subprocess.Popen(
             cmd,
@@ -196,7 +185,7 @@ def generate_resource_file(target, source, env):
     if p.returncode:
         console.info(std_out)
         console.info(std_err)
-        console.error_exit("failed to generate resource file")
+        console.error_exit('failed to generate resource file')
     return p.returncode
 
 
@@ -208,9 +197,9 @@ def MakeAction(cmd, cmdstr):
         return SCons.Action.Action(cmd, cmdstr)
 
 
-_ERRORS = [": error:", ": fatal error:", ": undefined reference to",
-           ": cannot find ", ": ld returned 1 exit status"]
-_WARNINGS = [": warning:", ": note: "]
+_ERRORS = [': error:', ': fatal error:', ': undefined reference to',
+           ': cannot find ', ': ld returned 1 exit status']
+_WARNINGS = [': warning:', ': note: ']
 
 
 def error_colorize(message):
@@ -231,9 +220,9 @@ def error_colorize(message):
                     color = 'red'
                     break
 
-        colored_message.append(colors[color])
+        colored_message.append(console.colors(color))
         colored_message.append(t)
-        colored_message.append(colors['end'])
+        colored_message.append(console.colors('end'))
     return ''.join(colored_message)
 
 
@@ -281,7 +270,7 @@ def _blade_action_postfunc(closing_message):
 def _fast_link_helper(target, source, env, link_com):
     """fast link helper function. """
     target_file = str(target[0])
-    prefix_str = "blade_%s" % target_file.replace("/", "_").replace(".", "_")
+    prefix_str = 'blade_%s' % target_file.replace('/', '_').replace('.', '_')
     fd, temporary_file = tempfile.mkstemp(suffix='xianxian',
                                           prefix=prefix_str,
                                           dir=linking_tmp_dir)
@@ -309,31 +298,31 @@ def _fast_link_helper(target, source, env, link_com):
     if p.returncode == 0:
         shutil.move(temporary_file, target_file)
         if not os.path.exists(target_file):
-            console.warning("failed to genreate %s in link on tmpfs mode" % target_file)
+            console.warning('failed to genreate %s in link on tmpfs mode' % target_file)
     else:
-        _blade_action_postfunc("failed while fast linking")
+        _blade_action_postfunc('failed while fast linking')
         return p.returncode
 
 
 def fast_link_sharelib_action(target, source, env):
     # $SHLINK -o $TARGET $SHLINKFLAGS $__RPATH $SOURCES $_LIBDIRFLAGS $_LIBFLAGS
-    link_com = string.Template("%s -o $FL_TARGET %s %s $FL_SOURCE %s %s" % (
-                env.subst("$SHLINK"),
-                env.subst("$SHLINKFLAGS"),
-                env.subst("$__RPATH"),
-                env.subst("$_LIBDIRFLAGS"),
-                env.subst("$_LIBFLAGS")))
+    link_com = string.Template('%s -o $FL_TARGET %s %s $FL_SOURCE %s %s' % (
+                env.subst('$SHLINK'),
+                env.subst('$SHLINKFLAGS'),
+                env.subst('$__RPATH'),
+                env.subst('$_LIBDIRFLAGS'),
+                env.subst('$_LIBFLAGS')))
     return _fast_link_helper(target, source, env, link_com)
 
 
 def fast_link_prog_action(target, source, env):
     # $LINK -o $TARGET $LINKFLAGS $__RPATH $SOURCES $_LIBDIRFLAGS $_LIBFLAGS
-    link_com = string.Template("%s -o $FL_TARGET %s %s $FL_SOURCE %s %s" % (
-                env.subst("$LINK"),
-                env.subst("$LINKFLAGS"),
-                env.subst("$__RPATH"),
-                env.subst("$_LIBDIRFLAGS"),
-                env.subst("$_LIBFLAGS")))
+    link_com = string.Template('%s -o $FL_TARGET %s %s $FL_SOURCE %s %s' % (
+                env.subst('$LINK'),
+                env.subst('$LINKFLAGS'),
+                env.subst('$__RPATH'),
+                env.subst('$_LIBDIRFLAGS'),
+                env.subst('$_LIBFLAGS')))
     return _fast_link_helper(target, source, env, link_com)
 
 
@@ -347,7 +336,7 @@ def create_fast_link_prog_builder(env):
        system to advoid the random read write of linker
        largely degrades building performance.
     """
-    new_link_action = MakeAction(fast_link_prog_action, "$LINKCOMSTR")
+    new_link_action = MakeAction(fast_link_prog_action, '$LINKCOMSTR')
     program = SCons.Builder.Builder(action=new_link_action,
                                     emitter='$PROGEMITTER',
                                     prefix='$PROGPREFIX',
@@ -370,10 +359,10 @@ def create_fast_link_sharelib_builder(env):
     """
     new_link_actions = []
     new_link_actions.append(SCons.Defaults.SharedCheck)
-    new_link_actions.append(MakeAction(fast_link_sharelib_action, "$SHLINKCOMSTR"))
+    new_link_actions.append(MakeAction(fast_link_sharelib_action, '$SHLINKCOMSTR'))
 
     sharedlib = SCons.Builder.Builder(action=new_link_actions,
-                                      emitter="$SHLIBEMITTER",
+                                      emitter='$SHLIBEMITTER',
                                       prefix='$SHLIBPREFIX',
                                       suffix='$SHLIBSUFFIX',
                                       target_scanner=SCons.Scanner.Prog.ProgramScanner(),
@@ -397,12 +386,12 @@ def create_fast_link_builders(env):
 
     # Do not try to overwrite builder with error
     if p.returncode:
-        console.warning("you have link on tmp enabled, but it is not fullfilled to make it.")
+        console.warning('you have link on tmp enabled, but it is not fullfilled to make it.')
         return
 
     # No tmpfs to do fastlink, will not overwrite the builder
     if not std_out:
-        console.warning("you have link on tmp enabled, but there is no tmpfs to make it.")
+        console.warning('you have link on tmp enabled, but there is no tmpfs to make it.')
         return
 
     # Use the first one
@@ -410,13 +399,14 @@ def create_fast_link_builders(env):
     usage, linking_tmp_dir = tuple(std_out.splitlines(False)[0].split())
 
     # Do not try to do that if there is no memory space left
-    usage = int(usage.replace("%", ""))
+    usage = int(usage.replace('%', ''))
     if usage > 90:
-        console.warning("you have link on tmp enabled, "
-                "but there is not enough space on %s to make it." % linking_tmp_dir)
+        console.warning('you have link on tmp enabled, '
+                        'but there is not enough space on %s to make it.' %
+                        linking_tmp_dir)
         return
 
-    console.info("building in link on tmpfs mode")
+    console.info('building in link on tmpfs mode')
 
     create_fast_link_sharelib_builder(env)
     create_fast_link_prog_builder(env)

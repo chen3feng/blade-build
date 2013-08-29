@@ -1,14 +1,14 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Authors: Huan Yu <huanyu@tencent.com>
+#          Feng Chen <phongchen@tencent.com>
+#          Yi Wang <yiwang@tencent.com>
+#          Chong Peng <michaelpeng@tencent.com>
+# Date: October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Authors: Huan Yu <huanyu@tencent.com>
-          Feng Chen <phongchen@tencent.com>
-          Yi Wang <yiwang@tencent.com>
-          Chong Peng <michaelpeng@tencent.com>
- Date: October 20, 2011
-
  This is the TestRunner module which executes the test programs.
 
 """
@@ -63,8 +63,8 @@ class TestRunner(binary_runner.BinaryRunner):
         """Init method. """
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
-        self.inctest_md5_file = ".blade.test.stamp"
-        self.tests_detail_file = "./blade_tests_detail"
+        self.inctest_md5_file = '.blade.test.stamp'
+        self.tests_detail_file = './blade_tests_detail'
         self.inctest_run_list = []
         self.last_test_stamp = {}
         self.last_test_stamp['md5'] = {}
@@ -80,7 +80,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 try:
                     self.last_test_stamp = eval(open(self.inctest_md5_file).read())
                 except (IOError, SyntaxError):
-                    console.warning("error loading incremental test history, will run full test")
+                    console.warning('error loading incremental test history, will run full test')
                     self.run_all_reason = 'NO_HISTORY'
 
         self.test_stamp['testarg'] = md5sum(str(self.options.args))
@@ -97,7 +97,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if self.test_stamp['testarg'] != (
                     self.last_test_stamp.get('testarg', None)):
                 self.run_all_reason = 'ARGUMENT'
-                console.info("all tests will run due to test arguments changed")
+                console.info('all tests will run due to test arguments changed')
 
             new_env = self.test_stamp['env']
             old_env = self.last_test_stamp.get('env', {})
@@ -105,12 +105,12 @@ class TestRunner(binary_runner.BinaryRunner):
                 old_env = {}
             if new_env != old_env:
                 self.run_all_reason = 'ENVIRONMENT'
+                console.info('all tests will run due to test environments changed:')
                 (new, old) = _diff_env(new_env, old_env)
-                console.info("all tests will run due to test environments changed:")
                 if new:
-                    console.info("new environments: %s" % new)
+                    console.info('new environments: %s' % new)
                 if old:
-                    console.info("old environments: %s" % old)
+                    console.info('old environments: %s' % old)
 
             this_time = int(round(self.test_stamp['inctest_time']))
             last_time = int(round(self.last_test_stamp.get('inctest_time', 0)))
@@ -118,7 +118,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
             if interval >= self.valid_inctest_time_interval or interval < 0:
                 self.run_all_reason = 'STALE'
-                console.info("all tests will run due to all passed tests are invalid now")
+                console.info('all tests will run due to all passed tests are invalid now')
         else:
             self.run_all_reason = 'FULLTEST'
 
@@ -130,20 +130,20 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target['options']['dynamic_link']:
-            target_key = (target['path'], target['name'])
-            for dep in self.target_database.get(target_key, {}).get('deps', []):
-                dep_target = self.target_database.get(dep, {})
-                if 'cc_library' in dep_target.get('type', ''):
-                    lib_name = 'lib%s.so' % dep_target['name']
+        if target.data['dynamic_link']:
+            target_key = (target.path, target.name)
+            for dep in self.target_database[target_key].expanded_deps:
+                dep_target = self.target_database[dep]
+                if 'cc_library' in dep_target.type:
+                    lib_name = 'lib%s.so' % dep_target.name
                     lib_path = os.path.join(self.build_dir,
-                                            dep_target['path'],
+                                            dep_target.path,
                                             lib_name)
                     abs_lib_path = os.path.abspath(lib_path)
                     if os.path.exists(abs_lib_path):
                         related_file_list.append(abs_lib_path)
 
-        for i in target['options']['testdata']:
+        for i in target.data['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
             else:
@@ -154,8 +154,8 @@ class TestRunner(binary_runner.BinaryRunner):
                 data_target = data_target[2:]
                 data_target_path = os.path.abspath(data_target)
             else:
-                data_target_path = os.path.abspath("%s/%s" % (
-                                                   target['path'], data_target))
+                data_target_path = os.path.abspath('%s/%s' % (
+                                                   target.path, data_target))
             if os.path.exists(data_target_path):
                 related_file_data_list.append(data_target_path)
 
@@ -179,9 +179,9 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
-            if target['type'] != 'cc_test':
+            if target.type != 'cc_test':
                 continue
-            target_key = (target['path'], target['name'])
+            target_key = (target.path, target.name)
             test_file_name = os.path.abspath(self._executable(target))
             self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
             if self.run_all_reason:
@@ -196,8 +196,8 @@ class TestRunner(binary_runner.BinaryRunner):
                 self.inctest_run_list.append(target)
                 self.tests_run_map[target_key] = {
                         'runfile': test_file_name,
-                        'result':  '',
-                        'reason':  'EXPLICIT',
+                        'result': '',
+                        'reason': 'EXPLICIT',
                         'costtime': 0}
                 continue
 
@@ -217,9 +217,9 @@ class TestRunner(binary_runner.BinaryRunner):
                 else:
                     reason = 'STALE'
                 self.tests_run_map[target_key] = {
-                        'runfile':  test_file_name,
-                        'result':   '',
-                        'reason':   reason,
+                        'runfile': test_file_name,
+                        'result': '',
+                        'reason': reason,
                         'costtime': 0}
 
         # Append old md5sum that not existed into new
@@ -235,42 +235,41 @@ class TestRunner(binary_runner.BinaryRunner):
         """
         if os.path.exists(self.inctest_md5_file):
             if os.path.getsize(self.inctest_md5_file) > 2 * 1024 * 1024 * 1024:
-                console.warning("Will remove the md5sum file for incremental test "
-                        "for it is oversized"
-                        )
+                console.warning('Will remove the md5sum file for incremental '
+                                'test for it is oversized')
                 os.remove(self.inctest_md5_file)
 
     def _write_test_history(self):
         """write md5sum to file. """
-        f = open(self.inctest_md5_file, "w")
+        f = open(self.inctest_md5_file, 'w')
         print >> f, str(self.test_stamp)
         f.close()
         self._check_inctest_md5sum_file()
 
     def _write_tests_detail_map(self):
         """write the tests detail map for further use. """
-        f = open(self.tests_detail_file, "w")
+        f = open(self.tests_detail_file, 'w')
         print >> f, str(self.tests_run_map)
         f.close()
 
     def _show_tests_detail(self):
         """show the tests detail after scheduling them. """
         sort_buf = []
-        for key in self.tests_run_map.keys():
+        for key in self.tests_run_map:
             costtime = self.tests_run_map.get(key, {}).get('costtime', 0)
             sort_buf.append((key, costtime))
         sort_buf.sort(key=lambda x: x[1])
 
-        if self.tests_run_map.keys():
-            console.info("%s Testing detail %s" % (self.title_str, self.title_str))
+        if self.tests_run_map:
+            console.info('%s Testing detail %s' % (self.title_str, self.title_str))
         for key, costtime in sort_buf:
             reason = self.tests_run_map.get(key, {}).get('reason', 'UNKNOWN')
             result = self.tests_run_map.get(key, {}).get('result',
                                                          'INTERRUPTED')
             if 'SIG' in result:
-                result = "with %s" % result
-            console.info("%s triggered by %s, exit(%s), cost %.2f s" % (
-                         key, reason, result, costtime), prefix=False)
+                result = 'with %s' % result
+            console.info('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
+                         key[0], key[1], reason, result, costtime), prefix=False)
 
     def _finish_tests(self):
         """finish some work before return from runner. """
@@ -289,14 +288,14 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.skipped_tests:
             return
         self.skipped_tests.sort()
-        console.info("skipped tests")
+        console.info('skipped tests')
         for target_key in self.skipped_tests:
-            print "%s:%s" % (target_key[0], target_key[1])
+            print '%s:%s' % (target_key[0], target_key[1])
 
     def _show_skipped_tests_summary(self):
         """show tests skipped summary. """
-        console.info("%d tests skipped when doing incremental test" % len(self.skipped_tests))
-        console.info("to run all tests, please specify --full-test argument")
+        console.info('%d tests skipped when doing incremental test' % len(self.skipped_tests))
+        console.info('to run all tests, please specify --full-test argument')
 
     def run(self):
         """Run all the cc_test target programs. """
@@ -304,11 +303,11 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_inctest_run_list()
         tests_run_list = []
         for target in self.targets.values():
-            if target['type'] != 'cc_test':
+            if target.type != 'cc_test':
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
-                if not target.get('options', {}).get('always_run', False):
-                    self.skipped_tests.append((target['path'], target['name']))
+                if not target.data.get('always_run'):
+                    self.skipped_tests.append((target.path, target.name))
                     continue
             self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
@@ -323,7 +322,7 @@ class TestRunner(binary_runner.BinaryRunner):
             else:
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
-            test_env['HEAPCHECK'] = target.get('options', {}).get('heap_check', '')
+            test_env['HEAPCHECK'] = target.data.get('heap_check', '')
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,
@@ -336,24 +335,24 @@ class TestRunner(binary_runner.BinaryRunner):
         scheduler.schedule_jobs()
 
         self._clean_env()
-        console.info("%s Testing Summary %s" % (self.title_str, self.title_str))
-        console.info("Run %d test targets" % scheduler.num_of_run_tests)
+        console.info('%s Testing Summary %s' % (self.title_str, self.title_str))
+        console.info('Run %d test targets' % scheduler.num_of_run_tests)
 
         failed_targets = scheduler.failed_targets
         if failed_targets:
-            console.error("%d tests failed:" % len(failed_targets))
-            for i in failed_targets:
-                print "%s/%s, exit code: %s" % (
-                    i["path"], i["name"], i["test_exit_code"])
-                test_file_name = os.path.abspath(self._executable(i))
+            console.error('%d tests failed:' % len(failed_targets))
+            for target in failed_targets:
+                print '%s:%s, exit code: %s' % (
+                    target.path, target.name, target.data['test_exit_code'])
+                test_file_name = os.path.abspath(self._executable(target))
                 # Do not skip failed test by default
                 if test_file_name in self.test_stamp['md5']:
                     self.test_stamp['md5'][test_file_name] = (0, 0)
-            console.info("%d tests passed" % (
+            console.info('%d tests passed' % (
                 scheduler.num_of_run_tests - len(failed_targets)))
             self._finish_tests()
             return 1
         else:
-            console.info("All tests passed!")
+            console.info('All tests passed!')
             self._finish_tests()
             return 0

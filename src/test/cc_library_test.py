@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the test module for cc_library target.
 
 """
@@ -43,7 +43,7 @@ class TestCcLibrary(blade_test.TargetTest):
         com_upper_line = ''
         com_string_line = ''
         string_depends_libs = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'puppercase.cpp.o -c' in line:
@@ -53,27 +53,19 @@ class TestCcLibrary(blade_test.TargetTest):
             if 'libblade_string.so' in line:
                 string_depends_libs = line
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
-
-        self.assertTrue('-fPIC -Wall -Wextra' in com_upper_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
-
-        self.assertTrue('-fPIC -Wall -Wextra' not in com_string_line)
-        self.assertTrue('-fno-omit-frame-pointer' in com_string_line)
-        self.assertTrue('-mcx16 -pipe -g' in com_string_line)
+        self.assertCxxFlags(com_lower_line)
+        self.assertCxxFlags(com_upper_line)
+        self.assertNoWarningCxxFlags(com_string_line)
         self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS=64' in com_string_line)
         self.assertTrue('-DBLADE_STR_DEF -O2' in com_string_line)
         self.assertTrue('-w' in com_string_line)
         self.assertTrue('-m64' in com_string_line)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_string_line)
+
+        self.assertDynamicLinkFlags(string_depends_libs)
 
         self.assertTrue('liblowercase.so' in string_depends_libs)
         self.assertTrue('libuppercase.so' in string_depends_libs)
 
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     blade_test.run(TestCcLibrary)

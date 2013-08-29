@@ -18,7 +18,7 @@ import blade.blade
 import blade.configparse
 from blade.blade import Blade
 from blade.configparse import BladeConfig
-from blade_namespace import Namespace
+from blade.argparse import Namespace
 
 
 class TargetTest(unittest.TestCase):
@@ -39,15 +39,15 @@ class TargetTest(unittest.TestCase):
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
         options = {
-                'm' : '64',
-                'profile' : 'release',
-                'generate_dynamic' : True,
-                'generate_java' : True,
-                'generate_php' : generate_php,
-                'verbose' : True
+                'm': '64',
+                'profile': 'release',
+                'generate_dynamic': True,
+                'generate_java': True,
+                'generate_php': generate_php,
+                'verbose': True
                 }
         options.update(kwargs)
-        self.options = Namespace(options)
+        self.options = Namespace(**options)
         self.direct_targets = []
         self.all_command_targets = []
         self.related_targets = {}
@@ -67,14 +67,14 @@ class TargetTest(unittest.TestCase):
         (self.direct_targets,
          self.all_command_targets) = self.blade.load_targets()
         self.blade.analyze_targets()
-        self.all_targets = self.blade.get_all_targets_expanded()
-        self.command_file = 'cmds.tmp'
+        self.all_targets = self.blade.get_build_targets()
+        self.scons_output_file = 'scons_output.txt'
 
     def tearDown(self):
         """tear down method. """
         try:
             os.remove('./SConstruct')
-            os.remove(self.command_file)
+            os.remove(self.scons_output_file)
         except OSError:
             pass
 
@@ -86,15 +86,49 @@ class TargetTest(unittest.TestCase):
         self.assertTrue(self.all_command_targets)
 
     def dryRun(self):
-        p = subprocess.Popen("scons --dry-run > %s" % self.command_file,
-                             stdout=subprocess.PIPE,
+        # We can use pipe to capture stdout, but keep the output file make it
+        # easy debugging.
+        p = subprocess.Popen('scons --dry-run > %s' % self.scons_output_file,
                              shell=True)
         try:
             p.wait()
+            self.scons_output = open(self.scons_output_file)
             return p.returncode == 0
         except:
-            print >>sys.stderr, "Failed while dry running:\n%s" % sys.exc_info()
+            print >>sys.stderr, 'Failed while dry running:\n%s' % sys.exc_info()
         return False
+
+    def _assertCxxCommonFlags(self, cmdline):
+        self.assertTrue('-g' in cmdline)
+        self.assertTrue('-fPIC' in cmdline, cmdline)
+
+    def _assertCxxWarningFlags(self, cmdline):
+        self.assertTrue('-Wall -Wextra' in cmdline)
+        self.assertTrue('-Wframe-larger-than=69632' in cmdline)
+        self.assertTrue('-Werror=overloaded-virtual' in cmdline)
+
+    def _assertCxxNoWarningFlags(self, cmdline):
+        self.assertTrue('-Wall -Wextra' not in cmdline)
+        self.assertTrue('-Wframe-larger-than=69632' not in cmdline)
+        self.assertTrue('-Werror=overloaded-virtual' not in cmdline)
+
+    def assertCxxFlags(self, cmdline):
+        self._assertCxxCommonFlags(cmdline)
+        self._assertCxxWarningFlags(cmdline)
+
+    def assertNoWarningCxxFlags(self, cmdline):
+        self._assertCxxCommonFlags(cmdline)
+        self._assertCxxNoWarningFlags(cmdline)
+
+    def assertLinkFlags(self, cmdline):
+        self.assertTrue('-static-libgcc -static-libstdc++' in cmdline)
+
+    def assertStaticLinkFlags(self, cmdline):
+        self.assertTrue('-shared' not in cmdline)
+
+    def assertDynamicLinkFlags(self, cmdline):
+        self.assertTrue('-shared' in cmdline)
+
 
 def run(class_name):
     suite_test = unittest.TestSuite()

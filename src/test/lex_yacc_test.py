@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the test module for lex_yacc_library target.
 
 """
@@ -38,55 +38,35 @@ class TestLexYacc(blade_test.TargetTest):
         com_bison_line = ''
         com_flex_line = ''
         com_ll_static_line = ''
-        com_ll_so_line = ''
         com_yy_static_line = ''
-        com_yy_so_line = ''
         lex_yacc_depends_libs = ''
-        for line in open(self.command_file):
+        for line in self.scons_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'bison -d -o' in line:
                 com_bison_line = line
             if 'flex -R -t' in line:
                 com_flex_line = line
-            if 'line_parser.ll.o -c' in line:
+            if 'line_parser.ll.cc.o -c' in line:
                 com_ll_static_line = line
-            if 'line_parser.yy.o -c' in line:
+            if 'line_parser.yy.cc.o -c' in line:
                 com_yy_static_line = line
-            if 'line_parser.ll.os -c' in line:
-                com_ll_so_line = line
-            if 'line_parser.yy.os -c' in line:
-                com_yy_so_line = line
             if 'libparser.so' in line:
                 lex_yacc_depends_libs = line
 
-        self.assertTrue('-fPIC -Wall -Wextra' in com_lower_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_lower_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_lower_line)
+        self.assertCxxFlags(com_lower_line)
 
         self.assertTrue('line_parser.yy.cc' in com_bison_line)
         self.assertTrue('line_parser.ll.cc' in com_flex_line)
 
-        self.assertTrue('-Woverloaded-virtual' in com_ll_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_ll_static_line)
-        self.assertTrue('-fPIC -Wall -Wextra' in com_ll_so_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_ll_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_ll_so_line)
-
-        self.assertTrue('-Woverloaded-virtual' in com_yy_static_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_yy_static_line)
-        self.assertTrue('-fPIC -Wall -Wextra' in com_yy_so_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_yy_so_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_yy_so_line)
+        self.assertCxxFlags(com_ll_static_line)
+        self.assertCxxFlags(com_yy_static_line)
 
         self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.ll.os' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.yy.os' in lex_yacc_depends_libs)
+        self.assertTrue('line_parser.ll.cc.o' in lex_yacc_depends_libs)
+        self.assertTrue('line_parser.yy.cc.o' in lex_yacc_depends_libs)
+        self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 
-if __name__ == "__main__":
-    suite_test = unittest.TestSuite()
-    suite_test.addTests(
-            [unittest.defaultTestLoader.loadTestsFromTestCase(TestLexYacc)])
-    runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+if __name__ == '__main__':
+    blade_test.run(TestLexYacc)

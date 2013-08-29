@@ -1,11 +1,11 @@
+# Copyright (c) 2011 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   October 20, 2011
+
+
 """
-
- Copyright (c) 2011 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   October 20, 2011
-
  This is the scons_gen_rule module which inherits the SconsTarget
  and generates related gen rule rules.
 
@@ -19,11 +19,6 @@ import build_rules
 import java_jar_target
 from blade_util import var_to_list
 from target import Target
-
-
-# The gen rule files map, which is used to generate the explict dependency
-# relationtion ship between gen_rule target and other targets
-_files_map = {}
 
 
 class GenRuleTarget(Target):
@@ -62,19 +57,11 @@ class GenRuleTarget(Target):
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
-        return ','.join(["'%s'" % os.path.join(self.build_path, path, src)
+        return ','.join(['"%s"' % os.path.join(self.build_path, path, src)
             for src in srcs])
 
     def scons_rules(self):
         """scons_rules.
-
-        Parameters
-        -----------
-        None
-
-        Returns
-        -----------
-        None
 
         Description
         -----------
@@ -85,53 +72,52 @@ class GenRuleTarget(Target):
 
         # Build java source according to its option
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.data['path'], self.data['name'])
+        var_name = self._generate_variable_name(self.path, self.name)
 
-        srcs_str = ""
-        if not self.data['srcs']:
+        srcs_str = ''
+        if not self.srcs:
             srcs_str = 'time_value'
         else:
-            srcs_str = self._srcs_list(self.data['path'], self.data['srcs'])
+            srcs_str = self._srcs_list(self.path, self.srcs)
         cmd = self.data['cmd']
-        cmd = cmd.replace("$SRCS", '$SOURCES')
-        cmd = cmd.replace("$OUTS", '$TARGETS')
-        cmd = cmd.replace("$FIRST_SRC", '$SOURCE')
-        cmd = cmd.replace("$FIRST_OUT", '$TARGET')
-        cmd = cmd.replace("$BUILD_DIR", self.build_path)
+        cmd = cmd.replace('$SRCS', '$SOURCES')
+        cmd = cmd.replace('$OUTS', '$TARGETS')
+        cmd = cmd.replace('$FIRST_SRC', '$SOURCE')
+        cmd = cmd.replace('$FIRST_OUT', '$TARGET')
+        cmd = cmd.replace('$BUILD_DIR', self.build_path)
         self._write_rule('%s = %s.Command([%s], [%s], "%s")' % (
                 var_name,
                 env_name,
-                self._srcs_list(self.data['path'], self.data['outs']),
+                self._srcs_list(self.path, self.data['outs']),
                 srcs_str,
                 cmd))
 
-        _files_map[(self.data['path'], self.data['name'])] = var_name
+        self.var_name = var_name
         self._generate_target_explict_dependency(var_name)
 
-        targets = self.blade.get_all_targets_expanded()
-        java_jars_map = java_jar_target.get_java_jars_map()
+        targets = self.blade.get_build_targets()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
-        for i in self.data['deps']:
+        for i in self.expanded_deps:
             dep_target = targets[i]
-            if dep_target['type'] in dep_skip_list:
+            if dep_target.type in dep_skip_list:
                 continue
-            elif dep_target['type'] == 'swig_library':
+            elif dep_target.type == 'swig_library':
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'], 'dynamic_py')
+                        dep_target.path, dep_target.name, 'dynamic_py')
                 dep_var_list.append(dep_var_name)
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'], 'dynamic_java')
+                        dep_target.path, dep_target.name, 'dynamic_java')
                 dep_var_list.append(dep_var_name)
-            elif dep_target['type'] == 'java_jar':
-                dep_var_list += java_jars_map.get(dep_target['name'], [])
+            elif dep_target.type == 'java_jar':
+                dep_var_list += dep_target.data.get('java_jars', [])
             else:
                 dep_var_name = self._generate_variable_name(
-                        dep_target['path'], dep_target['name'])
+                        dep_target.path, dep_target.name)
                 dep_var_list.append(dep_var_name)
 
         for dep_var_name in dep_var_list:
-            self._write_rule("%s.Depends(%s, %s)" % (env_name,
+            self._write_rule('%s.Depends(%s, %s)' % (env_name,
                                                      var_name,
                                                      dep_var_name))
 
@@ -140,7 +126,7 @@ def gen_rule(name,
              srcs=[],
              deps=[],
              outs=[],
-             cmd="",
+             cmd='',
              **kwargs):
     """scons_gen_rule. """
     gen_rule_target = GenRuleTarget(name,
@@ -154,4 +140,3 @@ def gen_rule(name,
 
 
 build_rules.register_function(gen_rule)
-

@@ -1,11 +1,11 @@
+# Copyright (c) 2012 Tencent Inc.
+# All rights reserved.
+#
+# Author: Michaelpeng <michaelpeng@tencent.com>
+# Date:   February 29, 2012
+
+
 """
-
- Copyright (c) 2012 Tencent Inc.
- All rights reserved.
-
- Author: Michaelpeng <michaelpeng@tencent.com>
- Date:   February 29, 2012
-
  This is a thread module for blade which is used to spawn
  threads to finish some kind of work.
 
@@ -46,12 +46,12 @@ class WorkerThread(threading.Thread):
         self.start_working_time = time.time()
         self.end_working_time = None
         self.ret = None
-        console.info("blade test executor %d starts to work" % self.thread_id)
+        console.info('blade test executor %d starts to work' % self.thread_id)
 
     def __process(self):
         """Private handler to handle one job. """
-        console.info("blade worker %d starts to process" % self.thread_id)
-        console.info("blade worker %d finish" % self.thread_id)
+        console.info('blade worker %d starts to process' % self.thread_id)
+        console.info('blade worker %d finish' % self.thread_id)
         return
 
     def get_return(self):
@@ -119,14 +119,15 @@ class TestScheduler(object):
         result = 'SUCCESS'
         if returncode:
             result = signal_map.get(returncode, 'FAILED')
+            result = '%s:%s' % (result, returncode)
         return result
 
     def _run_job_redirect(self, job):
         """run job, redirect the output. """
         (target, run_dir, test_env, cmd) = job
-        test_name = "%s/%s" % (target['path'], target['name'])
+        test_name = '%s:%s' % (target.path, target.name)
 
-        console.info("Running %s" % cmd)
+        console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
@@ -136,7 +137,7 @@ class TestScheduler(object):
 
         (stdoutdata, stderrdata) = p.communicate()
         result = self.__get_result(p.returncode)
-        console.info("Output of %s:\n%s\n%s finished: %s\n" % (test_name,
+        console.info('Output of %s:\n%s\n%s finished: %s\n' % (test_name,
                 stdoutdata, test_name, result))
 
         return p.returncode
@@ -144,12 +145,12 @@ class TestScheduler(object):
     def _run_job(self, job):
         """run job, do not redirect the output. """
         (target, run_dir, test_env, cmd) = job
-        console.info("Running %s" % cmd)
+        console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True)
         p.wait()
         result = self.__get_result(p.returncode)
-        console.info("%s/%s finished : %s\n" % (
-             target['path'], target['name'], result))
+        console.info('%s/%s finished : %s\n' % (
+             target.path, target.name, result))
 
         return p.returncode
 
@@ -162,7 +163,7 @@ class TestScheduler(object):
         while not job_queue.empty():
             job = job_queue.get()
             target = job[0]
-            target_key = "%s:%s" % (target['path'], target['name'])
+            target_key = '%s:%s' % (target.path, target.name)
             start_time = time.time()
 
             try:
@@ -171,20 +172,20 @@ class TestScheduler(object):
                 else:
                     returncode = self._run_job(job)
             except OSError, e:
-                console.error("%s: Create test process error: %s" %
-                        (target_key, str(e)))
+                console.error('%s: Create test process error: %s' %
+                              (target_key, str(e)))
                 returncode = 255
 
             costtime = time.time() - start_time
 
             if returncode:
-                target["test_exit_code"] = returncode
+                target.data['test_exit_code'] = returncode
                 self.failed_targets_lock.acquire()
                 self.failed_targets.append(target)
                 self.failed_targets_lock.release()
 
             self.tests_run_map_lock.acquire()
-            run_item_map = self.tests_run_map.get(target_key, {})
+            run_item_map = self.tests_run_map.get(target.key, {})
             if run_item_map:
                 run_item_map['result'] = self.__get_result(returncode)
                 run_item_map['costtime'] = costtime
@@ -197,7 +198,7 @@ class TestScheduler(object):
 
     def print_summary(self):
         """print the summary output of tests. """
-        console.info("There are %d tests scheduled to run by scheduler" % (len(self.tests_list)))
+        console.info('There are %d tests scheduled to run by scheduler' % (len(self.tests_list)))
 
     def _join_thread(self, t):
         """Join thread and keep signal awareable"""
@@ -212,11 +213,11 @@ class TestScheduler(object):
             return True
 
         num_of_workers = self.__get_workers_num()
-        console.info("spawn %d worker(s) to run tests" % num_of_workers)
+        console.info('spawn %d worker(s) to run tests' % num_of_workers)
 
         for i in self.tests_list:
             target = i[0]
-            if target.get('options', {}).get('exclusive', False):
+            if target.data.get('exclusive'):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)
@@ -230,7 +231,7 @@ class TestScheduler(object):
             self._join_thread(t)
 
         if not self.exclusive_job_queue.empty():
-            console.info("spawn 1 worker to run exclusive tests")
+            console.info('spawn 1 worker to run exclusive tests')
             test_arg = [self.exclusive_job_queue, False]
             last_t = WorkerThread((num_of_workers), self._process_command, args=test_arg)
             last_t.start()

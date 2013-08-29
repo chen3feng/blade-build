@@ -14,10 +14,7 @@ import os
 import blade
 
 import build_rules
-import console
-import configparse
 
-from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
 
@@ -59,7 +56,8 @@ class JavaTarget(Target):
 
     def _dep_is_jar_to_compile(self, dep):
         """Check the target is java_jar target or not. """
-        target_type = self.targets[dep].get('type')
+        targets = self.blade.get_build_targets()
+        target_type = targets[dep].type
         return ('java_jar' in target_type and 'prebuilt' not in target_type)
 
     def _java_jar_deps_list(self, deps):
@@ -90,7 +88,7 @@ class JavaTarget(Target):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, prebuilt, **kwargs):
+    def __init__(self, name, srcs, deps, prebuilt, **kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -99,14 +97,14 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, **kwargs):
+    def __init__(self, name, srcs, deps, **kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
 
 class JavaTest(JavaBinary):
     """JavaLibrary"""
-    def __init__(name, srcs, deps, **kwargs):
+    def __init__(self, name, srcs, deps, **kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
@@ -155,4 +153,3 @@ def java_test(name,
 build_rules.register_function(java_binary)
 build_rules.register_function(java_library)
 build_rules.register_function(java_test)
-

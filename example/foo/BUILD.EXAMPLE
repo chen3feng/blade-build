@@ -3,5 +3,5 @@ cc_library(
     srcs = 'foo.cpp',
     deps = '//common:common',
     optimize = 'O3',
-    always_optimze = True,
+    always_optimize = True,
 )
