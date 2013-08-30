@@ -193,7 +193,7 @@ from scons_helper import generate_resource_header
         self._add_rule('top_env.Decider("MD5-timestamp")')
         self._add_rule('console.color_enabled=%s' % console.color_enabled)
 
-        if getattr(self.options, 'verbose', False):
+        if not getattr(self.options, 'verbose', False):
             self._add_rule('top_env["SPAWN"] = echospawn')
 
         self._add_rule(
