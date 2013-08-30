@@ -489,7 +489,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
             if hasattr(self.options, 'cache_size') and (self.options.cache_size != -1):
                 cache_size = self.options.cache_size
 
-            self._add_rule('CacheDir("%s")' % self.options.cache_dir)
+            self._add_rule('CacheDir("%s")' % cache_dir)
             self._add_rule('scache_manager = ScacheManager("%s", cache_limit=%d)' % (
                         cache_dir, cache_size))
             self._add_rule('Progress(scache_manager, interval=100)')
