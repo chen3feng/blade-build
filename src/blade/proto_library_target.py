@@ -205,9 +205,9 @@ class ProtoLibrary(CcTarget):
             self.key in self.direct_targets):
             self._proto_java_rules()
 
-        if (getattr(self.options, 'generate_php', False) or
-            self.data.get('generate_php') or
-            self.key in self.direct_targets):
+        if (getattr(self.options, 'generate_php', False) and
+            (self.data.get('generate_php') or
+             self.key in self.direct_targets)):
             self._proto_php_rules()
 
         if (getattr(self.options, 'generate_python', False) or
