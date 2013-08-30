@@ -282,7 +282,7 @@ def _main(blade_path):
                  }[command](options)
         return action
     finally:
-        if (getattr(options, 'scons_only', False) or
+        if (not getattr(options, 'scons_only', False) or
                 command == 'clean' or command == 'query'):
             try:
                 if locked_scons:
