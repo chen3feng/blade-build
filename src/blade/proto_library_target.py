@@ -14,8 +14,6 @@ import blade
 import console
 import configparse
 import build_rules
-import java_jar_target
-import py_targets
 from blade_util import var_to_list
 from cc_targets import CcTarget
 
@@ -171,8 +169,6 @@ class ProtoLibrary(CcTarget):
 
     def _proto_python_rules(self):
         """Generate python files. """
-        py_targets.binary_dep_source_map[self.key] = []
-        py_targets.binary_dep_source_cmd[self.key] = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_python_src = self._proto_gen_python_file(self.path, src)
