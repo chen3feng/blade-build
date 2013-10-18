@@ -1,0 +1,55 @@
+# Configure file for using blade without google-libs
+
+cc_test_config(
+    dynamic_link=False,
+    heap_check='strict',
+    gperftools_libs=['#tcmalloc'],
+    gperftools_debug_libs=['#tcmalloc_debug'],
+    gtest_libs=['#gtest'],
+    gtest_main_libs=['#gtest_main']
+)
+
+"""
+cc_binary_config(
+    link_libs=['#jemalloc']
+)
+"""
+
+distcc_config(
+    enabled=False
+)
+
+link_config(
+    link_on_tmp=False,
+    enable_dccc=False
+)
+
+proto_library_config(
+    protoc='protoc',
+    protobuf_libs=['#protobuf', '#glog', '#gflags', '#pthread'],
+    protobuf_path='thirdparty',
+    protobuf_incs = [],
+    protobuf_php_path='thirdparty/Protobuf-PHP/library',
+    protoc_php_plugin='thirdparty/Protobuf-PHP/protoc-gen-php.php'
+)
+
+thrift_library_config(
+    # The path to thrift compiler.
+    thrift='thrift',
+    # The libraries depended by thrift.
+    thrift_libs=['#thrift', '#pthread'],
+    # The extra include paths to be passed to thrift compiler.
+    thrift_incs=[],
+)
+
+cc_config(
+    extra_incs=[],
+    cppflags = '-DHAVE_CONFIG_H'
+)
+
+"""
+java_config(
+    source_version='1.6',
+    target_version='1.6'
+)
+"""

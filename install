@@ -1,0 +1,45 @@
+#!/bin/bash
+
+blade_dir=$(cd $(dirname $0) && pwd)
+cd $blade_dir
+
+echo -n "Installing vim scripts..."
+mkdir -p ~/.vim/{syntax,ftdetect,indent}
+ln -sf $blade_dir/vim/ftdetect/blade.vim ~/.vim/ftdetect/
+ln -sf $blade_dir/vim/syntax/blade.vim ~/.vim/syntax/
+ln -sf $blade_dir/vim/indent/blade.vim ~/.vim/indent/
+
+if [ ! -f ~/.vimrc ]; then
+    touch ~/.vimrc
+fi
+
+if ! grep "set filetype=blade" ~/.vimrc 2>&1 >/dev/null; then
+    cat >> ~/.vimrc << END
+augroup filetype
+    autocmd! BufRead,BufNewFile BUILD set filetype=blade
+augroup end
+END
+fi
+echo ", Done."
+
+mkdir -p ~/bin
+echo -n "Installing blade auxiliary tools..."
+ln -sf $blade_dir/{genlibbuild,lsnobuild,lsrc,merge-static-libs,bladefunctions} ~/bin
+if [ ! -f ~/.bashrc ] || ! grep "bladefunctions" ~/.bashrc 2>&1 >/dev/null; then
+    echo "test -s ~/bin/bladefunctions && . ~/bin/bladefunctions || true" >> ~/.bashrc
+fi
+echo ", Done."
+
+echo -n "Installing blade..."
+ln -sf $blade_dir/blade ~/bin
+echo ", Done."
+
+if ! echo $PATH | grep "$HOME/bin" &> /dev/null; then
+    echo 'export PATH=~/bin:$PATH' >> ~/.profile
+
+    if echo $SHELL | grep "zsh" &> /dev/null; then
+        echo 'export PATH=~/bin:$PATH' >> ~/.zshrc
+    fi
+fi
+
+echo -e "\033[1;32mAll successful, please log in again or source ~/.profile manually\033[0m"

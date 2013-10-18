@@ -1,0 +1,41 @@
+java_jar(
+    name = 'log4j',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )
+
+java_jar(
+    name = 'netty',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )
+
+java_jar(
+    name = 'protobuf-java',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )
+
+java_jar(
+    name = 'snappy-java',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )
+
+java_jar(
+    name = 'zookeeper',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )
+
+java_jar(
+    name = 'junit',
+    srcs = [],
+    deps = [],
+    prebuilt = 1
+    )

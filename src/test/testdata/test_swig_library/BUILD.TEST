@@ -1,0 +1,25 @@
+cc_library(
+    name='lowercase',
+    srcs=[
+         'plowercase.cpp'
+         ],
+    deps=[
+         '#pthread'
+    ],
+    defs=['LOWER_DEF'],
+    incs=['include'],
+)
+
+swig_library(
+    name='poppy_client',
+    srcs=[
+        'poppy_client.i'
+    ],
+    deps=[
+        ':lowercase'
+    ],
+    warning='yes',
+    java_package='com.soso.poppy.swig',
+    java_lib_packed=1
+)
+

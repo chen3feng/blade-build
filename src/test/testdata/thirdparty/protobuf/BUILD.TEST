@@ -1,0 +1,8 @@
+cc_library(
+    name = 'protobuf',
+)
+
+cc_library(
+    name = 'protoc',
+)
+

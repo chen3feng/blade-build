@@ -1,0 +1,87 @@
+Blade Unified Construction Collection
+=======================================
+
+http://code.tencent.com/projects/blade
+
+Overview
+-----------------------------
+
+Blade is designed to be a distributed unified building
+system. It is powerful and easy to use. It supports
+building mulitiple languages, such as c/c++, Java, protobuf
+and swig etc. It analyzes the target dependency automatically
+and integrates compiling and linking, testing(incremental
+testing and parallel testing), static code inspection functions
+together. It aims to improve the clarity and simplicity of the
+building rules for a project.
+
+Requirements for End Users
+-----------------------------
+
+Blade is designed to have fairly minimal requirements
+to build your projects, but there are some. Currently we
+only support Linux. We will also make our best effort to
+support other platforms (e.g. Solaris, Windows).
+However, since core members of the Blade project have no
+access to these platforms, it may have outstanding issues
+there. If you notice any problems on your platform, please
+notify michaelpeng@tencent.com or phongchen@tencent.com.
+Patches for fixing them are even more welcome!
+
+### Linux requirements ###
+These are the basic requirements to use Blade as a source
+package.
+
+    * GNU Complier Collection (required)
+    * Scons v2.0 or newer (required)
+    * Python v2.6 or newer (required)
+    * Ccache v3.1 or newer (optional)
+
+If you want to make Blade to have the capability to build
+every target it supports, these are the prerequisites.
+
+    * swig v2.0 or newer (required for swig_library)
+    * flex v2.5 or newer (required for lex_yacc)
+    * bison v2.1 or newer (required for lex_yacc)
+
+Requirements for Contributor
+-----------------------------
+
+We welcome patches. If you plan to contribute a patch,
+you need to develop and test your patch from (SVN) checkout.
+You need to have this requirement to develop. Blade is
+written in python.
+
+    * Python version 2.6 or newer (python 3.0 or newer excluded)
+
+Getting the source
+-----------------------------
+
+You can directly check out the source from our Subversion (SVN)
+repository. The SVN checkout requires a few extra steps and some
+extra software packages on your system, but lets you track the
+latest development and make patches much more easily, so we
+highly encourage it.
+
+### Source Package ###
+
+    Blade is released in versioned source packages which is
+    located at this site [1].
+
+    [1] http://code.tencent.com/projects/blade
+
+Setting up the collection
+-----------------------------
+
+End users or developers need to execute the install script to
+intall Blade into current user environment. Please make sure
+that ~/bin is in your PATH environment variable. We establish
+several symbolic links that enable you to execute blade command.
+
+Reference
+-----------------------------
+    [1] http://code.tencent.com/projects/blade
+    [2] user manual is inside the package
+    [3] developer manual is inside the package
+
+Happy testing!

@@ -1,0 +1,59 @@
+#!/bin/bash
+# list srcs as BUILD file format, except test files.
+
+shopt -s nullglob
+
+first=1
+
+function output ()
+{
+    local src_pattern='\w+\.(c|cc|cpp)$'
+    local test_pattern='[-_](unit)?test\.c*'
+    # all sources except tests
+    if [[ $1 =~ $src_pattern && \
+        ! $1 =~ $test_pattern ]]; then
+        if [ $first -eq 0 ]; then
+            echo -en ",\n"
+        else
+            first=0
+        fi
+        echo -n "        '$1'"
+    fi
+}
+
+function handle_dir ()
+{
+    local dir
+    dir=$1
+    if [ ! -z "$dir" ]; then
+        if [ "$dir" = '.' ]; then
+            dir=
+        elif ! [[ "$dir" =~ /$ ]]; then
+            dir=$dir/
+        fi
+    fi
+    for src in $dir*.{c,cc,cpp,cxx}; do
+        output $src
+    done
+}
+
+function handle_entry ()
+{
+    for entry in $@; do
+        if [ -d $entry ]; then
+            handle_dir $entry
+        else
+            output $entry
+        fi
+    done
+}
+
+echo -e '    srcs = ['
+
+if [ $# -eq 0 ]; then
+    handle_entry *.*
+else
+    handle_entry $@
+fi
+
+echo -e '\n    ]'

@@ -1,0 +1,21 @@
+cc_library(
+    name='lowercase',
+    srcs=[
+         'plowercase.cpp'
+         ],
+    deps=[
+          '#pthread',
+          ':static_resource'
+    ],
+    warning='yes',
+    defs=['LOWER_DEF'],
+    incs=['include'],
+)
+
+resource_library(
+    name = 'static_resource',
+    srcs = [
+        'forms.js',
+        'poppy.html'
+    ]
+)

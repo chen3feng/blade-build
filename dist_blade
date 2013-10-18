@@ -1,0 +1,37 @@
+#!/bin/bash
+#make_blade_zip
+# SCRIPT: dist_blade
+# AUTHOR: Michael
+# DATE:   Dec 17 2011
+# REV:    1.1.A (Valid are A, B, D, T and P)
+#               (For Alpha, Beta, Dev, Test and Production)
+#
+# PLATFORM: Linux
+# PURPOSE : This script is used to make blade sources to be a zip ball.
+# REV LIST:
+#        DATE:    Dec 17 2011
+#        BY  :    Michaelpeng
+#        MODIFICATION: Created
+
+
+function make_blade_zip()
+{
+    blade_dir=$(cd $(dirname $0) && pwd)
+    cd $blade_dir
+
+    echo "Blade directory: ${blade_dir}"
+    src_dir='./src/blade'
+    dist_file_path=${blade_dir}'/blade.zip'
+
+    cd $src_dir
+
+    zip blade.zip ./*.py
+    mv ./blade.zip ${dist_file_path}
+
+    cd $blade_dir
+
+    echo 'Done'
+}
+
+make_blade_zip
+

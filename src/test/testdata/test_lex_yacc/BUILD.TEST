@@ -1,0 +1,21 @@
+cc_library(
+    name='lowercase',
+    srcs=[
+         'plowercase.cpp'
+         ],
+    deps=['#pthread'],
+    defs=['LOWER_DEF'],
+    incs=['include'],
+    optimize=['O3'],
+    always_optimize=True,
+)
+
+lex_yacc_library(
+     name = "parser",
+     srcs = [
+         'line_parser.ll',
+         'line_parser.yy'
+     ],
+     deps = [':lowercase'],
+     recursive=1
+)
