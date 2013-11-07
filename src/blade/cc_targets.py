@@ -200,6 +200,13 @@ class CcTarget(Target):
         if incs_list:
             self._write_rule('%s.Append(CPPPATH=%s)' % (env_name, incs_list))
 
+    def _setup_as_flags(self):
+        """_setup_as_flags. """
+        env_name = self._env_name()
+        as_flags = self._get_as_flags()
+        if as_flags:
+            self._write_rule('%s.Append(ASFLAGS=%s)' % (env_name, as_flags))
+
     def _setup_extra_link_flags(self):
         """extra_linkflags. """
         extra_linkflags = self.data.get('extra_linkflags')
@@ -277,6 +284,17 @@ class CcTarget(Target):
                 incs_list.append(new_inc)
 
         return (cpp_flags, incs_list)
+
+    def _get_as_flags(self):
+        """_get_as_flags.
+
+        Return the as flags according to the build architecture.
+
+        """
+        options = self.blade.get_options()
+        as_flags = ["--" + options.m]
+        return as_flags
+
 
     def _dep_is_library(self, dep):
         """_dep_is_library.
@@ -524,6 +542,7 @@ class CcTarget(Target):
         env_name = self._env_name()
 
         self._setup_cc_flags()
+        self._setup_as_flags()
 
         objs = []
         sources = []

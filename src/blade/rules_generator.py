@@ -228,6 +228,9 @@ compile_resource_message = '%sCompiling %s$SOURCE%s as resource file%s' % \
 compile_source_message = '%sCompiling %s$SOURCE%s%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
+assembling_source_message = '%sAssembling %s$SOURCE%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+
 link_program_message = '%sLinking Program %s$TARGET%s%s' % \
     (colors('green'), colors('purple'), colors('green'), colors('end'))
 
@@ -265,6 +268,7 @@ compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
 top_env.Append(
     CXXCOMSTR = compile_source_message,
     CCCOMSTR = compile_source_message,
+    ASCOMSTR = assembling_source_message,
     SHCCCOMSTR = compile_source_message,
     SHCXXCOMSTR = compile_source_message,
     ARCOMSTR = link_library_message,
