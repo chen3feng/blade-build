@@ -337,8 +337,11 @@ top_env.Append(
 
         # Generate thrift library builders.
         thrift_config = configparse.blade_config.get_config('thrift_config')
-        thrift_bin = thrift_config['thrift']
         thrift_incs_str = _incs_list_to_string(thrift_config['thrift_incs'])
+        thrift_bin = thrift_config['thrift']
+        if thrift_bin.startswith('//'):
+            thrift_bin = thrift_bin.replace('//', self.build_dir + '/')
+            thrift_bin = thrift_bin.replace(':', '/')
 
         # Genreates common builders now
         self._add_rule(

@@ -63,6 +63,14 @@ class ThriftLibrary(CcTarget):
 
         thrift_config = configparse.blade_config.get_config('thrift_config')
         thrift_lib = var_to_list(thrift_config['thrift_libs'])
+        thrift_bin = thrift_config['thrift']
+        if thrift_bin.startswith("//"):
+            dkey = self._convert_string_to_target_helper(thrift_bin)
+            if dkey not in self.expanded_deps:
+                self.expanded_deps.append(dkey)
+            if dkey not in self.deps:
+                self.deps.append(dkey)
+
 
         # Hardcode deps rule to thrift libraries.
         self._add_hardcode_library(thrift_lib)
