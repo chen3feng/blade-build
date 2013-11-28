@@ -83,6 +83,7 @@ class BladeConfig(object):
                 'cppflags': [],
                 'cflags': [],
                 'cxxflags': [],
+                'linkflags': [],
                 'c_warnings': [],
                 'cxx_warnings': [],
                 'warnings': [],
