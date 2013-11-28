@@ -751,6 +751,11 @@ class CcBinary(CcTarget):
             self._write_rule(
                 '%s.Append(LINKFLAGS="-rdynamic")' % env_name)
 
+        cc_config = configparse.blade_config.get_config('cc_config')
+        linkflags = cc_config['linkflags']
+        if linkflags:
+            self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), linkflags))
+
         self._setup_extra_link_flags()
 
         self._write_rule('%s = %s.Program("%s", %s, %s)' % (
