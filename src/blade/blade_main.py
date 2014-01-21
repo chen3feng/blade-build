@@ -232,8 +232,9 @@ def _main(blade_path):
         _check_code_style(opened_files)
 
     # Init global blade manager.
-    current_building_path = 'build%s_%s' % (options.m, options.profile)
-
+    build_path_format = configparse.blade_config.configs['global_config']['build_path_format']
+    current_building_path = build_path_format % (options.m, options.profile)
+    
     lock_file_fd = None
     locked_scons = False
     try:

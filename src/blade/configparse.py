@@ -36,6 +36,10 @@ class BladeConfig(object):
         self.current_source_dir = current_source_dir
         self.current_file_name = ''
         self.configs = {
+            'global_config' : {
+                'build_path_format': 'build%s_%s',
+            },
+
             'cc_test_config': {
                 'dynamic_link': False,
                 'heap_check': '',
@@ -170,6 +174,10 @@ def cc_test_config(append=None, **kwargs):
 def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
     blade_config.update_config('cc_binary_config', append, kwargs)
+
+def global_config(append=None, **kwargs):
+    """global_config section. """
+    blade_config.update_config('global_config', append, kwargs)
 
 
 def distcc_config(append=None, **kwargs):
