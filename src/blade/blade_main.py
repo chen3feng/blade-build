@@ -71,6 +71,7 @@ import signal
 import subprocess
 import sys
 import traceback
+from string import Template
 
 import blade
 import console
@@ -232,9 +233,11 @@ def _main(blade_path):
         _check_code_style(opened_files)
 
     # Init global blade manager.
-    build_path_format = configparse.blade_config.configs['global_config']['build_path_format']
-    current_building_path = build_path_format % (options.m, options.profile)
     
+    build_path_format = configparse.blade_config.configs['global_config']['build_path_template']
+    s = Template(build_path_format)
+    current_building_path = s.substitute(m=options.m, profile=options.profile)
+
     lock_file_fd = None
     locked_scons = False
     try:

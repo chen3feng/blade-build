@@ -37,7 +37,7 @@ class BladeConfig(object):
         self.current_file_name = ''
         self.configs = {
             'global_config' : {
-                'build_path_format': 'build%s_%s',
+                'build_path_template': 'build${m}_${profile}',
             },
 
             'cc_test_config': {
