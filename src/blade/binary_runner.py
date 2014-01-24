@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 
+import blade
 import cc_targets
 import console
 
@@ -30,7 +31,7 @@ class BinaryRunner(object):
     def __init__(self, targets, options, target_database):
         """Init method. """
         self.targets = targets
-        self.build_dir = 'build%s_%s' % (options.m, options.profile)
+        self.build_dir = blade.blade.get_build_path()
         self.options = options
         self.run_list = ['cc_binary',
                          'cc_test']
