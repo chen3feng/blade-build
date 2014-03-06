@@ -292,7 +292,8 @@ def _main(blade_path):
                 if locked_scons:
                     os.remove(os.path.join(blade_root_dir, 'SConstruct'))
                     unlock_file(lock_file_fd.fileno())
-                lock_file_fd.close()
+                if lock_file_fd:
+                    lock_file_fd.close()
             except OSError:
                 pass
     return 0
