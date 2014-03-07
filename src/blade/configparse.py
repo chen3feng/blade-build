@@ -165,7 +165,7 @@ class BladeConfig(object):
 def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
-    if heap_check and heap_check not in HEAP_CHECK_VALUES:
+    if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
                 HEAP_CHECK_VALUES)
     blade_config.update_config('cc_test_config', append, kwargs)

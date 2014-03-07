@@ -90,13 +90,13 @@ class SconsPlatform(object):
         p = subprocess.Popen(
             'java -version',
             env=os.environ,
-            stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             shell=True,
             universal_newlines=True)
         (stdout, stderr) = p.communicate()
         if p.returncode == 0:
-            version_line = stderr.splitlines(True)[0]
+            version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
             version = version.replace('"', '')
             include_list.append('/usr/java/jdk%s/include' % version)

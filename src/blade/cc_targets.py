@@ -987,6 +987,7 @@ build_rules.register_function(cc_plugin)
 
 # See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
 HEAP_CHECK_VALUES = set([
+    '',
     'minimal',
     'normal',
     'strict',
