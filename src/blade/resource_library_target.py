@@ -53,7 +53,7 @@ class ResourceLibrary(CcTarget):
                           kwargs)
 
     def _generate_header_files(self):
-        """Whether this target generate header files during building."""
+        """Whether this target generates header files during building."""
         return True
 
     def scons_rules(self):
