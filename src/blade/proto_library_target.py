@@ -80,6 +80,10 @@ class ProtoLibrary(CcTarget):
             if err == 1:
                 console.error_exit('invalid proto file name %s' % src)
 
+    def _generate_header_files(self):
+        """Whether this target generate header files during building."""
+        return True
+
     def _proto_gen_files(self, path, src):
         """_proto_gen_files. """
         proto_name = src[:-6]

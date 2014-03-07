@@ -320,6 +320,10 @@ class Target(object):
                         files_str,
                         srcs_list))
 
+    def _generate_header_files(self):
+        """Whether this target header source files during building."""
+        return False
+
     def _write_rule(self, rule):
         """_write_rule.
 

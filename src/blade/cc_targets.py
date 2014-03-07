@@ -493,6 +493,16 @@ class CcTarget(Target):
                 self._env_name(),
                 var_name,
                 self._objs_name()))
+        for dep_name in self.deps:
+            dep = self.target_database[dep_name]
+            if not dep._generate_header_files():
+                continue
+            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    self._env_name(),
+                    var_name,
+                    dep_var_name))
+
         self._generate_target_explict_dependency(var_name)
 
     def _dynamic_cc_library(self):

@@ -52,6 +52,10 @@ class ResourceLibrary(CcTarget):
                           blade,
                           kwargs)
 
+    def _generate_header_files(self):
+        """Whether this target generate header files during building."""
+        return True
+
     def scons_rules(self):
         """scons_rules.
 
