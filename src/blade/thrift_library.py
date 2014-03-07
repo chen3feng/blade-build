@@ -107,6 +107,10 @@ class ThriftLibrary(CcTarget):
         if error > 0:
             console.error_exit('invalid thrift file names found.')
 
+    def _generate_header_files(self):
+        """Whether this target generates header files during building."""
+        return True
+
     def _thrift_gen_cpp_files(self, path, src):
         """_thrift_gen_cpp_files.
 
