@@ -396,8 +396,8 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         toolchain_dir = os.environ.get('TOOLCHAIN_DIR', '')
         if toolchain_dir and not toolchain_dir.endswith('/'):
             toolchain_dir += '/'
+        cpp_str = toolchain_dir + os.environ.get('CPP', 'cpp')
         cc_str = toolchain_dir + os.environ.get('CC', 'gcc')
-        cpp_str = toolchain_dir + os.environ.get('CPP', cc_str + ' -E')
         cxx_str = toolchain_dir + os.environ.get('CXX', 'g++')
         ld_str = toolchain_dir + os.environ.get('LD', 'g++')
         console.info('CPP=%s' % cpp_str)
