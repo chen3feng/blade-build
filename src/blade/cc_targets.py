@@ -893,6 +893,8 @@ class CcPlugin(CcTarget):
                  export_incs,
                  optimize,
                  prebuilt,
+                 prefix,
+                 suffix,
                  extra_cppflags,
                  extra_linkflags,
                  blade,
@@ -919,6 +921,8 @@ class CcPlugin(CcTarget):
         if prebuilt:
             self.type = 'prebuilt_cc_library'
             self.srcs = []
+        self.prefix = prefix
+        self.suffix = suffix
 
     def scons_rules(self):
         """scons_rules.
@@ -942,6 +946,14 @@ class CcPlugin(CcTarget):
         if whole_link_flags:
             self._write_rule(
                     '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
+
+        if self.prefix is not None:
+            self._write_rule(
+                    '%s.Replace(SHLIBPREFIX="%s")' % (env_name, self.prefix))
+
+        if self.suffix is not None:
+            self._write_rule(
+                    '%s.Replace(SHLIBSUFFIX="%s")' % (env_name, self.suffix))
 
         if self.srcs or self.expanded_deps:
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
@@ -968,6 +980,8 @@ def cc_plugin(name,
               optimize=[],
               prebuilt=False,
               pre_build=False,
+              prefix=None,
+              suffix=None,
               extra_cppflags=[],
               extra_linkflags=[],
               **kwargs):
@@ -981,6 +995,8 @@ def cc_plugin(name,
                       export_incs,
                       optimize,
                       prebuilt or pre_build,
+                      prefix,
+                      suffix,
                       extra_cppflags,
                       extra_linkflags,
                       blade.blade,
