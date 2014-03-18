@@ -167,23 +167,19 @@ class CcTarget(Target):
         return 'objs_%s' % self._generate_variable_name(self.path,
                                                         self.name)
 
-    def _prebuilt_cc_library_build_path(self, path='', name='', dynamic=0):
+    def _prebuilt_cc_library_build_path(self, dynamic=False):
         """Returns the build path of the prebuilt cc library. """
-        if not path:
-            path = self.path
-        if not name:
-            name = self.name
+        path = self.path
+        name = self.name
         suffix = 'a'
         if dynamic:
             suffix = 'so'
         return os.path.join(self.build_path, path, 'lib%s.%s' % (name, suffix))
 
-    def _prebuilt_cc_library_src_path(self, path='', name='', dynamic=0):
+    def _prebuilt_cc_library_src_path(self, dynamic=False):
         """Returns the source path of the prebuilt cc library. """
-        if not path:
-            path = self.path
-        if not name:
-            name = self.name
+        path = self.path
+        name = self.name
         options = self.blade.get_options()
         suffix = 'a'
         if dynamic:
@@ -425,7 +421,7 @@ class CcTarget(Target):
             lib_str = 'LIBS=[%s]' % ','.join(lib_list)
         return lib_str
 
-    def _prebuilt_cc_library(self, dynamic=0):
+    def _prebuilt_cc_library(self, dynamic):
         """prebuilt cc library rules. """
         build_targets = self.blade.get_build_targets()
         prebuilt_target_file = ''
@@ -453,14 +449,8 @@ class CcTarget(Target):
                              var_name,
                              self._prebuilt_cc_library_build_path()))
         if dynamic:
-            prebuilt_target_file = self._prebuilt_cc_library_build_path(
-                                            self.path,
-                                            self.name,
-                                            dynamic=1)
-            prebuilt_src_file = self._prebuilt_cc_library_src_path(
-                                            self.path,
-                                            self.name,
-                                            dynamic=1)
+            prebuilt_target_file = self._prebuilt_cc_library_build_path(dynamic=True)
+            prebuilt_src_file = self._prebuilt_cc_library_src_path(dynamic=True)
             self._write_rule(
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
                      prebuilt_target_file,

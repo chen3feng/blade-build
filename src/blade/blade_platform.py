@@ -131,23 +131,17 @@ class CcFlagsManager(object):
         self.options = options
         self.cpp_str = ''
 
-    def _filter_out_invalid_flags(self, flag_list, flag_type='cpp'):
+    def _filter_out_invalid_flags(self, flag_list, language='none'):
         """filter the unsupported compliation flags. """
         flag_type_list = ['cpp', 'c', 'cxx']
         flag_list_var = var_to_list(flag_list)
         if not flag_type in flag_type_list:
             return flag_list
 
-        option = ''
-        if flag_type == 'c':
-            option = '-xc'
-        elif flag_type == 'cxx':
-            option = '-xc++'
-
         ret_flag_list = []
         for flag in flag_list_var:
-            cmd_str = 'echo "" | %s %s %s >/dev/null 2>&1' % (
-                      self.cpp_str, option, flag)
+            cmd_str = 'echo "" | %s -x%s %s >/dev/null 2>&1' % (
+                      self.cpp_str, language, flag)
             if subprocess.call(cmd_str, shell=True) == 0:
                 ret_flag_list.append(flag)
         return ret_flag_list
@@ -166,7 +160,7 @@ class CcFlagsManager(object):
             flags_except_warning += ['-g', '-DNDEBUG']
         flags_except_warning += [
                 '-D_FILE_OFFSET_BITS=64',
-                '_D__STDC_CONSTANT_MACROS',
+                '-D__STDC_CONSTANT_MACROS',
                 '-D__STDC_FORMAT_MACROS',
                 '-D__STDC_LIMIT_MACROS',
         ]
@@ -186,7 +180,7 @@ class CcFlagsManager(object):
                               '-Wl,--no-whole-archive']
 
         flags_except_warning = self._filter_out_invalid_flags(
-                flags_except_warning, 'cpp')
+                flags_except_warning, 'c++')
 
         return (flags_except_warning, linkflags)
 
@@ -197,8 +191,8 @@ class CcFlagsManager(object):
         cxxflags = cc_config['cxx_warnings']
         cflags = cc_config['c_warnings']
 
-        filtered_cppflags = self._filter_out_invalid_flags(cppflags, 'cpp')
-        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'cxx')
+        filtered_cppflags = self._filter_out_invalid_flags(cppflags, 'c')
+        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
         filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
 
         return (filtered_cppflags, filtered_cxxflags, filtered_cflags)
