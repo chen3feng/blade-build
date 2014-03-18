@@ -131,12 +131,9 @@ class CcFlagsManager(object):
         self.options = options
         self.cpp_str = ''
 
-    def _filter_out_invalid_flags(self, flag_list, language='none'):
+    def _filter_out_invalid_flags(self, flag_list, language='c'):
         """filter the unsupported compliation flags. """
-        flag_type_list = ['cpp', 'c', 'cxx']
         flag_list_var = var_to_list(flag_list)
-        if not flag_type in flag_type_list:
-            return flag_list
 
         ret_flag_list = []
         for flag in flag_list_var:
@@ -180,7 +177,7 @@ class CcFlagsManager(object):
                               '-Wl,--no-whole-archive']
 
         flags_except_warning = self._filter_out_invalid_flags(
-                flags_except_warning, 'c++')
+                flags_except_warning, 'c')
 
         return (flags_except_warning, linkflags)
 
