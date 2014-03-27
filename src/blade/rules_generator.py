@@ -54,7 +54,7 @@ class SconsFileHeaderGenerator(object):
         self.version_cpp_compile_template = string.Template("""
 env_version = Environment(ENV = os.environ)
 env_version.Append(SHCXXCOMSTR = '%s$updateinfo%s' % (colors('cyan'), colors('end')))
-env_version.Append(CPPFLAGS = '-m$m')
+env_version.Append(CPPFLAGS = '$m')
 version_obj = env_version.SharedObject('$filename')
 """)
         self.blade_config = configparse.blade_config
@@ -140,9 +140,11 @@ version_obj = env_version.SharedObject('$filename')
         version_cpp.close()
 
         self._add_rule('VariantDir("%s", ".", duplicate=0)' % self.build_dir)
+
+        # todo - may not work in python 2.4
         self._add_rule(self.version_cpp_compile_template.substitute(
             updateinfo='Updating version information',
-            m=self.options.m,
+            m='-m%s' % self.options.m if self.options.arch == 'x86' else '',
             filename='%s/version.cpp' % self.build_dir))
 
     def generate_imports_functions(self, blade_path):

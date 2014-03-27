@@ -114,6 +114,7 @@ class CmdArguments(object):
             self.options.profile != 'release'):
             console.error_exit('--profile must be "debug" or "release".')
 
+        self.options.arch = self._arch()
         if self.options.m is None:
             self.options.m = self._arch_bits()
         else:
@@ -377,11 +378,19 @@ class CmdArguments(object):
         return arg_parser.parse_known_args()
 
     def _arch_bits(self):
-        """Platform arch."""
-        if 'x86_64' == platform.machine():
+        """Platform arch bit."""
+        if '64bit' == platform.architecture()[0]:
             return '64'
         else:
             return '32'
+
+    def _arch(self):
+        """Platform arch name."""
+        arch = platform.machine()
+        if arch in ['i386', 'i686', 'x86_64']:
+            return 'x86'
+        else:
+            return arch
 
     def get_command(self):
         """Return blade command. """
