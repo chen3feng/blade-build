@@ -483,17 +483,6 @@ class CcTarget(Target):
                 self._env_name(),
                 var_name,
                 self._objs_name()))
-        for dep_name in self.deps:
-            dep = self.target_database[dep_name]
-            if not dep._generate_header_files():
-                continue
-            dep_var_name = self._generate_variable_name(dep.path, dep.name)
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    self._env_name(),
-                    var_name,
-                    dep_var_name))
-
-        self._generate_target_explict_dependency(var_name)
 
     def _dynamic_cc_library(self):
         """_dynamic_cc_library.
@@ -521,7 +510,6 @@ class CcTarget(Target):
                     self._env_name(),
                     var_name,
                     self._objs_name()))
-        self._generate_target_explict_dependency(var_name)
 
     def _cc_objects_rules(self):
         """_cc_objects_rules.
@@ -564,6 +552,17 @@ class CcTarget(Target):
             sources.append(self._target_file_path(path, src))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
+
+        # Generate dependancy to all targets that generate header files
+        for dep_name in self.deps:
+            dep = self.target_database[dep_name]
+            if not dep._generate_header_files():
+                continue
+            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    env_name,
+                    objs_name,
+                    dep_var_name))
         return sources
 
 
@@ -768,7 +767,6 @@ class CcBinary(CcTarget):
             env_name,
             var_name,
             self._objs_name()))
-        self._generate_target_explict_dependency(var_name)
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
@@ -801,8 +799,6 @@ class CcBinary(CcTarget):
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))
-
-        self._generate_target_explict_dependency(var_name)
 
     def scons_rules(self):
         """scons_rules.
@@ -956,8 +952,6 @@ class CcPlugin(CcTarget):
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
                 env_name, var_name, ', '.join(link_all_symbols_lib_list)))
-
-        self._generate_target_explict_dependency(var_name)
 
 
 def cc_plugin(name,

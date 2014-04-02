@@ -60,6 +60,11 @@ class GenRuleTarget(Target):
         return ','.join(['"%s"' % os.path.join(self.build_path, path, src)
             for src in srcs])
 
+    def _generate_header_files(self):
+        """Whether this target generates header files during building."""
+        # Be conservative: Assume gen_rule always generates header files.
+        return True
+
     def scons_rules(self):
         """scons_rules.
 
@@ -93,7 +98,6 @@ class GenRuleTarget(Target):
                 cmd))
 
         self.var_name = var_name
-        self._generate_target_explict_dependency(var_name)
 
         targets = self.blade.get_build_targets()
         dep_var_list = []

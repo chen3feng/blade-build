@@ -182,8 +182,6 @@ class SwigLibrary(CcTarget):
             self._write_rule('%s.Depends(%s, [%s])' % (
                 env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
-        self._generate_target_explict_dependency(var_name)
-
         return dep_files_map
 
     def _swig_library_rules_java(self, dep_files_map):
@@ -336,8 +334,6 @@ class SwigLibrary(CcTarget):
             self._write_rule('%s.Depends(%s, [%s])' % (
                 env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
-        self._generate_target_explict_dependency(var_name)
-
         if build_jar and java_lib_packed:
             lib_dir = os.path.dirname(target_path_java)
             lib_name = os.path.basename(target_path_java)
@@ -429,8 +425,6 @@ class SwigLibrary(CcTarget):
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
                 env_name, var_name, ', '.join(link_all_symbols_lib_list)))
-
-        self._generate_target_explict_dependency(var_name)
 
     def scons_rules(self):
         """scons_rules.
