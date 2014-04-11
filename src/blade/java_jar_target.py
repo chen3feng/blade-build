@@ -125,7 +125,6 @@ class JavaJarTarget(Target):
                                       dep_cmd_var,
                                       explict_files_depended))
 
-        self._generate_target_explict_dependency(self.cmd_var_list)
         self.java_jar_after_dep_source_list = new_dep_source_list
 
     def _java_jar_deps_list(self, deps):
@@ -240,8 +239,6 @@ class JavaJarTarget(Target):
                     env_name,
                     classes_var,
                     dep_java_jar_list))
-
-        self._generate_target_explict_dependency(classes_var)
 
         for cmd in self.cmd_var_list:
             self._write_rule('%s.Depends(%s, %s)' % (

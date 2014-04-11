@@ -59,6 +59,7 @@ class Target(object):
         self._check_deps_in_build_file(deps)
         self._init_target_deps(deps)
         self.scons_rule_buf = []
+        self.__cached_generate_header_files = None
 
     def _clone_env(self):
         """Clone target's environment. """
@@ -291,38 +292,18 @@ class Target(object):
         new_path, new_name = self.__fill_path_name(path, name)
         return os.path.join(self.build_path, new_path, new_name)
 
-    def _generate_target_explict_dependency(self, target_files):
-        """_generate_target_explict_dependency.
-
-        Description
-        -----------
-        Generates dependency relationship that two targets have no dependency
-        but it really needs when user specify it in BUILD file.
-
-        1. gen_rule target should be needed by other targets
-
-        """
-        if not target_files:
-            return
-        env_name = self._env_name()
-        files = var_to_list(target_files)
-        files_str = ','.join(['%s' % f for f in files])
-        targets = self.blade.get_build_targets()
-        import gen_rule_target
-        deps = self.expanded_deps
-        for d in deps:
-            dep_target = targets[d]
-            if dep_target.type == 'gen_rule':
-                srcs_list = dep_target.var_name
-                if srcs_list:
-                    self._write_rule('%s.Depends([%s], [%s])' % (
-                        env_name,
-                        files_str,
-                        srcs_list))
+    def __generate_header_files(self):
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            if dep._generate_header_files():
+                return True
+        return False
 
     def _generate_header_files(self):
         """Whether this target generates header files during building."""
-        return False
+        if self.__cached_generate_header_files is None:
+            self.__cached_generate_header_files = self.__generate_header_files()
+        return self.__cached_generate_header_files
 
     def _write_rule(self, rule):
         """_write_rule.
