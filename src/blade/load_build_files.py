@@ -26,6 +26,7 @@ from blade_util import relative_path
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 import cc_targets
+import cu_targets
 import gen_rule_target
 import java_jar_target
 import java_targets

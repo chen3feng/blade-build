@@ -37,13 +37,14 @@ def _incs_list_to_string(incs):
 class SconsFileHeaderGenerator(object):
     """SconsFileHeaderGenerator class"""
     def __init__(self, options, build_dir, gcc_version,
-                 python_inc, build_environment, svn_roots):
+                 python_inc, cuda_inc, build_environment, svn_roots):
         """Init method. """
         self.rules_buf = []
         self.options = options
         self.build_dir = build_dir
         self.gcc_version = gcc_version
         self.python_inc = python_inc
+        self.cuda_inc = cuda_inc
         self.build_environment = build_environment
         self.ccflags_manager = CcFlagsManager(options)
         self.env_list = ['env_with_error', 'env_no_warning']
@@ -399,10 +400,12 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
         cpp_str = toolchain_dir + os.environ.get('CPP', 'cpp')
         cc_str = toolchain_dir + os.environ.get('CC', 'gcc')
         cxx_str = toolchain_dir + os.environ.get('CXX', 'g++')
+        nvcc_str = toolchain_dir + os.environ.get('NVCC', 'nvcc')
         ld_str = toolchain_dir + os.environ.get('LD', 'g++')
         console.info('CPP=%s' % cpp_str)
         console.info('CC=%s' % cc_str)
         console.info('CXX=%s' % cxx_str)
+        console.info('NVCC=%s' % nvcc_str)
         console.info('LD=%s' % ld_str)
 
         self.ccflags_manager.set_cpp_str(cpp_str)
@@ -441,6 +444,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         cc_env_str = 'CC="%s", CXX="%s"' % (cc_str, cxx_str)
         ld_env_str = 'LINK="%s"' % ld_str
+        nvcc_env_str = 'NVCC="%s"' % nvcc_str
 
         cc_config = configparse.blade_config.get_config('cc_config')
         extra_incs = cc_config['extra_incs']
@@ -450,11 +454,28 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 
         (cppflags_except_warning, linkflags) = self.ccflags_manager.get_flags_except_warning()
 
-        self._add_rule('top_env.Replace(%s, '
+        builder_list = []
+        cuda_incs_str = ' '.join(['-I%s' % inc for inc in self.cuda_inc])
+        self._add_rule(
+            'nvcc_object_bld = Builder(action = MakeAction("%s -ccbin g++ %s '
+            '$NVCCFLAGS -o $TARGET -c $SOURCE", compile_source_message))' % (
+                    nvcc_str, cuda_incs_str))
+        builder_list.append('BUILDERS = {"NvccObject" : nvcc_object_bld}')
+
+        self._add_rule(
+            'nvcc_binary_bld = Builder(action = MakeAction("%s %s '
+            '$NVCCFLAGS -o $TARGET ", link_program_message))' % (
+                    nvcc_str, cuda_incs_str))
+        builder_list.append('BUILDERS = {"NvccBinary" : nvcc_binary_bld}')
+
+        for builder in builder_list:
+            self._add_rule('top_env.Append(%s)' % builder)
+
+        self._add_rule('top_env.Replace(%s, %s, '
                        'CPPPATH=[%s, "%s", "%s"], '
                        'CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s, '
                        '%s, LINKFLAGS=%s)' %
-                       (cc_env_str,
+                       (cc_env_str, nvcc_env_str,
                         extra_incs_str, self.build_dir, self.python_inc,
                         cc_config['cppflags'] + cppflags_except_warning,
                         cc_config['cflags'],
@@ -528,12 +549,14 @@ class SconsRulesGenerator(object):
         options = self.blade.get_options()
         gcc_version = self.scons_platform.get_gcc_version()
         python_inc = self.scons_platform.get_python_include()
+        cuda_inc = self.scons_platform.get_cuda_include()
 
         self.scons_file_header_generator = SconsFileHeaderGenerator(
                 options,
                 build_dir,
                 gcc_version,
                 python_inc,
+                cuda_inc,
                 self.blade.build_environment,
                 self.blade.svn_root_dirs)
         try:

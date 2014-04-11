@@ -27,6 +27,8 @@ class SconsPlatform(object):
         self.python_inc = self._get_python_include()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
+        self.nvcc_version = self._get_nvcc_version('nvcc')
+        self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
     def _get_gcc_version(compiler):
@@ -42,6 +44,23 @@ class SconsPlatform(object):
         if p.returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
+            return version
+        return ''
+
+    @staticmethod
+    def _get_nvcc_version(compiler):
+        """Get the nvcc version. """
+        p = subprocess.Popen(
+            compiler + ' --version',
+            env=os.environ,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            shell=True,
+            universal_newlines=True)
+        (stdout, stderr) = p.communicate()
+        if p.returncode == 0:
+            version_line = stdout.splitlines(True)[-1]
+            version = version_line.split()[5]
             return version
         return ''
 
@@ -104,6 +123,32 @@ class SconsPlatform(object):
             return include_list
         return []
 
+    @staticmethod
+    def _get_cuda_include():
+        include_list = []
+        cuda_path = os.environ.get('CUDA_PATH')
+        if cuda_path:
+            include_list.append('%s/include' % cuda_path)
+            include_list.append('%s/samples/common/inc' % cuda_path)
+            return include_list
+        p = subprocess.Popen(
+            'nvcc --version',
+            env=os.environ,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            shell=True,
+            universal_newlines=True)
+        (stdout, stderr) = p.communicate()
+        if p.returncode == 0:
+            version_line = stdout.splitlines(True)[-1]
+            version = version_line.split()[4]
+            version = version.replace(',', '')
+            if os.path.isdir('/usr/local/cuda-%s' % version):
+                include_list.append('/usr/local/cuda-%s/include' % version)
+                include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
+                return include_list
+        return []
+
     def get_gcc_version(self):
         """Returns gcc version. """
         return self.gcc_version
@@ -119,6 +164,14 @@ class SconsPlatform(object):
     def get_java_include(self):
         """Returns a list of java include. """
         return self.java_inc_list
+
+    def get_nvcc_version(self):
+        """Returns nvcc version. """
+        return self.nvcc_version
+
+    def get_cuda_include(self):
+        """Returns a list of cuda include. """
+        return self.cuda_inc_list
 
 
 class CcFlagsManager(object):

@@ -29,8 +29,8 @@ endif
 syn case match
 
 " Sorted by alphabet order
-syn keyword bladeTarget cc_binary cc_library cc_plugin cc_test cc_benchmark enable_if
-syn keyword bladeTarget gen_rule lex_yacc_library proto_library java_jar
+syn keyword bladeTarget cc_binary cc_library cc_plugin cc_test cc_benchmark cu_binary cu_library
+syn keyword bladeTarget enable_if gen_rule lex_yacc_library proto_library java_jar
 syn keyword resource_library swig_library
 
 " Sorted by alphabet order
