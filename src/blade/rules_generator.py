@@ -347,8 +347,8 @@ top_env.Append(
         # Genreates common builders now
         self._add_rule(
             'thrift_bld = Builder(action = MakeAction("%s '
-            '--gen cpp:include_prefix -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` '
-            '$SOURCE", compile_thrift_cc_message))' % (
+            '--gen cpp:include_prefix,pure_enums -I . %s -I `dirname $SOURCE` '
+            '-out %s/`dirname $SOURCE` $SOURCE", compile_thrift_cc_message))' % (
                     thrift_bin, thrift_incs_str, self.build_dir))
         builder_list.append('BUILDERS = {"Thrift" : thrift_bld}')
 
