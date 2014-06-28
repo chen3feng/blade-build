@@ -25,6 +25,7 @@
     lex_yacc_library  -- build a library from lex/yacc source
     proto_library     -- build a library from Protobuf source
     thrift_library    -- build a library from Thrift source
+    fbthrift_library  -- build a library from Thrift source for Facebook's Thrift Cpp2
     resource_library  -- build resource library and gen header files
     swig_library      -- build swig library for python and java
 
@@ -233,7 +234,7 @@ def _main(blade_path):
         _check_code_style(opened_files)
 
     # Init global blade manager.
-    
+
     build_path_format = configparse.blade_config.configs['global_config']['build_path_template']
     s = Template(build_path_format)
     current_building_path = s.substitute(m=options.m, profile=options.profile)

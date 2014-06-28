@@ -36,6 +36,7 @@ import py_targets
 import resource_library_target
 import swig_library_target
 import thrift_library
+import fbthrift_library
 
 
 class TargetAttributes(object):

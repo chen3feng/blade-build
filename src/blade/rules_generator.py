@@ -220,6 +220,12 @@ compile_thrift_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
 compile_thrift_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
+compile_fbthrift_cpp_message = '%sCompiling %s$SOURCE%s to cpp source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+
+compile_fbthrift_cpp2_message = '%sCompiling %s$SOURCE%s to cpp2 source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+
 compile_resource_header_message = '%sGenerating resource header %s$TARGET%s%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
@@ -365,6 +371,25 @@ top_env.Append(
             '$SOURCE", compile_thrift_python_message))' % (
                     thrift_bin, thrift_incs_str, self.build_dir))
         builder_list.append('BUILDERS = {"ThriftPython" : thrift_python_bld}')
+
+        fbthrift_config = configparse.blade_config.get_config('fbthrift_config')
+        fbthrift1_bin = fbthrift_config['fbthrift1']
+        fbthrift2_bin = fbthrift_config['fbthrift2']
+        fbthrift_incs_str = _incs_list_to_string(fbthrift_config['fbthrift_incs'])
+
+        self._add_rule(
+            'fbthrift1_bld = Builder(action = MakeAction("%s '
+            '--gen cpp:include_prefix,enum_strict -I . %s -I `dirname $SOURCE` '
+            '-o %s/`dirname $SOURCE` $SOURCE", compile_fbthrift_cpp_message))' % (
+                    fbthrift1_bin, fbthrift_incs_str, self.build_dir))
+        builder_list.append('BUILDERS = {"FBThrift1" : fbthrift1_bld}')
+
+        self._add_rule(
+            'fbthrift2_bld = Builder(action = MakeAction("%s '
+            '--gen=cpp2:include_prefix,future -I . %s -I `dirname $SOURCE` '
+            '-o %s/`dirname $SOURCE` $SOURCE", compile_fbthrift_cpp2_message))' % (
+                    fbthrift2_bin, fbthrift_incs_str, self.build_dir))
+        builder_list.append('BUILDERS = {"FBThrift2" : fbthrift2_bld}')
 
         self._add_rule(
                      r"""
