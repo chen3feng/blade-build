@@ -93,10 +93,12 @@ class FBThriftHelper(object):
                  'gen-cpp/%s_reflection.cpp' % self.thrift_name,
                  'gen-cpp/%s_reflection.h' % self.thrift_name,
                  'gen-cpp/%s_types.cpp' % self.thrift_name,
-                 'gen-cpp/%s_types.h' % self.thrift_name]
+                 'gen-cpp/%s_types.h' % self.thrift_name,
+                 'gen-cpp/%s_types.tcc' % self.thrift_name]
         for service in self.services:
             files.append('gen-cpp/%s.cpp' % service)
             files.append('gen-cpp/%s.h' % service)
+            files.append('gen-cpp/%s.tcc' % service)
         return files
 
     def get_generated_cpp2_files(self):
