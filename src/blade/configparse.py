@@ -73,6 +73,13 @@ class BladeConfig(object):
                 'thrift_incs': [],
             },
 
+            'fbthrift_config': {
+                'fbthrift1': 'thrift1',
+                'fbthrift2': 'thrift2',
+                'fbthrift_libs': [],
+                'fbthrift_incs': [],
+            },
+
             'proto_library_config': {
                 'protoc': 'thirdparty/protobuf/bin/protoc',
                 'protobuf_libs': [],
@@ -215,6 +222,9 @@ def thrift_library_config(append=None, **kwargs):
     """thrift config. """
     blade_config.update_config('thrift_config', append, kwargs)
 
+def fbthrift_library_config(append=None, **kwargs):
+    """fbthrift config. """
+    blade_config.update_config('fbthrift_config', append, kwargs)
 
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
