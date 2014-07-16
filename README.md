@@ -38,7 +38,7 @@ cc_library(
     deps = ':common'
 )
 ```
-那么对于使用foo的程序，如果没有直接用到common，那么久只需要列出foo，并不需要列出common。
+那么对于使用foo的程序，如果没有直接用到common，那么就只需要列出foo，并不需要列出common。
 ```python
 cc_binary(
     name = 'my_app',
