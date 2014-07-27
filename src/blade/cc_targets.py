@@ -167,25 +167,42 @@ class CcTarget(Target):
         return 'objs_%s' % self._generate_variable_name(self.path,
                                                         self.name)
 
-    def _prebuilt_cc_library_build_path(self, dynamic=False):
-        """Returns the build path of the prebuilt cc library. """
-        path = self.path
-        name = self.name
-        suffix = 'a'
-        if dynamic:
-            suffix = 'so'
-        return os.path.join(self.build_path, path, 'lib%s.%s' % (name, suffix))
+    def _prebuilt_cc_library_target_path(self, prefer_dynamic=False):
+        """Returns the target path of the prebuilt cc library to be copied to.
+           when both .so and .a exist, return .so, if prefer_dynamic is True,
+           else return the exist one
+        """
+        src_path = self._prebuilt_cc_library_src_path(prefer_dynamic)
+        return os.path.join(self.build_path, self.path, os.path.basename(src_path))
 
-    def _prebuilt_cc_library_src_path(self, dynamic=False):
-        """Returns the source path of the prebuilt cc library. """
-        path = self.path
-        name = self.name
+    def _prebuilt_cc_library_src_path(self, prefer_dynamic=False):
+        """Returns the source path of the prebuilt cc library.
+           when both .so and .a exist, return .so, if prefer_dynamic is True,
+           else return the exist one
+        """
+        a_src_path = self._prebuilt_cc_library_make_src_filename(dynamic=False)
+        so_src_path = self._prebuilt_cc_library_make_src_filename(dynamic=True)
+        libs = (a_src_path, so_src_path) # Ordered by priority
+        if prefer_dynamic:
+            libs = (so_src_path, a_src_path)
+        src_lib = ''
+        for lib in libs:
+            if os.path.exists(lib):
+                src_lib = lib
+                break
+        if not src_lib:
+            console.warning('//%s:%s: Can not find ethier %s or %s' %
+                    ((self.path, self.name) + libs))
+            src_lib = libs[0]
+        return src_lib
+
+    def _prebuilt_cc_library_make_src_filename(self, dynamic=False):
         options = self.blade.get_options()
         suffix = 'a'
         if dynamic:
             suffix = 'so'
-        return os.path.join(path, 'lib%s_%s' % (options.m, options.profile),
-                            'lib%s.%s' % (name, suffix))
+        return os.path.join(self.path, 'lib%s_%s' % (options.m, options.profile),
+                             'lib%s.%s' % (self.name, suffix))
 
     def _setup_cc_flags(self):
         """_setup_cc_flags. """
@@ -440,30 +457,44 @@ class CcTarget(Target):
 
         var_name = self._generate_variable_name(self.path,
                                                 self.name)
+        static_target_path = ''
+        dynamic_target_path = ''
         if not allow_only_dynamic:
+            # Paths for static linking, may be a dynamic library!
+            static_src_path = self._prebuilt_cc_library_src_path()
+            static_target_path = self._prebuilt_cc_library_target_path()
             self._write_rule(
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                             self._prebuilt_cc_library_build_path(),
-                             self._prebuilt_cc_library_src_path()))
+                             static_target_path, static_src_path))
             self._write_rule('%s = top_env.File("%s")' % (
-                             var_name,
-                             self._prebuilt_cc_library_build_path()))
+                var_name, static_target_path))
         if dynamic:
-            prebuilt_target_file = self._prebuilt_cc_library_build_path(dynamic=True)
-            prebuilt_src_file = self._prebuilt_cc_library_src_path(dynamic=True)
-            self._write_rule(
+            dynamic_target_path = self._prebuilt_cc_library_target_path(
+                    prefer_dynamic=True)
+            dynamic_src_path = self._prebuilt_cc_library_src_path(
+                    prefer_dynamic=True)
+            if dynamic_target_path != static_target_path:
+                # Avoid copy twice if has only one kind of library
+                self._write_rule(
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                     prebuilt_target_file,
-                     prebuilt_src_file))
+                     dynamic_target_path,
+                     dynamic_src_path))
             var_name = self._generate_variable_name(self.path,
                                                     self.name,
                                                     'dynamic')
             self._write_rule('%s = top_env.File("%s")' % (
-                        var_name,
-                        prebuilt_target_file))
-            prebuilt_symlink = os.path.realpath(prebuilt_src_file)
-            prebuilt_symlink = os.path.basename(prebuilt_symlink)
-            self.file_and_link = (prebuilt_target_file, prebuilt_symlink)
+                    var_name,
+                    dynamic_target_path))
+
+        # Make a symbol link if either lib is a so
+        so_path = ''
+        if static_target_path.endswith('.so'):
+            so_path = static_target_path
+        elif dynamic_target_path.endswith('.so'):
+            so_path = dynamic_target_path
+        if so_path:
+            prebuilt_symlink = os.path.basename(os.path.realpath(so_path))
+            self.file_and_link = (so_path, prebuilt_symlink)
         else:
             self.file_and_link = None
 
@@ -483,6 +514,15 @@ class CcTarget(Target):
                 self._env_name(),
                 var_name,
                 self._objs_name()))
+        for dep_name in self.deps:
+            dep = self.target_database[dep_name]
+            if not dep._generate_header_files():
+                continue
+            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    self._env_name(),
+                    var_name,
+                    dep_var_name))
 
     def _dynamic_cc_library(self):
         """_dynamic_cc_library.
@@ -616,6 +656,12 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
 
+    def _rpath_link(self, dynamic):
+        lib_path = self._prebuilt_cc_library_target_path(dynamic)
+        if lib_path.endswith('.so'):
+            return os.path.dirname(lib_path)
+        return None
+
     def scons_rules(self):
         """scons_rules.
 
@@ -729,6 +775,26 @@ class CcBinary(CcTarget):
         link_libs = var_to_list(cc_binary_config['extra_libs'])
         self._add_hardcode_library(link_libs)
 
+    def _get_rpath_links(self):
+        """Get rpath_links from dependies"""
+        dynamic_link = self.data['dynamic_link']
+        build_targets = self.blade.get_build_targets()
+        rpath_links = []
+        for lib in self.expanded_deps:
+            if build_targets[lib].type == 'prebuilt_cc_library':
+                path = build_targets[lib]._rpath_link(dynamic_link)
+                if path and path not in rpath_links:
+                    rpath_links.append(path)
+
+        return rpath_links
+
+    def _write_rpath_links(self):
+        rpath_links = self._get_rpath_links()
+        if rpath_links:
+            for rpath_link in rpath_links:
+                self._write_rule('%s.Append(LINKFLAGS="-Wl,--rpath-link=%s")' %
+                        (self._env_name(), rpath_link))
+
     def _cc_binary(self):
         """_cc_binary rules. """
         env_name = self._env_name()
@@ -772,6 +838,7 @@ class CcBinary(CcTarget):
             self._write_rule('%s.Depends(%s, [%s])' % (
                     env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
+        self._write_rpath_links()
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))
@@ -792,6 +859,7 @@ class CcBinary(CcTarget):
             self._target_file_path(),
             self._objs_name(),
             lib_str))
+
         self._write_rule('%s.Depends(%s, %s)' % (
             env_name,
             var_name,
@@ -799,6 +867,8 @@ class CcBinary(CcTarget):
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))
+
+        self._write_rpath_links()
 
     def scons_rules(self):
         """scons_rules.

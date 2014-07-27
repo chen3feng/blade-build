@@ -289,7 +289,6 @@ class CuBinary(CuTarget):
 #            env_name,
 #            var_name,
 #            self._objs_name()))
-#        self._generate_target_explict_dependency(var_name)
 #
 #        if link_all_symbols_lib_list:
 #            self._write_rule('%s.Depends(%s, [%s])' % (

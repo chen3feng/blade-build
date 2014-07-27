@@ -207,6 +207,9 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
             source_dirs.append((source_dir, WARN_IF_FAIL))
             for root, dirs, files in os.walk(source_dir):
                 # Skip over subdirs starting with '.', e.g., .svn.
+                # Note the dirs[:] = slice assignment; we are replacing the
+                # elements in dirs (and not the list referred to by dirs) so
+                # that os.walk() will not process deleted directories.
                 dirs[:] = [d for d in dirs if not d.startswith('.')]
                 for d in dirs:
                     source_dirs.append((os.path.join(root, d), IGNORE_IF_FAIL))

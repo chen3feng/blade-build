@@ -15,6 +15,7 @@
 import os
 import string
 
+import configparse
 import console
 from blade_util import var_to_list
 
@@ -91,13 +92,14 @@ class Target(object):
         It will warn if one file belongs to two different targets.
 
         """
+        config = configparse.blade_config.get_config('global_config')
+        action = config.get('duplicated_source_action')
         allow_dup_src_type_list = ['cc_binary', 'cc_test']
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
-                raise Exception, (
-                    'Invalid source file path: %s. '
-                    'can only be relative path, and must in current directory or '
-                    'subdirectories') % s
+                console.error_exit('%s:%s Invalid source file path: %s. '
+                    'can only be relative path, and must in current directory '
+                    'or subdirectories' % (self.path, self.name, s))
 
             src_key = os.path.normpath('%s/%s' % (self.path, s))
             src_value = '%s %s:%s' % (
@@ -108,9 +110,14 @@ class Target(object):
                 if (value_existed != src_value and
                     not (value_existed.split(': ')[0] in allow_dup_src_type_list and
                          self.type in allow_dup_src_type_list)):
-                    # Just warn here, not raising exception
-                    console.warning('Source file %s belongs to both %s and %s' % (
-                            s, Target.__src_target_map[src_key], src_value))
+                    message = 'Source file %s belongs to both %s and %s' % (
+                              s, value_existed, src_value)
+                    if action == 'error':
+                        console.error_exit(message)
+                    elif action == 'warning':
+                        console.warning(message)
+                    elif action == 'none' or not action:
+                        pass
             Target.__src_target_map[src_key] = src_value
 
     def _add_hardcode_library(self, hardcode_dep_list):

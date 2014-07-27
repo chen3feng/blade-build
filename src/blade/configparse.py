@@ -38,6 +38,7 @@ class BladeConfig(object):
         self.configs = {
             'global_config' : {
                 'build_path_template': 'build${m}_${profile}',
+                'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
             },
 
             'cc_test_config': {
@@ -111,9 +112,8 @@ class BladeConfig(object):
             self.current_file_name = filename
             if os.path.exists(filename):
                 execfile(filename)
-        except:
-            console.error_exit('Parse error in config file %s, exit...\n%s' %
-                       (filename, traceback.format_exc()))
+        except SystemExit:
+            console.error_exit('Parse error in config file %s, exit...' % filename)
 
     def parse(self):
         """load the configuration file and parse. """
@@ -182,8 +182,14 @@ def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
     blade_config.update_config('cc_binary_config', append, kwargs)
 
+__DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+
 def global_config(append=None, **kwargs):
     """global_config section. """
+    duplicated_source_action = kwargs.get('duplicated_source_action')
+    if duplicated_source_action not in __DUPLICATED_SOURCE_ACTION_VALUES:
+        console.error_exit('Invalid global_config.duplicated_source_action '
+                'value, can only be in %s' % __DUPLICATED_SOURCE_ACTION_VALUES)
     blade_config.update_config('global_config', append, kwargs)
 
 

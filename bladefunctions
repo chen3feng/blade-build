@@ -28,7 +28,6 @@ function cddst()
     if root=`_find_project_root`; then
         if ! [[ "$PWD" =~ $_BUILD_DIR_PATTERN ]]; then
             if relpath=$(pwd | sed "s|^$root||"); then
-                echo $relpath
                 cd `readlink $root/blade-bin`/$relpath
                 return $?
             fi

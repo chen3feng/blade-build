@@ -234,7 +234,6 @@ def _main(blade_path):
         _check_code_style(opened_files)
 
     # Init global blade manager.
-
     build_path_format = configparse.blade_config.configs['global_config']['build_path_template']
     s = Template(build_path_format)
     current_building_path = s.substitute(m=options.m, profile=options.profile)
