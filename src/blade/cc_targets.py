@@ -323,7 +323,7 @@ class CcTarget(Target):
         """
         build_targets = self.blade.get_build_targets()
         target_type = build_targets[dep].type
-        return ('library' in target_type or 'plugin' in target_type)
+        return target_type.endswith('_library')
 
     def _export_incs_list(self):
         """_export_incs_list.
@@ -740,7 +740,6 @@ class CcBinary(CcTarget):
                  warning,
                  defs,
                  incs,
-                 export_incs,
                  optimize,
                  dynamic_link,
                  extra_cppflags,
@@ -761,7 +760,7 @@ class CcBinary(CcTarget):
                           warning,
                           defs,
                           incs,
-                          export_incs,
+                          [],
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
@@ -892,7 +891,6 @@ def cc_binary(name,
               warning='yes',
               defs=[],
               incs=[],
-              export_incs=[],
               optimize=[],
               dynamic_link=False,
               extra_cppflags=[],
@@ -906,7 +904,6 @@ def cc_binary(name,
                                 warning,
                                 defs,
                                 incs,
-                                export_incs,
                                 optimize,
                                 dynamic_link,
                                 extra_cppflags,
@@ -946,9 +943,7 @@ class CcPlugin(CcTarget):
                  warning,
                  defs,
                  incs,
-                 export_incs,
                  optimize,
-                 prebuilt,
                  prefix,
                  suffix,
                  extra_cppflags,
@@ -968,15 +963,12 @@ class CcPlugin(CcTarget):
                           warning,
                           defs,
                           incs,
-                          export_incs,
+                          [],
                           optimize,
                           extra_cppflags,
                           extra_linkflags,
                           blade,
                           kwargs)
-        if prebuilt:
-            self.type = 'prebuilt_cc_library'
-            self.srcs = []
         self.prefix = prefix
         self.suffix = suffix
 
@@ -989,9 +981,7 @@ class CcPlugin(CcTarget):
         self._prepare_to_generate_rule()
 
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path,
-                                                self.name,
-                                                'dynamic')
+        var_name = self._generate_variable_name(self.path, self.name)
 
         self._cc_objects_rules()
         self._setup_extra_link_flags()
@@ -1030,10 +1020,7 @@ def cc_plugin(name,
               warning='yes',
               defs=[],
               incs=[],
-              export_incs=[],
               optimize=[],
-              prebuilt=False,
-              pre_build=False,
               prefix=None,
               suffix=None,
               extra_cppflags=[],
@@ -1046,19 +1033,13 @@ def cc_plugin(name,
                       warning,
                       defs,
                       incs,
-                      export_incs,
                       optimize,
-                      prebuilt or pre_build,
                       prefix,
                       suffix,
                       extra_cppflags,
                       extra_linkflags,
                       blade.blade,
                       kwargs)
-    if pre_build:
-        console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.path,
-                                                   target.name))
     blade.blade.register_target(target)
 
 
@@ -1091,7 +1072,6 @@ class CcTest(CcBinary):
                  warning,
                  defs,
                  incs,
-                 export_incs,
                  optimize,
                  dynamic_link,
                  testdata,
@@ -1120,7 +1100,6 @@ class CcTest(CcBinary):
                           warning,
                           defs,
                           incs,
-                          export_incs,
                           optimize,
                           dynamic_link,
                           extra_cppflags,
@@ -1166,7 +1145,6 @@ def cc_test(name,
             warning='yes',
             defs=[],
             incs=[],
-            export_incs=[],
             optimize=[],
             dynamic_link=None,
             testdata=[],
@@ -1185,7 +1163,6 @@ def cc_test(name,
                             warning,
                             defs,
                             incs,
-                            export_incs,
                             optimize,
                             dynamic_link,
                             testdata,
