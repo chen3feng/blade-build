@@ -91,6 +91,8 @@ class LexYaccLibrary(CcTarget):
         self._write_rule('%s.Depends(lex_%s, yacc_%s)' % (env_name,
                                                           var_name, var_name))
 
+        self._setup_cc_flags()
+
         obj_names = []
         obj_name = '%s_object' % self._generate_variable_name(
                     self.path, self.srcs[0] + '.cc')
