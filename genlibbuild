@@ -15,9 +15,10 @@ done
 
 # generate cc_library
 test_src_pattern='_test\.c.*$'
+test_src_pattern2='Test\.c.*$'
 echo -e "cc_library(\n    name = '$libname',\n    srcs = ["
 for src in *.{c,cc,cpp,cxx}; do
-    if ! [[ $src =~ $test_src_pattern ]]; then
+    if ! [[ ($src =~ $test_src_pattern) || ($src =~ $test_src_pattern2) ]]; then
         echo "        '$src',"
     fi
 done
@@ -28,4 +29,7 @@ for src in *_test.{c,cc,cpp,cxx}; do
     echo -e "\ncc_test(\n    name = '${src/.*/}',\n    srcs = ['$src'],\n    deps = [':$libname']\n)\n"
 done
 
+for src in *Test.{c,cc,cpp,cxx}; do
+    echo -e "\ncc_test(\n    name = '${src/.*/}',\n    srcs = ['$src'],\n    deps = [':$libname']\n)\n"
+done
 
