@@ -438,36 +438,37 @@ class CcTarget(Target):
             lib_str = 'LIBS=[%s]' % ','.join(lib_list)
         return lib_str
 
+    def _prebuilt_cc_library_is_depended(self):
+        build_targets = self.blade.get_build_targets()
+        for key in build_targets:
+            target = build_targets[key]
+            if (self.key in target.expanded_deps and
+                target.type != 'prebuilt_cc_library'):
+                return True
+        return False
+
     def _prebuilt_cc_library(self, dynamic):
         """prebuilt cc library rules. """
-        build_targets = self.blade.get_build_targets()
-        prebuilt_target_file = ''
-        prebuilt_src_file = ''
-        prebuilt_symlink = ''
-        allow_only_dynamic = True
-        need_static_lib_targets = ['cc_test',
-                                   'cc_binary',
-                                   'cc_benchmark',
-                                   'cc_plugin',
-                                   'swig_library']
-        for key in build_targets:
-            if (self.key in build_targets[key].expanded_deps and
-                build_targets[key].type in need_static_lib_targets):
-                allow_only_dynamic = False
+        # We allow a prebuilt cc_library doesn't exist if it is not used.
+        # So if this library is not depended by any target, don't generate any
+        # rule to avoid runtime error and also avoid unnecessary runtime cost.
+        if not self._prebuilt_cc_library_is_depended():
+            return
 
         var_name = self._generate_variable_name(self.path,
                                                 self.name)
         static_target_path = ''
         dynamic_target_path = ''
-        if not allow_only_dynamic:
-            # Paths for static linking, may be a dynamic library!
-            static_src_path = self._prebuilt_cc_library_src_path()
-            static_target_path = self._prebuilt_cc_library_target_path()
-            self._write_rule(
-                    'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                             static_target_path, static_src_path))
-            self._write_rule('%s = top_env.File("%s")' % (
-                var_name, static_target_path))
+
+        # Paths for static linking, may be a dynamic library!
+        static_src_path = self._prebuilt_cc_library_src_path()
+        static_target_path = self._prebuilt_cc_library_target_path()
+        self._write_rule(
+                'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
+                         static_target_path, static_src_path))
+        self._write_rule('%s = top_env.File("%s")' % (
+            var_name, static_target_path))
+
         if dynamic:
             dynamic_target_path = self._prebuilt_cc_library_target_path(
                     prefer_dynamic=True)
