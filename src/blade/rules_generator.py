@@ -46,6 +46,7 @@ class SconsFileHeaderGenerator(object):
         self.python_inc = python_inc
         self.cuda_inc = cuda_inc
         self.build_environment = build_environment
+        self.blade_root_dir = build_environment.blade_root_dir
         self.ccflags_manager = CcFlagsManager(options)
         self.env_list = ['env_with_error', 'env_no_warning']
 
@@ -79,11 +80,30 @@ version_obj = env_version.SharedObject('$filename')
         else:
             return building_var
 
+    def _exec_get_version_info(self, cmd, cwd, dirname):
+        lc_all_env = os.environ
+        lc_all_env['LC_ALL'] = 'POSIX'
+        p = subprocess.Popen(cmd,
+                             env=lc_all_env,
+                             cwd=cwd,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=True)
+        std_out, std_err = p.communicate()
+        if p.returncode:
+            console.warning('failed to get version control info in %s' % dirname)
+        else:
+            self.svn_info_map[dirname] = std_out.replace('\n', '\\n\\\n')
+
     def _get_version_info(self):
         """Gets svn root dir info. """
+
+        if os.path.exists("%s/.git" % self.blade_root_dir):
+          cmd = "git log -n 1"
+          self._exec_get_version_info(cmd, None, os.path.dirname(self.blade_root_dir))
+          return
+
         for root_dir in self.svn_roots:
-            lc_all_env = os.environ
-            lc_all_env['LC_ALL'] = 'POSIX'
             root_dir_realpath = os.path.realpath(root_dir)
             svn_working_dir = os.path.dirname(root_dir_realpath)
             svn_dir = os.path.basename(root_dir_realpath)
@@ -91,18 +111,9 @@ version_obj = env_version.SharedObject('$filename')
             if not os.path.exists('%s/.svn' % root_dir):
                 console.warning('"%s" is not under version control' % root_dir)
                 continue
-
-            p = subprocess.Popen('svn info %s' % svn_dir,
-                                 env=lc_all_env,
-                                 cwd='%s' % svn_working_dir,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 shell=True)
-            std_out, std_err = p.communicate()
-            if p.returncode:
-                console.warning('failed to get version control info in %s' % root_dir)
-            else:
-                self.svn_info_map[root_dir] = std_out.replace('\n', '\\n\\\n')
+            cmd = 'svn info %s' % svn_dir
+            cwd = svn_working_dir
+            self._exec_get_version_info(cmd, cwd, root_dir)
 
     def generate_version_file(self):
         """Generate version information files. """
