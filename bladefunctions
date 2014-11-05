@@ -41,9 +41,16 @@ function cdsrc()
 {
     local root
     local relpath
+    local sed_r_option
+
+    if [[ "$OSTYPE" == "linux"* ]]; then
+        sed_r_option='-r'
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        sed_r_option='-E'
+    fi
     if root=`_find_project_root`; then
         if [[ "$PWD" =~ $_BUILD_DIR_PATTERN ]]; then
-            if relpath=$(pwd | sed -r -e "s%^$root/($_BUILD_DIR_PATTERN)%%"); then
+            if relpath=$(pwd | sed $sed_r_option -e "s%^$root/($_BUILD_DIR_PATTERN)%%"); then
                 cd $root/$relpath
                 return $?
             fi
