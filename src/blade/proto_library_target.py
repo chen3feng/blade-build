@@ -233,13 +233,26 @@ class ProtoLibrary(CcTarget):
             self._write_rule(
                 '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
                 'source="%s")' % (obj_name,
-                                    env_name,
-                                    proto_src,
-                                    proto_src))
+                                  env_name,
+                                  proto_src,
+                                  proto_src))
             sources.append(proto_src)
+
+        # *.o depends on *pb.cc
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._write_rule('%s.Depends(%s, %s)' % (
                          env_name, self._objs_name(), sources))
+
+        # pb.cc depends on other proto_library
+        for dep_name in self.deps:
+            dep = self.target_database[dep_name]
+            if not dep._generate_header_files():
+                continue
+            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    self._env_name(),
+                    sources,
+                    dep_var_name))
 
         self._cc_library()
         options = self.blade.get_options()
