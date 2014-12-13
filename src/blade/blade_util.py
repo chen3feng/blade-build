@@ -15,6 +15,7 @@
 
 import fcntl
 import os
+import string
 import subprocess
 
 import console

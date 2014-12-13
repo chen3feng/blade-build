@@ -65,18 +65,16 @@ class ResourceLibrary(CcTarget):
         self._prepare_to_generate_rule()
 
         env_name = self._env_name()
-        (out_dir, res_file_name) = self._resource_library_rules_helper()
-
-        self.data['res_srcs'] = []
+        (out_dir, res_file_index) = self._resource_library_rules_helper()
+        self.data['res_srcs'] = [os.path.join(out_dir, res_file_index + '.c')]
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
-            src_base = os.path.basename(src_path)
-            src_base_name = '%s.c' % self._regular_variable_name(src_base)
-            new_src_path = os.path.join(out_dir, src_base_name)
-            cmd_bld = '%s_bld' % self._regular_variable_name(new_src_path)
+            c_src_name = '%s.c' % self._regular_variable_name(src)
+            c_src_path = os.path.join(out_dir, c_src_name)
+            cmd_bld = '%s_bld' % self._regular_variable_name(c_src_path)
             self._write_rule('%s = %s.ResourceFile("%s", "%s")' % (
-                         cmd_bld, env_name, new_src_path, src_path))
-            self.data['res_srcs'].append(new_src_path)
+                         cmd_bld, env_name, c_src_path, src_path))
+            self.data['res_srcs'].append(c_src_path)
 
         self._resource_library_rules_objects()
 
@@ -123,21 +121,25 @@ class ResourceLibrary(CcTarget):
         """The helper method to generate scons resource rules, mainly applies builder.  """
         env_name = self._env_name()
         out_dir = os.path.join(self.build_path, self.path)
-        res_name = self._regular_variable_name(self.name)
-        res_file_name = res_name
-        res_file_header = res_file_name + '.h'
-        res_header_path = os.path.join(out_dir, res_file_header)
+        res_index_name = self._regular_variable_name(self.name)
+        res_index_source = res_index_name + '.c'
+        res_index_header = res_index_name + '.h'
 
         src_list = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             src_list.append(src_path)
 
-        cmd_bld = '%s_header_cmd_bld' % res_name
-        self._write_rule('%s = %s.ResourceHeader("%s", %s)' % (
-                     cmd_bld, env_name, res_header_path, src_list))
+        cmd_bld = '%s_header_cmd_bld' % res_index_name
+        res_index_header_path = os.path.join(out_dir, res_index_header)
+        res_index_source_path = os.path.join(out_dir, res_index_source)
+        self._write_rule('%s["SOURCE_PATH"] = "%s"' % (env_name, self.path))
+        self._write_rule('%s["TARGET_NAME"] = "%s"' % (env_name, res_index_name))
+        self._write_rule('%s = %s.ResourceIndex(["%s", "%s"], %s)' % (
+                     cmd_bld, env_name, res_index_source_path, res_index_header_path,
+                     src_list))
 
-        return (out_dir, res_file_name)
+        return (out_dir, res_index_name)
 
 
 def resource_library(name,

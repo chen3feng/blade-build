@@ -949,6 +949,7 @@ class CcPlugin(CcTarget):
                  suffix,
                  extra_cppflags,
                  extra_linkflags,
+                 allow_undefined,
                  blade,
                  kwargs):
         """Init method.
@@ -972,6 +973,7 @@ class CcPlugin(CcTarget):
                           kwargs)
         self.prefix = prefix
         self.suffix = suffix
+        self.data['allow_undefined'] = allow_undefined
 
     def scons_rules(self):
         """scons_rules.
@@ -1002,6 +1004,10 @@ class CcPlugin(CcTarget):
             self._write_rule(
                     '%s.Replace(SHLIBSUFFIX="%s")' % (env_name, self.suffix))
 
+        if not self.data['allow_undefined']:
+            self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
+                    % env_name)
+
         if self.srcs or self.expanded_deps:
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
                     var_name,
@@ -1026,6 +1032,7 @@ def cc_plugin(name,
               suffix=None,
               extra_cppflags=[],
               extra_linkflags=[],
+              allow_undefined=True,
               **kwargs):
     """cc_plugin target. """
     target = CcPlugin(name,
@@ -1039,6 +1046,7 @@ def cc_plugin(name,
                       suffix,
                       extra_cppflags,
                       extra_linkflags,
+                      allow_undefined,
                       blade.blade,
                       kwargs)
     blade.blade.register_target(target)

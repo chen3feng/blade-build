@@ -228,9 +228,11 @@ def thrift_library_config(append=None, **kwargs):
     """thrift config. """
     blade_config.update_config('thrift_config', append, kwargs)
 
+
 def fbthrift_library_config(append=None, **kwargs):
     """fbthrift config. """
     blade_config.update_config('fbthrift_config', append, kwargs)
+
 
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """

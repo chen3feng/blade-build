@@ -46,7 +46,6 @@ class SconsFileHeaderGenerator(object):
         self.python_inc = python_inc
         self.cuda_inc = cuda_inc
         self.build_environment = build_environment
-        self.blade_root_dir = build_environment.blade_root_dir
         self.ccflags_manager = CcFlagsManager(options)
         self.env_list = ['env_with_error', 'env_no_warning']
 
@@ -98,9 +97,10 @@ version_obj = env_version.SharedObject('$filename')
     def _get_version_info(self):
         """Gets svn root dir info. """
 
-        if os.path.exists("%s/.git" % self.blade_root_dir):
+        blade_root_dir = self.build_environment.blade_root_dir
+        if os.path.exists("%s/.git" % blade_root_dir):
           cmd = "git log -n 1"
-          self._exec_get_version_info(cmd, None, os.path.dirname(self.blade_root_dir))
+          self._exec_get_version_info(cmd, None, os.path.dirname(blade_root_dir))
           return
 
         for root_dir in self.svn_roots:
@@ -185,7 +185,7 @@ from scons_helper import echospawn
 from scons_helper import error_colorize
 from scons_helper import generate_python_binary
 from scons_helper import generate_resource_file
-from scons_helper import generate_resource_header
+from scons_helper import generate_resource_index
 """)
 
         if getattr(self.options, 'verbose', False):
@@ -237,7 +237,7 @@ compile_fbthrift_cpp_message = '%sCompiling %s$SOURCE%s to cpp source%s' % \
 compile_fbthrift_cpp2_message = '%sCompiling %s$SOURCE%s to cpp2 source%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
-compile_resource_header_message = '%sGenerating resource header %s$TARGET%s%s' % \
+compile_resource_index_message = '%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_resource_message = '%sCompiling %s$SOURCE%s as resource file%s' % \
@@ -410,8 +410,8 @@ blade_jar_bld = Builder(action = MakeAction('jar cf $TARGET -C `dirname $SOURCE`
 yacc_bld = Builder(action = MakeAction('bison $YACCFLAGS -d -o $TARGET $SOURCE',
     compile_yacc_message))
 
-resource_header_bld = Builder(action = MakeAction(generate_resource_header,
-    compile_resource_header_message))
+resource_index_bld = Builder(action = MakeAction(generate_resource_index,
+    compile_resource_index_message))
 
 resource_file_bld = Builder(action = MakeAction(generate_resource_file,
     compile_resource_message))
@@ -421,7 +421,7 @@ python_binary_bld = Builder(action = MakeAction(generate_python_binary,
 """)
         builder_list.append('BUILDERS = {"BladeJar" : blade_jar_bld}')
         builder_list.append('BUILDERS = {"Yacc" : yacc_bld}')
-        builder_list.append('BUILDERS = {"ResourceHeader" : resource_header_bld}')
+        builder_list.append('BUILDERS = {"ResourceIndex" : resource_index_bld}')
         builder_list.append('BUILDERS = {"ResourceFile" : resource_file_bld}')
         builder_list.append('BUILDERS = {"PythonBinary" : python_binary_bld}')
 

@@ -94,7 +94,7 @@ class Target(object):
         """
         config = configparse.blade_config.get_config('global_config')
         action = config.get('duplicated_source_action')
-        allow_dup_src_type_list = ['cc_binary', 'cc_test']
+        allow_dup_src_type_list = ['cc_binary', 'cc_test', 'gen_rule']
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
                 console.error_exit('%s:%s Invalid source file path: %s. '
@@ -108,7 +108,7 @@ class Target(object):
                 value_existed = Target.__src_target_map[src_key]
                   # May insert multiple time in test because of not unloading module
                 if (value_existed != src_value and
-                    not (value_existed.split(': ')[0] in allow_dup_src_type_list and
+                    not (value_existed.split(' ')[0] in allow_dup_src_type_list and
                          self.type in allow_dup_src_type_list)):
                     message = 'Source file %s belongs to both %s and %s' % (
                               s, value_existed, src_value)
