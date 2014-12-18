@@ -127,3 +127,22 @@ def cpu_count():
         return multiprocessing.cpu_count()
     except ImportError:
         return int(os.sysconf('SC_NPROCESSORS_ONLN'))
+
+
+def regular_variable_name(var):
+    """regular_variable_name.
+
+    Parameters
+    -----------
+    var: the variable to be modified
+
+    Returns
+    -----------
+    s: the variable modified
+
+    Description
+    -----------
+    Replace the chars that scons doesn't regconize.
+
+    """
+    return var.translate(string.maketrans(',-/.+*', '______'))

@@ -195,6 +195,7 @@ struct BladeResourceEntry {
         print >>c, '    { "%s", RESOURCE_%s, %s },' % (org_src, var_name, s.get_size())
     print >>c, '};'
     print >>c, 'const unsigned %s_len = %s;' % (res_index_name, len(source))
+    print >>h, '// Resource index'
     print >>h, 'extern const struct BladeResourceEntry %s[];' % res_index_name
     print >>h, 'extern const unsigned %s_len;' % res_index_name
     print >>h, '\n#ifdef __cplusplus\n} // extern "C"\n#endif\n'
@@ -217,10 +218,11 @@ def generate_resource_file(target, source, env):
             shell=True,
             universal_newlines=True)
     std_out, std_err = p.communicate()
-    if p.returncode:
-        console.info(std_out)
-        console.info(std_err)
-        console.error_exit('failed to generate resource file')
+    if p.returncode or std_err:
+        error = 'failed to generate resource file'
+        if std_err:
+            error = error + ': ' + std_err
+        console.error_exit(error)
     return p.returncode
 
 

@@ -68,6 +68,7 @@ class ResourceLibrary(CcTarget):
         (out_dir, res_file_index) = self._resource_library_rules_helper()
         self.data['res_srcs'] = [os.path.join(out_dir, res_file_index + '.c')]
         for src in self.srcs:
+            src = os.path.normpath(src)
             src_path = os.path.join(self.path, src)
             c_src_name = '%s.c' % self._regular_variable_name(src)
             c_src_path = os.path.join(out_dir, c_src_name)

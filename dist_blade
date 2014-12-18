@@ -1,6 +1,5 @@
 #!/bin/bash
-#make_blade_zip
-# SCRIPT: dist_blade
+# make_blade_zip
 # AUTHOR: Michael
 # DATE:   Dec 17 2011
 # REV:    1.1.A (Valid are A, B, D, T and P)

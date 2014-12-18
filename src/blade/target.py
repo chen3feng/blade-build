@@ -77,8 +77,8 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.warning('//%s:%s: unrecognized options %s' % (
-                    self.path, self.name, kwargs))
+            console.error_exit('//%s:%s: unrecognized options %s' % (
+                self.path, self.name, kwargs))
 
     # Keep the relationship of all src -> target.
     # Used by build rules to ensure that a source file occurres in
