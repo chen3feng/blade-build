@@ -31,6 +31,7 @@ class CuTarget(CcTarget):
                  target_type,
                  srcs,
                  deps,
+                 warning,
                  defs,
                  incs,
                  extra_cppflags,
@@ -52,7 +53,7 @@ class CuTarget(CcTarget):
                           target_type,
                           srcs,
                           deps,
-                          'yes',
+                          warning,
                           defs,
                           incs,
                           [], [],
@@ -60,9 +61,6 @@ class CuTarget(CcTarget):
                           extra_linkflags,
                           blade,
                           kwargs)
-
-        self.data['extra_cppflags'] = extra_cppflags
-        self.data['extra_linkflags'] = extra_linkflags
 
     def _get_cu_flags(self):
         """_get_cu_flags.
@@ -142,6 +140,7 @@ class CuLibrary(CuTarget):
                  name,
                  srcs,
                  deps,
+                 warning,
                  defs,
                  incs,
                  extra_cppflags,
@@ -154,6 +153,7 @@ class CuLibrary(CuTarget):
                           type,
                           srcs,
                           deps,
+                          warning,
                           defs,
                           incs,
                           extra_cppflags,
@@ -174,6 +174,7 @@ class CuLibrary(CuTarget):
 def cu_library(name,
                srcs=[],
                deps=[],
+               warning='yes',
                defs=[],
                incs=[],
                extra_cppflags=[],
@@ -182,6 +183,7 @@ def cu_library(name,
     target = CuLibrary(name,
                        srcs,
                        deps,
+                       warning,
                        defs,
                        incs,
                        extra_cppflags,
@@ -204,6 +206,7 @@ class CuBinary(CuTarget):
                  name,
                  srcs,
                  deps,
+                 warning,
                  defs,
                  incs,
                  extra_cppflags,
@@ -216,6 +219,7 @@ class CuBinary(CuTarget):
                           type,
                           srcs,
                           deps,
+                          warning,
                           defs,
                           incs,
                           extra_cppflags,
@@ -268,32 +272,6 @@ class CuBinary(CuTarget):
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))
 
-#    def _cu_binary(self):
-#        """_cu_binary rules. """
-#        env_name = self._env_name()
-#        var_name = self._generate_variable_name(self.path, self.name)
-#
-#        platform = self.blade.get_scons_platform()
-#
-#        (link_all_symbols_lib_list,
-#         lib_str,
-#         whole_link_flags) = self._get_static_deps_lib_list()
-#        print "%s, %s, %s" % (env_name, self._objs_name(), self._target_file_path())
-#
-#        self._write_rule('%s = %s.NvccBinary(NVCCFLAGS="%s", target="%s"' % (
-#            var_name,
-#            env_name,
-#            '',
-#            self._target_file_path()))
-#        self._write_rule('%s.Depends(%s, %s)' % (
-#            env_name,
-#            var_name,
-#            self._objs_name()))
-#
-#        if link_all_symbols_lib_list:
-#            self._write_rule('%s.Depends(%s, [%s])' % (
-#                    env_name, var_name, ', '.join(link_all_symbols_lib_list)))
-
     def scons_rules(self):
         """scons_rules.
 
@@ -307,6 +285,7 @@ class CuBinary(CuTarget):
 def cu_binary(name,
               srcs=[],
               deps=[],
+              warning='yes',
               defs=[],
               incs=[],
               extra_cppflags=[],
@@ -315,6 +294,7 @@ def cu_binary(name,
     target = CuBinary(name,
                       srcs,
                       deps,
+                      warning,
                       defs,
                       incs,
                       extra_cppflags,
