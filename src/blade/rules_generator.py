@@ -90,9 +90,10 @@ version_obj = env_version.SharedObject('$filename')
                              shell=True)
         std_out, std_err = p.communicate()
         if p.returncode:
-            console.warning('failed to get version control info in %s' % dirname)
+            return False
         else:
             self.svn_info_map[dirname] = std_out.replace('\n', '\\n\\\n')
+            return True
 
     def _get_version_info(self):
         """Gets svn root dir info. """
@@ -108,12 +109,13 @@ version_obj = env_version.SharedObject('$filename')
             svn_working_dir = os.path.dirname(root_dir_realpath)
             svn_dir = os.path.basename(root_dir_realpath)
 
-            if not os.path.exists('%s/.svn' % root_dir):
-                console.warning('"%s" is not under version control' % root_dir)
-                continue
             cmd = 'svn info %s' % svn_dir
             cwd = svn_working_dir
-            self._exec_get_version_info(cmd, cwd, root_dir)
+            if not self._exec_get_version_info(cmd, cwd, root_dir):
+                cmd = 'git ls-remote --get-url && git branch | grep "*" && git log -n 1'
+                cwd = root_dir_realpath
+                if  not self._exec_get_version_info(cmd, cwd, root_dir):
+                    console.warning('failed to get version control info in %s' % root_dir)
 
     def generate_version_file(self):
         """Generate version information files. """
