@@ -41,7 +41,7 @@ option_verbose = False
 linking_tmp_dir = ''
 
 
-def generate_python_binary(target, source, env):
+def generate_python_egg(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):
         console.warning('setup.py not existed to generate target %s, '
@@ -147,7 +147,7 @@ setup(
     if p.returncode:
         console.info(std_out)
         console.info(std_err)
-        console.error_exit('failed to generate python binary in %s' % target_dir)
+        console.error_exit('failed to generate python egg in %s' % target_dir)
         return p.returncode
     return 0
 

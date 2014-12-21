@@ -12,8 +12,8 @@
 
 
 import os
-import blade
 
+import blade
 import build_rules
 import console
 
@@ -21,7 +21,7 @@ from blade_util import var_to_list
 from target import Target
 
 
-class PythonBinaryTarget(Target):
+class PythonEggTarget(Target):
     """A python egg target subclass.
 
     This class is derived from SconsTarget and generates python egg package.
@@ -40,14 +40,14 @@ class PythonBinaryTarget(Target):
 
         Target.__init__(self,
                         name,
-                        'py_binary',
+                        'py_egg',
                         srcs,
                         deps,
                         blade,
                         kwargs)
 
         if prebuilt:
-            self.type = 'prebuilt_py_binary'
+            self.type = 'prebuilt_py_egg'
 
     def scons_rules(self):
         """scons_rules.
@@ -59,7 +59,7 @@ class PythonBinaryTarget(Target):
         """
         self._clone_env()
 
-        if self.type == 'prebuilt_py_binary':
+        if self.type == 'prebuilt_py_egg':
             return
 
         env_name = self._env_name()
@@ -77,15 +77,14 @@ class PythonBinaryTarget(Target):
         binary_files.append(init_file)
 
         dep_var_list = []
-        self.targets = self.blade.get_build_targets()
+        targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
             binary_files += targets[dep].data.get('python_sources', [])
             dep_var_list += targets[dep].data.get('python_vars', [])
 
         target_egg_file = '%s.egg' % self._target_file_path()
-        python_binary_var = '%s_python_binary_var' % (
-            self._generate_variable_name(self.path, self.name))
-        self._write_rule('%s = %s.PythonBinary(["%s"], %s)' % (
+        python_binary_var = '%s_python_binary_var' % (self._var_name())
+        self._write_rule('%s = %s.PythonEgg(["%s"], %s)' % (
                           python_binary_var,
                           env_name,
                           target_egg_file,
@@ -95,19 +94,98 @@ class PythonBinaryTarget(Target):
                              env_name, python_binary_var, var))
 
 
-def py_binary(name,
-              srcs=[],
-              deps=[],
-              prebuilt=False,
-              **kwargs):
-    """python binary - aka, python egg. """
-    target = PythonBinaryTarget(name,
-                                srcs,
-                                deps,
-                                prebuilt,
-                                blade.blade,
-                                kwargs)
+def py_egg(name,
+           srcs=[],
+           deps=[],
+           prebuilt=False,
+           **kwargs):
+    """python egg. """
+    target = PythonEggTarget(name,
+                             srcs,
+                             deps,
+                             prebuilt,
+                             blade.blade,
+                             kwargs)
     blade.blade.register_target(target)
 
 
-build_rules.register_function(py_binary)
+build_rules.register_function(py_egg)
+
+
+class PythonLibraryTarget(Target):
+    """A python library target subclass.
+
+    This class is derived from SconsTarget and generates python library package.
+
+    """
+    def __init__(self,
+                 name,
+                 srcs,
+                 deps,
+                 prebuilt,
+                 blade,
+                 kwargs):
+        """Init method. """
+        srcs = var_to_list(srcs)
+        deps = var_to_list(deps)
+
+        Target.__init__(self,
+                        name,
+                        'py_library',
+                        srcs,
+                        deps,
+                        blade,
+                        kwargs)
+
+        if prebuilt:
+            self.type = 'prebuilt_py_library'
+
+    def scons_rules(self):
+        """scons_rules.
+
+        Description
+        -----------
+        It outputs the scons rules according to user options.
+
+        """
+        self._clone_env()
+
+        if self.type == 'prebuilt_py_library':
+            return
+
+        env_name = self._env_name()
+
+        dep_var_list = []
+        self.targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            binary_files += targets[dep].data.get('python_sources', [])
+            dep_var_list += targets[dep].data.get('python_vars', [])
+
+        target_library_file = '%s.library' % self._target_file_path()
+        python_binary_var = '%s_python_binary_var' % (self._var_name())
+        self._write_rule('%s = %s.PythonLibrary(["%s"], %s)' % (
+                          python_binary_var,
+                          env_name,
+                          target_library_file,
+                          binary_files))
+        for var in dep_var_list:
+            self._write_rule('%s.Depends(%s, %s)' % (
+                             env_name, python_binary_var, var))
+
+
+def py_library(name,
+               srcs=[],
+               deps=[],
+               prebuilt=False,
+               **kwargs):
+    """python library. """
+    target = PythonLibraryTarget(name,
+                                 srcs,
+                                 deps,
+                                 prebuilt,
+                                 blade.blade,
+                                 kwargs)
+    blade.blade.register_target(target)
+
+
+build_rules.register_function(py_library)

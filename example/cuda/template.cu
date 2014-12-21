@@ -25,8 +25,8 @@
 #include <cuda_runtime.h>
 
 // includes, project
-#include <helper_cuda.h>
-#include <helper_functions.h> // helper functions for SDK examples
+#include "helper_cuda.h"
+#include "helper_functions.h" // helper functions for SDK examples
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
@@ -161,7 +161,7 @@ runTest(int argc, char **argv)
     // not mandatory in normal operation, it is good practice.  It is also
     // needed to ensure correct operation when the application is being
     // profiled. Calling cudaDeviceReset causes all profile data to be
-    // flushed before the application exits   
+    // flushed before the application exits
     cudaDeviceReset();
     exit(bTestResult ? EXIT_SUCCESS : EXIT_FAILURE);
 }

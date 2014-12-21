@@ -5,8 +5,8 @@ cc_test_config(
     heap_check='strict',
     gperftools_libs=['#tcmalloc'],
     gperftools_debug_libs=['#tcmalloc_debug'],
-    gtest_libs=['#gtest'],
-    gtest_main_libs=['#gtest_main']
+    gtest_libs=['//thirdparty/gtest:gtest'],
+    gtest_main_libs=['//thirdparty/gtest:gtest_main']
 )
 
 """
@@ -26,7 +26,11 @@ link_config(
 
 proto_library_config(
     protoc='protoc',
-    protobuf_libs=['#protobuf', '#glog', '#gflags', '#pthread'],
+    protobuf_libs=[
+        '#protobuf',
+        '//thirdparty/glog:glog',
+        '//thirdparty/gflags:gflags',
+        '#pthread'],
     protobuf_path='thirdparty',
     protobuf_incs = [],
     protobuf_php_path='thirdparty/Protobuf-PHP/library',

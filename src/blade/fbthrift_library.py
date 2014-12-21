@@ -109,22 +109,22 @@ class FBThriftLibrary(CcTarget):
         """Whether this target generates header files during building."""
         return True
 
-    def _thrift_gen_cpp_files(self, path, src):
+    def _thrift_gen_cpp_files(self, src):
         """_thrift_gen_cpp_files.
 
         Get the c++ files generated from thrift file.
 
         """
-        return [self._target_file_path(path, f)
+        return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp_files()]
 
-    def _thrift_gen_cpp2_files(self, path, src):
+    def _thrift_gen_cpp2_files(self, src):
         """_thrift_gen_cpp2_files.
 
         Get the c++ files generated from thrift file.
 
         """
-        return [self._target_file_path(path, f)
+        return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp2_files()]
 
     def scons_rules(self):
@@ -146,10 +146,10 @@ class FBThriftLibrary(CcTarget):
         sources = []
         obj_names = []
         for src in self.srcs:
-            thrift_cpp_files = self._thrift_gen_cpp_files(self.path, src)
+            thrift_cpp_files = self._thrift_gen_cpp_files(src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
 
-            thrift_cpp2_files = self._thrift_gen_cpp2_files(self.path, src)
+            thrift_cpp2_files = self._thrift_gen_cpp2_files(src)
             thrift_cpp2_src_files = [f for f in thrift_cpp2_files if f.endswith('.cpp')]
 
             self._write_rule('%s.FBThrift1(%s, "%s")' % (
@@ -163,8 +163,7 @@ class FBThriftLibrary(CcTarget):
                     os.path.join(self.path, src)))
 
             for thrift_cpp_src in thrift_cpp_src_files:
-                obj_name = '%s_object' % self._generate_variable_name(
-                    self.path, thrift_cpp_src)
+                obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
                     '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
@@ -175,8 +174,7 @@ class FBThriftLibrary(CcTarget):
                 sources.append(thrift_cpp_src)
 
             for thrift_cpp_src in thrift_cpp2_src_files:
-                obj_name = '%s_object' % self._generate_variable_name(
-                    self.path, thrift_cpp_src)
+                obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
                     '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '

@@ -61,6 +61,7 @@ def _expand_deps(targets):
         target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
+        # TODO(phongchen): Refactor with abstract method expand_deps
         if target.data.get('dynamic_link'):
             for dep in target.expanded_deps:
                 targets[dep].data['build_dynamic'] = True
@@ -68,7 +69,7 @@ def _expand_deps(targets):
             for dep in target.expanded_deps:
                 if targets[dep].type == 'proto_library':
                     targets[dep].data['generate_php'] = True
-        elif target.type == 'py_binary':
+        elif target.type == 'py_binary' or target.type == 'py_library' or target.type == 'py_egg':
             for dep in target.expanded_deps:
                 targets[dep].data['generate_python'] = True
         elif target.type == 'java_jar':

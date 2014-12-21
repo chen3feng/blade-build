@@ -164,8 +164,7 @@ class CcTarget(Target):
         Concatinating target path, target name to be objs var and returns.
 
         """
-        return 'objs_%s' % self._generate_variable_name(self.path,
-                                                        self.name)
+        return 'objs_%s' % self._generate_variable_name(self.path, self.name)
 
     def _prebuilt_cc_library_target_path(self, prefer_dynamic=False):
         """Returns the target path of the prebuilt cc library to be copied to.
@@ -410,9 +409,7 @@ class CcTarget(Target):
             if lib[0] == '#':
                 lib_name = "'%s'" % lib[1]
             else:
-                lib_name = self._generate_variable_name(lib[0],
-                                                        lib[1],
-                                                        'dynamic')
+                lib_name = self._generate_variable_name(lib[0], lib[1], 'dynamic')
 
             lib_list.append(lib_name)
 
@@ -455,8 +452,7 @@ class CcTarget(Target):
         if not self._prebuilt_cc_library_is_depended():
             return
 
-        var_name = self._generate_variable_name(self.path,
-                                                self.name)
+        var_name = self._var_name()
         static_target_path = ''
         dynamic_target_path = ''
 
@@ -480,9 +476,7 @@ class CcTarget(Target):
                     'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
                      dynamic_target_path,
                      dynamic_src_path))
-            var_name = self._generate_variable_name(self.path,
-                                                    self.name,
-                                                    'dynamic')
+            var_name = self._var_name('dynamic')
             self._write_rule('%s = top_env.File("%s")' % (
                     var_name,
                     dynamic_target_path))
@@ -505,7 +499,7 @@ class CcTarget(Target):
         It will output the cc_library rule into the buffer.
 
         """
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
         self._write_rule('%s = %s.Library("%s", %s)' % (
                 var_name,
                 self._env_name(),
@@ -519,7 +513,7 @@ class CcTarget(Target):
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
                 continue
-            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            dep_var_name = dep._var_name()
             self._write_rule('%s.Depends(%s, %s)' % (
                     self._env_name(),
                     var_name,
@@ -533,9 +527,7 @@ class CcTarget(Target):
         """
         self._setup_extra_link_flags()
 
-        var_name = self._generate_variable_name(self.path,
-                                                self.name,
-                                                'dynamic')
+        var_name = self._var_name('dynamic')
 
         lib_str = self._get_dynamic_deps_lib_list()
         if self.srcs or self.expanded_deps:
@@ -566,7 +558,6 @@ class CcTarget(Target):
         if not self.type in target_types:
             console.error_exit('logic error, type %s err in object rule' % self.type)
 
-        path = self.path
         objs_name = self._objs_name()
         env_name = self._env_name()
 
@@ -574,23 +565,15 @@ class CcTarget(Target):
         self._setup_as_flags()
 
         objs = []
-        sources = []
         for src in self.srcs:
-            obj = '%s_%s_object' % (self._generate_variable_name(path, src),
+            obj = '%s_%s_object' % (self._var_name_of(src),
                                     self._regular_variable_name(self.name))
-            target_path = os.path.join(
-                    self.build_path, path, '%s.objs' % self.name, src)
+            target_path = self._target_file_path('%s.objs' % src)
+            source_path = self._source_file_path(src)
             self._write_rule(
                     '%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
-                    ', source = "%s")' % (obj,
-                                          env_name,
-                                          target_path,
-                                          self._target_file_path(path, src)))
-            self._write_rule('%s.Depends(%s, "%s")' % (
-                             env_name,
-                             obj,
-                             self._target_file_path(path, src)))
-            sources.append(self._target_file_path(path, src))
+                    ', source = "%s")' % (obj, env_name, target_path, source_path))
+            self._write_rule('%s.Depends(%s, "%s")' % (env_name, obj, source_path))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -599,12 +582,11 @@ class CcTarget(Target):
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
                 continue
-            dep_var_name = self._generate_variable_name(dep.path, dep.name)
+            dep_var_name = dep._var_name()
             self._write_rule('%s.Depends(%s, %s)' % (
                     env_name,
                     objs_name,
                     dep_var_name))
-        return sources
 
 
 class CcLibrary(CcTarget):
@@ -798,7 +780,7 @@ class CcBinary(CcTarget):
     def _cc_binary(self):
         """_cc_binary rules. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
 
         platform = self.blade.get_scons_platform()
         if platform.get_gcc_version() > '4.5':
@@ -846,7 +828,7 @@ class CcBinary(CcTarget):
     def _dynamic_cc_binary(self):
         """_dynamic_cc_binary. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
         if self.data.get('export_dynamic'):
             self._write_rule('%s.Append(LINKFLAGS="-rdynamic")' % env_name)
 
@@ -984,7 +966,7 @@ class CcPlugin(CcTarget):
         self._prepare_to_generate_rule()
 
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
 
         self._cc_objects_rules()
         self._setup_extra_link_flags()

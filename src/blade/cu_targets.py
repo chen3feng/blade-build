@@ -101,7 +101,7 @@ class CuTarget(CcTarget):
     def _cu_objects_rules(self):
         """_cu_library rules. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
         flags_from_option, incs_list = self._get_cu_flags()
         incs_string = " -I".join(incs_list)
         flags_string = " ".join(flags_from_option)
@@ -119,12 +119,12 @@ class CuTarget(CcTarget):
                                         incs_string,
                                         flags_string,
                                         target_path,
-                                        self._target_file_path(self.path, src)))
+                                        self._target_file_path(src)))
             self._write_rule('%s.Depends(%s, "%s")' % (
                              env_name,
                              obj,
-                             self._target_file_path(self.path, src)))
-            sources.append(self._target_file_path(self.path, src))
+                             self._target_file_path(src)))
+            sources.append(self._target_file_path(src))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(objs)))
         return sources
@@ -230,7 +230,7 @@ class CuBinary(CuTarget):
     def _cc_binary(self):
         """_cc_binary rules. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
 
         platform = self.blade.get_scons_platform()
 

@@ -28,7 +28,7 @@ for f in `find . -name BUILD.EXAMPLE`; do
 done
 cp BLADE_ROOT.EXAMPLE BLADE_ROOT
 
-../blade test ... --verbose
+../blade test ...
 exit_code=$?
 
 cleanup

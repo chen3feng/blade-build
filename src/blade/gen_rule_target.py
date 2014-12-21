@@ -77,7 +77,7 @@ class GenRuleTarget(Target):
 
         # Build java source according to its option
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
 
         srcs_str = ''
         if not self.srcs:
@@ -99,6 +99,7 @@ class GenRuleTarget(Target):
 
         self.var_name = var_name
 
+        # TODO(phongchen): add Target.get_all_vars
         targets = self.blade.get_build_targets()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
@@ -107,17 +108,14 @@ class GenRuleTarget(Target):
             if dep_target.type in dep_skip_list:
                 continue
             elif dep_target.type == 'swig_library':
-                dep_var_name = self._generate_variable_name(
-                        dep_target.path, dep_target.name, 'dynamic_py')
+                dep_var_name = dep_target._var_name('dynamic_py')
                 dep_var_list.append(dep_var_name)
-                dep_var_name = self._generate_variable_name(
-                        dep_target.path, dep_target.name, 'dynamic_java')
+                dep_var_name = dep_target._var_name('dynamic_java')
                 dep_var_list.append(dep_var_name)
             elif dep_target.type == 'java_jar':
                 dep_var_list += dep_target.data.get('java_jars', [])
             else:
-                dep_var_name = self._generate_variable_name(
-                        dep_target.path, dep_target.name)
+                dep_var_name = dep_target._var_name()
                 dep_var_list.append(dep_var_name)
 
         for dep_var_name in dep_var_list:

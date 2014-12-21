@@ -111,35 +111,38 @@ class ThriftLibrary(CcTarget):
         """Whether this target generates header files during building."""
         return True
 
-    def _thrift_gen_cpp_files(self, path, src):
+    def _thrift_gen_cpp_files(self, src):
         """_thrift_gen_cpp_files.
 
         Get the c++ files generated from thrift file.
 
         """
+        files = []
+        for f in self.thrift_helpers[src].get_generated_cpp_files():
+            files.append(self._target_file_path(f))
+        return files
 
-        return [self._target_file_path(path, f)
-                for f in self.thrift_helpers[src].get_generated_cpp_files()]
-
-    def _thrift_gen_py_files(self, path, src):
+    def _thrift_gen_py_files(self, src):
         """_thrift_gen_py_files.
 
         Get the python files generated from thrift file.
 
         """
+        files = []
+        for f in self.thrift_helpers[src].get_generated_py_files():
+            files.append(self._target_file_path(f))
+        return files
 
-        return [self._target_file_path(path, f)
-                for f in self.thrift_helpers[src].get_generated_py_files()]
-
-    def _thrift_gen_java_files(self, path, src):
+    def _thrift_gen_java_files(self, src):
         """_thrift_gen_java_files.
 
         Get the java files generated from thrift file.
 
         """
-
-        return [self._target_file_path(path, f)
-                for f in self.thrift_helpers[src].get_generated_java_files()]
+        files = []
+        for f in self.thrift_helpers[src].get_generated_java_files():
+            files.append(self._target_file_path(f))
+        return files
 
     def _thrift_java_rules(self):
         """_thrift_java_rules.
@@ -173,9 +176,8 @@ class ThriftLibrary(CcTarget):
         """
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
-            thrift_py_src_files = self._thrift_gen_py_files(self.path, src)
-            py_cmd_var = '%s_python' % self._generate_variable_name(
-                    self.path, self.name)
+            thrift_py_src_files = self._thrift_gen_py_files(src)
+            py_cmd_var = self._var_name('python')
             self._write_rule('%s = %s.ThriftPython(%s, "%s")' % (
                     py_cmd_var,
                     self._env_name(),
@@ -213,7 +215,7 @@ class ThriftLibrary(CcTarget):
         sources = []
         obj_names = []
         for src in self.srcs:
-            thrift_cpp_files = self._thrift_gen_cpp_files(self.path, src)
+            thrift_cpp_files = self._thrift_gen_cpp_files(src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
 
             self._write_rule('%s.Thrift(%s, "%s")' % (
@@ -222,8 +224,7 @@ class ThriftLibrary(CcTarget):
                     os.path.join(self.path, src)))
 
             for thrift_cpp_src in thrift_cpp_src_files:
-                obj_name = '%s_object' % self._generate_variable_name(
-                    self.path, thrift_cpp_src)
+                obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
                 obj_names.append(obj_name)
                 self._write_rule(
                     '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '

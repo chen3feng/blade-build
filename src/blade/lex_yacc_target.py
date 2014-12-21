@@ -59,10 +59,8 @@ class LexYaccLibrary(CcTarget):
         self._prepare_to_generate_rule()
 
         env_name = self._env_name()
-
-        var_name = self._generate_variable_name(self.path, self.name)
-        lex_source_file = self._target_file_path(self.path,
-                                                 self.srcs[0])
+        var_name = self._var_name()
+        lex_source_file = self._target_file_path(self.srcs[0])
         lex_cc_file = '%s.cc' % lex_source_file
 
         lex_flags = []
@@ -94,8 +92,7 @@ class LexYaccLibrary(CcTarget):
         self._setup_cc_flags()
 
         obj_names = []
-        obj_name = '%s_object' % self._generate_variable_name(
-                    self.path, self.srcs[0] + '.cc')
+        obj_name = '%s_object' % self._var_name_of(self.srcs[0] + '.cc')
         obj_names.append(obj_name)
         self._write_rule('%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
                          'source="%s")' % (obj_name,
@@ -103,8 +100,7 @@ class LexYaccLibrary(CcTarget):
                                              lex_cc_file,
                                              lex_cc_file))
 
-        obj_name = '%s_object' % self._generate_variable_name(
-                    self.path, self.srcs[1] + '.cc')
+        obj_name = '%s_object' % self._var_name_of(self.srcs[1] + '.cc')
         obj_names.append(obj_name)
         self._write_rule('%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
                          'source="%s")' % (obj_name,

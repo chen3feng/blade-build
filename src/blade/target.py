@@ -230,7 +230,7 @@ class Target(object):
         """
         return var.translate(string.maketrans(',-/.+*', '______'))
 
-    def _generate_variable_name(self, path='', name='', suffix=''):
+    def _generate_variable_name(self, path, name, suffix=''):
         """_generate_variable_name.
 
         Parameters
@@ -267,18 +267,42 @@ class Target(object):
         Concatinating target path, target name to be environment var and returns.
 
         """
-        return 'env_%s' % self._generate_variable_name(self.path,
-                                                       self.name)
+        return 'env_%s' % self._generate_variable_name(self.path, self.name)
 
-    def __fill_path_name(self, path, name):
-        """fill the path and name to make them not None. """
-        if not path:
-            path = self.path
-        if not name:
-            name = self.name
-        return path, name
+    def _var_name(self, suffix=''):
+        """_var_name.
 
-    def _target_file_path(self, path='', name=''):
+        Returns
+        -----------
+        The scons variable name
+
+        """
+        return self._generate_variable_name(self.path, self.name, suffix)
+
+    def _var_name_of(self, name, suffix=''):
+        """_var_name_of.
+
+        Returns
+        -----------
+        The scons variable name
+
+        """
+        return self._generate_variable_name(self.path, name, suffix)
+    def _source_file_path(self, name):
+        """_source_file_path.
+
+        Parameters
+        -----------
+        name: the source's name
+
+        Returns
+        -----------
+        The source's full path in full blade dir tree
+
+        """
+        return os.path.normpath(os.path.join(self.path, name))
+
+    def _target_file_path(self, name=''):
         """_target_file_path.
 
         Parameters
@@ -296,8 +320,9 @@ class Target(object):
         file path.
 
         """
-        new_path, new_name = self.__fill_path_name(path, name)
-        return os.path.join(self.build_path, new_path, new_name)
+        if not name:
+            name = self.name
+        return os.path.join(self.build_path, self.path, name)
 
     def __generate_header_files(self):
         for dkey in self.deps:

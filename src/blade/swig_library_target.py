@@ -94,9 +94,7 @@ class SwigLibrary(CcTarget):
         """_swig_library_rules_py.
         """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path,
-                                                self.name,
-                                                'dynamic_py')
+        var_name = self._var_name('dynamic_py')
 
         obj_names_py = []
         flag_list = []
@@ -132,8 +130,7 @@ class SwigLibrary(CcTarget):
                     os.path.join(self.path, src)))
             self.data['python_sources'].append(
                     self._pyswig_gen_python_file(self.path, src))
-            obj_name_py = '%s_object' % self._generate_variable_name(
-                self.path, src, 'python')
+            obj_name_py = '%s_object' % self._var_name_of(src, 'python')
             obj_names_py.append(obj_name_py)
 
             self._write_rule(
@@ -187,9 +184,7 @@ class SwigLibrary(CcTarget):
     def _swig_library_rules_java(self, dep_files_map):
         """_swig_library_rules_java. """
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path,
-                                                self.name,
-                                                'dynamic_java')
+        var_name = self._var_name('dynamic_java')
 
         # Append -fno-strict-aliasing flag to cxxflags and cppflags
         self._write_rule('%s.Append(CPPFLAGS = ["-fno-strict-aliasing"])' % env_name)
@@ -254,9 +249,7 @@ class SwigLibrary(CcTarget):
                                         builder_alias,
                                         dep_files_map):
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path,
-                                                self.name,
-                                                'dynamic_java')
+        var_name = self._var_name('dynamic_java')
         depend_outdir = dep_outdir
         build_jar = java_build_jar
         java_lib_packed = lib_packed
@@ -289,8 +282,7 @@ class SwigLibrary(CcTarget):
                         out_dir_dummy))
             self.data['java_dep_var'].append(javaswig_var)
 
-            obj_name_java = '%s_object' % self._generate_variable_name(
-                    self.path, src, 'dynamic_java')
+            obj_name_java = '%s_object' % self._var_name_of(src, 'dynamic_java')
             obj_names_java.append(obj_name_java)
 
             self._write_rule(
@@ -343,7 +335,7 @@ class SwigLibrary(CcTarget):
 
     def _swig_library_rules_php(self, dep_files_map):
         env_name = self._env_name()
-        var_name = self._generate_variable_name(self.path, self.name)
+        var_name = self._var_name()
         obj_names_php = []
 
         flag_list = []
@@ -380,8 +372,7 @@ class SwigLibrary(CcTarget):
                     builder_alias,
                     phpswig_src,
                     os.path.join(self.path, src)))
-            obj_name_php = '%s_object' % self._generate_variable_name(
-                self.path, src, 'php')
+            obj_name_php = '%s_object' % self._var_name_of(src, 'php')
             obj_names_php.append(obj_name_php)
 
             self._write_rule(
@@ -406,7 +397,7 @@ class SwigLibrary(CcTarget):
 
         self._write_rule('%s = [%s]' % (objs_name_php, ','.join(obj_names_php)))
 
-        target_path = self._target_file_path(self.path, self.name)
+        target_path = self._target_file_path()
         target_lib = os.path.basename(target_path)
         target_path_php = os.path.join(os.path.dirname(target_path), target_lib)
 
