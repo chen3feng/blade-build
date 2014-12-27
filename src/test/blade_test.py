@@ -39,6 +39,7 @@ class TargetTest(unittest.TestCase):
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
         options = {
+                'arch': 'x86',
                 'm': '64',
                 'profile': 'release',
                 'generate_dynamic': True,

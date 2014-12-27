@@ -119,11 +119,13 @@ class TestJavaJar(blade_test.TargetTest):
         self.assertTrue('poppy_client_javawrap.cxx' in com_swig_java)
 
         self.assertTrue('-fno-omit-frame-pointer' in com_swig_python_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_python_cxx)
+        self.assertTrue('-mcx16 -g' in com_swig_python_cxx)
+        self.assertTrue('-pipe' in com_swig_python_cxx)
         self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_python_cxx)
 
         self.assertTrue('-fno-omit-frame-pointer' in com_swig_java_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_java_cxx)
+        self.assertTrue('-mcx16 -g' in com_swig_java_cxx)
+        self.assertTrue('-pipe' in com_swig_java_cxx)
         self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_java_cxx)
 
         self.assertTrue(java_com_line)

@@ -305,9 +305,10 @@ class CcTarget(Target):
 
         """
         options = self.blade.get_options()
-        as_flags = ["--" + options.m]
-        return as_flags
-
+        if options.arch == 'x86':
+            return ["--" + options.m]
+        else:
+            return []
 
     def _dep_is_library(self, dep):
         """_dep_is_library.
