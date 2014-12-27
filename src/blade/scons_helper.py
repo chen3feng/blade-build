@@ -152,6 +152,14 @@ setup(
     return 0
 
 
+def generate_python_library(target, source, env):
+    console.warning('generate_python_library %s -> %s' % ([str(src) for src in source], str(target[0])))
+
+
+def generate_python_binary(target, source, env):
+    console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
+
+
 def generate_resource_index(target, source, env):
     res_source_path = str(target[0])
     res_header_path = str(target[1])

@@ -186,6 +186,8 @@ from scons_helper import create_fast_link_builders
 from scons_helper import echospawn
 from scons_helper import error_colorize
 from scons_helper import generate_python_egg
+from scons_helper import generate_python_library
+from scons_helper import generate_python_binary
 from scons_helper import generate_resource_file
 from scons_helper import generate_resource_index
 """)
@@ -267,6 +269,12 @@ compile_java_jar_message = '%sGenerating java jar %s$TARGET%s%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_python_egg_message = '%sGenerating python egg %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+
+compile_python_library_message = '%sGenerating python library %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+
+compile_python_binary_message = '%sGenerating python binary %s$TARGET%s%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
 
 compile_yacc_message = '%sYacc %s$SOURCE%s to $TARGET%s' % \
@@ -420,12 +428,21 @@ resource_file_bld = Builder(action = MakeAction(generate_resource_file,
 
 python_egg_bld = Builder(action = MakeAction(generate_python_egg,
     compile_python_egg_message))
+
+python_library_bld = Builder(action = MakeAction(generate_python_library,
+    compile_python_library_message))
+
+python_binary_bld = Builder(action = MakeAction(generate_python_binary,
+    compile_python_binary_message))
+
 """)
         builder_list.append('BUILDERS = {"BladeJar" : blade_jar_bld}')
         builder_list.append('BUILDERS = {"Yacc" : yacc_bld}')
         builder_list.append('BUILDERS = {"ResourceIndex" : resource_index_bld}')
         builder_list.append('BUILDERS = {"ResourceFile" : resource_file_bld}')
         builder_list.append('BUILDERS = {"PythonEgg" : python_egg_bld}')
+        builder_list.append('BUILDERS = {"PythonLibrary" : python_library_bld}')
+        builder_list.append('BUILDERS = {"PythonBinary" : python_binary_bld}')
 
         for builder in builder_list:
             self._add_rule('top_env.Append(%s)' % builder)

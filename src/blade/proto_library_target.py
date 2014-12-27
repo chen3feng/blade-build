@@ -176,7 +176,7 @@ class ProtoLibrary(CcTarget):
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_python_src = self._proto_gen_python_file(src)
-            py_cmd_var = '%s_python' % self._var_name('python')
+            py_cmd_var = self._var_name_of(src, 'python')
             self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
                     py_cmd_var,
                     self._env_name(),
