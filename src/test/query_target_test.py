@@ -29,7 +29,7 @@ class TestQuery(blade_test.TargetTest):
         result_map = self.blade.query_helper(self.query_targets)
         all_targets = self.blade.get_build_targets()
         query_key = ('test_query', 'poppy')
-        self.assertTrue(query_key in result_map.keys())
+        self.assertIn(query_key, result_map.keys())
         deps = result_map.get(query_key, [])[0]
         depended_by = result_map.get(query_key, [])[1]
 
@@ -38,13 +38,13 @@ class TestQuery(blade_test.TargetTest):
 
         dep_one_key = ('test_query', 'rpc_meta_info_proto')
         dep_second_key = ('test_query', 'static_resource')
-        self.assertTrue(dep_one_key in deps)
-        self.assertTrue(dep_second_key in deps)
+        self.assertIn(dep_one_key, deps)
+        self.assertIn(dep_second_key, deps)
 
         depended_one_key = ('test_query', 'poppy_client')
         depended_second_key = ('test_query', 'poppy_mock')
-        self.assertTrue(depended_one_key in depended_by)
-        self.assertTrue(depended_second_key in depended_by)
+        self.assertIn(depended_one_key, depended_by)
+        self.assertIn(depended_second_key, depended_by)
 
 
 if __name__ == '__main__':

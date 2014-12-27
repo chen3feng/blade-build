@@ -30,9 +30,9 @@ class TestGenRule(blade_test.TargetTest):
         gen_rule = (self.target_path, 'process_media')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(cc_library_upper in self.all_targets.keys())
-        self.assertTrue(gen_rule in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(cc_library_upper, self.all_targets.keys())
+        self.assertIn(gen_rule, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -60,8 +60,8 @@ class TestGenRule(blade_test.TargetTest):
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)
 
-        self.assertTrue(gen_rule_index > lower_so_index)
-        self.assertTrue(upper_so_index, gen_rule_index)
+        self.assertGreater(gen_rule_index, lower_so_index)
+        self.assertGreater(upper_so_index, gen_rule_index)
 
 
 if __name__ == '__main__':

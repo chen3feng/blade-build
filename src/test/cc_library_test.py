@@ -33,9 +33,9 @@ class TestCcLibrary(blade_test.TargetTest):
         cc_library_upper = (self.target_path, 'uppercase')
         cc_library_string = (self.target_path, 'blade_string')
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(cc_library_upper in self.all_targets.keys())
-        self.assertTrue(cc_library_string in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(cc_library_upper, self.all_targets.keys())
+        self.assertIn(cc_library_string, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -56,15 +56,15 @@ class TestCcLibrary(blade_test.TargetTest):
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)
         self.assertNoWarningCxxFlags(com_string_line)
-        self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS=64' in com_string_line)
-        self.assertTrue('-DBLADE_STR_DEF -O2' in com_string_line)
-        self.assertTrue('-w' in com_string_line)
-        self.assertTrue('-m64' in com_string_line)
+        self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS=64', com_string_line)
+        self.assertIn('-DBLADE_STR_DEF -O2', com_string_line)
+        self.assertIn('-w', com_string_line)
+        self.assertIn('-m64', com_string_line)
 
         self.assertDynamicLinkFlags(string_depends_libs)
 
-        self.assertTrue('liblowercase.so' in string_depends_libs)
-        self.assertTrue('libuppercase.so' in string_depends_libs)
+        self.assertIn('liblowercase.so', string_depends_libs)
+        self.assertIn('libuppercase.so', string_depends_libs)
 
 
 if __name__ == '__main__':

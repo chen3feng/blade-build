@@ -336,6 +336,7 @@ class Blade(object):
             if skip_test_targets and target.type == 'cc_test':
                 continue
             scons_object.scons_rules()
+            rules_buf.append('\n')
             rules_buf += scons_object.get_rules()
         return rules_buf
 

@@ -28,9 +28,9 @@ class TestProtoLibrary(blade_test.TargetTest):
         proto_library_meta = (self.target_path, 'rpc_option_proto')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(proto_library_option in self.all_targets.keys())
-        self.assertTrue(proto_library_meta in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(proto_library_option, self.all_targets.keys())
+        self.assertIn(proto_library_meta, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -80,11 +80,11 @@ class TestProtoLibrary(blade_test.TargetTest):
         self.assertNoWarningCxxFlags(com_proto_meta_cc)
 
         self.assertTrue(meta_depends_libs)
-        self.assertTrue('librpc_option_proto.so' in meta_depends_libs)
+        self.assertIn('librpc_option_proto.so', meta_depends_libs)
 
-        self.assertTrue('liblowercase.so' in lower_depends_libs)
-        self.assertTrue('librpc_meta_info_proto.so' in lower_depends_libs)
-        self.assertTrue('librpc_option_proto.so' in lower_depends_libs)
+        self.assertIn('liblowercase.so', lower_depends_libs)
+        self.assertIn('librpc_meta_info_proto.so', lower_depends_libs)
+        self.assertIn('librpc_option_proto.so', lower_depends_libs)
 
 
 if __name__ == '__main__':

@@ -49,33 +49,33 @@ class TestDepsAnalyzing(blade_test.TargetTest):
         java_jar_prebuild = (os.path.join(self.target_path, 'java', 'lib'),
                              'protobuf-java')
 
-        self.assertTrue(cc_library_poppy in self.all_targets.keys())
+        self.assertIn(cc_library_poppy, self.all_targets.keys())
 
         poppy_deps = self.all_targets[cc_library_poppy].expanded_deps
         poppy_mock_deps = self.all_targets[cc_lib_poppy_mock].expanded_deps
         self.assertTrue(poppy_deps)
         self.assertTrue(poppy_mock_deps)
 
-        self.assertTrue(proto_lib_option in poppy_deps)
-        self.assertTrue(proto_lib_meta in poppy_deps)
-        self.assertTrue(static_resource in poppy_deps)
-        self.assertTrue(system_lib in poppy_deps)
-        self.assertTrue(cc_library_poppy in poppy_mock_deps)
-        self.assertTrue(proto_lib_meta in poppy_mock_deps)
+        self.assertIn(proto_lib_option, poppy_deps)
+        self.assertIn(proto_lib_meta, poppy_deps)
+        self.assertIn(static_resource, poppy_deps)
+        self.assertIn(system_lib, poppy_deps)
+        self.assertIn(cc_library_poppy, poppy_mock_deps)
+        self.assertIn(proto_lib_meta, poppy_mock_deps)
 
         poppy_client_deps = self.all_targets[swig_library].expanded_deps
         self.assertTrue(poppy_client_deps)
-        self.assertTrue(cc_library_poppy in poppy_client_deps)
-        self.assertTrue(cc_lib_prebuild  in poppy_client_deps)
+        self.assertIn(cc_library_poppy, poppy_client_deps)
+        self.assertIn(cc_lib_prebuild , poppy_client_deps)
 
-        self.assertTrue(java_jar in self.all_targets)
+        self.assertIn(java_jar, self.all_targets)
         java_jar_deps = self.all_targets[java_jar].expanded_deps
         self.assertTrue(java_jar_deps)
 
-        self.assertTrue(proto_lib_option in java_jar_deps)
-        self.assertTrue(proto_lib_meta in java_jar_deps)
-        self.assertTrue(java_jar_prebuild in java_jar_deps)
-        self.assertTrue(cc_library_poppy not in java_jar_deps)
+        self.assertIn(proto_lib_option, java_jar_deps)
+        self.assertIn(proto_lib_meta, java_jar_deps)
+        self.assertIn(java_jar_prebuild, java_jar_deps)
+        self.assertNotIn(cc_library_poppy, java_jar_deps)
 
 
 if __name__ == '__main__':

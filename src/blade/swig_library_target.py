@@ -136,9 +136,9 @@ class SwigLibrary(CcTarget):
             self._write_rule(
                 '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
                 'source="%s")' % (obj_name_py,
-                                    env_name,
-                                    pyswig_src,
-                                    pyswig_src))
+                                  env_name,
+                                  pyswig_src,
+                                  pyswig_src))
             self.data['python_vars'].append(obj_name_py)
             dep_files = self._swig_extract_dependency_files(
                                 os.path.join(self.path, src))

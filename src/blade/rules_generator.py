@@ -203,10 +203,13 @@ from scons_helper import generate_resource_index
         """generates top level environment. """
         self._add_rule('os.environ["LC_ALL"] = "C"')
         self._add_rule('top_env = Environment(ENV=os.environ)')
+        # Optimization options, see http://www.scons.org/wiki/GoFastButton
+        self._add_rule('top_env.Decider("MD5-timestamp")')
+        self._add_rule('top_env.SetOption("implicit_cache", 1)')
+        self._add_rule('top_env.SetOption("max_drift", 1)')
 
     def generate_compliation_verbose(self):
         """Generates color and verbose message. """
-        self._add_rule('top_env.Decider("MD5-timestamp")')
         self._add_rule('console.color_enabled=%s' % console.color_enabled)
 
         if not getattr(self.options, 'verbose', False):

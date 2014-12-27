@@ -505,10 +505,6 @@ class CcTarget(Target):
                 self._env_name(),
                 self._target_file_path(),
                 self._objs_name()))
-        self._write_rule('%s.Depends(%s, %s)' % (
-                self._env_name(),
-                var_name,
-                self._objs_name()))
         for dep_name in self.deps:
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
@@ -539,10 +535,6 @@ class CcTarget(Target):
                     self._target_file_path(),
                     self._objs_name(),
                     lib_str))
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    self._env_name(),
-                    var_name,
-                    self._objs_name()))
 
     def _cc_objects_rules(self):
         """_cc_objects_rules.
@@ -568,12 +560,11 @@ class CcTarget(Target):
         for src in self.srcs:
             obj = '%s_%s_object' % (self._var_name_of(src),
                                     self._regular_variable_name(self.name))
-            target_path = self._target_file_path('%s.objs' % src)
+            target_path = self._target_file_path() + '.objs/%s' % src
             source_path = self._source_file_path(src)
             self._write_rule(
                     '%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
                     ', source = "%s")' % (obj, env_name, target_path, source_path))
-            self._write_rule('%s.Depends(%s, "%s")' % (env_name, obj, source_path))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -811,10 +802,6 @@ class CcBinary(CcTarget):
             self._target_file_path(),
             self._objs_name(),
             lib_str))
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name,
-            var_name,
-            self._objs_name()))
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
@@ -842,10 +829,6 @@ class CcBinary(CcTarget):
             self._objs_name(),
             lib_str))
 
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name,
-            var_name,
-            self._objs_name()))
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))
