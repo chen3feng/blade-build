@@ -30,9 +30,9 @@ class TestCcTest(blade_test.TargetTest):
         cc_library_string = (self.target_path, 'string_test_main')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(cc_library_upper in self.all_targets.keys())
-        self.assertTrue(cc_library_string in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(cc_library_upper, self.all_targets.keys())
+        self.assertIn(cc_library_string, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -55,8 +55,8 @@ class TestCcTest(blade_test.TargetTest):
         self.assertCxxFlags(com_string_line)
 
         self.assertLinkFlags(string_main_depends_libs)
-        self.assertTrue('liblowercase.a' in string_main_depends_libs)
-        self.assertTrue('libuppercase.a' in string_main_depends_libs)
+        self.assertIn('liblowercase.a', string_main_depends_libs)
+        self.assertIn('libuppercase.a', string_main_depends_libs)
 
 
 if __name__ == '__main__':

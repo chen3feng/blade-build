@@ -98,19 +98,28 @@ class TargetTest(unittest.TestCase):
             print >>sys.stderr, 'Failed while dry running:\n%s' % sys.exc_info()
         return False
 
+    if getattr(unittest.TestCase, 'assertIn', None) is None:
+        # New asserts since 2.7, add for old version
+        def assertIn(self, a, b):
+            self.assertTrue(a in b, '"%s" in "%s"' % (a, b))
+        def assertNotIn(self, a, b):
+            self.assertTrue(a not in b, '"%s" not in "%s"' % (a, b))
+        def assertGreater(self, a, b):
+            self.assertTrue(a > b, '"%s" > "%s"' % (a, b))
+
     def _assertCxxCommonFlags(self, cmdline):
-        self.assertTrue('-g' in cmdline)
-        self.assertTrue('-fPIC' in cmdline, cmdline)
+        self.assertIn('-g', cmdline)
+        self.assertIn('-fPIC', cmdline)
 
     def _assertCxxWarningFlags(self, cmdline):
-        self.assertTrue('-Wall -Wextra' in cmdline)
-        self.assertTrue('-Wframe-larger-than=69632' in cmdline)
-        self.assertTrue('-Werror=overloaded-virtual' in cmdline)
+        self.assertIn('-Wall -Wextra', cmdline)
+        self.assertIn('-Wframe-larger-than=69632', cmdline)
+        self.assertIn('-Werror=overloaded-virtual', cmdline)
 
     def _assertCxxNoWarningFlags(self, cmdline):
-        self.assertTrue('-Wall -Wextra' not in cmdline)
-        self.assertTrue('-Wframe-larger-than=69632' not in cmdline)
-        self.assertTrue('-Werror=overloaded-virtual' not in cmdline)
+        self.assertNotIn('-Wall -Wextra', cmdline)
+        self.assertNotIn('-Wframe-larger-than=69632', cmdline)
+        self.assertNotIn('-Werror=overloaded-virtual', cmdline)
 
     def assertCxxFlags(self, cmdline):
         self._assertCxxCommonFlags(cmdline)
@@ -121,13 +130,13 @@ class TargetTest(unittest.TestCase):
         self._assertCxxNoWarningFlags(cmdline)
 
     def assertLinkFlags(self, cmdline):
-        self.assertTrue('-static-libgcc -static-libstdc++' in cmdline)
+        self.assertIn('-static-libgcc -static-libstdc++', cmdline)
 
     def assertStaticLinkFlags(self, cmdline):
-        self.assertTrue('-shared' not in cmdline)
+        self.assertNotIn('-shared', cmdline)
 
     def assertDynamicLinkFlags(self, cmdline):
-        self.assertTrue('-shared' in cmdline)
+        self.assertIn('-shared', cmdline)
 
 
 def run(class_name):

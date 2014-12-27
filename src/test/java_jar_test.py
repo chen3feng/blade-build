@@ -36,9 +36,9 @@ class TestJavaJar(blade_test.TargetTest):
         proto_library = (self.upper_target_path, 'rpc_option_proto')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(swig_library in self.all_targets.keys())
-        self.assertTrue(java_client in self.all_targets.keys())
-        self.assertTrue(proto_library in self.all_targets.keys())
+        self.assertIn(swig_library, self.all_targets.keys())
+        self.assertIn(java_client, self.all_targets.keys())
+        self.assertIn(proto_library, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -108,38 +108,38 @@ class TestJavaJar(blade_test.TargetTest):
         self.assertTrue(com_proto_java_option)
         self.assertTrue(com_proto_java_meta)
 
-        self.assertTrue('-fPIC' in com_proto_option_cc)
-        self.assertTrue('-Wall -Wextra' not in com_proto_option_cc)
-        self.assertTrue('-Wframe-larger-than=' not in com_proto_option_cc)
-        self.assertTrue('-Werror=overloaded-virtual' not in com_proto_option_cc)
+        self.assertIn('-fPIC', com_proto_option_cc)
+        self.assertNotIn('-Wall -Wextra', com_proto_option_cc)
+        self.assertNotIn('-Wframe-larger-than=', com_proto_option_cc)
+        self.assertNotIn('-Werror=overloaded-virtual', com_proto_option_cc)
 
-        self.assertTrue('-fPIC' in com_proto_meta_cc)
+        self.assertIn('-fPIC', com_proto_meta_cc)
 
-        self.assertTrue('poppy_client_pywrap.cxx' in com_swig_python)
-        self.assertTrue('poppy_client_javawrap.cxx' in com_swig_java)
+        self.assertIn('poppy_client_pywrap.cxx', com_swig_python)
+        self.assertIn('poppy_client_javawrap.cxx', com_swig_java)
 
-        self.assertTrue('-fno-omit-frame-pointer' in com_swig_python_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_python_cxx)
-        self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_python_cxx)
+        self.assertIn('-fno-omit-frame-pointer', com_swig_python_cxx)
+        self.assertIn('-mcx16 -pipe -g', com_swig_python_cxx)
+        self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_python_cxx)
 
-        self.assertTrue('-fno-omit-frame-pointer' in com_swig_java_cxx)
-        self.assertTrue('-mcx16 -pipe -g' in com_swig_java_cxx)
-        self.assertTrue('-DNDEBUG -D_FILE_OFFSET_BITS' in com_swig_java_cxx)
+        self.assertIn('-fno-omit-frame-pointer', com_swig_java_cxx)
+        self.assertIn('-mcx16 -pipe -g', com_swig_java_cxx)
+        self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_java_cxx)
 
         self.assertTrue(java_com_line)
         self.assertTrue(java_so_line)
         self.assertTrue(jar_line)
 
-        self.assertTrue('test_java_jar/java/lib/junit.jar' in java_com_line)
-        self.assertTrue('com/soso/poppy/swig/*.java' in java_com_line)
-        self.assertTrue('com/soso/poppy/*.java' in java_com_line)
+        self.assertIn('test_java_jar/java/lib/junit.jar', java_com_line)
+        self.assertIn('com/soso/poppy/swig/*.java', java_com_line)
+        self.assertIn('com/soso/poppy/*.java', java_com_line)
 
         whole_archive = ('--whole-archive build64_release/test_java_jar/'
                          'librpc_meta_info_proto.a build64_release/test_java_jar/'
                          'librpc_option_proto.a -Wl,--no-whole-archive')
-        self.assertTrue(whole_archive in java_so_line)
-        self.assertTrue(jar_idx > java_com_idx)
-        self.assertTrue(jar_idx > java_so_idx)
+        self.assertIn(whole_archive, java_so_line)
+        self.assertGreater(jar_idx, java_com_idx)
+        self.assertGreater(jar_idx, java_so_idx)
 
 
 if __name__ == '__main__':

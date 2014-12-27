@@ -253,6 +253,7 @@ class ProtoLibrary(CcTarget):
                     dep_var_name))
 
         self._cc_library()
+        options = self.blade.get_options()
         if (getattr(options, 'generate_dynamic', False) or
             self.data.get('build_dynamic', False)):
             self._dynamic_cc_library()
