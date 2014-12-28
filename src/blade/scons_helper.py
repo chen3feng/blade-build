@@ -16,12 +16,14 @@
 
 
 import os
+import py_compile
 import shutil
 import signal
 import string
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 import SCons
 import SCons.Action
@@ -153,11 +155,61 @@ setup(
 
 
 def generate_python_library(target, source, env):
-    console.warning('generate_python_library %s -> %s' % ([str(src) for src in source], str(target[0])))
+    # console.warning('generate_python_library %s -> %s' % ([str(src) for src in source], str(target[0])))
+    target_file = open(str(target[0]), 'w')
+    data = dict()
+    data['base_dir'] = env.get('BASE_DIR', '')
+    srcs = []
+    for s in source:
+        src = str(s)
+        py_compile.compile(src)
+        srcs.append(src)
+    data['srcs'] = srcs
+    target_file.write(str(data))
+    target_file.close()
+
+
+def update_init_py_dict(name, arcname, d):
+    dir = os.path.dirname(arcname)
+    if name.endswith('__init__.py'):
+        d[dir] = arcname
+    else:
+        d[dir] = None
+
+
+def dirs_missing_init_py(dirs):
+    result = set()
+    for d in dirs:
+        while d:
+            if not dirs.get(d):
+                result.add(d)
+            d = os.path.dirname(d)
+    result.add('')
+    return result
 
 
 def generate_python_binary(target, source, env):
-    console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
+    # console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
+    target_file = zipfile.PyZipFile(str(target[0]) + '', 'w')
+    dirs = dict()
+    for s in source:
+        src = str(s)
+        if src.endswith('.pylib'):
+            libfile = open(src)
+            data = eval(libfile.read())
+            libfile.close()
+            for libsrc in data['srcs']:
+                arcname = os.path.relpath(libsrc, data['base_dir'])
+                update_init_py_dict(libsrc, arcname, dirs)
+                target_file.write(libsrc, arcname)
+        else:
+            update_init_py_dict(src, src, dirs)
+            target_file.write(src)
+    dirs = dirs_missing_init_py(dirs)
+    print dirs
+    for d in dirs:
+        target_file.write('/dev/null', os.path.join(d, '__init__.py'))
+    target_file.close()
 
 
 def generate_resource_index(target, source, env):

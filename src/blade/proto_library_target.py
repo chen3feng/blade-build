@@ -176,14 +176,23 @@ class ProtoLibrary(CcTarget):
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_python_src = self._proto_gen_python_file(src)
-            py_cmd_var = self._var_name_of(src, 'python')
+            py_src_var = self._var_name_of(src, 'python')
             self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
-                    py_cmd_var,
+                    py_src_var,
                     self._env_name(),
                     proto_python_src,
                     src_path))
-            self.data['python_vars'].append(py_cmd_var)
+            self.data['python_vars'].append(py_src_var)
             self.data['python_sources'].append(proto_python_src)
+        py_lib_var = self._var_name('python')
+        self._write_rule('%s["BASE_DIR"] = "%s"' % (
+            self._env_name(), self.build_path))
+        self._write_rule('%s = %s.PythonLibrary(["%s"], [%s])' % (
+            py_lib_var,
+            self._env_name(),
+            self._target_file_path() + '.pylib',
+            ', '.join(self.data['python_vars'])))
+        self.data['python_var'] = py_lib_var
 
     def scons_rules(self):
         """scons_rules.

@@ -112,7 +112,35 @@ def py_egg(name,
 build_rules.register_function(py_egg)
 
 
-class PythonLibraryTarget(Target):
+class PythonTarget(Target):
+    """python target base class.
+
+    """
+    def __init__(self,
+                 name,
+                 type,
+                 srcs,
+                 deps,
+                 blade,
+                 kwargs):
+        """Init method. """
+        srcs = var_to_list(srcs)
+        deps = var_to_list(deps)
+
+        Target.__init__(self,
+                        name,
+                        type,
+                        srcs,
+                        deps,
+                        blade,
+                        kwargs)
+
+        self.data['python_sources'] = []
+        for src in srcs:
+            self.data['python_sources'].append(self._source_file_path(src))
+
+
+class PythonLibraryTarget(PythonTarget):
     """A python library target subclass.
 
     This class is derived from SconsTarget and generates python library package.
@@ -126,22 +154,16 @@ class PythonLibraryTarget(Target):
                  blade,
                  kwargs):
         """Init method. """
-        srcs = var_to_list(srcs)
-        deps = var_to_list(deps)
-
-        Target.__init__(self,
-                        name,
-                        'py_library',
-                        srcs,
-                        deps,
-                        blade,
-                        kwargs)
+        PythonTarget.__init__(self,
+                              name,
+                              'py_library',
+                              srcs,
+                              deps,
+                              blade,
+                              kwargs)
 
         if prebuilt:
             self.type = 'prebuilt_py_library'
-        self.data['python_sources'] = []
-        for src in srcs:
-            self.data['python_sources'].append(self._source_file_path(src))
 
     def scons_rules(self):
         """scons_rules.
@@ -165,11 +187,13 @@ class PythonLibraryTarget(Target):
                          env_name,
                          target_library_file,
                          source_files))
-
+        self.data['python_var'] = var_name
         dep_var_list = []
         targets = self.blade.get_build_targets()
-        for dep in self.expanded_deps:
-            dep_var_list += targets[dep].data.get('python_vars', [])
+        for dep in self.deps:
+            var = targets[dep].data.get('python_var')
+            if var:
+                dep_var_list.append(var)
 
         for dep_var in dep_var_list:
             self._write_rule('%s.Depends(%s, %s)' % (
@@ -194,7 +218,7 @@ def py_library(name,
 build_rules.register_function(py_library)
 
 
-class PythonBinaryTarget(Target):
+class PythonBinaryTarget(PythonTarget):
     """A python binary target subclass.
 
     This class is derived from SconsTarget and generates python binary package.
@@ -210,16 +234,13 @@ class PythonBinaryTarget(Target):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        Target.__init__(self,
-                        name,
-                        'py_binary',
-                        srcs,
-                        deps,
-                        blade,
-                        kwargs)
-        self.data['python_sources'] = []
-        for src in srcs:
-            self.data['python_sources'].append(self._source_file_path(src))
+        PythonTarget.__init__(self,
+                              name,
+                              'py_binary',
+                              srcs,
+                              deps,
+                              blade,
+                              kwargs)
 
     def scons_rules(self):
         """scons_rules.
@@ -237,17 +258,17 @@ class PythonBinaryTarget(Target):
         source_files = self.data.get('python_sources', [])
         dep_var_list = []
         for dep in self.expanded_deps:
-            dep_var_list += targets[dep].data.get('python_vars', [])
+            python_var = targets[dep].data.get('python_var')
+            if python_var:
+                dep_var_list.append(python_var)
 
-        target_binary_file = '%s.binary' % self._target_file_path()
-        self._write_rule('%s = %s.PythonBinary(["%s"], %s)' % (
+        target_binary_file = self._target_file_path() + '.zip'
+        self._write_rule('%s = %s.PythonBinary(["%s"], %s + [%s])' % (
                           var_name,
                           env_name,
                           target_binary_file,
-                          source_files + dep_var_list))
-        for dep_var in dep_var_list:
-            self._write_rule('%s.Depends(%s, %s)' % (
-                             env_name, var_name, dep_var))
+                          source_files, ','.join(dep_var_list)))
+
 
 def py_binary(name,
               srcs=[],

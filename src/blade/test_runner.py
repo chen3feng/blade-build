@@ -78,7 +78,9 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.options.fulltest:
             if os.path.exists(self.inctest_md5_file):
                 try:
-                    self.last_test_stamp = eval(open(self.inctest_md5_file).read())
+                    f = open(self.inctest_md5_file)
+                    self.last_test_stamp = eval(f.read())
+                    f.close()
                 except (IOError, SyntaxError):
                     console.warning('error loading incremental test history, will run full test')
                     self.run_all_reason = 'NO_HISTORY'
