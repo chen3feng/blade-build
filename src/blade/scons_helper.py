@@ -169,29 +169,20 @@ def generate_python_library(target, source, env):
     target_file.close()
 
 
-def update_init_py_dict(name, arcname, d):
+def update_init_py_dirs(arcname, dirs, dirs_with_init_py):
     dir = os.path.dirname(arcname)
-    if name.endswith('__init__.py'):
-        d[dir] = arcname
-    else:
-        d[dir] = None
-
-
-def dirs_missing_init_py(dirs):
-    result = set()
-    for d in dirs:
-        while d:
-            if not dirs.get(d):
-                result.add(d)
-            d = os.path.dirname(d)
-    result.add('')
-    return result
+    if os.path.basename(arcname) == '__init__.py':
+        dirs_with_init_py.add(dir)
+    while dir:
+        dirs.add(dir)
+        dir = os.path.dirname(dir)
 
 
 def generate_python_binary(target, source, env):
     # console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
     target_file = zipfile.PyZipFile(str(target[0]) + '', 'w')
-    dirs = dict()
+    dirs = set()
+    dirs_with_init_py = set()
     for s in source:
         src = str(s)
         if src.endswith('.pylib'):
@@ -200,15 +191,17 @@ def generate_python_binary(target, source, env):
             libfile.close()
             for libsrc in data['srcs']:
                 arcname = os.path.relpath(libsrc, data['base_dir'])
-                update_init_py_dict(libsrc, arcname, dirs)
+                update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
         else:
-            update_init_py_dict(src, src, dirs)
+            py_compile.compile(src)
+            update_init_py_dirs(src, dirs, dirs_with_init_py)
             target_file.write(src)
-    dirs = dirs_missing_init_py(dirs)
-    print dirs
-    for d in dirs:
-        target_file.write('/dev/null', os.path.join(d, '__init__.py'))
+
+    # insert __init__.py into each dir if missing
+    dirs_missing_init_py = dirs - dirs_with_init_py
+    for dir in dirs_missing_init_py:
+        target_file.writestr(os.path.join(dir, '__init__.py'), '')
     target_file.close()
 
 
