@@ -118,7 +118,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
             if interval >= self.valid_inctest_time_interval or interval < 0:
                 self.run_all_reason = 'STALE'
-                console.info('all tests will run due to all passed tests are invalid now')
+                console.info('all tests will run due to all passed tests are expired now')
         else:
             self.run_all_reason = 'FULLTEST'
 

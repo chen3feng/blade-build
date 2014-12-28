@@ -21,7 +21,7 @@ function cleanup()
 cd `dirname $0`
 
 # Cleanup before running
-rm -rf blade-bin/ build64_release/
+rm -rf blade-bin build64_release/
 
 for f in `find . -name BUILD.EXAMPLE`; do
     cp $f ${f%.EXAMPLE}

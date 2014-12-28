@@ -100,12 +100,23 @@ class TargetTest(unittest.TestCase):
 
     if getattr(unittest.TestCase, 'assertIn', None) is None:
         # New asserts since 2.7, add for old version
-        def assertIn(self, a, b):
-            self.assertTrue(a in b, '"%s" in "%s"' % (a, b))
-        def assertNotIn(self, a, b):
-            self.assertTrue(a not in b, '"%s" not in "%s"' % (a, b))
-        def assertGreater(self, a, b):
-            self.assertTrue(a > b, '"%s" > "%s"' % (a, b))
+        def _format_message(self, msg):
+            if msg:
+                return ', %s' % msg
+            else:
+                return ''
+
+        def assertIn(self, a, b, msg=None):
+            msg = self._format_message(msg)
+            self.assertTrue(a in b, '"%s" in "%s"%s' % (a, b, msg))
+
+        def assertNotIn(self, a, b, msg=None):
+            msg = self._format_message(msg)
+            self.assertTrue(a not in b, '"%s" not in "%s"%s' % (a, b, msg))
+
+        def assertGreater(self, a, b, msg=None):
+            msg = self._format_message(msg)
+            self.assertTrue(a > b, '"%s" > "%s"%s' % (a, b, msg))
 
     def _assertCxxCommonFlags(self, cmdline):
         self.assertIn('-g', cmdline)

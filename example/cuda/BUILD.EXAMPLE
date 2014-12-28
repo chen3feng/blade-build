@@ -3,7 +3,6 @@ cc_library(
     srcs = [
         'template_cpu.cpp',
     ],
-    warning = 'no',
 )
 
 cu_binary(
@@ -14,5 +13,4 @@ cu_binary(
     deps = [
         ':template_cpu',
     ],
-    warning = 'no',
 )
