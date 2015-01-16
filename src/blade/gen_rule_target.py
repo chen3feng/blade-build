@@ -16,7 +16,6 @@ import os
 
 import blade
 import build_rules
-import java_jar_target
 from blade_util import var_to_list
 from target import Target
 

@@ -12,8 +12,6 @@ import os
 import blade
 
 import build_rules
-import java_jar_target
-import py_targets
 from cc_targets import CcTarget
 
 

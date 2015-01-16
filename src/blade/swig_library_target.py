@@ -13,8 +13,6 @@ import blade
 
 import console
 import build_rules
-import java_jar_target
-import py_targets
 from cc_targets import CcTarget
 
 

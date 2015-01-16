@@ -135,10 +135,10 @@ class TestScheduler(object):
                              stderr=subprocess.STDOUT,
                              close_fds=True)
 
-        (stdoutdata, stderrdata) = p.communicate()
+        (stdout, stderr) = p.communicate()
         result = self.__get_result(p.returncode)
         console.info('Output of %s:\n%s\n%s finished: %s\n' % (test_name,
-                stdoutdata, test_name, result))
+                stdout, test_name, result))
 
         return p.returncode
 

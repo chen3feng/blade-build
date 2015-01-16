@@ -18,7 +18,7 @@ import configparse
 
 import console
 import build_rules
-from blade_util import var_to_list
+from blade_util import var_to_list, stable_unique
 from target import Target
 
 
@@ -283,19 +283,13 @@ class CcTarget(Target):
         cpp_flags += self.data.get('extra_cppflags', [])
 
         # Incs
-        incs = self.data.get('incs', [])
-        if not incs:
-            incs = self.data.get('export_incs', [])
-        new_incs_list = [os.path.join(self.path, inc) for inc in incs]
-        new_incs_list += self._export_incs_list()
+        incs = self.data.get('incs', []) + self.data.get('export_incs', [])
+        incs = [os.path.normpath(os.path.join(self.path, inc)) for inc in incs]
+        incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
-        incs_list = []
-        for inc in new_incs_list:
-            new_inc = os.path.normpath(inc)
-            if new_inc not in incs_list:
-                incs_list.append(new_inc)
+        incs = stable_unique(incs)
 
-        return (cpp_flags, incs_list)
+        return (cpp_flags, incs)
 
     def _get_as_flags(self):
         """_get_as_flags.
@@ -331,20 +325,13 @@ class CcTarget(Target):
         deps = self.expanded_deps
         inc_list = []
         for lib in deps:
-            # lib is (path, libname) pair.
-            if not lib:
-                continue
-
-            if not self._dep_is_library(lib):
-                continue
-
             # system lib
             if lib[0] == '#':
                 continue
 
             target = self.target_database[lib]
             for inc in target.data.get('export_incs', []):
-                path = os.path.normpath('%s/%s' % (lib[0], inc))
+                path = os.path.normpath(os.path.join(target.path, inc))
                 inc_list.append(path)
 
         return inc_list
@@ -370,13 +357,14 @@ class CcTarget(Target):
             if not self._dep_is_library(dep):
                 continue
 
+            dep_target = build_targets[dep]
             # system lib
-            if dep[0] == '#':
-                lib_name = "'%s'" % dep[1]
+            if dep_target.type == 'system_library':
+                lib_name = "'%s'" % dep_target.name
             else:
-                lib_name = self._generate_variable_name(dep[0], dep[1])
+                lib_name = dep_target._var_name()
 
-            if build_targets[dep].data.get('link_all_symbols'):
+            if dep_target.data.get('link_all_symbols'):
                 link_all_symbols_lib_list.append(lib_name)
             else:
                 lib_list.append(lib_name)

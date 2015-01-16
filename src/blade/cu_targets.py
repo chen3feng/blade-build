@@ -232,8 +232,6 @@ class CuBinary(CuTarget):
         env_name = self._env_name()
         var_name = self._var_name()
 
-        platform = self.blade.get_scons_platform()
-
         (link_all_symbols_lib_list,
          lib_str,
          whole_link_flags) = self._get_static_deps_lib_list()

@@ -11,7 +11,6 @@
 import os
 import blade
 
-import console
 import build_rules
 from cc_targets import CcTarget
 

@@ -12,7 +12,6 @@
 """
 import os
 import sys
-import traceback
 
 import console
 from blade_util import var_to_list

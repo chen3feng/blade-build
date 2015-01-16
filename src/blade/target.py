@@ -297,6 +297,7 @@ class Target(object):
 
         """
         return self._generate_variable_name(self.path, name, suffix)
+
     def _source_file_path(self, name):
         """_source_file_path.
 
@@ -316,7 +317,6 @@ class Target(object):
 
         Parameters
         -----------
-        path: the target's path
         name: the target's name
 
         Returns

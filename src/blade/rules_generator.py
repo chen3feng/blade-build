@@ -88,11 +88,11 @@ version_obj = env_version.SharedObject('$filename')
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              shell=True)
-        std_out, std_err = p.communicate()
+        stdout, stderr = p.communicate()
         if p.returncode:
             return False
         else:
-            self.svn_info_map[dirname] = std_out.replace('\n', '\\n\\\n')
+            self.svn_info_map[dirname] = stdout.replace('\n', '\\n\\\n')
             return True
 
     def _get_version_info(self):
@@ -100,9 +100,9 @@ version_obj = env_version.SharedObject('$filename')
 
         blade_root_dir = self.build_environment.blade_root_dir
         if os.path.exists("%s/.git" % blade_root_dir):
-          cmd = "git log -n 1"
-          self._exec_get_version_info(cmd, None, os.path.dirname(blade_root_dir))
-          return
+            cmd = "git log -n 1"
+            self._exec_get_version_info(cmd, None, os.path.dirname(blade_root_dir))
+            return
 
         for root_dir in self.svn_roots:
             root_dir_realpath = os.path.realpath(root_dir)

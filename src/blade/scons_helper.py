@@ -270,11 +270,11 @@ def generate_resource_file(target, source, env):
             stderr=subprocess.PIPE,
             shell=True,
             universal_newlines=True)
-    std_out, std_err = p.communicate()
-    if p.returncode or std_err:
+    stdout, stderr = p.communicate()
+    if p.returncode or stderr:
         error = 'failed to generate resource file'
-        if std_err:
-            error = error + ': ' + std_err
+        if stderr:
+            error = error + ': ' + stderr
         console.error_exit(error)
     return p.returncode
 
@@ -472,7 +472,7 @@ def create_fast_link_builders(env):
                         stderr=subprocess.PIPE,
                         shell=True,
                         universal_newlines=True)
-    std_out, std_err = p.communicate()
+    stdout, stderr = p.communicate()
 
     # Do not try to overwrite builder with error
     if p.returncode:
@@ -480,13 +480,13 @@ def create_fast_link_builders(env):
         return
 
     # No tmpfs to do fastlink, will not overwrite the builder
-    if not std_out:
+    if not stdout:
         console.warning('you have link on tmp enabled, but there is no tmpfs to make it.')
         return
 
     # Use the first one
     global linking_tmp_dir
-    usage, linking_tmp_dir = tuple(std_out.splitlines(False)[0].split())
+    usage, linking_tmp_dir = tuple(stdout.splitlines(False)[0].split())
 
     # Do not try to do that if there is no memory space left
     usage = int(usage.replace('%', ''))

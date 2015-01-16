@@ -20,7 +20,6 @@ import subprocess
 import sys
 
 import blade
-import cc_targets
 import console
 
 from blade_util import environ_add_path
