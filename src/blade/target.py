@@ -87,11 +87,20 @@ class Target(object):
 
     def _check_srcs(self):
         """Check source files.
-        Description
-        -----------
-        It will warn if one file belongs to two different targets.
 
         """
+        dups = []
+        srcset = set()
+        for s in self.srcs:
+            if s in srcset:
+                dups.append(s)
+            else:
+                srcset.add(s)
+        if dups:
+            console.error_exit('%s:%s Duplicate source file paths: %s ' % (
+                self.path, self.name, dups))
+
+        # Check if one file belongs to two different targets.
         config = configparse.blade_config.get_config('global_config')
         action = config.get('duplicated_source_action')
         allow_dup_src_type_list = ['cc_binary', 'cc_test', 'gen_rule']

@@ -511,10 +511,6 @@ class CcTarget(Target):
                 self._env_name(),
                 self._target_file_path(),
                 self._objs_name()))
-        self._write_rule('%s.Depends(%s, %s)' % (
-                self._env_name(),
-                var_name,
-                self._objs_name()))
         for dep_name in self.deps:
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
@@ -547,10 +543,6 @@ class CcTarget(Target):
                     self._target_file_path(),
                     self._objs_name(),
                     lib_str))
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    self._env_name(),
-                    var_name,
-                    self._objs_name()))
 
     def _cc_objects_rules(self):
         """_cc_objects_rules.
@@ -574,7 +566,6 @@ class CcTarget(Target):
         self._setup_as_flags()
 
         objs = []
-        sources = []
         for src in self.srcs:
             obj = '%s_%s_object' % (self._generate_variable_name(path, src),
                                     self._regular_variable_name(self.name))
@@ -586,11 +577,6 @@ class CcTarget(Target):
                                           env_name,
                                           target_path,
                                           self._target_file_path(path, src)))
-            self._write_rule('%s.Depends(%s, "%s")' % (
-                             env_name,
-                             obj,
-                             self._target_file_path(path, src)))
-            sources.append(self._target_file_path(path, src))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -604,7 +590,6 @@ class CcTarget(Target):
                     env_name,
                     objs_name,
                     dep_var_name))
-        return sources
 
 
 class CcLibrary(CcTarget):
@@ -829,10 +814,6 @@ class CcBinary(CcTarget):
             self._target_file_path(),
             self._objs_name(),
             lib_str))
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name,
-            var_name,
-            self._objs_name()))
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
@@ -860,10 +841,6 @@ class CcBinary(CcTarget):
             self._objs_name(),
             lib_str))
 
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name,
-            var_name,
-            self._objs_name()))
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
                          env_name, var_name))

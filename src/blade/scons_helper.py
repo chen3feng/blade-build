@@ -235,8 +235,10 @@ def MakeAction(cmd, cmdstr):
 
 
 _ERRORS = [': error:', ': fatal error:', ': undefined reference to',
-           ': cannot find ', ': ld returned 1 exit status']
-_WARNINGS = [': warning:', ': note: ']
+           ': cannot find ', ': ld returned 1 exit status',
+           ' is not defined'
+           ]
+_WARNINGS = [': warning:', ': note: ', '] Warning: ']
 
 
 def error_colorize(message):
