@@ -36,6 +36,24 @@ _colors['gray']   = '\033[1;38m'
 _colors['end']    = '\033[0m'
 
 
+_CLEAR_LINE = '\033[2K'
+_CURSUR_UP = '\033[A'
+
+
+def newline(msg):
+    """Make msg clear line when output"""
+    if color_enabled:
+        return _CLEAR_LINE + msg
+    return msg
+
+
+def no_newline(msg):
+    """Make msg does't cause new line when output"""
+    if color_enabled:
+        return _CLEAR_LINE + msg + _CURSUR_UP
+    return msg
+
+
 def colors(name):
     """Return ansi console control sequence from color name"""
     if color_enabled:
@@ -72,3 +90,4 @@ def info(msg, prefix=True):
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
     print >>sys.stderr, msg
+

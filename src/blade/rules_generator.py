@@ -54,7 +54,7 @@ class SconsFileHeaderGenerator(object):
 
         self.version_cpp_compile_template = string.Template("""
 env_version = Environment(ENV = os.environ)
-env_version.Append(SHCXXCOMSTR = '%s$updateinfo%s' % (colors('cyan'), colors('end')))
+env_version.Append(SHCXXCOMSTR = console.no_newline('%s$updateinfo%s' % (colors('cyan'), colors('end'))))
 env_version.Append(CPPFLAGS = '-m$m')
 version_obj = env_version.SharedObject('$filename')
 """)
@@ -217,80 +217,80 @@ from scons_helper import generate_resource_index
 
         self._add_rule(
                 """
-compile_proto_cc_message = '%sCompiling %s$SOURCE%s to cc source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_proto_cc_message = console.no_newline('%sCompiling %s$SOURCE%s to cc source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_proto_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_proto_java_message = console.no_newline('%sCompiling %s$SOURCE%s to java source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_proto_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_proto_php_message = console.no_newline('%sCompiling %s$SOURCE%s to php source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_proto_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_proto_python_message = console.no_newline('%sCompiling %s$SOURCE%s to python source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_thrift_cc_message = '%sCompiling %s$SOURCE%s to cc source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_thrift_cc_message = console.no_newline('%sCompiling %s$SOURCE%s to cc source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_thrift_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_thrift_java_message = console.no_newline('%sCompiling %s$SOURCE%s to java source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_thrift_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_thrift_python_message = console.no_newline( '%sCompiling %s$SOURCE%s to python source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_fbthrift_cpp_message = '%sCompiling %s$SOURCE%s to cpp source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_fbthrift_cpp_message = console.no_newline('%sCompiling %s$SOURCE%s to cpp source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_fbthrift_cpp2_message = '%sCompiling %s$SOURCE%s to cpp2 source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_fbthrift_cpp2_message = console.no_newline('%sCompiling %s$SOURCE%s to cpp2 source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_resource_index_message = '%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_resource_index_message = console.no_newline('%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_resource_message = '%sCompiling %s$SOURCE%s as resource file%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_resource_message = console.no_newline('%sCompiling %s$SOURCE%s as resource file%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_source_message = '%sCompiling %s$SOURCE%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_source_message = console.no_newline('%sCompiling %s$SOURCE%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-assembling_source_message = '%sAssembling %s$SOURCE%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+assembling_source_message = console.no_newline('%sAssembling %s$SOURCE%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-link_program_message = '%sLinking Program %s$TARGET%s%s' % \
-    (colors('green'), colors('purple'), colors('green'), colors('end'))
+link_program_message = console.newline('%sLinking Program %s$TARGET%s%s' % \
+    (colors('green'), colors('purple'), colors('green'), colors('end')))
 
-link_library_message = '%sCreating Static Library %s$TARGET%s%s' % \
-    (colors('green'), colors('purple'), colors('green'), colors('end'))
+link_library_message = console.newline('%sCreating Static Library %s$TARGET%s%s' % \
+    (colors('green'), colors('purple'), colors('green'), colors('end')))
 
-ranlib_library_message = '%sRanlib Library %s$TARGET%s%s' % \
-    (colors('green'), colors('purple'), colors('green'), colors('end')) \
+ranlib_library_message = console.newline('%sRanlib Library %s$TARGET%s%s' % \
+    (colors('green'), colors('purple'), colors('green'), colors('end')))
 
-link_shared_library_message = '%sLinking Shared Library %s$TARGET%s%s' % \
-    (colors('green'), colors('purple'), colors('green'), colors('end'))
+link_shared_library_message = console.newline('%sLinking Shared Library %s$TARGET%s%s' % \
+    (colors('green'), colors('purple'), colors('green'), colors('end')))
 
-compile_java_jar_message = '%sGenerating java jar %s$TARGET%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_java_jar_message = console.newline('%sGenerating java jar %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_python_egg_message = '%sGenerating python egg %s$TARGET%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_python_egg_message = console.no_newline('%sGenerating python egg %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_python_library_message = '%sGenerating python library %s$TARGET%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_python_library_message = console.no_newline('%sGenerating python library %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_python_binary_message = '%sGenerating python binary %s$TARGET%s%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_python_binary_message = console.no_newline('%sGenerating python binary %s$TARGET%s%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_yacc_message = '%sYacc %s$SOURCE%s to $TARGET%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_yacc_message = console.no_newline('%sYacc %s$SOURCE%s to $TARGET%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_swig_python_message = '%sCompiling %s$SOURCE%s to python source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_swig_python_message = console.no_newline('%sCompiling %s$SOURCE%s to python source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_swig_java_message = '%sCompiling %s$SOURCE%s to java source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_swig_java_message = console.no_newline('%sCompiling %s$SOURCE%s to java source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-compile_swig_php_message = '%sCompiling %s$SOURCE%s to php source%s' % \
-    (colors('cyan'), colors('purple'), colors('cyan'), colors('end'))
+compile_swig_php_message = console.no_newline('%sCompiling %s$SOURCE%s to php source%s' % \
+    (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 """)
 
         if not getattr(self.options, 'verbose', False):
