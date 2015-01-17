@@ -424,9 +424,9 @@ def fast_link_prog_action(target, source, env):
     return _fast_link_helper(target, source, env, link_com)
 
 
-def create_fast_link_prog_builder(env):
+def setup_fast_link_prog_builder(top_env):
     """
-       This is the function to create blade fast link
+       This is the function to setup blade fast link
        program builder. It will overwrite the program
        builder of top level env if user specifies an
        option to apply fast link method that they want
@@ -442,12 +442,12 @@ def create_fast_link_prog_builder(env):
                                     src_suffix='$OBJSUFFIX',
                                     src_builder='Object',
                                     target_scanner=SCons.Scanner.Prog.ProgramScanner())
-    env['BUILDERS']['Program'] = program
+    top_env['BUILDERS']['Program'] = program
 
 
-def create_fast_link_sharelib_builder(env):
+def setup_fast_link_sharelib_builder(top_env):
     """
-       This is the function to create blade fast link
+       This is the function to setup blade fast link
        sharelib builder. It will overwrite the sharelib
        builder of top level env if user specifies an
        option to apply fast link method that they want
@@ -466,10 +466,10 @@ def create_fast_link_sharelib_builder(env):
                                       target_scanner=SCons.Scanner.Prog.ProgramScanner(),
                                       src_suffix='$SHOBJSUFFIX',
                                       src_builder='SharedObject')
-    env['BUILDERS']['SharedLibrary'] = sharedlib
+    top_env['BUILDERS']['SharedLibrary'] = sharedlib
 
 
-def create_fast_link_builders(env):
+def setup_fast_link_builders(top_env):
     """Creates fast link builders - Program and  SharedLibrary. """
     # Check requirement
     acquire_temp_place = "df | grep tmpfs | awk '{print $5, $6}'"
@@ -506,8 +506,8 @@ def create_fast_link_builders(env):
 
     console.info('building in link on tmpfs mode')
 
-    create_fast_link_sharelib_builder(env)
-    create_fast_link_prog_builder(env)
+    setup_fast_link_sharelib_builder(top_env)
+    setup_fast_link_prog_builder(top_env)
 
 
 def make_top_env(build_dir):
@@ -769,6 +769,7 @@ def _exec_get_version_info(cmd, cwd, dirname):
         return None
     else:
         return stdout.replace('\n', '\\n\\\n')
+
 
 def _get_version_info(blade_root_dir, svn_roots):
     """Gets svn root dir info. """

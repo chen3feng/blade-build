@@ -122,7 +122,7 @@ from console import colors
         if link_config['link_on_tmp']:
             if (not enable_dccc) or (
                     enable_dccc and not self.build_environment.dccc_env_prepared):
-                self._add_rule('scons_helper.create_fast_link_builders(top_env)')
+                self._add_rule('scons_helper.setup_fast_link_builders(top_env)')
 
     def _generate_proto_builders(self):
         self._add_rule('time_value = Value("%s")' % time.asctime())
