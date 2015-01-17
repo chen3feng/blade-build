@@ -90,6 +90,7 @@ class LexYaccLibrary(CcTarget):
 
         self._setup_cc_flags()
 
+        self._write_rule('%s.Append(CPPFLAGS="-Wno-unused-function")' % env_name)
         obj_names = []
         obj_name = '%s_object' % self._var_name_of(self.srcs[0] + '.cc')
         obj_names.append(obj_name)

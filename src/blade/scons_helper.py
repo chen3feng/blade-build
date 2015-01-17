@@ -19,10 +19,12 @@ import os
 import py_compile
 import shutil
 import signal
+import socket
 import string
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 import SCons
@@ -34,6 +36,7 @@ import SCons.Scanner.Prog
 import blade_util
 import console
 
+from console import colors
 
 # option_verbose to indicate print verbose or not
 option_verbose = False
@@ -296,26 +299,34 @@ _WARNINGS = [': warning:', ': note: ', '] Warning: ']
 
 def error_colorize(message):
     colored_message = []
-    for t in message.splitlines(True):
+    for line in message.splitlines(True): # keepends
         color = 'cyan'
 
         # For clang column indicator, such as '^~~~~~'
-        if t.strip().startswith('^'):
+        if line.strip().startswith('^'):
             color = 'green'
         else:
             for w in _WARNINGS:
-                if w in t:
+                if w in line:
                     color = 'yellow'
                     break
             for w in _ERRORS:
-                if w in t:
+                if w in line:
                     color = 'red'
                     break
 
         colored_message.append(console.colors(color))
-        colored_message.append(t)
+        colored_message.append(line)
         colored_message.append(console.colors('end'))
-    return ''.join(colored_message)
+    return console.inerasable(''.join(colored_message))
+
+
+def _colored_echo(stdout, stderr):
+    """Echo error colored message"""
+    if stdout:
+        sys.stdout.write(error_colorize(stdout))
+    if stderr:
+        sys.stderr.write(error_colorize(stderr))
 
 
 def echospawn(sh, escape, cmd, args, env):
@@ -337,15 +348,10 @@ def echospawn(sh, escape, cmd, args, env):
     if p.returncode:
         if p.returncode != -signal.SIGINT:
             # Error
-            sys.stdout.write(error_colorize(stdout))
-            sys.stderr.write(error_colorize(stderr))
+            _colored_echo(stdout, stderr)
     else:
-        if stderr:
-            # Only warnings
-            sys.stdout.write(error_colorize(stdout))
-            sys.stderr.write(error_colorize(stderr))
-        else:
-            sys.stdout.write(stdout)
+        # Only warnings
+        _colored_echo(stdout, stderr)
 
     return p.returncode
 
@@ -502,3 +508,338 @@ def create_fast_link_builders(env):
 
     create_fast_link_sharelib_builder(env)
     create_fast_link_prog_builder(env)
+
+
+def make_top_env(build_dir):
+    """Make the top level scons envrionment object"""
+    os.environ['LC_ALL'] = 'C'
+    top_env = SCons.Environment.Environment(ENV=os.environ)
+    # Optimization options, see http://www.scons.org/wiki/GoFastButton
+    top_env.Decider('MD5-timestamp')
+    top_env.SetOption('implicit_cache', 1)
+    top_env.SetOption('max_drift', 1)
+    top_env.VariantDir(build_dir, '.', duplicate=0)
+    return top_env
+
+
+def get_compile_source_message():
+    return console.erasable('%sCompiling %s$SOURCE%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+
+def get_link_program_message():
+    return console.inerasable('%sLinking Program %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
+
+def setup_compliation_verbose(top_env, color_enabled, verbose):
+    """Generates color and verbose message. """
+    console.color_enabled = color_enabled
+
+    if not verbose:
+        top_env["SPAWN"] = echospawn
+
+    compile_source_message = get_compile_source_message()
+    link_program_message = get_link_program_message()
+    assembling_source_message = console.erasable('%sAssembling %s$SOURCE%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    link_library_message = console.inerasable('%sCreating Static Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    ranlib_library_message = console.inerasable('%sRanlib Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    link_shared_library_message = console.inerasable('%sLinking Shared Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
+    if not verbose:
+        top_env.Append(
+                CXXCOMSTR = compile_source_message,
+                CCCOMSTR = compile_source_message,
+                ASCOMSTR = assembling_source_message,
+                SHCCCOMSTR = compile_source_message,
+                SHCXXCOMSTR = compile_source_message,
+                ARCOMSTR = link_library_message,
+                RANLIBCOMSTR = ranlib_library_message,
+                SHLINKCOMSTR = link_shared_library_message,
+                LINKCOMSTR = link_program_message,
+                JAVACCOMSTR = compile_source_message,
+                LEXCOMSTR = compile_source_message)
+
+
+def setup_proto_builders(top_env, build_dir, protoc_bin, protobuf_path,
+                         protobuf_incs_str,
+                         protoc_php_plugin, protobuf_php_path):
+    compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    proto_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $SOURCE" % (
+            protoc_bin, protobuf_incs_str, build_dir),
+        compile_proto_cc_message))
+    top_env.Append(BUILDERS = {"Proto" : proto_bld})
+
+    proto_java_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $SOURCE" % (
+            protoc_bin, protobuf_path, build_dir),
+        compile_proto_java_message))
+    top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
+
+    proto_php_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. --plugin=protoc-gen-php=%s -I. %s -I%s -I=`dirname $SOURCE` --php_out=%s/`dirname $SOURCE` $SOURCE" % (
+            protoc_bin, protoc_php_plugin, protobuf_incs_str, protobuf_php_path, build_dir),
+        compile_proto_php_message))
+    top_env.Append(BUILDERS = {"ProtoPhp" : proto_php_bld})
+
+    proto_python_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --python_out=%s $SOURCE" % (
+            protoc_bin, protobuf_incs_str, build_dir),
+        compile_proto_python_message))
+    top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
+
+
+def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
+    compile_thrift_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_thrift_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_thrift_python_message = console.erasable( '%sCompiling %s$SOURCE%s to python source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    thrift_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen cpp:include_prefix,pure_enums -I . %s -I `dirname $SOURCE`'
+        ' -out %s/`dirname $SOURCE` $SOURCE' % (
+            thrift_bin, thrift_incs_str, build_dir),
+        compile_thrift_cc_message))
+    top_env.Append(BUILDERS = {"Thrift" : thrift_bld})
+
+    thrift_java_bld = SCons.Builder.Builder(action = MakeAction(
+    "%s --gen java -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` $SOURCE" % (
+        thrift_bin, thrift_incs_str, build_dir),
+    compile_thrift_java_message))
+    top_env.Append(BUILDERS = {"ThriftJava" : thrift_java_bld})
+
+    thrift_python_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --gen py -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` $SOURCE" % (
+            thrift_bin, thrift_incs_str, build_dir),
+        compile_thrift_python_message))
+    top_env.Append(BUILDERS = {"ThriftPython" : thrift_python_bld})
+
+
+def setup_fbthrift_builders(top_env, build_dir, fbthrift1_bin, fbthrift2_bin, fbthrift_incs_str):
+    compile_fbthrift_cpp_message = console.erasable('%sCompiling %s$SOURCE%s to cpp source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_fbthrift_cpp2_message = console.erasable('%sCompiling %s$SOURCE%s to cpp2 source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    fbthrift1_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen cpp:templates,cob_style,include_prefix,enum_strict -I . %s -I `dirname $SOURCE`'
+        ' -o %s/`dirname $SOURCE` $SOURCE' % (
+            fbthrift1_bin, fbthrift_incs_str, build_dir),
+        compile_fbthrift_cpp_message))
+    top_env.Append(BUILDERS = {"FBThrift1" : fbthrift1_bld})
+
+    fbthrift2_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen=cpp2:cob_style,include_prefix,future -I . %s -I `dirname $SOURCE` '
+        '-o %s/`dirname $SOURCE` $SOURCE' % (
+            fbthrift2_bin, fbthrift_incs_str, build_dir),
+        compile_fbthrift_cpp2_message))
+    top_env.Append(BUILDERS = {"FBThrift2" : fbthrift2_bld})
+
+
+def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
+    nvcc_object_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s -ccbin g++ %s $NVCCFLAGS -o $TARGET -c $SOURCE" % (nvcc_str, cuda_incs_str),
+        get_compile_source_message()))
+    top_env.Append(BUILDERS = {"NvccObject" : nvcc_object_bld})
+
+    nvcc_binary_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s %s $NVCCFLAGS -o $TARGET" % (nvcc_str, cuda_incs_str),
+        get_link_program_message()))
+    top_env.Append(NVCC=nvcc_str)
+    top_env.Append(BUILDERS = {"NvccBinary" : nvcc_binary_bld})
+
+
+def setup_jar_builders(top_env):
+    compile_java_jar_message = console.inerasable('%sGenerating java jar %s$TARGET%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        'jar cf $TARGET -C `dirname $SOURCE` .',
+        compile_java_jar_message))
+    top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
+
+
+def setup_yacc_builders(top_env):
+    compile_yacc_message = console.erasable('%sYacc %s$SOURCE%s to $TARGET%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    yacc_bld = SCons.Builder.Builder(action = MakeAction(
+        'bison $YACCFLAGS -d -o $TARGET $SOURCE',
+        compile_yacc_message))
+    top_env.Append(BUILDERS = {"Yacc" : yacc_bld})
+
+
+def setup_resource_builders(top_env):
+    compile_resource_index_message = console.erasable('%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_resource_message = console.erasable('%sCompiling %s$SOURCE%s as resource file%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    resource_index_bld = SCons.Builder.Builder(action = MakeAction(generate_resource_index,
+        compile_resource_index_message))
+    resource_file_bld = SCons.Builder.Builder(action = MakeAction(generate_resource_file,
+        compile_resource_message))
+    top_env.Append(BUILDERS = {"ResourceIndex" : resource_index_bld})
+    top_env.Append(BUILDERS = {"ResourceFile" : resource_file_bld})
+
+
+def setup_python_builders(top_env):
+    compile_python_egg_message = console.erasable('%sGenerating python egg %s$TARGET%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_python_library_message = console.erasable('%sGenerating python library %s$TARGET%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_python_binary_message = console.erasable('%sGenerating python binary %s$TARGET%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    python_egg_bld = SCons.Builder.Builder(action = MakeAction(generate_python_egg,
+        compile_python_egg_message))
+    python_library_bld = SCons.Builder.Builder(action = MakeAction(generate_python_library,
+        compile_python_library_message))
+    python_binary_bld = SCons.Builder.Builder(action = MakeAction(generate_python_binary,
+        compile_python_binary_message))
+    top_env.Append(BUILDERS = {"PythonEgg" : python_egg_bld})
+    top_env.Append(BUILDERS = {"PythonLibrary" : python_library_bld})
+    top_env.Append(BUILDERS = {"PythonBinary" : python_binary_bld})
+
+
+def setup_other_builders(top_env):
+    setup_jar_builders(top_env)
+    setup_yacc_builders(top_env)
+    setup_resource_builders(top_env)
+    setup_python_builders(top_env)
+
+
+def setup_swig_builders(top_env, build_dir):
+    compile_swig_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_swig_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_swig_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    # Python
+    swig_py_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -python -threads $SWIGPYTHONFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_python_message))
+    top_env.Append(BUILDERS={"SwigPython" : swig_py_bld})
+
+    # Java
+    swig_java_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -java $SWIGJAVAFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_java_message))
+    top_env.Append(BUILDERS={'SwigJava' : swig_java_bld})
+
+    swig_php_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -php $SWIGPHPFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_php_message))
+    top_env.Append(BUILDERS={"SwigPhp" : swig_php_bld})
+
+
+def _exec_get_version_info(cmd, cwd, dirname):
+    lc_all_env = os.environ
+    lc_all_env['LC_ALL'] = 'POSIX'
+    p = subprocess.Popen(cmd,
+                         env=lc_all_env,
+                         cwd=cwd,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True)
+    stdout, stderr = p.communicate()
+    if p.returncode:
+        return None
+    else:
+        return stdout.replace('\n', '\\n\\\n')
+
+def _get_version_info(blade_root_dir, svn_roots):
+    """Gets svn root dir info. """
+    svn_info_map = {}
+    if os.path.exists("%s/.git" % blade_root_dir):
+        cmd = "git log -n 1"
+        dirname = os.path.dirname(blade_root_dir)
+        version_info = _exec_get_version_info(cmd, None, dirname)
+        if version_info:
+            svn_info_map[dirname] = version_info
+        return svn_info_map
+
+    for root_dir in svn_roots:
+        root_dir_realpath = os.path.realpath(root_dir)
+        svn_working_dir = os.path.dirname(root_dir_realpath)
+        svn_dir = os.path.basename(root_dir_realpath)
+
+        cmd = 'svn info %s' % svn_dir
+        cwd = svn_working_dir
+        version_info = _exec_get_version_info(cmd, cwd, root_dir)
+        if not version_info:
+            cmd = 'git ls-remote --get-url && git branch | grep "*" && git log -n 1'
+            cwd = root_dir_realpath
+            version_info = _exec_get_version_info(cmd, cwd, root_dir)
+            if not version_info:
+                console.warning('failed to get version control info in %s' % root_dir)
+                continue
+            svn_info_map[root_dir] = version_info
+
+    return svn_info_map
+
+def generate_version_file(top_env, blade_root_dir, build_dir,
+                          profile, gcc_version, svn_roots):
+    """Generate version information files. """
+    svn_info_map = _get_version_info(blade_root_dir, svn_roots)
+    svn_info_len = len(svn_info_map)
+
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+    filename = '%s/version.cpp' % build_dir
+    version_cpp = open(filename, 'w')
+
+    print >>version_cpp, '/* This file was generated by blade */'
+    print >>version_cpp, 'extern "C" {'
+    print >>version_cpp, 'namespace binary_version {'
+    print >>version_cpp, 'extern const int kSvnInfoCount = %d;' % svn_info_len
+
+    svn_info_array = '{'
+    for idx in range(svn_info_len):
+        key_with_idx = svn_info_map.keys()[idx]
+        svn_info_line = '"%s"' % svn_info_map[key_with_idx]
+        svn_info_array += svn_info_line
+        if idx != (svn_info_len - 1):
+            svn_info_array += ','
+    svn_info_array += '}'
+
+    print >>version_cpp, 'extern const char* const kSvnInfo[%d] = %s;' % (
+            svn_info_len, svn_info_array)
+    print >>version_cpp, 'extern const char kBuildType[] = "%s";' % profile
+    print >>version_cpp, 'extern const char kBuildTime[] = "%s";' % time.asctime()
+    print >>version_cpp, 'extern const char kBuilderName[] = "%s";' % os.getenv('USER')
+    print >>version_cpp, (
+            'extern const char kHostName[] = "%s";' % socket.gethostname())
+    compiler = 'GCC %s' % gcc_version
+    print >>version_cpp, 'extern const char kCompiler[] = "%s";' % compiler
+    print >>version_cpp, '}}'
+
+    version_cpp.close()
+
+    env_version = top_env.Clone()
+    env_version.Replace(SHCXXCOMSTR=console.erasable(
+        '%sUpdating version information%s' % (
+            colors('cyan'), colors('end'))))
+    return env_version.SharedObject(filename)

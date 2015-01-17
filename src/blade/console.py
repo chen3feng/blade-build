@@ -23,7 +23,8 @@ color_enabled = (sys.stdout.isatty() and
                  os.environ['TERM'] not in ('emacs', 'dumb'))
 
 
-# _colors
+# See http://en.wikipedia.org/wiki/ANSI_escape_code
+# colors
 _colors = {}
 _colors['red']    = '\033[1;31m'
 _colors['green']  = '\033[1;32m'
@@ -35,19 +36,19 @@ _colors['white']  = '\033[1;37m'
 _colors['gray']   = '\033[1;38m'
 _colors['end']    = '\033[0m'
 
-
+# cursor movement
 _CLEAR_LINE = '\033[2K'
 _CURSUR_UP = '\033[A'
 
 
-def newline(msg):
+def inerasable(msg):
     """Make msg clear line when output"""
     if color_enabled:
         return _CLEAR_LINE + msg
     return msg
 
 
-def no_newline(msg):
+def erasable(msg):
     """Make msg does't cause new line when output"""
     if color_enabled:
         return _CLEAR_LINE + msg + _CURSUR_UP

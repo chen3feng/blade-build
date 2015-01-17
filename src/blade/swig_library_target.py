@@ -104,26 +104,15 @@ class SwigLibrary(CcTarget):
                 if flag[1] == 'yes':
                     pyswig_flags += ' -cpperraswarn'
 
-        builder_name = '%s_bld' % var_name
-        builder_alias = '%s_bld_alias' % var_name
-        swig_bld_cmd = 'swig -python -threads %s -c++ -I%s -o $TARGET $SOURCE' % (
-                pyswig_flags, self.build_path)
-
-        self._write_rule('%s = Builder(action=MakeAction("%s", '
-                         'compile_swig_python_message))' % (
-                             builder_name, swig_bld_cmd))
-        self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
-                env_name, builder_alias, builder_name))
-
+        self._write_rule('%s.Append(SWIGPYTHONFLAGS="%s")' % (env_name, pyswig_flags))
         self._setup_cc_flags()
 
         dep_files = []
         dep_files_map = {}
         for src in self.srcs:
             pyswig_src = self._pyswig_gen_file(self.path, src)
-            self._write_rule('%s.%s(["%s"], "%s")' % (
+            self._write_rule('%s.SwigPython(["%s"], "%s")' % (
                     env_name,
-                    builder_alias,
                     pyswig_src,
                     os.path.join(self.path, src)))
             self.data['python_sources'].append(
@@ -226,25 +215,16 @@ class SwigLibrary(CcTarget):
                                 os.path.join(self.build_path, self.path),
                                 self.name)
 
-        builder_name = '%s_bld' % var_name
-        builder_alias = '%s_bld_alias' % var_name
-        swig_bld_cmd = 'swig -java %s -c++ -I%s -o $TARGET $SOURCE' % (
-                       javaswig_flags, self.build_path)
-        self._write_rule('%s = Builder(action=MakeAction("%s", '
-                         'compile_swig_java_message))' % (
-                             builder_name, swig_bld_cmd))
-        self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
-                env_name, builder_alias, builder_name))
+        self._write_rule('%s.Append(SWIGJAVAFLAGS="%s")' % (env_name, javaswig_flags))
         self._swig_library_rules_java_helper(depend_outdir, build_jar,
                                              java_lib_packed, out_dir,
-                                             builder_alias, dep_files_map)
+                                             dep_files_map)
 
     def _swig_library_rules_java_helper(self,
                                         dep_outdir,
                                         java_build_jar,
                                         lib_packed,
                                         out_dir,
-                                        builder_alias,
                                         dep_files_map):
         env_name = self._env_name()
         var_name = self._var_name('dynamic_java')
@@ -266,10 +246,9 @@ class SwigLibrary(CcTarget):
             src_basename = os.path.basename(src)
             javaswig_var = '%s_%s' % (
                     var_name, self._regular_variable_name(src_basename))
-            self._write_rule('%s = %s.%s(["%s"], "%s")' % (
+            self._write_rule('%s = %s.SwigJava(["%s"], "%s")' % (
                     javaswig_var,
                     env_name,
-                    builder_alias,
                     javaswig_src,
                     os.path.join(self.path, src)))
             self.data['java_sources_explict_dependency'].append(javaswig_src)
@@ -339,25 +318,13 @@ class SwigLibrary(CcTarget):
         flag_list = []
         warning = self.data.get('cpperraswarn', '')
         flag_list.append(('cpperraswarn', warning))
-        self.phpswig_flags = ''
         phpswig_flags = ''
         for flag in flag_list:
             if flag[0] == 'cpperraswarn':
                 if flag[1] == 'yes':
                     phpswig_flags += ' -cpperraswarn'
-        self.phpswig_flags = phpswig_flags
 
-        builder_name = '%s_php_bld' % self._regular_variable_name(self.name)
-        builder_alias = '%s_php_bld_alias' % self._regular_variable_name(self.name)
-        swig_bld_cmd = 'swig -php %s -c++ -I%s -o $TARGET $SOURCE' % (
-                       phpswig_flags, self.build_path)
-
-        self._write_rule('%s = Builder(action=MakeAction("%s", '
-                         'compile_swig_php_message))' % (
-                             builder_name, swig_bld_cmd))
-        self._write_rule('%s.Append(BUILDERS={"%s" : %s})' % (
-                          env_name, builder_alias, builder_name))
-
+        self._write_rule('%s.Append(SWIGPHPFLAGS="%s")' % (env_name, phpswig_flags))
         if self.php_inc_list:
             self._write_rule('%s.Append(CPPPATH=%s)' % (env_name, self.php_inc_list))
 
@@ -365,9 +332,8 @@ class SwigLibrary(CcTarget):
         dep_files_map = {}
         for src in self.srcs:
             phpswig_src = self._phpswig_gen_file(self.path, src)
-            self._write_rule('%s.%s(["%s"], "%s")' % (
+            self._write_rule('%s.SwigPhp(["%s"], "%s")' % (
                     env_name,
-                    builder_alias,
                     phpswig_src,
                     os.path.join(self.path, src)))
             obj_name_php = '%s_object' % self._var_name_of(src, 'php')

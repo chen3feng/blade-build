@@ -1,0 +1,10 @@
+lex_yacc_library(
+    name = 'example_llyy',
+    srcs = ['example.ll', 'example.yy']
+)
+
+cc_binary(
+    name = 'example',
+    srcs = 'example.cpp',
+    deps = ':example_llyy',
+)
