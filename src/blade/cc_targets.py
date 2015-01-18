@@ -225,16 +225,6 @@ class CcTarget(Target):
         if extra_linkflags:
             self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), extra_linkflags))
 
-    def _check_gcc_flag(self, gcc_flag_list):
-        options = self.blade.get_options()
-        gcc_flags_list_checked = []
-        for flag in gcc_flag_list:
-            if flag == '-fno-omit-frame-pointer':
-                if options.profile != 'release':
-                    continue
-            gcc_flags_list_checked.append(flag)
-        return gcc_flags_list_checked
-
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
         oflags = []
@@ -273,12 +263,8 @@ class CcTarget(Target):
         if (self.blade.get_options().profile == 'release' or
             self.data.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
-
-        # Add the compliation flags here
-        # 1. -fno-omit-frame-pointer to release
-        blade_gcc_flags = ['-fno-omit-frame-pointer']
-        blade_gcc_flags_checked = self._check_gcc_flag(blade_gcc_flags)
-        cpp_flags += list(set(blade_gcc_flags_checked).difference(set(cpp_flags)))
+            # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
+            cpp_flags += ['-fno-omit-frame-pointer']
 
         cpp_flags += self.data.get('extra_cppflags', [])
 

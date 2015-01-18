@@ -156,6 +156,7 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
                 os.chdir(git_root)
                 status_cmd = 'git status --porcelain %s' % (git_subdir)
                 output = os.popen(status_cmd).read().split('\n')
+                os.chdir(blade_root_dir)
             else:
                 console.warning('unknown source client type, NOT svn OR git')
         for f in output:
@@ -230,7 +231,6 @@ def _main(blade_path):
     # Check code style using cpplint.py
     if command == 'build' or command == 'test':
         opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
-        os.chdir(blade_root_dir)
         _check_code_style(opened_files)
 
     # Init global blade manager.

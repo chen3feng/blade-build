@@ -20,6 +20,7 @@ import py_compile
 import shutil
 import signal
 import socket
+import stat
 import string
 import subprocess
 import sys
@@ -183,7 +184,8 @@ def update_init_py_dirs(arcname, dirs, dirs_with_init_py):
 
 def generate_python_binary(target, source, env):
     # console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
-    target_file = zipfile.PyZipFile(str(target[0]) + '', 'w')
+    target_name = str(target[0])
+    target_file = zipfile.ZipFile(target_name, 'w', zipfile.ZIP_DEFLATED)
     dirs = set()
     dirs_with_init_py = set()
     for s in source:
@@ -205,7 +207,19 @@ def generate_python_binary(target, source, env):
     dirs_missing_init_py = dirs - dirs_with_init_py
     for dir in dirs_missing_init_py:
         target_file.writestr(os.path.join(dir, '__init__.py'), '')
+    target_file.writestr('__init__.py', '')
     target_file.close()
+
+    target_file = open(target_name, 'rb')
+    content = target_file.read()
+    target_file.close()
+
+    entry = env['ENTRY']
+    target_file = open(target_name, 'wb')
+    target_file.write('#!/bin/sh\n\nPYTHONPATH=$0 exec python -m %s\n' % entry)
+    target_file.write(content)
+    target_file.close()
+    os.chmod(target_name, 0775)
 
 
 def generate_resource_index(target, source, env):
@@ -706,7 +720,7 @@ def setup_python_builders(top_env):
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     compile_python_library_message = console.erasable('%sGenerating python library %s$TARGET%s%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
-    compile_python_binary_message = console.erasable('%sGenerating python binary %s$TARGET%s%s' % \
+    compile_python_binary_message = console.inerasable('%sGenerating python binary %s$TARGET%s%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
     python_egg_bld = SCons.Builder.Builder(action = MakeAction(generate_python_egg,

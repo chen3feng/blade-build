@@ -61,6 +61,7 @@ class ResourceLibrary(CcTarget):
 
         """
         self._prepare_to_generate_rule()
+        self._setup_cc_flags()
 
         env_name = self._env_name()
         (out_dir, res_file_index) = self._resource_library_rules_helper()
@@ -70,9 +71,9 @@ class ResourceLibrary(CcTarget):
             src_path = os.path.join(self.path, src)
             c_src_name = '%s.c' % self._regular_variable_name(src)
             c_src_path = os.path.join(out_dir, c_src_name)
-            cmd_bld = '%s_bld' % self._regular_variable_name(c_src_path)
+            v_src = self._var_name_of(src_path)
             self._write_rule('%s = %s.ResourceFile("%s", "%s")' % (
-                         cmd_bld, env_name, c_src_path, src_path))
+                         v_src, env_name, c_src_path, src_path))
             self.data['res_srcs'].append(c_src_path)
 
         self._resource_library_rules_objects()
@@ -88,8 +89,6 @@ class ResourceLibrary(CcTarget):
         """Generate resource library object rules.  """
         env_name = self._env_name()
         objs_name = self._objs_name()
-
-        self._setup_cc_flags()
 
         objs = []
         res_srcs = self.data['res_srcs']
@@ -129,13 +128,13 @@ class ResourceLibrary(CcTarget):
             src_path = os.path.join(self.path, src)
             src_list.append(src_path)
 
-        cmd_bld = '%s_header_cmd_bld' % res_index_name
+        v_index = self._var_name_of(self.name, 'index')
         res_index_header_path = os.path.join(out_dir, res_index_header)
         res_index_source_path = os.path.join(out_dir, res_index_source)
         self._write_rule('%s["SOURCE_PATH"] = "%s"' % (env_name, self.path))
         self._write_rule('%s["TARGET_NAME"] = "%s"' % (env_name, res_index_name))
         self._write_rule('%s = %s.ResourceIndex(["%s", "%s"], %s)' % (
-                     cmd_bld, env_name, res_index_source_path, res_index_header_path,
+                     v_index, env_name, res_index_source_path, res_index_header_path,
                      src_list))
 
         return (out_dir, res_index_name)

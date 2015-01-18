@@ -8,29 +8,16 @@
 #
 # Script to run examples
 
-function cleanup()
-{
-    # Cleanup BLADE_ROOT and BUILDs to avoid ran by 'blade build ...' on upper dirs
-    find . -name BUILD | xargs rm
-    rm -rf BLADE_ROOT
-
-    # Cleanup generated files
-    rm -rf {BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.sconsign.dblite,.sconsign.tmp,blade_tests_detail,.Building.lock} SConstruct
-}
-
 cd `dirname $0`
 
 # Cleanup before running
 rm -rf blade-bin build64_release/
 
-for f in `find . -name BUILD.EXAMPLE`; do
-    cp $f ${f%.EXAMPLE}
-done
-cp BLADE_ROOT.EXAMPLE BLADE_ROOT
+. setup.sh
 
 ../blade test ...
 exit_code=$?
 
-cleanup
+. cleanup.sh
 
 exit $exit_code

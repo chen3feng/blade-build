@@ -228,6 +228,7 @@ class PythonBinaryTarget(PythonTarget):
                  name,
                  srcs,
                  deps,
+                 main,
                  blade,
                  kwargs):
         """Init method. """
@@ -241,6 +242,21 @@ class PythonBinaryTarget(PythonTarget):
                               deps,
                               blade,
                               kwargs)
+        if main:
+            self.data['main'] = main
+        else:
+            if len(srcs) == 1:
+                self.data['main'] = srcs[0]
+            else:
+                console.error_exit(
+                    '%s: The entry file must be specified by the "main" '
+                    'argument if more than 1 srcs' % self.fullname)
+
+    def _get_entry(self):
+        main = self.data['main']
+        full_path = os.path.normpath(os.path.join(self.path, main))[:-3]
+        return full_path.replace('/', '.')
+
 
     def scons_rules(self):
         """scons_rules.
@@ -254,6 +270,7 @@ class PythonBinaryTarget(PythonTarget):
         env_name = self._env_name()
         var_name = self._var_name()
 
+        self._write_rule('%s.Append(ENTRY="%s")' % (env_name, self._get_entry()))
         targets = self.blade.get_build_targets()
         source_files = self.data.get('python_sources', [])
         dep_var_list = []
@@ -262,7 +279,7 @@ class PythonBinaryTarget(PythonTarget):
             if python_var:
                 dep_var_list.append(python_var)
 
-        target_binary_file = self._target_file_path() + '.zip'
+        target_binary_file = self._target_file_path()
         self._write_rule('%s = %s.PythonBinary(["%s"], %s + [%s])' % (
                           var_name,
                           env_name,
@@ -273,11 +290,13 @@ class PythonBinaryTarget(PythonTarget):
 def py_binary(name,
               srcs=[],
               deps=[],
+              main=None,
               **kwargs):
     """python binary. """
     target = PythonBinaryTarget(name,
                                 srcs,
                                 deps,
+                                main,
                                 blade.blade,
                                 kwargs)
     blade.blade.register_target(target)

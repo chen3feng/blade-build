@@ -96,8 +96,6 @@ class GenRuleTarget(Target):
                 srcs_str,
                 cmd))
 
-        self.var_name = var_name
-
         # TODO(phongchen): add Target.get_all_vars
         targets = self.blade.get_build_targets()
         dep_var_list = []
