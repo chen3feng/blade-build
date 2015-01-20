@@ -173,7 +173,7 @@ def generate_python_library(target, source, env):
     target_file.close()
 
 
-def update_init_py_dirs(arcname, dirs, dirs_with_init_py):
+def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
     dir = os.path.dirname(arcname)
     if os.path.basename(arcname) == '__init__.py':
         dirs_with_init_py.add(dir)
@@ -196,11 +196,11 @@ def generate_python_binary(target, source, env):
             libfile.close()
             for libsrc in data['srcs']:
                 arcname = os.path.relpath(libsrc, data['base_dir'])
-                update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
         else:
             py_compile.compile(src)
-            update_init_py_dirs(src, dirs, dirs_with_init_py)
+            _update_init_py_dirs(src, dirs, dirs_with_init_py)
             target_file.write(src)
 
     # insert __init__.py into each dir if missing
@@ -211,13 +211,19 @@ def generate_python_binary(target, source, env):
     target_file.close()
 
     target_file = open(target_name, 'rb')
-    content = target_file.read()
+    zip_content = target_file.read()
     target_file.close()
 
+    # Insert bootstrap before zip, it is also a valid zip file.
+    # unzip will seek actually start until meet the zip magic number.
     entry = env['ENTRY']
+    bootstrap =
+        '#!/bin/sh\n'
+        '\n'
+        'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n' % entry
     target_file = open(target_name, 'wb')
-    target_file.write('#!/bin/sh\n\nPYTHONPATH=$0 exec python -m %s\n' % entry)
-    target_file.write(content)
+    target_file.write(bootstrap)
+    target_file.write(zip_content)
     target_file.close()
     os.chmod(target_name, 0775)
 

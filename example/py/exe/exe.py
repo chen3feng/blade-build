@@ -1,3 +1,4 @@
+import sys
 import py.lib.lib
 import py.proto.echo_pb2
 
@@ -9,6 +10,7 @@ def main():
     p.id = 9527
     p.email = 'chen3feng@gmail.com'
     print ab
+    print sys.argv
 
 
 if __name__ == '__main__':
