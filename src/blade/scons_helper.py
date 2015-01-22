@@ -158,15 +158,24 @@ setup(
     return 0
 
 
+def _compile_python(src, build_dir):
+    if src.startswith(build_dir):
+        pyc = src + 'c'
+    else:
+        pyc = os.path.join(build_dir, src) + 'c'
+    py_compile.compile(src, pyc)
+    return pyc
+
+
 def generate_python_library(target, source, env):
-    # console.warning('generate_python_library %s -> %s' % ([str(src) for src in source], str(target[0])))
     target_file = open(str(target[0]), 'w')
     data = dict()
     data['base_dir'] = env.get('BASE_DIR', '')
+    build_dir = env['BUILD_DIR']
     srcs = []
     for s in source:
         src = str(s)
-        py_compile.compile(src)
+        _compile_python(src, build_dir)
         srcs.append(src)
     data['srcs'] = srcs
     target_file.write(str(data))
@@ -183,8 +192,9 @@ def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
 
 
 def generate_python_binary(target, source, env):
-    # console.warning('generate_python_binary %s -> %s' % ([str(src) for src in source], str(target[0])))
+    """The action for generate python executable file"""
     target_name = str(target[0])
+    build_dir = env['BUILD_DIR']
     target_file = zipfile.ZipFile(target_name, 'w', zipfile.ZIP_DEFLATED)
     dirs = set()
     dirs_with_init_py = set()
@@ -194,12 +204,13 @@ def generate_python_binary(target, source, env):
             libfile = open(src)
             data = eval(libfile.read())
             libfile.close()
+            base_dir = data['base_dir']
             for libsrc in data['srcs']:
-                arcname = os.path.relpath(libsrc, data['base_dir'])
+                arcname = os.path.relpath(libsrc, base_dir)
                 _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
         else:
-            py_compile.compile(src)
+            _compile_python(src, build_dir)
             _update_init_py_dirs(src, dirs, dirs_with_init_py)
             target_file.write(src)
 
@@ -217,10 +228,10 @@ def generate_python_binary(target, source, env):
     # Insert bootstrap before zip, it is also a valid zip file.
     # unzip will seek actually start until meet the zip magic number.
     entry = env['ENTRY']
-    bootstrap =
+    bootstrap = (
         '#!/bin/sh\n'
         '\n'
-        'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n' % entry
+        'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % entry
     target_file = open(target_name, 'wb')
     target_file.write(bootstrap)
     target_file.write(zip_content)

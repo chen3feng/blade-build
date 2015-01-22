@@ -173,23 +173,23 @@ class ProtoLibrary(CcTarget):
 
     def _proto_python_rules(self):
         """Generate python files. """
+        env_name = self._env_name()
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             proto_python_src = self._proto_gen_python_file(src)
             py_src_var = self._var_name_of(src, 'python')
             self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
                     py_src_var,
-                    self._env_name(),
+                    env_name,
                     proto_python_src,
                     src_path))
             self.data['python_vars'].append(py_src_var)
             self.data['python_sources'].append(proto_python_src)
         py_lib_var = self._var_name('python')
-        self._write_rule('%s["BASE_DIR"] = "%s"' % (
-            self._env_name(), self.build_path))
+        self._write_rule('%s["BASE_DIR"] = "%s"' % (env_name, self.build_path))
+        self._write_rule('%s["BUILD_DIR"] = "%s"' % (env_name, self.build_path))
         self._write_rule('%s = %s.PythonLibrary(["%s"], [%s])' % (
-            py_lib_var,
-            self._env_name(),
+            py_lib_var, env_name,
             self._target_file_path() + '.pylib',
             ', '.join(self.data['python_vars'])))
         self.data['python_var'] = py_lib_var
@@ -231,10 +231,7 @@ class ProtoLibrary(CcTarget):
             (proto_src, proto_hdr) = self._proto_gen_files(src)
 
             self._write_rule('%s.Proto(["%s", "%s"], "%s")' % (
-                    env_name,
-                    proto_src,
-                    proto_hdr,
-                    os.path.join(self.path, src)))
+                    env_name, proto_src, proto_hdr, os.path.join(self.path, src)))
             obj_name = "%s_object" % self._var_name_of(src)
             obj_names.append(obj_name)
             self._write_rule(
@@ -257,9 +254,7 @@ class ProtoLibrary(CcTarget):
                 continue
             dep_var_name = dep._var_name()
             self._write_rule('%s.Depends(%s, %s)' % (
-                    self._env_name(),
-                    sources,
-                    dep_var_name))
+                    env_name, sources, dep_var_name))
 
         self._cc_library()
         options = self.blade.get_options()

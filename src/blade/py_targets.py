@@ -180,6 +180,8 @@ class PythonLibraryTarget(PythonTarget):
         if self.type == 'prebuilt_py_library':
             return
 
+        self._write_rule('%s["BUILD_DIR"] = "%s"' % (env_name, self.build_path))
+
         source_files = self.data.get('python_sources', [])
         target_library_file = '%s.pylib' % self._target_file_path()
         self._write_rule('%s = %s.PythonLibrary(["%s"], %s)' % (
@@ -271,6 +273,7 @@ class PythonBinaryTarget(PythonTarget):
         var_name = self._var_name()
 
         self._write_rule('%s.Append(ENTRY="%s")' % (env_name, self._get_entry()))
+        self._write_rule('%s["BUILD_DIR"] = "%s"' % (env_name, self.build_path))
         targets = self.blade.get_build_targets()
         source_files = self.data.get('python_sources', [])
         dep_var_list = []
