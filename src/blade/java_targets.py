@@ -32,7 +32,6 @@ class JavaTarget(Target):
                  srcs,
                  deps,
                  prebuilt,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -47,7 +46,7 @@ class JavaTarget(Target):
                         type,
                         srcs,
                         deps,
-                        blade,
+                        blade.blade,
                         kwargs)
 
     def _java_jar_gen_class_root(self, path, name):
@@ -75,6 +74,9 @@ class JavaTarget(Target):
             jar_list.append(jar_path)
         return jar_list
 
+    def _generate_classes(self):
+        pass
+
     def scons_rules(self):
         """scons_rules.
         Description
@@ -83,12 +85,11 @@ class JavaTarget(Target):
 
         """
         self._generate_classes()
-        self._generate_jar()
 
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, prebuilt, **kwargs):
+    def __init__(self, name, srcs, deps, prebuilt, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -97,15 +98,15 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, **kwargs):
+    def __init__(self, name, srcs, deps, kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
 
-class JavaTest(JavaBinary):
+class JavaTest(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, **kwargs):
-        type = 'java_binary'
+    def __init__(self, name, srcs, deps, kwargs):
+        type = 'java_test'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
 
 
@@ -119,7 +120,6 @@ def java_library(name,
                          srcs,
                          deps,
                          prebuilt,
-                         blade.blade,
                          kwargs)
     blade.blade.register_target(target)
 
@@ -132,7 +132,6 @@ def java_binary(name,
     target = JavaBinary(name,
                         srcs,
                         deps,
-                        blade.blade,
                         kwargs)
     blade.blade.register_target(target)
 
@@ -145,7 +144,6 @@ def java_test(name,
     target = JavaTest(name,
                       srcs,
                       deps,
-                      blade.blade,
                       kwargs)
     blade.blade.register_target(target)
 

@@ -1,0 +1,22 @@
+java_library(
+    name = 'foo',
+    srcs = 'foo/src/main/java',
+)
+
+java_binary(
+    name = 'bar',
+    srcs = 'bar/src/main/java',
+    deps = ':foo',
+)
+
+java_test(
+    name = 'foo_test',
+    srcs = 'foo/src/test/java',
+    deps = ':foo'
+)
+
+java_test(
+    name = 'bar_test',
+    srcs = 'bar/src/test/java',
+    deps = ':bar'
+)
