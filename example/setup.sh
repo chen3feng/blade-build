@@ -6,7 +6,7 @@
 # Author: CHEN Feng <chen3feng@gmail.com>
 
 for f in `find . -name BUILD.EXAMPLE`; do
-    cp $f ${f%.EXAMPLE}
+    ln $f ${f%.EXAMPLE}
 done
-cp BLADE_ROOT.EXAMPLE BLADE_ROOT
+ln BLADE_ROOT.EXAMPLE BLADE_ROOT
 

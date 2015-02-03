@@ -1,6 +1,7 @@
 java_library(
     name = 'foo',
     srcs = 'foo/src/main/java',
+    deps = '//proto:contact_proto',
 )
 
 java_binary(

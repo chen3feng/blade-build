@@ -49,33 +49,44 @@ class JavaTarget(Target):
                         blade.blade,
                         kwargs)
 
-    def _java_jar_gen_class_root(self, path, name):
-        """Gen class root. """
-        return os.path.join(self.build_path, path, '%s.classes' % name)
+    def _get_classes_dir(self):
+        """Generated classes dir. """
+        return self._target_file_path() + '.classes'
 
-    def _dep_is_jar_to_compile(self, dep):
-        """Check the target is java_jar target or not. """
-        targets = self.blade.get_build_targets()
-        target_type = targets[dep].type
-        return ('java_jar' in target_type and 'prebuilt' not in target_type)
-
-    def _java_jar_deps_list(self, deps):
-        """Returns a jar list string that this targets depends on. """
-        jar_list = []
-        for jar in deps:
-            if not jar:
-                continue
-
-            if not self._dep_is_jar_to_compile(jar):
-                continue
-
-            jar_name = '%s.jar' % jar[1]
-            jar_path = os.path.join(self.build_path, jar[0], jar_name)
-            jar_list.append(jar_path)
-        return jar_list
+    def _get_deps(self):
+        """Returns list of class paths that this targets depends on. """
+        classes = []
+        class_paths = []
+        for dep in self.deps:
+            target = self.target_database.get(dep)
+            class_path = target.data.get('java_class_path')
+            if class_path:
+                class_paths.append(class_path)
+            class_var = target.data.get('java_classes')
+            if class_var:
+                classes.append(class_var)
+        return classes, class_paths
 
     def _generate_classes(self):
-        pass
+        self._clone_env()
+        env_name = self._env_name()
+        var_name = self._var_name()
+        self._write_rule('%s.Append(JAVACLASSPATH=["%s"])' % (
+            env_name, '/usr/share/java/junit4.jar'))
+        dep_classes, class_paths = self._get_deps()
+        if class_paths:
+            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
+                env_name, class_paths))
+        srcs = [self._source_file_path(src) for src in self.srcs]
+        classes_dir = self._get_classes_dir()
+        self._write_rule('%s = %s.Java(source=%s, target="%s")' % (
+            var_name, env_name, srcs, classes_dir))
+        if dep_classes:
+            self._write_rule('%s.Depends(%s, [%s])' % (
+                env_name, var_name, ', '.join(dep_classes)))
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
+        self.data['java_class_path'] = classes_dir
+        self.data['java_classes'] = var_name
 
     def scons_rules(self):
         """scons_rules.
