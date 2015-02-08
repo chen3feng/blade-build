@@ -19,7 +19,47 @@ from blade_util import var_to_list
 from target import Target
 
 
-class JavaTarget(Target):
+class JavaTargetMixIn(object):
+    def _get_classes_dir(self):
+        """Generated classes dir. """
+        return self._target_file_path() + '.classes'
+
+    def _get_deps(self):
+        """Returns list of class paths that this targets depends on. """
+        classes = []
+        class_paths = []
+        for dep in self.expanded_deps:
+            target = self.target_database.get(dep)
+            class_path = target.data.get('java_class_path')
+            if class_path:
+                class_paths.append(class_path)
+            class_var = target.data.get('java_classes')
+            if class_var:
+                classes.append(class_var)
+        return classes, class_paths
+
+    def _generate_java_classes(self, srcs):
+        self._clone_env()
+        env_name = self._env_name()
+        var_name = self._var_name()
+        self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
+            env_name, ['/usr/share/java/junit4.jar', 'protobuf-java-2.4.1.jar']))
+        dep_classes, class_paths = self._get_deps()
+        if class_paths:
+            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
+                env_name, class_paths))
+        classes_dir = self._get_classes_dir()
+        self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
+            var_name, env_name, classes_dir, srcs))
+        if dep_classes:
+            self._write_rule('%s.Depends(%s, [%s])' % (
+                env_name, var_name, ', '.join(dep_classes)))
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
+        self.data['java_class_path'] = classes_dir
+        self.data['java_classes'] = var_name
+
+
+class JavaTarget(Target, JavaTargetMixIn):
     """A java jar target subclass.
 
     This class is derived from Target and generates relates java jar
@@ -49,53 +89,9 @@ class JavaTarget(Target):
                         blade.blade,
                         kwargs)
 
-    def _get_classes_dir(self):
-        """Generated classes dir. """
-        return self._target_file_path() + '.classes'
-
-    def _get_deps(self):
-        """Returns list of class paths that this targets depends on. """
-        classes = []
-        class_paths = []
-        for dep in self.expanded_deps:
-            target = self.target_database.get(dep)
-            class_path = target.data.get('java_class_path')
-            if class_path:
-                class_paths.append(class_path)
-            class_var = target.data.get('java_classes')
-            if class_var:
-                classes.append(class_var)
-        return classes, class_paths
-
     def _generate_classes(self):
-        self._clone_env()
-        env_name = self._env_name()
-        var_name = self._var_name()
-        self._write_rule('%s.Append(JAVACLASSPATH=["%s"])' % (
-            env_name, '/usr/share/java/junit4.jar'))
-        dep_classes, class_paths = self._get_deps()
-        if class_paths:
-            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
-                env_name, class_paths))
         srcs = [self._source_file_path(src) for src in self.srcs]
-        classes_dir = self._get_classes_dir()
-        self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
-            var_name, env_name, classes_dir, srcs))
-        if dep_classes:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ', '.join(dep_classes)))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
-        self.data['java_class_path'] = classes_dir
-        self.data['java_classes'] = var_name
-
-    def scons_rules(self):
-        """scons_rules.
-        Description
-        -----------
-        It outputs the scons rules according to user options.
-
-        """
-        self._generate_classes()
+        self._generate_java_classes(srcs)
 
 
 class JavaLibrary(JavaTarget):
@@ -105,6 +101,9 @@ class JavaLibrary(JavaTarget):
         if prebuilt:
             type = 'prebuilt_java_library'
         JavaTarget.__init__(self, name, type, srcs, deps, prebuilt, kwargs)
+
+    def scons_rules(self):
+        self._generate_classes()
 
 
 class JavaBinary(JavaTarget):
@@ -127,6 +126,9 @@ class JavaTest(JavaTarget):
     def __init__(self, name, srcs, deps, kwargs):
         type = 'java_test'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
+
+    def scons_rules(self):
+        self._generate_classes()
 
 
 def java_library(name,

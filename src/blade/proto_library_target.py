@@ -9,16 +9,18 @@
 
 
 import os
+import re
 import blade
 
 import console
 import configparse
 import build_rules
+import java_targets
 from blade_util import var_to_list
 from cc_targets import CcTarget
 
 
-class ProtoLibrary(CcTarget):
+class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     """A scons proto library target subclass.
 
     This class is derived from SconsCcTarget.
@@ -100,66 +102,61 @@ class ProtoLibrary(CcTarget):
         proto_name = src[:-6]
         return self._target_file_path('%s_pb2.py' % proto_name)
 
-    def _get_java_package_name(self, src):
+    def _get_java_package_name(self, content):
         """Get the java package name from proto file if it is specified. """
-        package_name_java = 'java_package'
-        package_name = 'package'
-        if not os.path.isfile(src):
-            return ''
-        package_line = ''
-        package = ''
-        normal_package_line = ''
-        for line in open(src):
-            line = line.strip()
-            if line.startswith('//'):
-                continue
-            pos = line.find('//')
-            if pos != -1:
-                line = line[0:pos]
-            if package_name_java in line:
-                package_line = line
-                break
-            if line.startswith(package_name):
-                normal_package_line = line
+        java_package_pattern = '^\s*option\s*java_package\s*=\s*["\']([\w.]+)'
+        m = re.search(java_package_pattern, content, re.MULTILINE)
+        if m:
+            return m.group(1)
 
-        if package_line:
-            package = package_line.split('=')[1].strip().strip(r'\'";')
-        elif normal_package_line:
-            package = normal_package_line.split(' ')[1].strip().strip(';')
+        package_pattern = '^\s*package\s+([\w.]+)'
+        m = re.search(package_pattern, content, re.MULTILINE)
+        if m:
+            return m.group(1).replace('.', '/')
 
-        package = package.replace('.', '/')
+        return ''
 
-        return package
-
-    def _proto_java_gen_file(self, path, src, package):
-        """Generate the java files name of the proto library. """
+    def _proto_java_gen_class_name(self, src, content):
+        """Get generated java class name"""
+        pattern = '^\s*option\s+java_outer_classname\s*=\s*[\'"](\w+)["\']'
+        text = open(self._source_file_path(src)).read()
+        m = re.search(pattern, content, re.MULTILINE)
+        if m:
+            return m.group(1)
         proto_name = src[:-6]
         base_name = os.path.basename(proto_name)
-        base_name = ''.join(base_name.title().split('_'))
-        base_name = '%s.java' % base_name
-        dir_name = os.path.join(path, package)
-        proto_name = os.path.join(dir_name, base_name)
-        return os.path.join(self.build_path, proto_name)
+        return ''.join(base_name.title().split('_'))
+
+    def _proto_java_gen_file(self, src):
+        """Generate the java files name of the proto library. """
+        f = open(self._source_file_path(src))
+        content = f.read()
+        f.close()
+        package = self._get_java_package_name(content)
+        class_name = self._proto_java_gen_class_name(src, content)
+        java_name = '%s.java' % class_name
+        return package, java_name
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
+        java_srcs = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
-            package_dir = self._get_java_package_name(src_path)
-            proto_java_src_package = self._proto_java_gen_file(self.path,
-                                                               src,
-                                                               package_dir)
-
+            package, java_name = self._proto_java_gen_file(src)
+            proto_java_src = self._target_file_path(
+                    os.path.join(os.path.dirname(src), package, java_name))
+            java_srcs.append(proto_java_src)
             self._write_rule('%s.ProtoJava(["%s"], "%s")' % (
                     self._env_name(),
-                    proto_java_src_package,
+                    proto_java_src,
                     src_path))
 
             self.data['java_sources'] = (
-                     os.path.dirname(proto_java_src_package),
+                     os.path.dirname(proto_java_src),
                      os.path.join(self.build_path, self.path),
                      self.name)
-            self.data['java_sources_explict_dependency'].append(proto_java_src_package)
+            self.data['java_sources_explict_dependency'].append(proto_java_src)
+        self._generate_java_classes(java_srcs)
 
     def _proto_php_rules(self):
         """Generate php files. """
