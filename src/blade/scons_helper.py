@@ -580,6 +580,8 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
         colors('green'), colors('purple'), colors('green'), colors('end')))
     link_shared_library_message = console.inerasable('%sLinking Shared Library %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
+    jar_message = console.inerasable('%sCreating Jar %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
 
     if not verbose:
         top_env.Append(
@@ -593,6 +595,7 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
                 SHLINKCOMSTR = link_shared_library_message,
                 LINKCOMSTR = link_program_message,
                 JAVACCOMSTR = compile_source_message,
+                JARCOMSTR = jar_message,
                 LEXCOMSTR = compile_source_message)
 
 

@@ -57,7 +57,7 @@ class JavaTarget(Target):
         """Returns list of class paths that this targets depends on. """
         classes = []
         class_paths = []
-        for dep in self.deps:
+        for dep in self.expanded_deps:
             target = self.target_database.get(dep)
             class_path = target.data.get('java_class_path')
             if class_path:
@@ -79,8 +79,8 @@ class JavaTarget(Target):
                 env_name, class_paths))
         srcs = [self._source_file_path(src) for src in self.srcs]
         classes_dir = self._get_classes_dir()
-        self._write_rule('%s = %s.Java(source=%s, target="%s")' % (
-            var_name, env_name, srcs, classes_dir))
+        self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
+            var_name, env_name, classes_dir, srcs))
         if dep_classes:
             self._write_rule('%s.Depends(%s, [%s])' % (
                 env_name, var_name, ', '.join(dep_classes)))
@@ -112,6 +112,14 @@ class JavaBinary(JavaTarget):
     def __init__(self, name, srcs, deps, kwargs):
         type = 'java_binary'
         JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
+
+    def scons_rules(self):
+        self._generate_classes()
+        env_name = self._env_name()
+        var_name = self._var_name()
+        dep_classes, class_paths = self._get_deps()
+        self._write_rule('%s = %s.Jar(target="%s", source=[%s] + [%s])' % (
+            var_name, env_name, self._target_file_path(), self.data['java_classes'], ', '.join(dep_classes)))
 
 
 class JavaTest(JavaTarget):
