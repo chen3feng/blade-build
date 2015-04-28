@@ -33,6 +33,11 @@ def _incs_list_to_string(incs):
     """
     return ' '.join(['-I ' + path for path in incs])
 
+def escape_c_string(s):
+    all_chars = (chr(x) for x in range(256))
+    trans_table = dict((c, c) for c in all_chars)
+    trans_table.update({'"': r'\"'})
+    return "".join(trans_table[c] for c in s)
 
 class SconsFileHeaderGenerator(object):
     """SconsFileHeaderGenerator class"""
@@ -134,7 +139,7 @@ version_obj = env_version.SharedObject('$filename')
         svn_info_array = '{'
         for idx in range(svn_info_len):
             key_with_idx = self.svn_info_map.keys()[idx]
-            svn_info_line = '"%s"' % self.svn_info_map[key_with_idx]
+            svn_info_line = '"%s"' % escape_c_string(self.svn_info_map[key_with_idx])
             svn_info_array += svn_info_line
             if idx != (svn_info_len - 1):
                 svn_info_array += ','
