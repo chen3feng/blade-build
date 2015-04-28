@@ -24,8 +24,6 @@ import time
 import configparse
 import console
 
-import json
-
 from blade_platform import CcFlagsManager
 
 
@@ -136,7 +134,7 @@ version_obj = env_version.SharedObject('$filename')
         svn_info_array = '{'
         for idx in range(svn_info_len):
             key_with_idx = self.svn_info_map.keys()[idx]
-            svn_info_line = json.dumps(self.svn_info_map[key_with_idx])
+            svn_info_line = '"%s"' % self.svn_info_map[key_with_idx]
             svn_info_array += svn_info_line
             if idx != (svn_info_len - 1):
                 svn_info_array += ','
