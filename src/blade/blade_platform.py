@@ -207,10 +207,22 @@ class CcFlagsManager(object):
         """Get the flags that are not warning flags. """
         flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
         linkflags = ['-m%s' % self.options.m]
+
+        # Debigging information setting
+        if self.options.no_debug_info:
+            flags_except_warning += ['-g0']
+        else:
+            if self.options.profile == 'debug':
+                flags_except_warning += ['-ggdb3']
+            elif self.options.profile == 'release':
+                flags_except_warning += ['-g']
+
+        # Option debugging flags
         if self.options.profile == 'debug':
-            flags_except_warning += ['-ggdb3', '-fstack-protector']
+            flags_except_warning += ['-fstack-protector']
         elif self.options.profile == 'release':
-            flags_except_warning += ['-g', '-DNDEBUG']
+            flags_except_warning += ['-DNDEBUG']
+
         flags_except_warning += [
                 '-D_FILE_OFFSET_BITS=64',
                 '-D__STDC_CONSTANT_MACROS',

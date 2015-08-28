@@ -46,11 +46,13 @@ class BladeConfig(object):
                 'gperftools_libs': [],
                 'gperftools_debug_libs': [],
                 'gtest_libs': [],
-                'gtest_main_libs': []
+                'gtest_main_libs': [],
+                'pprof_path': '',
             },
 
             'cc_binary_config': {
-                'extra_libs': []
+                'extra_libs': [],
+                'run_lib_paths' : [],
             },
 
             'distcc_config': {
@@ -151,6 +153,7 @@ class BladeConfig(object):
 
     def _replace_config(self, section_name, config, user_config):
         """Replace config section items"""
+        unknown_keys = []
         for k in user_config:
             if k in config:
                 if isinstance(config[k], list):
@@ -160,7 +163,9 @@ class BladeConfig(object):
             else:
                 console.warning('%s: %s: unknown config item name: %s' %
                         (self.current_file_name, section_name, k))
-                del user_config[k]
+                unknown_keys.append(k)
+        for k in unknown_keys:
+            del user_config[k]
         config.update(user_config)
 
     def get_config(self, section_name):

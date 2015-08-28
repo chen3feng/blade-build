@@ -89,25 +89,6 @@ class CmdArguments(object):
                             ' arguments after a "--" ')
             self.options.args = shlex.split(self.options.testargs) + self.options.args
 
-    def _check_query_targets(self):
-        """check query targets, should have a leaset one target. """
-        err = False
-        targets = []
-        if len(self.targets) == 0:
-            err = True
-        for target in self.targets:
-            if target.find(':') == -1:
-                err = True
-                break
-            if target.startswith('//'):
-                targets.append(target[2:])
-            else:
-                targets.append(target)
-        if err:
-            console.error_exit('Please specify targets in this way: blade query'
-                               ' //target_path:target_name (or path:target_name)')
-        self.targets = targets
-
     def _check_plat_and_profile_options(self):
         """check platform and profile options. """
         if (self.options.profile != 'debug' and
@@ -189,7 +170,6 @@ class CmdArguments(object):
         self._check_plat_and_profile_options()
         self._check_color_options()
         self._check_query_options()
-        self._check_query_targets()
 
     def __add_plat_profile_arguments(self, parser):
         """Add plat and profile arguments. """
@@ -206,6 +186,13 @@ class CmdArguments(object):
                             help=('Build profile: debug or release, '
                                   'default is release.'))
 
+        parser.add_argument('--no-debug-info',
+                            dest='no_debug_info',
+                            action='store_true',
+                            default=False,
+                            help=('Do not produce debugging information, this '
+                                  'make less disk space cost but hard to debug, '
+                                  'default is false.'))
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
         parser.add_argument(

@@ -19,6 +19,7 @@ import sys
 import time
 
 import binary_runner
+import configparse
 import console
 
 from blade_util import environ_add_path
@@ -32,8 +33,9 @@ def _get_ignore_set():
             # shell variables
             'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID',
             # CI variables
+            'BUILD_DISPLAY_NAME',
             'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
-            'BUILD_ID', 'EXECUTOR_NUMBER', 'START_USER',
+            'BUILD_ID', 'START_USER',
             'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
             'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
             # ssh variables
@@ -311,20 +313,22 @@ class TestRunner(binary_runner.BinaryRunner):
                 if not target.data.get('always_run'):
                     self.skipped_tests.append((target.path, target.name))
                     continue
-            self._prepare_env(target)
+            test_env = self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
 
             sys.stdout.flush()  # make sure output before scons if redirected
 
-            test_env = dict(os.environ)
-            environ_add_path(test_env, 'LD_LIBRARY_PATH', self._runfiles_dir(target))
             if console.color_enabled:
                 test_env['GTEST_COLOR'] = 'yes'
             else:
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
             test_env['HEAPCHECK'] = target.data.get('heap_check', '')
+            config = configparse.blade_config.get_config('cc_test_config')
+            pprof_path = config['pprof_path']
+            if pprof_path:
+                test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,

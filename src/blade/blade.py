@@ -105,15 +105,11 @@ class Blade(object):
     def load_targets(self):
         """Load the targets. """
         console.info('loading BUILDs...')
-        if self.__command == 'query':
+        if self.__command == 'query' and getattr(self.__options,
+            'depended', False):
+            # For query depended command, always start from root with target ...
+            # that is scanning the whole tree
             working_dir = self.__root_dir
-
-            if '...' not in self.__command_targets:
-                new_target_list = []
-                for target in self.__command_targets:
-                    new_target_list.append('%s:%s' %
-                            self._get_normpath_target(target))
-                self.__command_targets = new_target_list
         else:
             working_dir = self.__working_dir
         (self.__direct_targets,
@@ -237,13 +233,24 @@ class Blade(object):
         target_path = relative_path(self.__working_dir, self.__root_dir)
         t_path = ''
         for t in targets:
-            key = t.split(':')
-            if target_path == '.':
-                t_path = key[0]
+            if t.find(':') != -1:
+                key = t.split(':')
+                if target_path == '.':
+                    t_path = key[0]
+                else:
+                    t_path = target_path + '/' + key[0]
+                t_path = os.path.normpath(t_path)
+                query_list.append((t_path, key[1]))
+            elif t.endswith('...'):
+                t_path = os.path.normpath(target_path + '/' + t[:-3])
+                for tkey in all_targets:
+                    if tkey[0].startswith(t_path):
+                        query_list.append((tkey[0], tkey[1]))
             else:
-                t_path = target_path + '/' + key[0]
-            t_path = os.path.normpath(t_path)
-            query_list.append((t_path, key[1]))
+                t_path = os.path.normpath(target_path + '/' + t)
+                for tkey in all_targets:
+                    if tkey[0] == t_path:
+                        query_list.append((t_path, tkey[1]))
         result_map = {}
         for key in query_list:
             result_map[key] = ([], [])

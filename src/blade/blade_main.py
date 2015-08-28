@@ -174,6 +174,9 @@ def _check_code_style(opened_files):
     if not opened_files:
         return 0
     cpplint = configparse.blade_config.configs['cc_config']['cpplint']
+    if not cpplint:
+        console.info('cpplint disabled')
+        return 0
     console.info('Begin to check code style for changed source code')
     p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(opened_files))), shell=True)
     try:
@@ -204,7 +207,10 @@ def _main(blade_path):
     global query_targets
     global run_target
     if command == 'query':
-        query_targets = list(targets)
+        if not targets:
+            query_targets = ['.']
+        else:
+            query_targets = list(targets)
     if command == 'run':
         run_target = targets[0]
 

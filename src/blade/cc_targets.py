@@ -219,8 +219,13 @@ class CcTarget(Target):
         if as_flags:
             self._write_rule('%s.Append(ASFLAGS=%s)' % (env_name, as_flags))
 
-    def _setup_extra_link_flags(self):
-        """extra_linkflags. """
+    def _setup_link_flags(self):
+        """linkflags. """
+        cc_config = configparse.blade_config.get_config('cc_config')
+        linkflags = cc_config['linkflags']
+        if linkflags:
+            self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), linkflags))
+
         extra_linkflags = self.data.get('extra_linkflags')
         if extra_linkflags:
             self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), extra_linkflags))
@@ -495,7 +500,7 @@ class CcTarget(Target):
         It will output the dynamic_cc_library rule into the buffer.
 
         """
-        self._setup_extra_link_flags()
+        self._setup_link_flags()
 
         var_name = self._var_name('dynamic')
 
@@ -763,12 +768,7 @@ class CcBinary(CcTarget):
             self._write_rule(
                 '%s.Append(LINKFLAGS="-rdynamic")' % env_name)
 
-        cc_config = configparse.blade_config.get_config('cc_config')
-        linkflags = cc_config['linkflags']
-        if linkflags:
-            self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), linkflags))
-
-        self._setup_extra_link_flags()
+        self._setup_link_flags()
 
         self._write_rule('%s = %s.Program("%s", %s, %s)' % (
             var_name,
@@ -793,7 +793,7 @@ class CcBinary(CcTarget):
         if self.data.get('export_dynamic'):
             self._write_rule('%s.Append(LINKFLAGS="-rdynamic")' % env_name)
 
-        self._setup_extra_link_flags()
+        self._setup_link_flags()
 
         lib_str = self._get_dynamic_deps_lib_list()
         self._write_rule('%s = %s.Program("%s", %s, %s)' % (
@@ -926,7 +926,7 @@ class CcPlugin(CcTarget):
         var_name = self._var_name()
 
         self._cc_objects_rules()
-        self._setup_extra_link_flags()
+        self._setup_link_flags()
 
         (link_all_symbols_lib_list,
          lib_str,
