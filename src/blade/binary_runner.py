@@ -22,6 +22,7 @@ import sys
 import blade
 import cc_targets
 import console
+import configparse
 
 from blade_util import environ_add_path
 
@@ -108,6 +109,18 @@ class BinaryRunner(object):
             os.symlink(src, dst)
 
         self._prepare_test_data(target)
+        run_env = dict(os.environ)
+        environ_add_path(run_env, 'LD_LIBRARY_PATH',
+                         self._runfiles_dir(target))
+        config = configparse.blade_config.get_config('cc_binary_config')
+        run_lib_paths = config['run_lib_paths']
+        if run_lib_paths:
+            for path in run_lib_paths:
+                if path.startswith('//'):
+                    path = path[2:]
+                path = os.path.abspath(path)
+                environ_add_path(run_env, 'LD_LIBRARY_PATH', path)
+        return run_env
 
     def _prepare_test_data(self, target):
         if 'testdata' not in target.data:
@@ -181,14 +194,11 @@ class BinaryRunner(object):
         if target.type not in self.run_list:
             console.error_exit('target %s:%s is not a target that could run' % (
                        target_key[0], target_key[1]))
-        self._prepare_env(target)
+        run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         console.info("'%s' will be ran" % cmd)
         sys.stdout.flush()
 
-        run_env = dict(os.environ)
-        environ_add_path(run_env, 'LD_LIBRARY_PATH',
-                         self._runfiles_dir(target))
         p = subprocess.Popen(cmd, env=run_env, close_fds=True)
         p.wait()
         self._clean_env()

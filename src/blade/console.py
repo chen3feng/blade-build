@@ -40,14 +40,14 @@ _CLEAR_LINE = '\033[2K'
 _CURSUR_UP = '\033[A'
 
 
-def newline(msg):
+def inerasable(msg):
     """Make msg clear line when output"""
     if color_enabled:
         return _CLEAR_LINE + msg
     return msg
 
 
-def no_newline(msg):
+def erasable(msg):
     """Make msg does't cause new line when output"""
     if color_enabled:
         return _CLEAR_LINE + msg + _CURSUR_UP

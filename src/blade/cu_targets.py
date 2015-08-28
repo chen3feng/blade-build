@@ -245,7 +245,7 @@ class CuBinary(CuTarget):
             self._write_rule(
                 '%s.Append(LINKFLAGS="-rdynamic")' % env_name)
 
-        self._setup_extra_link_flags()
+        self._setup_link_flags()
 
         self._write_rule('{0}.Replace('
                        'CC={0}["NVCC"], '

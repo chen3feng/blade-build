@@ -262,7 +262,7 @@ def error_colorize(message):
         colored_message.append(console.colors(color))
         colored_message.append(t)
         colored_message.append(console.colors('end'))
-    return ''.join(colored_message)
+    return console.inerasable(''.join(colored_message))
 
 
 def echospawn(sh, escape, cmd, args, env):
