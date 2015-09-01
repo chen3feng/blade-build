@@ -1,5 +1,6 @@
 package blade.examples;
 
+option java_package = "com.qq.blade.examples";
 option java_outer_classname = "ContactProto";
 
 message Person {

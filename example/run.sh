@@ -15,7 +15,7 @@ rm -rf blade-bin build64_release/
 
 . setup.sh
 
-../blade test ...
+../blade $@
 exit_code=$?
 
 . cleanup.sh
