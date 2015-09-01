@@ -72,7 +72,7 @@ def _expand_deps(targets):
         elif target.type == 'py_binary' or target.type == 'py_library' or target.type == 'py_egg':
             for dep in target.expanded_deps:
                 targets[dep].data['generate_python'] = True
-        elif target.type == 'java_jar':
+        elif target.type.startswith('java_'):
             for dep in target.expanded_deps:
                 targets[dep].data['generate_java'] = True
 

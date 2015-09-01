@@ -69,6 +69,9 @@ class BladeConfig(object):
                 'target_version': ''
             },
 
+            'java_test_config': {
+                'junit_libs' : [],
+            },
             'thrift_config': {
                 'thrift': 'thrift',
                 'thrift_libs': [],
@@ -89,6 +92,7 @@ class BladeConfig(object):
                 'protobuf_incs': [],
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
+                'protobuf_java_libs' : [],
             },
 
             'cc_config': {
@@ -210,6 +214,11 @@ def link_config(append=None, **kwargs):
 def java_config(append=None, **kwargs):
     """java_config. """
     blade_config.update_config('java_config', append, kwargs)
+
+
+def java_test_config(append=None, **kwargs):
+    """java_test_config. """
+    blade_config.update_config('java_test_config', append, kwargs)
 
 
 def proto_library_config(append=None, **kwargs):

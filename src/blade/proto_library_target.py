@@ -112,7 +112,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         package_pattern = '^\s*package\s+([\w.]+)'
         m = re.search(package_pattern, content, re.MULTILINE)
         if m:
-            return m.group(1).replace('.', '/')
+            return m.group(1)
 
         return ''
 
@@ -132,19 +132,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         f = open(self._source_file_path(src))
         content = f.read()
         f.close()
-        package = self._get_java_package_name(content)
+        package_dir = self._get_java_package_name(content).replace('.', '/')
         class_name = self._proto_java_gen_class_name(src, content)
         java_name = '%s.java' % class_name
-        return package, java_name
+        return package_dir, java_name
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
         java_srcs = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
-            package, java_name = self._proto_java_gen_file(src)
+            package_dir, java_name = self._proto_java_gen_file(src)
             proto_java_src = self._target_file_path(
-                    os.path.join(os.path.dirname(src), package, java_name))
+                    os.path.join(os.path.dirname(src), package_dir, java_name))
             java_srcs.append(proto_java_src)
             self._write_rule('%s.ProtoJava(["%s"], "%s")' % (
                     self._env_name(),
@@ -152,7 +152,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                     src_path))
 
             self.data['java_sources'] = (
-                     os.path.dirname(proto_java_src),
+                     proto_java_src,
                      os.path.join(self.build_path, self.path),
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)

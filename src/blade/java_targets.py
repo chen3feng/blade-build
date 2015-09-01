@@ -11,9 +11,10 @@ Implement java_library, java_binary and java_test
 
 
 import os
-import blade
 
+import blade
 import build_rules
+import configparse
 
 from blade_util import var_to_list
 from target import Target
@@ -42,8 +43,11 @@ class JavaTargetMixIn(object):
         self._clone_env()
         env_name = self._env_name()
         var_name = self._var_name()
+        java_test_config = configparse.blade_config.get_config('java_test_config')
+        proto_library_config = configparse.blade_config.get_config('proto_library_config')
+
         self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
-            env_name, ['/usr/share/java/junit4.jar', 'protobuf-java-2.4.1.jar']))
+            env_name, java_test_config['junit_libs'] + proto_library_config['protobuf_java_libs']))
         dep_classes, class_paths = self._get_deps()
         if class_paths:
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
@@ -103,7 +107,8 @@ class JavaLibrary(JavaTarget):
         JavaTarget.__init__(self, name, type, srcs, deps, prebuilt, kwargs)
 
     def scons_rules(self):
-        self._generate_classes()
+        if type != 'prebuilt_java_library':
+            self._generate_classes()
 
 
 class JavaBinary(JavaTarget):
