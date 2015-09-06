@@ -218,6 +218,11 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Generate scons script for debug purpose.')
 
+        """Add cache related arguments. """
+        parser.add_argument(
+            '--scons-options', dest='scons_options', type=str,
+            help='Specifies extra scons options, for debugg purpose.')
+
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,
             help=('Specifies the number of jobs (commands) to '

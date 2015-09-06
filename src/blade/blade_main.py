@@ -313,6 +313,9 @@ def _build(options):
     scons_options += ' -j %s' % options.jobs
     if options.keep_going:
         scons_options += ' -k'
+    if options.scons_options:
+        scons_options += ' '
+        scons_options += options.scons_options
 
     p = subprocess.Popen('scons %s' % scons_options, shell=True)
     try:
@@ -346,8 +349,11 @@ def test(options):
 def clean(options):
     console.info('cleaning...(hint: please specify --generate-dynamic to '
                  'clean your so)')
-    p = subprocess.Popen('scons --duplicate=soft-copy -c -s --cache-show',
-                         shell=True)
+    cmd = 'scons --duplicate=soft-copy -c -s --cache-show'
+    if options.scons_options:
+        cmd += ' '
+        cmd += options.scons_options
+    p = subprocess.Popen(cmd, shell=True)
     p.wait()
     console.info('cleaning done.')
     return p.returncode
