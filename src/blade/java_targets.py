@@ -39,10 +39,8 @@ class JavaTargetMixIn(object):
                 classes.append(class_var)
         return classes, class_paths
 
-    def _generate_java_classes(self, srcs):
-        self._clone_env()
+    def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
-        var_name = self._var_name()
         java_test_config = configparse.blade_config.get_config('java_test_config')
         proto_library_config = configparse.blade_config.get_config('proto_library_config')
 
@@ -75,7 +73,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  type,
                  srcs,
                  deps,
-                 prebuilt,
+                 resources,
                  kwargs):
         """Init method.
 
@@ -84,6 +82,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
+        resources = var_to_list(resources)
 
         Target.__init__(self,
                         name,
@@ -92,32 +91,41 @@ class JavaTarget(Target, JavaTargetMixIn):
                         deps,
                         blade.blade,
                         kwargs)
+        self.data['resources'] = resources
+
+    def _prepare_to_generate_rule(self):
+        """Should be overridden. """
+        self._check_deprecated_deps()
+        self._clone_env()
 
     def _generate_classes(self):
+        var_name = self._var_name()
         srcs = [self._source_file_path(src) for src in self.srcs]
-        self._generate_java_classes(srcs)
+        self._generate_java_classes(var_name, srcs)
 
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, prebuilt, kwargs):
+    def __init__(self, name, srcs, deps, prebuilt, resources, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
-        JavaTarget.__init__(self, name, type, srcs, deps, prebuilt, kwargs)
+        JavaTarget.__init__(self, name, type, srcs, deps, resources, kwargs)
 
     def scons_rules(self):
-        if type != 'prebuilt_java_library':
+        if self.type != 'prebuilt_java_library':
+            self._prepare_to_generate_rule()
             self._generate_classes()
 
 
 class JavaBinary(JavaTarget):
-    """JavaLibrary"""
-    def __init__(self, name, srcs, deps, kwargs):
-        type = 'java_binary'
-        JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
+    """JavaBinary"""
+    def __init__(self, name, srcs, deps, resources, main_class, kwargs):
+        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources, kwargs)
+        self.data['main_class'] = main_class
 
     def scons_rules(self):
+        self._prepare_to_generate_rule()
         self._generate_classes()
         env_name = self._env_name()
         var_name = self._var_name()
@@ -126,38 +134,45 @@ class JavaBinary(JavaTarget):
             var_name, env_name, self._target_file_path(), self.data['java_classes'], ', '.join(dep_classes)))
 
 
-class JavaTest(JavaTarget):
-    """JavaLibrary"""
-    def __init__(self, name, srcs, deps, kwargs):
-        type = 'java_test'
-        JavaTarget.__init__(self, name, type, srcs, deps, False, kwargs)
+class JavaTest(JavaBinary):
+    """JavaTarget"""
+    def __init__(self, name, srcs, deps, resources, main_class, kwargs):
+        JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
+        self.type = 'java_test'
 
     def scons_rules(self):
+        self._prepare_to_generate_rule()
         self._generate_classes()
 
 
 def java_library(name,
                  srcs=[],
                  deps=[],
+                 resources=[],
                  prebuilt=False,
                  **kwargs):
     """Define java_jar target. """
     target = JavaLibrary(name,
                          srcs,
                          deps,
+                         resources,
                          prebuilt,
                          kwargs)
     blade.blade.register_target(target)
 
 
 def java_binary(name,
+                main_class,
                 srcs=[],
                 deps=[],
+                resources=[],
                 **kwargs):
     """Define java_jar target. """
     target = JavaBinary(name,
                         srcs,
                         deps,
+                        resources,
+                        main_class,
                         kwargs)
     blade.blade.register_target(target)
 
@@ -165,11 +180,15 @@ def java_binary(name,
 def java_test(name,
               srcs=[],
               deps=[],
+              resources=[],
+              main_class = 'org.junit.runner.JUnitCore',
               **kwargs):
     """Define java_jar target. """
     target = JavaTest(name,
                       srcs,
                       deps,
+                      resources,
+                      main_class,
                       kwargs)
     blade.blade.register_target(target)
 

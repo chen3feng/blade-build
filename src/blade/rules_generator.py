@@ -95,8 +95,6 @@ import glob
 import console
 import scons_helper
 
-from build_environment import ScacheManager
-from console import colors
 """)
 
         if getattr(self.options, 'verbose', False):

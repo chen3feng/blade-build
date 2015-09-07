@@ -156,7 +156,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                      os.path.join(self.build_path, self.path),
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
-        self._generate_java_classes(java_srcs)
+        self._generate_java_classes(self._var_name('java'), java_srcs)
 
     def _proto_php_rules(self):
         """Generate php files. """
