@@ -31,7 +31,7 @@ proto_library_config(
         '//thirdparty/glog:glog',
         '//thirdparty/gflags:gflags',
         '#pthread'],
-    protobuf_java_libs = ['java/protobuf-java-2.5.0.jar'],
+    protobuf_java_libs = ['java/protobuf-java-2.4.1.jar'],
     protobuf_path='thirdparty',
     protobuf_incs = [],
     protobuf_php_path='thirdparty/Protobuf-PHP/library',
@@ -53,7 +53,7 @@ cc_config(
 )
 
 java_test_config(
-    junit_libs = ['java/junit-4.11.jar'],
+    junit_libs = ['/usr/share/java/junit.jar'],
 )
 
 """

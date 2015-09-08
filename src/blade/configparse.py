@@ -69,6 +69,9 @@ class BladeConfig(object):
                 'target_version': ''
             },
 
+            'java_binary_config': {
+                'one_jar_boot_jar' : '',
+            },
             'java_test_config': {
                 'junit_libs' : [],
             },

@@ -60,6 +60,13 @@ class JavaTargetMixIn(object):
         self.data['java_class_path'] = classes_dir
         self.data['java_classes'] = var_name
 
+    def _generate_java_jar(self, var_name):
+        env_name = self._env_name()
+        self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
+            var_name, env_name, self._target_file_path(),
+            self.data['java_classes']))
+        self.data['java_jar'] = var_name
+
 
 class JavaTarget(Target, JavaTargetMixIn):
     """A java jar target subclass.
@@ -103,6 +110,10 @@ class JavaTarget(Target, JavaTargetMixIn):
         srcs = [self._source_file_path(src) for src in self.srcs]
         self._generate_java_classes(var_name, srcs)
 
+    def _generate_jar(self):
+        var_name = self._var_name()
+        self._generate_java_jar(var_name)
+
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
@@ -116,6 +127,9 @@ class JavaLibrary(JavaTarget):
         if self.type != 'prebuilt_java_library':
             self._prepare_to_generate_rule()
             self._generate_classes()
+            self._generate_jar()
+        else:
+            self.data['java_jar'] = self.name + '.jar'
 
 
 class JavaBinary(JavaTarget):
@@ -127,12 +141,11 @@ class JavaBinary(JavaTarget):
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_classes()
-        env_name = self._env_name()
-        var_name = self._var_name()
-        dep_classes, class_paths = self._get_deps()
-        self._write_rule('%s = %s.Jar(target="%s", source=[%s] + [%s])' % (
-            var_name, env_name, self._target_file_path(), self.data['java_classes'], ', '.join(dep_classes)))
+        self._generate_jar()
+        self._generate_one_jar()
 
+    def _generate_one_jar(self):
+        pass
 
 class JavaTest(JavaBinary):
     """JavaTarget"""
