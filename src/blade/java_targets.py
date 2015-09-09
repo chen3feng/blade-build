@@ -117,11 +117,16 @@ class JavaTarget(Target, JavaTargetMixIn):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, prebuilt, resources, kwargs):
+    def __init__(self, name, srcs, deps, resources, prebuilt, binary_jar, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
         JavaTarget.__init__(self, name, type, srcs, deps, resources, kwargs)
+        if prebuilt:
+            if binary_jar:
+                self.data['binary_jar'] = binary_jar
+            else:
+                self.data['binary_jar'] = name + '.jar'
 
     def scons_rules(self):
         if self.type != 'prebuilt_java_library':
@@ -129,7 +134,7 @@ class JavaLibrary(JavaTarget):
             self._generate_classes()
             self._generate_jar()
         else:
-            self.data['java_jar'] = self.name + '.jar'
+            self.data['java_jar'] = self.data['binary_jar']
 
 
 class JavaBinary(JavaTarget):
@@ -153,16 +158,13 @@ class JavaTest(JavaBinary):
         JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
         self.type = 'java_test'
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_classes()
-
 
 def java_library(name,
                  srcs=[],
                  deps=[],
                  resources=[],
                  prebuilt=False,
+                 binary_jar='',
                  **kwargs):
     """Define java_jar target. """
     target = JavaLibrary(name,
@@ -170,6 +172,7 @@ def java_library(name,
                          deps,
                          resources,
                          prebuilt,
+                         binary_jar,
                          kwargs)
     blade.blade.register_target(target)
 

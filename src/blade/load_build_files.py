@@ -19,8 +19,11 @@ import os
 import traceback
 
 import build_rules
+import blade
 import console
 from blade_util import relative_path
+from blade_util import var_to_list
+from pathlib import Path
 
 
 # import these modules make build functions registered into build_rules
@@ -96,7 +99,45 @@ def enable_if(cond, true_value, false_value=None):
         ret = []
     return ret
 
+def glob(srcs, excludes=[]):
+    """A global function can be called in BUILD to specify a set of files using patterns"""
+    srcs = var_to_list(srcs)
+    excludes = var_to_list(excludes)
+    source_dir = Path(blade.blade.get_current_source_path())
+
+    def includes_iterator():
+        results = []
+        for pattern in srcs:
+            for path in source_dir.glob(pattern):
+                if path.is_file() and not path.name.startswith('.'):
+                    results.append(path.relative_to(source_dir))
+
+        return results
+
+    def is_special(pattern):
+        return '*' in pattern or '?' in pattern or '[' in pattern
+
+    non_special_excludes = set()
+    match_excludes = set()
+    for pattern in excludes:
+        if is_special(pattern):
+            match_excludes.add(pattern)
+        else:
+            non_special_excludes.add(pattern)
+
+    def exclusion(path):
+        if str(path) in non_special_excludes:
+            return True
+        for pattern in match_excludes:
+            ret = path.match(pattern)
+            if ret:
+                return True
+        return False
+
+    return sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+
 build_rules.register_function(enable_if)
+build_rules.register_function(glob)
 
 
 IGNORE_IF_FAIL = 0

@@ -218,7 +218,7 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Generate scons script for debug purpose.')
 
-        """Add cache related arguments. """
+        """Add extra scons options arguments. """
         parser.add_argument(
             '--scons-options', dest='scons_options', type=str,
             help='Specifies extra scons options, for debugg purpose.')
@@ -290,6 +290,7 @@ class CmdArguments(object):
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """
         self.__add_plat_profile_arguments(parser)
+        self.__add_build_actions_arguments(parser)
         self.__add_generate_arguments(parser)
         self.__add_color_arguments(parser)
 
