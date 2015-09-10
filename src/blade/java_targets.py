@@ -52,7 +52,8 @@ class JavaTargetMixIn(object):
         dep_jar_vars, dep_jars = self._get_deps()
         for dep_jar_var in dep_jar_vars:
             # Can only append one by one here, maybe a scons bug.
-            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
+            # Can only append as string under scons 2.1.0, maybe another bug or defect.
+            self._write_rule('%s.Append(JAVACLASSPATH=str(%s[0]))' % (
                 env_name, dep_jar_var))
         if dep_jars:
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
