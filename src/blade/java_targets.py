@@ -25,47 +25,50 @@ class JavaTargetMixIn(object):
         """Generated classes dir. """
         return self._target_file_path() + '.classes'
 
+    def __get_deps(self, deps):
+        dep_jar_vars = []
+        dep_jars = []
+        for d in deps:
+            dep = self.target_database[d]
+            jar = dep.data.get('java_jar_var')
+            if jar:
+                dep_jar_vars.append(jar)
+            else:
+                jar = dep.data.get('binary_jar')
+                if jar:
+                    dep_jars.append(jar)
+        return dep_jar_vars, dep_jars
+
     def _get_deps(self):
-        """Returns list of class paths that this targets depends on. """
-        classes = []
-        class_paths = []
-        for dep in self.expanded_deps:
-            target = self.target_database.get(dep)
-            class_path = target.data.get('java_class_path')
-            if class_path:
-                class_paths.append(class_path)
-            class_var = target.data.get('java_classes')
-            if class_var:
-                classes.append(class_var)
-        return classes, class_paths
+        return self.__get_deps(self.deps)
+
+    def _get_all_deps(self):
+        return self.__get_deps(self.expanded_deps)
 
     def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
-        java_test_config = configparse.blade_config.get_config('java_test_config')
         proto_library_config = configparse.blade_config.get_config('proto_library_config')
 
-        self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
-            env_name, java_test_config['junit_libs'] + proto_library_config['protobuf_java_libs']))
-        dep_classes, class_paths = self._get_deps()
-        if class_paths:
+        dep_jar_vars, dep_jars = self._get_deps()
+        for dep_jar_var in dep_jar_vars:
+            # Can only append one by one here, maybe a scons bug.
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
-                env_name, class_paths))
+                env_name, dep_jar_var))
+        if dep_jars:
+            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
         classes_dir = self._get_classes_dir()
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
             var_name, env_name, classes_dir, srcs))
-        if dep_classes:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ', '.join(dep_classes)))
+        self._write_rule('%s.Depends(%s, [%s])' % (
+            env_name, var_name, ','.join(dep_jar_vars)))
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
-        self.data['java_class_path'] = classes_dir
-        self.data['java_classes'] = var_name
+        return var_name
 
-    def _generate_java_jar(self, var_name):
+    def _generate_java_jar(self, var_name, classes_var):
         env_name = self._env_name()
         self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
-            var_name, env_name, self._target_file_path(),
-            self.data['java_classes']))
-        self.data['java_jar'] = var_name
+            var_name, env_name, self._target_file_path(), classes_var))
+        self.data['java_jar_var'] = var_name
 
 
 class JavaTarget(Target, JavaTargetMixIn):
@@ -106,13 +109,13 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._clone_env()
 
     def _generate_classes(self):
-        var_name = self._var_name()
+        var_name = self._var_name('classes')
         srcs = [self._source_file_path(src) for src in self.srcs]
-        self._generate_java_classes(var_name, srcs)
+        return self._generate_java_classes(var_name, srcs)
 
-    def _generate_jar(self):
-        var_name = self._var_name()
-        self._generate_java_jar(var_name)
+    def _generate_jar(self, classes_var):
+        var_name = self._var_name('jar')
+        self._generate_java_jar(var_name, classes_var)
 
 
 class JavaLibrary(JavaTarget):
@@ -123,18 +126,14 @@ class JavaLibrary(JavaTarget):
             type = 'prebuilt_java_library'
         JavaTarget.__init__(self, name, type, srcs, deps, resources, kwargs)
         if prebuilt:
-            if binary_jar:
-                self.data['binary_jar'] = binary_jar
-            else:
+            if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
+            self.data['binary_jar'] = self._source_file_path(binary_jar)
 
     def scons_rules(self):
         if self.type != 'prebuilt_java_library':
             self._prepare_to_generate_rule()
-            self._generate_classes()
-            self._generate_jar()
-        else:
-            self.data['java_jar'] = self.data['binary_jar']
+            self._generate_jar(self._generate_classes())
 
 
 class JavaBinary(JavaTarget):
@@ -142,21 +141,38 @@ class JavaBinary(JavaTarget):
     def __init__(self, name, srcs, deps, resources, main_class, kwargs):
         JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources, kwargs)
         self.data['main_class'] = main_class
+        self.data['run_in_shell'] = True
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
-        self._generate_classes()
-        self._generate_jar()
-        self._generate_one_jar()
+        self._generate_jar(self._generate_classes())
+        self._generate_wrapper(self._generate_one_jar())
+
+    def _get_all_depended_jars(self):
+        return []
 
     def _generate_one_jar(self):
-        pass
+        var_name = self._var_name('onejar')
+        dep_jar_vars, dep_jars = self._get_all_deps()
+        self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + [%s] + %s)' % (
+            var_name, self._env_name(),
+            self._target_file_path() + '.one.jar', self.data['main_class'],
+            self.data['java_jar_var'], ','.join(dep_jar_vars), dep_jars))
+        return var_name
+
+    def _generate_wrapper(self, onejar):
+        var_name = self._var_name()
+        self._write_rule('%s = %s.JavaBinary(target="%s", source=%s)' % (
+            var_name, self._env_name(), self._target_file_path(), onejar))
+
 
 class JavaTest(JavaBinary):
     """JavaTarget"""
-    def __init__(self, name, srcs, deps, resources, main_class, kwargs):
+    def __init__(self, name, srcs, deps, resources, main_class, testdata, kwargs):
+        java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
         self.type = 'java_test'
+        self.data['testdata'] = var_to_list(testdata)
 
 
 def java_library(name,
@@ -166,7 +182,7 @@ def java_library(name,
                  prebuilt=False,
                  binary_jar='',
                  **kwargs):
-    """Define java_jar target. """
+    """Define java_library target. """
     target = JavaLibrary(name,
                          srcs,
                          deps,
@@ -183,7 +199,7 @@ def java_binary(name,
                 deps=[],
                 resources=[],
                 **kwargs):
-    """Define java_jar target. """
+    """Define java_binary target. """
     target = JavaBinary(name,
                         srcs,
                         deps,
@@ -198,13 +214,15 @@ def java_test(name,
               deps=[],
               resources=[],
               main_class = 'org.junit.runner.JUnitCore',
+              testdata=[],
               **kwargs):
-    """Define java_jar target. """
+    """Define java_test target. """
     target = JavaTest(name,
                       srcs,
                       deps,
                       resources,
                       main_class,
+                      testdata,
                       kwargs)
     blade.blade.register_target(target)
 

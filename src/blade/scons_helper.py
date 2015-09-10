@@ -5,6 +5,7 @@
 #         Feng Chen <phongchen@tencent.com>
 #         Yi Wang <yiwang@tencent.com>
 #         Chong Peng <michaelpeng@tencent.com>
+#         Wenting Li <wentingli@tencent.com>
 # Date:   October 20, 2011
 
 
@@ -311,6 +312,107 @@ def generate_resource_file(target, source, env):
             error = error + ': ' + stderr
         console.error_exit(error)
     return p.returncode
+
+
+_one_jar_boot_path = None
+
+
+def _generate_one_jar(target,
+                          main_class,
+                          main_jar,
+                          deps_jar,
+                          one_jar_boot_path):
+    target_file = target
+    target_dir = os.path.dirname(target_file)
+    one_jar_dir = os.path.join(target_dir, 'one-jar')
+    if os.path.exists(one_jar_dir):
+        shutil.rmtree(one_jar_dir, ignore_errors=True)
+    os.makedirs(one_jar_dir)
+    one_jar_main_dir = os.path.join(one_jar_dir, 'main')
+    os.makedirs(one_jar_main_dir)
+    shutil.copyfile(main_jar, os.path.join(one_jar_main_dir,
+                                           os.path.basename(main_jar)))
+    one_jar_lib_dir = os.path.join(one_jar_dir, 'lib')
+    os.makedirs(one_jar_lib_dir)
+    for dep in deps_jar:
+        dep_name = os.path.basename(dep)
+        shutil.copyfile(dep, os.path.join(one_jar_lib_dir, dep_name))
+
+    with zipfile.ZipFile(one_jar_boot_path, 'r') as zip_file:
+        zip_file.extractall(one_jar_dir)
+
+    manifest = os.path.join(one_jar_dir, 'META-INF', 'MANIFEST.MF')
+    # Override the default manifest in one-jar
+    # Note that the manifest file must end with a new line or carriage return
+    with open(manifest, 'w') as mf:
+        print >>mf, '''Manifest-Version: 1.0
+Main-Class: com.simontuffs.onejar.Boot
+One-Jar-Main-Class: %s
+''' % main_class
+
+    with zipfile.ZipFile(target_file, 'w') as zip_file:
+        for dir, subdirs, files in os.walk(one_jar_dir):
+            for file in files:
+                file = os.path.join(dir, file)
+                # print 'Add %s' % file
+                zip_file.write(file, os.path.relpath(file, one_jar_dir))
+
+
+def generate_one_jar(target, source, env):
+    if len(source) < 2:
+        console.error_exit('Failed to generate java binary from %s: '
+                           'Source should at least contain main class '
+                           'and main jar' % ','.join(str(s) for s in source))
+    main_class = str(source[0])
+    main_jar = str(source[1])
+    deps_jar = []
+    for dep in source[2:]:
+        deps_jar.append(str(dep))
+
+    target = str(target[0])
+    # print target, main_class, main_jar, deps_jar, _one_jar_boot_path
+    _generate_one_jar(target, main_class, main_jar, deps_jar, _one_jar_boot_path)
+
+
+def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
+    """generate a wrapper shell script to run jar"""
+    onejar_name = os.path.basename(onejar_path)
+    target_file = open(target_name, 'w')
+    target_file.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+# *.one.jar must be in same dir
+jar=`dirname "$0"`/"%s"
+
+exec java -jar %s "$jar" %s $@
+""" % (onejar_name, jvm_flags, run_args))
+    os.chmod(target_name, 0755)
+    target_file.close()
+
+
+def generate_java_binary(target, source, env):
+    """build function to generate wrapper shell script for java binary"""
+    target_name = str(target[0])
+    onejar_path = str(source[0])
+    _generate_java_binary(target_name, onejar_path, '', '')
+
+
+def _get_all_test_class_names_in_jar(jar):
+    """Returns a list of test class names in the jar file. """
+    test_class_names = []
+    zip_file = zipfile.ZipFile(jar, 'r')
+    name_list = zip_file.namelist()
+    for name in name_list:
+        basename = os.path.basename(name)
+        # Exclude inner class and Test.class
+        if (basename.endswith('Test.class') and
+            len(basename) > len('Test.class') and
+            not '$' in basename):
+            class_name = name.replace('/', '.')[:-6] # Remove .class suffix
+            test_class_names.append(class_name)
+    zip_file.close()
+    return test_class_names
 
 
 def MakeAction(cmd, cmdstr):
@@ -702,14 +804,28 @@ def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
     top_env.Append(NVCC=nvcc_str)
     top_env.Append(BUILDERS = {"NvccBinary" : nvcc_binary_bld})
 
-
-def setup_jar_builders(top_env):
+def setup_java_builders(top_env, one_jar_boot_path):
     compile_java_jar_message = console.inerasable('%sGenerating java jar %s$TARGET%s%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
         'jar cf $TARGET -C `dirname $SOURCE` .',
         compile_java_jar_message))
     top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
+
+    global _one_jar_boot_path
+    _one_jar_boot_path = one_jar_boot_path
+
+    one_java_message = console.erasable('%sGenerating one jar %s$TARGET%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    one_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_one_jar,
+        one_java_message))
+    top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
+
+    java_binary_message = console.inerasable('%sGenerating java binary %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    java_binary_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_java_binary, java_binary_message))
+    top_env.Append(BUILDERS = {"JavaBinary" : java_binary_bld})
 
 
 def setup_yacc_builders(top_env):
@@ -755,7 +871,6 @@ def setup_python_builders(top_env):
 
 
 def setup_other_builders(top_env):
-    setup_jar_builders(top_env)
     setup_yacc_builders(top_env)
     setup_resource_builders(top_env)
     setup_python_builders(top_env)

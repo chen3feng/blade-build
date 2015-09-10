@@ -166,6 +166,10 @@ import scons_helper
     def _generate_swig_builders(self):
         self._add_rule('scons_helper.setup_swig_builders(top_env, "%s")' % self.build_dir)
 
+    def _generate_java_builders(self):
+        config = configparse.blade_config.get_config('java_binary_config')
+        self._add_rule('scons_helper.setup_java_builders(top_env, "%s")' % config['one_jar_boot_jar'])
+
     def _generate_other_builders(self):
         self._add_rule('scons_helper.setup_other_builders(top_env)')
 
@@ -178,6 +182,7 @@ import scons_helper
         self._generate_fbthrift_builders()
         self._generate_cuda_builders()
         self._generate_swig_builders()
+        self._generate_java_builders()
         self._generate_other_builders()
 
     def generate_compliation_flags(self):

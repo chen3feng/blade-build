@@ -244,6 +244,7 @@ class PythonBinaryTarget(PythonTarget):
                               deps,
                               blade,
                               kwargs)
+        self.data['run_in_shell'] = True
         if main:
             self.data['main'] = main
         else:

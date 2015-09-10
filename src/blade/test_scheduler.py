@@ -126,14 +126,17 @@ class TestScheduler(object):
         """run job, redirect the output. """
         (target, run_dir, test_env, cmd) = job
         test_name = '%s:%s' % (target.path, target.name)
-
+        shell = target.data.get('run_in_shell', False)
+        if shell:
+            cmd = subprocess.list2cmdline(cmd)
         console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
-                             close_fds=True)
+                             close_fds=True,
+                             shell=shell)
 
         (stdout, stderr) = p.communicate()
         result = self.__get_result(p.returncode)
@@ -145,8 +148,11 @@ class TestScheduler(object):
     def _run_job(self, job):
         """run job, do not redirect the output. """
         (target, run_dir, test_env, cmd) = job
+        shell = target.data.get('run_in_shell', False)
+        if shell:
+            cmd = subprocess.list2cmdline(cmd)
         console.info('Running %s' % cmd)
-        p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True)
+        p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         p.wait()
         result = self.__get_result(p.returncode)
         console.info('%s/%s finished : %s\n' % (

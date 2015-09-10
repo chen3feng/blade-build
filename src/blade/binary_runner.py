@@ -34,7 +34,11 @@ class BinaryRunner(object):
         self.build_dir = blade.blade.get_build_path()
         self.options = options
         self.run_list = ['cc_binary',
-                         'cc_test']
+                         'cc_test',
+                         'java_binary',
+                         'java_test',
+                         'py_binary',
+                         'py_test']
         self.target_database = target_database
 
     def _executable(self, target):
@@ -195,10 +199,13 @@ class BinaryRunner(object):
                        target_key[0], target_key[1]))
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
+        shell = target.data.get('run_in_shell', False)
+        if shell:
+            cmd = subprocess.list2cmdline(cmd)
         console.info("'%s' will be ran" % cmd)
         sys.stdout.flush()
 
-        p = subprocess.Popen(cmd, env=run_env, close_fds=True)
+        p = subprocess.Popen(cmd, env=run_env, close_fds=True, shell=shell)
         p.wait()
         self._clean_env()
         return p.returncode

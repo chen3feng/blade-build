@@ -221,6 +221,11 @@ def java_config(append=None, **kwargs):
     blade_config.update_config('java_config', append, kwargs)
 
 
+def java_binary_config(append=None, **kwargs):
+    """java_test_config. """
+    blade_config.update_config('java_binary_config', append, kwargs)
+
+
 def java_test_config(append=None, **kwargs):
     """java_test_config. """
     blade_config.update_config('java_test_config', append, kwargs)

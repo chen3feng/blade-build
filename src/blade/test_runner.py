@@ -134,7 +134,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target.data['dynamic_link']:
+        if target.data.get('dynamic_link'):
             target_key = (target.path, target.name)
             for dep in self.target_database[target_key].expanded_deps:
                 dep_target = self.target_database[dep]
@@ -183,7 +183,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
-            if target.type != 'cc_test':
+            if not target.type.endswith('_test'):
                 continue
             target_key = (target.path, target.name)
             test_file_name = os.path.abspath(self._executable(target))
@@ -307,7 +307,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_inctest_run_list()
         tests_run_list = []
         for target in self.targets.values():
-            if target.type != 'cc_test':
+            if not target.type.endswith('_test'):
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
                 if not target.data.get('always_run'):
