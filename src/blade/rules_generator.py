@@ -33,11 +33,13 @@ def _incs_list_to_string(incs):
     """
     return ' '.join(['-I ' + path for path in incs])
 
+
 def escape_c_string(s):
     all_chars = (chr(x) for x in range(256))
     trans_table = dict((c, c) for c in all_chars)
     trans_table.update({'"': r'\"'})
     return "".join(trans_table[c] for c in s)
+
 
 class SconsFileHeaderGenerator(object):
     """SconsFileHeaderGenerator class"""
