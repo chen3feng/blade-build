@@ -147,12 +147,13 @@ class JavaBinary(JavaTarget):
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar(self._generate_classes())
-        self._generate_wrapper(self._generate_one_jar())
+        dep_jar_vars, dep_jars = self._get_all_deps()
+        self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
 
     def _get_all_depended_jars(self):
         return []
 
-    def _generate_one_jar(self):
+    def _generate_one_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('onejar')
         dep_jar_vars, dep_jars = self._get_all_deps()
         self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + [%s] + %s)' % (
@@ -174,6 +175,18 @@ class JavaTest(JavaBinary):
         JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
+
+    def scons_rules(self):
+        self._prepare_to_generate_rule()
+        self._generate_jar(self._generate_classes())
+        dep_jar_vars, dep_jars = self._get_all_deps()
+        self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars),
+                               dep_jar_vars)
+    def _generate_wrapper(self, onejar, dep_jar_vars):
+        var_name = self._var_name()
+        self._write_rule('%s = %s.JavaTest(target="%s", source=[%s, %s] + [%s])' % (
+            var_name, self._env_name(), self._target_file_path(),
+            onejar, self.data['java_jar_var'], ','.join(dep_jar_vars)))
 
 
 def java_library(name,
