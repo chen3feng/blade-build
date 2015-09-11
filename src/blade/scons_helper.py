@@ -239,7 +239,7 @@ def generate_python_binary(target, source, env):
     target_file.write(zip_content)
     target_file.close()
     os.chmod(target_name, 0775)
-    return 0
+    return None
 
 
 def generate_resource_index(target, source, env):
