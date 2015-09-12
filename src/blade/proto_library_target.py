@@ -52,10 +52,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                           kwargs)
 
         proto_config = configparse.blade_config.get_config('proto_library_config')
-        protobuf_lib = var_to_list(proto_config['protobuf_libs'])
+        protobuf_libs = var_to_list(proto_config['protobuf_libs'])
+        protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
 
         # Hardcode deps rule to thirdparty protobuf lib.
-        self._add_hardcode_library(protobuf_lib)
+        self._add_hardcode_library(protobuf_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
@@ -140,23 +141,41 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
         java_srcs = []
+        java_src_vars = []
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             package_dir, java_name = self._proto_java_gen_file(src)
             proto_java_src = self._target_file_path(
                     os.path.join(os.path.dirname(src), package_dir, java_name))
             java_srcs.append(proto_java_src)
-            self._write_rule('%s.ProtoJava(["%s"], "%s")' % (
+            java_src_var = self._var_name_of(proto_java_src)
+            self._write_rule('%s = %s.ProtoJava(["%s"], "%s")' % (
+                    java_src_var,
                     self._env_name(),
                     proto_java_src,
                     src_path))
-
+            java_src_vars.append(java_src_var)
             self.data['java_sources'] = (
                      proto_java_src,
                      os.path.join(self.build_path, self.path),
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
-        self._generate_java_classes(self._var_name('java'), java_srcs)
+        proto_config = configparse.blade_config.get_config('proto_library_config')
+        protobuf_java_libs = proto_config['protobuf_java_libs']
+        if not protobuf_java_libs:
+            console.error_exit('proto_library_config.protobuf_java_libs not configurated')
+        self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
+                self._env_name(), protobuf_java_libs))
+
+        self._generate_generated_java_jar(self._var_name('jar'), java_src_vars)
+
+    def _generate_java_jar(self, classes_var):
+        env_name = self._env_name()
+        var_name = self._var_name('jar')
+        # self._write_rule('%s.Append(JARCHDIR="%s")' % (env_name, classes_dir))
+        self._write_rule('%s = %s.Jar(target="%s", source=%s)' % (
+            var_name, env_name, self._target_file_path(), classes_var))
+        self.data['java_jar_var'] = var_name
 
     def _proto_php_rules(self):
         """Generate php files. """
