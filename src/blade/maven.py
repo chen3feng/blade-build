@@ -56,7 +56,7 @@ class Maven(object):
             console.error_exit('Maven was not configured')
         if not self.__central_repository:
             console.error_exit('Maven repository was not configured')
-        self.__maven = os.path.join(self.__root_dir, self.__maven) 
+        self.__maven = os.path.join(self.__root_dir, self.__maven)
         if not os.path.exists(self.__maven):
             console.error_exit('Maven was not found')
         self.__need_check_config = False
@@ -74,7 +74,7 @@ class Maven(object):
     def _download_jar(self, id):
         """Download the specified jar and its transitive dependencies. """
         group, artifact, version = id.split(':')
-        artifact = artifact + '-' + version 
+        artifact = artifact + '-' + version
         jar = artifact + '.jar'
         pom = artifact + '.pom'
         log = artifact + '__download.log'
@@ -123,7 +123,7 @@ class Maven(object):
             return self.__jar_database[id][0]
         else:
             return self.__jar_database[id][1]
-        
+
     def get_jar_path(self, id):
         """get_jar_path
 
