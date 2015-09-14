@@ -15,14 +15,18 @@ import os
 import blade
 import build_rules
 import configparse
+import maven
 
 from blade_util import var_to_list
 from target import Target
 
 
 class JavaTargetMixIn(object):
+    """
+    This mixin includes common java methods
+    """
     def _get_classes_dir(self):
-        """Generated classes dir. """
+        """Return path of classes dir. """
         return self._target_file_path() + '.classes'
 
     def __get_deps(self, deps):
@@ -75,8 +79,7 @@ class JavaTargetMixIn(object):
 class JavaTarget(Target, JavaTargetMixIn):
     """A java jar target subclass.
 
-    This class is derived from Target and generates relates java jar
-    rules.
+    This class is the base of all java targets.
 
     """
     def __init__(self,
