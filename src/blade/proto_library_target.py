@@ -57,6 +57,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         # Hardcode deps rule to thirdparty protobuf lib.
         self._add_hardcode_library(protobuf_libs)
+        self._add_hardcode_java_library(protobuf_java_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
@@ -160,13 +161,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                      os.path.join(self.build_path, self.path),
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
-        proto_config = configparse.blade_config.get_config('proto_library_config')
-        protobuf_java_libs = proto_config['protobuf_java_libs']
-        if not protobuf_java_libs:
-            console.error_exit('proto_library_config.protobuf_java_libs not configurated')
-        self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (
-                self._env_name(), protobuf_java_libs))
 
+        dep_jar_vars, dep_jars = self._get_compile_deps()
+        self._generate_java_classpath(dep_jar_vars, dep_jars)
         self._generate_generated_java_jar(self._var_name('jar'), java_src_vars)
 
     def _generate_java_jar(self, classes_var):

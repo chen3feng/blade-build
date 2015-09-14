@@ -832,7 +832,7 @@ def setup_java_builders(top_env, one_jar_boot_path):
     generated_jar_bld = SCons.Builder.Builder(action = MakeAction(
         'rm -fr ${TARGET}.classes && mkdir -p ${TARGET}.classes && '
         '$JAVAC $JAVACFLAGS $_JAVABOOTCLASSPATH $_JAVACLASSPATH -d ${TARGET}.classes $SOURCES && '
-        '$JAR $JARFLAGS ${TARGET} -C ${TARGET}.classes && '
+        '$JAR $JARFLAGS ${TARGET} -C ${TARGET}.classes . && '
         'rm -fr ${TARGET}.classes',
         '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})

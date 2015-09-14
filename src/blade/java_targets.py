@@ -13,6 +13,7 @@ Implement java_library, java_binary and java_test
 import os
 
 import blade
+import blade_util
 import build_rules
 import configparse
 import maven
@@ -21,15 +22,54 @@ from blade_util import var_to_list
 from target import Target
 
 
+class MavenJar(Target):
+    """MavenJar"""
+    def __init__(self, id, name):
+        Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
+        self.key = ('#', name)
+        self.fullname = '%s:%s' % self.key
+        self.path = '#'
+        self.data['binary_jar'] = maven.Maven.instance().get_jar_path(id)
+    def scons_rules(self):
+        pass
+
+
 class JavaTargetMixIn(object):
     """
     This mixin includes common java methods
     """
+    def _add_hardcode_java_library(self, deps):
+        """Add hardcode dep list to key's deps. """
+        for dep in deps:
+            if maven.is_valid_id(dep):
+                self._add_maven_dep(dep)
+
+    def _add_maven_dep(self, id):
+        name = blade_util.regular_variable_name(id).replace(':', '_')
+        key = ('#', name)
+        if not key in self.target_database:
+            target = MavenJar(id, name)
+            blade.blade.register_target(target)
+        self.expanded_deps.append(key)
+
+    def _filter_deps(self, deps):
+        filtered_deps = []
+        filterouted_deps = []
+        for dep in deps:
+            if maven.is_valid_id(dep):
+                filterouted_deps.append(dep)
+            else:
+                filtered_deps.append(dep)
+        return filtered_deps, filterouted_deps
+
     def _get_classes_dir(self):
         """Return path of classes dir. """
         return self._target_file_path() + '.classes'
 
     def __get_deps(self, deps):
+        """
+        Return a tuple of (scons vars, jars)
+        """
         dep_jar_vars = []
         dep_jars = []
         for d in deps:
@@ -49,10 +89,8 @@ class JavaTargetMixIn(object):
     def _get_pack_deps(self):
         return self.__get_deps(self.expanded_deps)
 
-    def _generate_java_classes(self, var_name, srcs):
+    def _generate_java_classpath(self, dep_jar_vars, dep_jars):
         env_name = self._env_name()
-
-        dep_jar_vars, dep_jars = self._get_compile_deps()
         for dep_jar_var in dep_jar_vars:
             # Can only append one by one here, maybe a scons bug.
             # Can only append as string under scons 2.1.0, maybe another bug or defect.
@@ -60,6 +98,12 @@ class JavaTargetMixIn(object):
                 env_name, dep_jar_var))
         if dep_jars:
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
+
+    def _generate_java_classes(self, var_name, srcs):
+        env_name = self._env_name()
+
+        dep_jar_vars, dep_jars = self._get_compile_deps()
+        self._generate_java_classpath(dep_jar_vars, dep_jars)
         classes_dir = self._get_classes_dir()
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
                 var_name, env_name, classes_dir, srcs))
@@ -101,7 +145,7 @@ class JavaTarget(Target, JavaTargetMixIn):
 
         """
         srcs = var_to_list(srcs)
-        deps = var_to_list(deps)
+        deps, mvn_deps = self._filter_deps(var_to_list(deps))
         resources = var_to_list(resources)
 
         Target.__init__(self,
@@ -112,6 +156,8 @@ class JavaTarget(Target, JavaTargetMixIn):
                         blade.blade,
                         kwargs)
         self.data['resources'] = resources
+        for dep in mvn_deps:
+            self._add_maven_dep(dep)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """

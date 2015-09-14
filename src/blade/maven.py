@@ -28,14 +28,15 @@ def is_valid_id(id):
     return False
 
 
-maven = None
-
-
 class Maven(object):
     """Maven. Manages maven jar files. """
-    def __init__(self, blade_root_path):
+
+    @staticmethod
+    def instance():
+        return Maven()
+
+    def __init__(self):
         """Init method. """
-        self.__root_dir = blade_root_path
 
         # jar database
         #   key: jar id in the format group:artifact:version
@@ -66,11 +67,6 @@ class Maven(object):
             return
         if not self.__maven:
             console.error_exit('Maven was not configured')
-        if not self.__central_repository:
-            console.error_exit('Maven repository was not configured')
-        self.__maven = os.path.join(self.__root_dir, self.__maven)
-        if not os.path.exists(self.__maven):
-            console.error_exit('Maven was not found')
         self.__need_check_config = False
 
     def _check_id(self, id):
@@ -86,11 +82,15 @@ class Maven(object):
         jar = artifact + '.jar'
         pom = artifact + '.pom'
         log = artifact + '__download.log'
+        central_repository = ''
+        if self.__central_repository:
+            central_repository = '-DremoteRepositories=%s' % self.__central_repository
+
         cmd = ' '.join([self.__maven,
                         'dependency:get',
-                        '-DremoteRepositories=%s' % self.__central_repository,
-                        '-Dartifact=%s' % id,
-                        '> %s' % log])
+                        central_repository,
+                        '-Dartifact=%s' % id])
+                        #'> %s' % log])
         console.info('Downloading %s from central repository...' % jar)
         ret = subprocess.call(cmd, shell=True)
         if ret:
