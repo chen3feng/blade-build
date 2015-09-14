@@ -78,9 +78,8 @@ class Maven(object):
     def _download_jar(self, id):
         """Download the specified jar and its transitive dependencies. """
         group, artifact, version = id.split(':')
-        artifact = artifact + '-' + version
-        jar = artifact + '.jar'
-        pom = artifact + '.pom'
+        jar = artifact + '-' + version + '.jar'
+        pom = artifact + '-' + version + '.pom'
         log = artifact + '__download.log'
         central_repository = ''
         if self.__central_repository:
@@ -91,6 +90,14 @@ class Maven(object):
                         central_repository,
                         '-Dartifact=%s' % id])
                         #'> %s' % log])
+
+        cmd = ' '.join([self.__maven, 'org.apache.maven.plugins:maven-dependency-plugin:2.7:get '
+            '-DgroupId=%s' % group,
+            '-DartifactId=%s' % artifact,
+            '-Dversion=%s' % version,
+            '-Dtype=pom',
+            '> %s' % log])
+
         console.info('Downloading %s from central repository...' % jar)
         ret = subprocess.call(cmd, shell=True)
         if ret:
@@ -126,6 +133,7 @@ class Maven(object):
         if not id in self.__jar_database:
             success = self._download_jar(id)
             if not success:
+                console.error_exit('download jar failed')
                 return '';
         if jar:
             return self.__jar_database[id][0]

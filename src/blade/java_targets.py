@@ -30,6 +30,7 @@ class MavenJar(Target):
         self.fullname = '%s:%s' % self.key
         self.path = '#'
         self.data['binary_jar'] = maven.Maven.instance().get_jar_path(id)
+
     def scons_rules(self):
         pass
 
@@ -50,6 +51,7 @@ class JavaTargetMixIn(object):
         if not key in self.target_database:
             target = MavenJar(id, name)
             blade.blade.register_target(target)
+        self.deps.append(key)
         self.expanded_deps.append(key)
 
     def _filter_deps(self, deps):
