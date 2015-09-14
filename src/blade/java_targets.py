@@ -43,17 +43,16 @@ class JavaTargetMixIn(object):
                     dep_jars.append(jar)
         return dep_jar_vars, dep_jars
 
-    def _get_deps(self):
+    def _get_compile_deps(self):
         return self.__get_deps(self.deps)
 
-    def _get_all_deps(self):
+    def _get_pack_deps(self):
         return self.__get_deps(self.expanded_deps)
 
     def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
-        proto_library_config = configparse.blade_config.get_config('proto_library_config')
 
-        dep_jar_vars, dep_jars = self._get_deps()
+        dep_jar_vars, dep_jars = self._get_compile_deps()
         for dep_jar_var in dep_jar_vars:
             # Can only append one by one here, maybe a scons bug.
             # Can only append as string under scons 2.1.0, maybe another bug or defect.
@@ -63,11 +62,18 @@ class JavaTargetMixIn(object):
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
         classes_dir = self._get_classes_dir()
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
-            var_name, env_name, classes_dir, srcs))
+                var_name, env_name, classes_dir, srcs))
+
         self._write_rule('%s.Depends(%s, [%s])' % (
             env_name, var_name, ','.join(dep_jar_vars)))
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
+
+    def _generate_generated_java_jar(self, var_name, srcs):
+        env_name = self._env_name()
+        self._write_rule('%s = %s.GeneratedJavaJar(target="%s" + top_env["JARSUFFIX"], source=[%s])' % (
+            var_name, env_name, self._target_file_path(), ','.join(srcs)))
+        self.data['java_jar_var'] = var_name
 
     def _generate_java_jar(self, var_name, classes_var):
         env_name = self._env_name()
@@ -150,7 +156,7 @@ class JavaBinary(JavaTarget):
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar(self._generate_classes())
-        dep_jar_vars, dep_jars = self._get_all_deps()
+        dep_jar_vars, dep_jars = self._get_pack_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
 
     def _get_all_depended_jars(self):
@@ -158,7 +164,6 @@ class JavaBinary(JavaTarget):
 
     def _generate_one_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('onejar')
-        dep_jar_vars, dep_jars = self._get_all_deps()
         self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + [%s] + %s)' % (
             var_name, self._env_name(),
             self._target_file_path() + '.one.jar', self.data['main_class'],
@@ -182,9 +187,10 @@ class JavaTest(JavaBinary):
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar(self._generate_classes())
-        dep_jar_vars, dep_jars = self._get_all_deps()
+        dep_jar_vars, dep_jars = self._get_pack_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars),
                                dep_jar_vars)
+
     def _generate_wrapper(self, onejar, dep_jar_vars):
         var_name = self._var_name()
         self._write_rule('%s = %s.JavaTest(target="%s", source=[%s, %s] + [%s])' % (

@@ -821,12 +821,21 @@ def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
     top_env.Append(BUILDERS = {"NvccBinary" : nvcc_binary_bld})
 
 def setup_java_builders(top_env, one_jar_boot_path):
-    compile_java_jar_message = console.inerasable('%sGenerating java jar %s$TARGET%s%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
         'jar cf $TARGET -C `dirname $SOURCE` .',
-        compile_java_jar_message))
+        '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
+
+    # Scons has many bugs with generated sources file,
+    # such as can't obtain class file path correctly.
+    # so just build all sources to jar directly
+    generated_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        'rm -fr ${TARGET}.classes && mkdir -p ${TARGET}.classes && '
+        '$JAVAC $JAVACFLAGS $_JAVABOOTCLASSPATH $_JAVACLASSPATH -d ${TARGET}.classes $SOURCES && '
+        '$JAR $JARFLAGS ${TARGET} -C ${TARGET}.classes && '
+        'rm -fr ${TARGET}.classes',
+        '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})
 
     global _one_jar_boot_path
     _one_jar_boot_path = one_jar_boot_path
