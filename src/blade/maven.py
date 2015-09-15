@@ -88,41 +88,44 @@ class Maven(object):
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         central_repository,
-                        '-Dartifact=%s' % id])
-                        #'> %s' % log])
+                        '-Dartifact=%s' % id,
+                        '> %s' % log])
 
-        cmd = ' '.join([self.__maven, 'org.apache.maven.plugins:maven-dependency-plugin:2.7:get '
+        cmd = ' '.join([self.__maven,
+            'org.apache.maven.plugins:maven-dependency-plugin:2.10:get '
+            #'dependency:get '
             '-DgroupId=%s' % group,
             '-DartifactId=%s' % artifact,
             '-Dversion=%s' % version,
             '-Dtype=pom',
             '> %s' % log])
-
         console.info('Downloading %s from central repository...' % jar)
         ret = subprocess.call(cmd, shell=True)
-        if ret:
+        target_path = self._generate_jar_path(id)
+        log_path = os.path.join(target_path, log)
+        os.rename(log, log_path)
+        if ret != 0:
             console.warning('Error occurred when downloading %s from central '
-                            'repository. Check %s for more details.' % (jar, log))
+                            'repository. Check %s for more details.' % (
+                                jar, log_path))
             return False
-        path = self._generate_jar_path(id)
-        os.rename(log, os.path.join(path, log))
 
         classpath = 'classpath.txt'
         log = artifact + '__classpath.log'
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
                         '-Dmdep.outputFile=%s' % classpath,
-                        '-f %s' % os.path.join(path, pom),
-                        '> %s' % os.path.join(path, log)])
+                        '-f %s' % os.path.join(target_path, pom),
+                        '> %s' % os.path.join(target_path, log)])
         console.info('Resolving %s dependencies...' % jar)
         ret = subprocess.call(cmd, shell=True)
         if ret:
             console.warning('Error occurred when resolving %s dependencies' % jar)
             return False
-        classpath = os.path.join(path, classpath)
+        classpath = os.path.join(target_path, classpath)
         with open(classpath) as f:
             # Read the first line
-            self.__jar_database[id] = (os.path.join(path, jar), f.readline())
+            self.__jar_database[id] = (os.path.join(target_path, jar), f.readline())
 
         return True
 
