@@ -121,10 +121,15 @@ class JavaTargetMixIn(object):
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
         self.data['java_jar_var'] = var_name
 
-    def _generate_java_jar(self, var_name, classes_var):
+    def _generate_java_jar(self, var_name, classes_var, resources_var):
         env_name = self._env_name()
+        resources = []
+        if classes_var:
+            resources.append(classes_var)
+        if resources_var:
+            resources.append(resources_var)
         self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
-            var_name, env_name, self._target_file_path(), classes_var))
+            var_name, env_name, self._target_file_path(), ','.join(resources)))
         self.data['java_jar_var'] = var_name
 
 
@@ -166,14 +171,31 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._check_deprecated_deps()
         self._clone_env()
 
+    def _generate_resources(self):
+        resources = self.data['resources']
+        if not resources:
+            return None
+        srcs = []
+        for src in resources:
+            srcs.append(self._source_file_path(src))
+        var_name = self._var_name('resources')
+        env_name = self._env_name()
+        resources_dir = self._target_file_path() + '.resources'
+        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
+            var_name, env_name, resources_dir, srcs))
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
+        return var_name
+
     def _generate_classes(self):
         var_name = self._var_name('classes')
         srcs = [self._source_file_path(src) for src in self.srcs]
         return self._generate_java_classes(var_name, srcs)
 
-    def _generate_jar(self, classes_var):
+    def _generate_jar(self):
         var_name = self._var_name('jar')
-        self._generate_java_jar(var_name, classes_var)
+        classes_var = self._generate_classes()
+        resources_var = self._generate_resources()
+        self._generate_java_jar(var_name, classes_var, resources_var)
 
 
 class JavaLibrary(JavaTarget):
@@ -191,7 +213,7 @@ class JavaLibrary(JavaTarget):
     def scons_rules(self):
         if self.type != 'prebuilt_java_library':
             self._prepare_to_generate_rule()
-            self._generate_jar(self._generate_classes())
+            self._generate_jar()
 
 
 class JavaBinary(JavaTarget):
@@ -203,7 +225,7 @@ class JavaBinary(JavaTarget):
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
-        self._generate_jar(self._generate_classes())
+        self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
 
@@ -234,7 +256,7 @@ class JavaTest(JavaBinary):
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
-        self._generate_jar(self._generate_classes())
+        self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars),
                                dep_jar_vars)

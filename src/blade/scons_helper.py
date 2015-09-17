@@ -296,6 +296,7 @@ struct BladeResourceEntry {
 
 
 def generate_resource_file(target, source, env):
+    """Generate resource source file in resource_library"""
     src_path = str(source[0])
     new_src_path = str(target[0])
     cmd = ('xxd -i %s | sed -e "s/^unsigned char /const char RESOURCE_/g" '
@@ -315,6 +316,82 @@ def generate_resource_file(target, source, env):
             error = error + ': ' + stderr
         console.error_exit(error)
     return p.returncode
+
+
+def _java_resource_file_target_path(path):
+    """ Return relative target path in target dir, see
+    https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html
+    for the rules
+    """
+    path =  str(path)
+    segs = [
+        '/src/main/resources/',
+        '/src/test/resources/',
+    ]
+    for seg in segs:
+        pos = path.find(seg)
+        if pos == -1:
+            return ''
+        return path[pos + len(seg):]
+
+
+# emitter function is used by scons builder to determine target files from
+# source files.
+def _emit_java_resources(target, source, env):
+    """Create and return lists of source resource files
+    and their corresponding target resource files.
+    """
+
+    target[0].must_be_same(SCons.Node.FS.Dir)
+    classdir = target[0]
+
+    slist = []
+    for entry in source:
+        entry = entry.rentry().disambiguate()
+        if isinstance(entry, SCons.Node.FS.File):
+            slist.append(entry)
+        elif isinstance(entry, SCons.Node.FS.Dir):
+            result = SCons.Util.OrderedDict()
+            dirnode = entry.rdir()
+            def find_files(arg, dirpath, filenames):
+                mydir = dirnode.Dir(dirpath)
+                for name in filenames:
+                    if os.path.isfile(os.path.join(str(dirpath), name)):
+                        arg[mydir.File(name)] = True
+            for dirpath, dirnames, filenames in os.walk(dirnode.get_abspath()):
+                find_files(result, dirpath, filenames)
+            entry.walk(find_files, result)
+
+            slist.extend(list(result.keys()))
+        else:
+            raise SCons.Errors.UserError("Java resource must be File or Dir, not '%s'" % entry.__class__)
+
+    tlist = []
+    for f in slist:
+        target_path = _java_resource_file_target_path(f.rfile().get_abspath())
+        if target_path:
+            d = target[0]
+            t = d.File(target_path)
+            t.attributes.java_classdir = classdir
+            f.attributes.target_path = target_path
+            t.set_specific_source([f])
+            tlist.append(t)
+        else:
+            console.warning('java resource file "%s" does not match any '
+                            'resource path pattern of maven standard directory '
+                            'layout, ignored. \nsee '
+                            'https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html' % f)
+
+    return tlist, slist
+
+
+def process_java_resources(target, source, env):
+    """Copy source resource file into .resources dir"""
+    target_dir = str(target[0].attributes.java_classdir)
+    for src in source:
+        target_path = os.path.join(target_dir, src.attributes.target_path)
+        shutil.copy2(str(src), target_path)
+    return None
 
 
 _one_jar_boot_path = None
@@ -837,6 +914,17 @@ def setup_java_builders(top_env, one_jar_boot_path):
         '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})
 
+
+    resource_message = console.erasable('%sProcess jar resource %s$SOURCES%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    java_resource_bld = SCons.Builder.Builder(
+            action = MakeAction(
+                process_java_resources, resource_message),
+            emitter = _emit_java_resources,
+            target_factory = SCons.Node.FS.Entry,
+            source_factory = SCons.Node.FS.Entry)
+    top_env.Append(BUILDERS = {"JavaResource" : java_resource_bld})
+
     global _one_jar_boot_path
     _one_jar_boot_path = one_jar_boot_path
 
@@ -857,6 +945,7 @@ def setup_java_builders(top_env, one_jar_boot_path):
     java_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_test, java_test_message))
     top_env.Append(BUILDERS = {"JavaTest" : java_test_bld})
+
 
 def setup_yacc_builders(top_env):
     compile_yacc_message = console.erasable('%sYacc %s$SOURCE%s to $TARGET%s' % \
