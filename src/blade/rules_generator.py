@@ -234,6 +234,9 @@ compile_proto_php_message = console.erasable('%sCompiling %s$SOURCE%s to php sou
 compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
+generate_proto_descriptor_message = console.inerasable('%sGenerating proto descriptor set %s$TARGET%s' % \
+    (colors('cyan'), colors('purple'), colors('end')))
+
 compile_thrift_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
     (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
@@ -364,6 +367,15 @@ top_env.Append(
             '$SOURCE", compile_proto_python_message))' % (
                     protoc_bin, protobuf_incs_str, self.build_dir))
         builder_list.append('BUILDERS = {"ProtoPython" : proto_python_bld}')
+
+        self._add_rule(
+            'proto_descriptor_bld = Builder(action = MakeAction("%s '
+            '--proto_path=. '
+            '-I. %s -I=`dirname $SOURCE` '
+            '--descriptor_set_out=$TARGET --include_source_info '
+            '$SOURCES", generate_proto_descriptor_message))' % (
+                    protoc_bin, protobuf_incs_str))
+        builder_list.append('BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld}')
 
         # Generate thrift library builders.
         thrift_config = configparse.blade_config.get_config('thrift_config')

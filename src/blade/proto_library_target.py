@@ -30,6 +30,7 @@ class ProtoLibrary(CcTarget):
                  deps,
                  optimize,
                  deprecated,
+                 generate_descriptors,
                  blade,
                  kwargs):
         """Init method.
@@ -61,6 +62,7 @@ class ProtoLibrary(CcTarget):
         self.data['java_sources_explict_dependency'] = []
         self.data['python_vars'] = []
         self.data['python_sources'] = []
+        self.data['generate_descriptors'] = generate_descriptors
 
     def _check_proto_srcs_name(self, srcs_list):
         """_check_proto_srcs_name.
@@ -99,6 +101,10 @@ class ProtoLibrary(CcTarget):
         """Generate the python file name. """
         proto_name = src[:-6]
         return self._target_file_path(path, '%s_pb2.py' % proto_name)
+
+    def _proto_gen_descriptor_file(self, path, name):
+        """Generate the descriptor file name. """
+        return self._target_file_path(path, '%s.descriptors.pb' % name)
 
     def _get_java_package_name(self, src):
         """Get the java package name from proto file if it is specified. """
@@ -186,6 +192,20 @@ class ProtoLibrary(CcTarget):
             self.data['python_vars'].append(py_cmd_var)
             self.data['python_sources'].append(proto_python_src)
 
+    def _proto_descriptor_rules(self):
+        """Generate descriptor files. """
+        proto_srcs = []
+        for src in self.srcs:
+            src_path = os.path.join(self.path, src)
+            proto_srcs.append(src_path)
+
+        proto_descriptor_file = self._proto_gen_descriptor_file(self.path,
+                                                                self.name)
+        self._write_rule('%s.ProtoDescriptors("%s", [%s])' % (
+                self._env_name(),
+                proto_descriptor_file,
+                ','.join(['"%s"' % src for src in proto_srcs])))
+
     def scons_rules(self):
         """scons_rules.
 
@@ -214,6 +234,9 @@ class ProtoLibrary(CcTarget):
             self.data.get('generate_python') or
             self.key in self.direct_targets):
             self._proto_python_rules()
+
+        if self.data['generate_descriptors']:
+            self._proto_descriptor_rules()
 
         self._setup_cc_flags()
 
@@ -266,6 +289,7 @@ def proto_library(name,
                   deps=[],
                   optimize=[],
                   deprecated=False,
+                  generate_descriptors=False,
                   **kwargs):
     """proto_library target. """
     proto_library_target = ProtoLibrary(name,
@@ -273,6 +297,7 @@ def proto_library(name,
                                         deps,
                                         optimize,
                                         deprecated,
+                                        generate_descriptors,
                                         blade.blade,
                                         kwargs)
     blade.blade.register_target(proto_library_target)
