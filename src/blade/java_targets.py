@@ -182,6 +182,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  srcs,
                  deps,
                  resources,
+                 source_encoding,
                  kwargs):
         """Init method.
 
@@ -200,6 +201,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         blade.blade,
                         kwargs)
         self.data['resources'] = resources
+        self.data['source_encoding'] = source_encoding
         for dep in mvn_deps:
             self._add_maven_dep(dep)
 
@@ -207,6 +209,10 @@ class JavaTarget(Target, JavaTargetMixIn):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
+        source_encoding = self.data['source_encoding']
+        if source_encoding:
+            self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
+                self._env_name(), source_encoding))
 
     def _generate_resources(self):
         resources = self.data['resources']
@@ -239,11 +245,13 @@ class JavaTarget(Target, JavaTargetMixIn):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, resources, prebuilt, binary_jar, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, prebuilt,
+                 binary_jar, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
-        JavaTarget.__init__(self, name, type, srcs, deps, resources, kwargs)
+        JavaTarget.__init__(self, name, type, srcs, deps, resources,
+                            source_encoding, kwargs)
         if prebuilt:
             if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
@@ -257,8 +265,9 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaBinary"""
-    def __init__(self, name, srcs, deps, resources, main_class, kwargs):
-        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources, kwargs)
+    def __init__(self, name, srcs, deps, resources, source_encoding, main_class, kwargs):
+        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
+                            source_encoding, kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
 
@@ -287,9 +296,11 @@ class JavaBinary(JavaTarget):
 
 class JavaTest(JavaBinary):
     """JavaTarget"""
-    def __init__(self, name, srcs, deps, resources, main_class, testdata, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 main_class, testdata, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
-        JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
+        JavaBinary.__init__(self, name, srcs, deps, resources,
+                            source_encoding, main_class, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -311,6 +322,7 @@ def java_library(name,
                  srcs=[],
                  deps=[],
                  resources=[],
+                 source_encoding='',
                  prebuilt=False,
                  binary_jar='',
                  **kwargs):
@@ -319,6 +331,7 @@ def java_library(name,
                          srcs,
                          deps,
                          resources,
+                         source_encoding,
                          prebuilt,
                          binary_jar,
                          kwargs)
@@ -330,12 +343,14 @@ def java_binary(name,
                 srcs=[],
                 deps=[],
                 resources=[],
+                source_encoding='',
                 **kwargs):
     """Define java_binary target. """
     target = JavaBinary(name,
                         srcs,
                         deps,
                         resources,
+                        source_encoding,
                         main_class,
                         kwargs)
     blade.blade.register_target(target)
@@ -345,6 +360,7 @@ def java_test(name,
               srcs=[],
               deps=[],
               resources=[],
+              source_encoding='',
               main_class = 'org.junit.runner.JUnitCore',
               testdata=[],
               **kwargs):
@@ -353,6 +369,7 @@ def java_test(name,
                       srcs,
                       deps,
                       resources,
+                      source_encoding,
                       main_class,
                       testdata,
                       kwargs)
