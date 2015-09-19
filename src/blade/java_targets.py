@@ -24,15 +24,25 @@ from target import Target
 
 class MavenJar(Target):
     """MavenJar"""
-    def __init__(self, id, name):
+    def __init__(self, name, id, is_implicit_added):
         Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
-        self.key = ('#', name)
-        self.fullname = '%s:%s' % self.key
-        self.path = '#'
-        self.data['binary_jar'] = maven.Maven.instance().get_jar_path(id)
+        self.data['id'] = id
+        if is_implicit_added:
+            self.key = ('#', name)
+            self.fullname = '%s:%s' % self.key
+            self.path = '#'
 
     def scons_rules(self):
-        pass
+        maven_cache = maven.MavenCache.instance()
+        self.data['binary_jar'] = maven_cache.get_jar_path(self.data['id'])
+
+
+def maven_jar(name, id):
+    target = MavenJar(name, id, is_implicit_added=False)
+    blade.blade.register_target(target)
+
+
+build_rules.register_function(maven_jar)
 
 
 class JavaTargetMixIn(object):
@@ -44,12 +54,18 @@ class JavaTargetMixIn(object):
         for dep in deps:
             if maven.is_valid_id(dep):
                 self._add_maven_dep(dep)
+                continue
+            dkey = self._convert_string_to_target_helper(dep)
+            if dkey not in self.deps:
+                self.deps.append(dkey)
+            if dkey not in self.expanded_deps:
+                self.expanded_deps.append(dkey)
 
     def _add_maven_dep(self, id):
         name = blade_util.regular_variable_name(id).replace(':', '_')
         key = ('#', name)
         if not key in self.target_database:
-            target = MavenJar(id, name)
+            target = MavenJar(name, id, is_implicit_added=True)
             blade.blade.register_target(target)
         self.deps.append(key)
         self.expanded_deps.append(key)
@@ -91,6 +107,25 @@ class JavaTargetMixIn(object):
     def _get_pack_deps(self):
         return self.__get_deps(self.expanded_deps)
 
+    def _java_sources_paths(self, srcs):
+        path = []
+        segs = [
+            'src/main/java',
+            'src/test/java',
+        ]
+        for src in srcs:
+            for seg in segs:
+                pos = src.find(seg)
+                if pos > 0:
+                    path.append(src[:pos + len(seg)])
+        return path
+
+    def _generate_java_sources_paths(self, srcs):
+        path = self._java_sources_paths(srcs)
+        if path:
+            env_name = self._env_name()
+            self._write_rule('%s.Append(JAVASOURCEPATH=%s)' % (env_name, path))
+
     def _generate_java_classpath(self, dep_jar_vars, dep_jars):
         env_name = self._env_name()
         for dep_jar_var in dep_jar_vars:
@@ -104,6 +139,7 @@ class JavaTargetMixIn(object):
     def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
 
+        self._generate_java_sources_paths(srcs)
         dep_jar_vars, dep_jars = self._get_compile_deps()
         self._generate_java_classpath(dep_jar_vars, dep_jars)
         classes_dir = self._get_classes_dir()
@@ -123,14 +159,15 @@ class JavaTargetMixIn(object):
 
     def _generate_java_jar(self, var_name, classes_var, resources_var):
         env_name = self._env_name()
-        resources = []
+        sources = []
         if classes_var:
-            resources.append(classes_var)
+            sources.append(classes_var)
         if resources_var:
-            resources.append(resources_var)
-        self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
-            var_name, env_name, self._target_file_path(), ','.join(resources)))
-        self.data['java_jar_var'] = var_name
+            sources.append(resources_var)
+        if sources:
+            self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
+                var_name, env_name, self._target_file_path(), ','.join(sources)))
+            self.data['java_jar_var'] = var_name
 
 
 class JavaTarget(Target, JavaTargetMixIn):
@@ -145,6 +182,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  srcs,
                  deps,
                  resources,
+                 source_encoding,
                  kwargs):
         """Init method.
 
@@ -163,6 +201,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         blade.blade,
                         kwargs)
         self.data['resources'] = resources
+        self.data['source_encoding'] = source_encoding
         for dep in mvn_deps:
             self._add_maven_dep(dep)
 
@@ -170,6 +209,10 @@ class JavaTarget(Target, JavaTargetMixIn):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
+        source_encoding = self.data['source_encoding']
+        if source_encoding:
+            self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
+                self._env_name(), source_encoding))
 
     def _generate_resources(self):
         resources = self.data['resources']
@@ -187,6 +230,8 @@ class JavaTarget(Target, JavaTargetMixIn):
         return var_name
 
     def _generate_classes(self):
+        if not self.srcs:
+            return None
         var_name = self._var_name('classes')
         srcs = [self._source_file_path(src) for src in self.srcs]
         return self._generate_java_classes(var_name, srcs)
@@ -200,11 +245,13 @@ class JavaTarget(Target, JavaTargetMixIn):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, resources, prebuilt, binary_jar, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, prebuilt,
+                 binary_jar, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
-        JavaTarget.__init__(self, name, type, srcs, deps, resources, kwargs)
+        JavaTarget.__init__(self, name, type, srcs, deps, resources,
+                            source_encoding, kwargs)
         if prebuilt:
             if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
@@ -218,8 +265,9 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaBinary"""
-    def __init__(self, name, srcs, deps, resources, main_class, kwargs):
-        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources, kwargs)
+    def __init__(self, name, srcs, deps, resources, source_encoding, main_class, kwargs):
+        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
+                            source_encoding, kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
 
@@ -248,9 +296,11 @@ class JavaBinary(JavaTarget):
 
 class JavaTest(JavaBinary):
     """JavaTarget"""
-    def __init__(self, name, srcs, deps, resources, main_class, testdata, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 main_class, testdata, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
-        JavaBinary.__init__(self, name, srcs, deps, resources, main_class, kwargs)
+        JavaBinary.__init__(self, name, srcs, deps, resources,
+                            source_encoding, main_class, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -272,6 +322,7 @@ def java_library(name,
                  srcs=[],
                  deps=[],
                  resources=[],
+                 source_encoding='',
                  prebuilt=False,
                  binary_jar='',
                  **kwargs):
@@ -280,6 +331,7 @@ def java_library(name,
                          srcs,
                          deps,
                          resources,
+                         source_encoding,
                          prebuilt,
                          binary_jar,
                          kwargs)
@@ -291,12 +343,14 @@ def java_binary(name,
                 srcs=[],
                 deps=[],
                 resources=[],
+                source_encoding='',
                 **kwargs):
     """Define java_binary target. """
     target = JavaBinary(name,
                         srcs,
                         deps,
                         resources,
+                        source_encoding,
                         main_class,
                         kwargs)
     blade.blade.register_target(target)
@@ -306,6 +360,7 @@ def java_test(name,
               srcs=[],
               deps=[],
               resources=[],
+              source_encoding='',
               main_class = 'org.junit.runner.JUnitCore',
               testdata=[],
               **kwargs):
@@ -314,6 +369,7 @@ def java_test(name,
                       srcs,
                       deps,
                       resources,
+                      source_encoding,
                       main_class,
                       testdata,
                       kwargs)
