@@ -84,13 +84,12 @@ class MavenCache(object):
         pom = artifact + '-' + version + '.pom'
         log = artifact + '__download.log'
         target_path = self._generate_jar_path(id)
-        console.info('Downloading %s from central repository...' % jar)
         if not version.endswith('-SNAPSHOT'):
             if (os.path.isfile(os.path.join(target_path, jar)) and
                 os.path.isfile(os.path.join(target_path, pom))):
-                console.info('%s met local cache, done.' % id)
                 return True
 
+        console.info('Downloading %s from central repository...' % jar)
         central_repository = ''
         if self.__central_repository:
             central_repository = '-DremoteRepositories=%s' % self.__central_repository
@@ -120,14 +119,13 @@ class MavenCache(object):
         return True
 
     def _download_dependency(self, id):
-        console.info('Resolving %s dependencies...' % id)
         group, artifact, version = id.split(':')
         target_path = self._generate_jar_path(id)
         classpath = 'classpath.txt'
         if not version.endswith('-SNAPSHOT'):
             if os.path.isfile(os.path.join(target_path, classpath)):
-                console.info('%s met local cache, done.' % id)
                 return True
+        console.info('Downloading %s dependencies...' % id)
         target_path = self._generate_jar_path(id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         log = os.path.join(target_path, artifact + '__classpath.log')

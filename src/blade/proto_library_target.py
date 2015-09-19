@@ -32,6 +32,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  deps,
                  optimize,
                  deprecated,
+                 source_encoding,
                  blade,
                  kwargs):
         """Init method.
@@ -62,6 +63,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
+        self.data['source_encoding'] = source_encoding
+
         self.data['java_sources_explict_dependency'] = []
         self.data['python_vars'] = []
         self.data['python_sources'] = []
@@ -162,9 +165,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
 
+        self._generate_java_source_encoding()
         dep_jar_vars, dep_jars = self._get_compile_deps()
         self._generate_java_classpath(dep_jar_vars, dep_jars)
-        self._generate_generated_java_jar(self._var_name('jar'), java_src_vars)
+        var_name = self._var_name('jar')
+        self._generate_generated_java_jar(var_name, java_src_vars)
+        self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
 
     def _generate_java_jar(self, classes_var):
         env_name = self._env_name()
@@ -222,18 +228,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         direct_targets = self.blade.get_direct_targets()
 
         if (getattr(options, 'generate_java', False) or
-            self.data.get('generate_java') or
-            self.key in direct_targets):
+            self.data.get('generate_java')):
             self._proto_java_rules()
 
-        if (getattr(options, 'generate_php', False) and
-            (self.data.get('generate_php') or
-             self.key in direct_targets)):
+        if (getattr(options, 'generate_php', False) or
+            self.data.get('generate_php')):
             self._proto_php_rules()
 
         if (getattr(options, 'generate_python', False) or
-            self.data.get('generate_python') or
-            self.key in direct_targets):
+            self.data.get('generate_python')):
             self._proto_python_rules()
 
         self._setup_cc_flags()
@@ -281,6 +284,7 @@ def proto_library(name,
                   deps=[],
                   optimize=[],
                   deprecated=False,
+                  source_encoding='iso-8859-1',
                   **kwargs):
     """proto_library target. """
     proto_library_target = ProtoLibrary(name,
@@ -288,6 +292,7 @@ def proto_library(name,
                                         deps,
                                         optimize,
                                         deprecated,
+                                        source_encoding,
                                         blade.blade,
                                         kwargs)
     blade.blade.register_target(proto_library_target)
