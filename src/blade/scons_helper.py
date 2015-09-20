@@ -898,7 +898,11 @@ def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
     top_env.Append(NVCC=nvcc_str)
     top_env.Append(BUILDERS = {"NvccBinary" : nvcc_binary_bld})
 
-def setup_java_builders(top_env, one_jar_boot_path):
+def setup_java_builders(top_env, java_home, one_jar_boot_path):
+    if java_home:
+        top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
+        top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
+
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
         'jar cf $TARGET -C `dirname $SOURCE` .',
         '$JARCOMSTR'))

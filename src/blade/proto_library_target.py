@@ -165,6 +165,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                      self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
 
+        self._generate_java_versions()
         self._generate_java_source_encoding()
         dep_jar_vars, dep_jars = self._get_compile_deps()
         self._generate_java_classpath(dep_jar_vars, dep_jars)

@@ -167,8 +167,10 @@ import scons_helper
         self._add_rule('scons_helper.setup_swig_builders(top_env, "%s")' % self.build_dir)
 
     def _generate_java_builders(self):
-        config = configparse.blade_config.get_config('java_binary_config')
-        self._add_rule('scons_helper.setup_java_builders(top_env, "%s")' % config['one_jar_boot_jar'])
+        config = configparse.blade_config.get_config('java_config')
+        bin_config = configparse.blade_config.get_config('java_binary_config')
+        self._add_rule('scons_helper.setup_java_builders(top_env, "%s", "%s")' % (
+            config['java_home'], bin_config['one_jar_boot_jar']))
 
     def _generate_other_builders(self):
         self._add_rule('scons_helper.setup_other_builders(top_env)')

@@ -135,6 +135,14 @@ class JavaTargetMixIn(object):
 
         return list(path)
 
+    def _generate_java_versions(self):
+        java_config = configparse.blade_config.get_config('java_config')
+        version = java_config['version']
+        source_version = java_config['source_version']
+        target_version = java_config['target_version']
+        self._write_rule('%s.Replace(JAVAVERSION="%s")' % (
+            self._env_name(), version))
+
     def _generate_java_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if source_encoding is None:
@@ -229,7 +237,8 @@ class JavaTarget(Target, JavaTargetMixIn):
                         kwargs)
         self.data['resources'] = resources
         self.data['source_encoding'] = source_encoding
-        self.data['warnings'] = warnings
+        if warnings is not None:
+            self.data['warnings'] = var_to_list(warnings)
         for dep in mvn_deps:
             self._add_maven_dep(dep)
 
@@ -237,15 +246,15 @@ class JavaTarget(Target, JavaTargetMixIn):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
+        self._generate_java_versions()
         self._generate_java_source_encoding()
-        warnings = self.data['warnings']
+        warnings = self.data.get('warnings')
         if warnings is None:
             config = configparse.blade_config.get_config('java_config')
             warnings = config['warnings']
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))
-
 
     def _generate_resources(self):
         resources = self.data['resources']

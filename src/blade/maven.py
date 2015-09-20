@@ -146,11 +146,16 @@ class MavenCache(object):
         """Download the specified jar and its transitive dependencies. """
         if not self._download_jar(id):
             return False
-        if not self._download_dependency(id):
-            return False
+
         group, artifact, version = id.split(':')
         jar = artifact + '-' + version + '.jar'
         target_path = self._generate_jar_path(id)
+
+        if not self._download_dependency(id):
+            self.__jar_database[id] = (os.path.join(target_path, jar), '')
+            # Ignore dependency download error
+            return True
+
         classpath = os.path.join(target_path, 'classpath.txt')
         with open(classpath) as f:
             # Read the first line
