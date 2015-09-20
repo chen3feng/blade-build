@@ -65,7 +65,7 @@ class BladeConfig(object):
             },
 
             'java_config': {
-                'version': '1.7',
+                'version': '1.6',
                 'source_version': '',
                 'target_version': '',
                 'maven': 'mvn',
