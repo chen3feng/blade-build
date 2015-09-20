@@ -327,6 +327,7 @@ def _java_resource_file_target_path(path):
     segs = [
         '/src/main/resources/',
         '/src/test/resources/',
+        '/resources/',
     ]
     for seg in segs:
         pos = path.find(seg)

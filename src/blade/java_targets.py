@@ -11,6 +11,7 @@ Implement java_library, java_binary and java_test
 
 
 import os
+import re
 
 import blade
 import blade_util
@@ -99,6 +100,18 @@ class JavaTargetMixIn(object):
     def _get_pack_deps(self):
         return self.__get_deps(self.expanded_deps)
 
+    def _get_java_package_name(self, file_name):
+        """Get the java package name from proto file if it is specified. """
+        if not os.path.isfile(file_name):
+            return ''
+        package_pattern = '^\s*package\s+([\w.]+)'
+        content = open(file_name).read()
+        m = re.search(package_pattern, content, re.MULTILINE)
+        if m:
+            return m.group(1)
+
+        return ''
+
     def _java_sources_paths(self, srcs):
         path = set()
         segs = [
@@ -111,6 +124,15 @@ class JavaTargetMixIn(object):
                 pos = src.find(seg)
                 if pos > 0:
                     path.add(src[:pos + len(seg)])
+                    continue
+            package = self._get_java_package_name(src)
+            if package:
+                package = package.replace('.', '/') + '/'
+                pos = src.find(package)
+                if pos > 0:
+                    path.add(src[:pos])
+                    continue
+
         return list(path)
 
     def _generate_java_source_encoding(self):
@@ -344,7 +366,7 @@ def java_library(name,
                  srcs=[],
                  deps=[],
                  resources=[],
-                 source_encoding='',
+                 source_encoding=None,
                  warnings=None,
                  prebuilt=False,
                  binary_jar='',
@@ -367,7 +389,7 @@ def java_binary(name,
                 srcs=[],
                 deps=[],
                 resources=[],
-                source_encoding='',
+                source_encoding=None,
                 warnings=None,
                 **kwargs):
     """Define java_binary target. """
@@ -386,7 +408,7 @@ def java_test(name,
               srcs=[],
               deps=[],
               resources=[],
-              source_encoding='',
+              source_encoding=None,
               warnings=None,
               main_class = 'org.junit.runner.JUnitCore',
               testdata=[],
