@@ -6,7 +6,7 @@
 
 
 """
-Implement java_library, java_binary, java_test and java_fat_binary
+Implement java_library, java_binary, java_test and java_fat_library
 """
 
 
@@ -366,10 +366,10 @@ class JavaTest(JavaBinary):
             onejar, self.data['java_jar_var'], ','.join(dep_jar_vars)))
 
 
-class JavaFatBinary(JavaTarget):
-    """JavaFatBinary"""
+class JavaFatLibrary(JavaTarget):
+    """JavaFatLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings, kwargs):
-        JavaTarget.__init__(self, name, 'java_fat_binary', srcs, deps,
+        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
                             resources, source_encoding, warnings, kwargs)
 
     def scons_rules(self):
@@ -459,21 +459,21 @@ def java_test(name,
     blade.blade.register_target(target)
 
 
-def java_fat_binary(name,
-                    srcs=[],
-                    deps=[],
-                    resources=[],
-                    source_encoding='',
-                    warnings=None,
-                    **kwargs):
-    """Define java_fat_binary target. """
-    target = JavaFatBinary(name,
-                           srcs,
-                           deps,
-                           resources,
-                           source_encoding,
-                           warnings,
-                           kwargs)
+def java_fat_library(name,
+                     srcs=[],
+                     deps=[],
+                     resources=[],
+                     source_encoding='',
+                     warnings=None,
+                     **kwargs):
+    """Define java_fat_library target. """
+    target = JavaFatLibrary(name,
+                            srcs,
+                            deps,
+                            resources,
+                            source_encoding,
+                            warnings,
+                            kwargs)
     blade.blade.register_target(target)
 
 
@@ -481,4 +481,4 @@ build_rules.register_function(maven_jar)
 build_rules.register_function(java_binary)
 build_rules.register_function(java_library)
 build_rules.register_function(java_test)
-build_rules.register_function(java_fat_binary)
+build_rules.register_function(java_fat_library)
