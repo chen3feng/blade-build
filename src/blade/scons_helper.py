@@ -486,6 +486,15 @@ def _generate_fat_jar(target, deps_jar):
     return None
 
 
+def generate_fat_jar(target, source, env):
+    target = str(target[0])
+    deps_jar = []
+    for dep in source:
+        deps_jar.append(str(dep))
+
+    return _generate_fat_jar(target, deps_jar)
+
+
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
     onejar_name = os.path.basename(onejar_path)
@@ -966,6 +975,12 @@ def setup_java_builders(top_env, one_jar_boot_path):
     one_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_one_jar,
         one_java_message))
     top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
+
+    fat_java_message = console.erasable('%sGenerating fat jar %s$TARGET%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
+        fat_java_message))
+    top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})
 
     java_binary_message = console.inerasable('%sGenerating java binary %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
