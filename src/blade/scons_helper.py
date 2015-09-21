@@ -330,9 +330,9 @@ def _java_resource_file_target_path(path):
     ]
     for seg in segs:
         pos = path.find(seg)
-        if pos == -1:
-            return ''
-        return path[pos + len(seg):]
+        if pos != -1:
+            return path[pos + len(seg):]
+    return ''
 
 
 # emitter function is used by scons builder to determine target files from

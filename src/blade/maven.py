@@ -28,12 +28,15 @@ def is_valid_id(id):
     return False
 
 
-class Maven(object):
-    """Maven. Manages maven jar files. """
+class MavenCache(object):
+    """MavenCache. Manages maven jar files. """
 
+    __instance = None
     @staticmethod
     def instance():
-        return Maven()
+        if not MavenCache.__instance:
+            MavenCache.__instance = MavenCache()
+        return MavenCache.__instance
 
     def __init__(self):
         """Init method. """
@@ -66,7 +69,7 @@ class Maven(object):
         if not self.__need_check_config:
             return
         if not self.__maven:
-            console.error_exit('Maven was not configured')
+            console.error_exit('MavenCache was not configured')
         self.__need_check_config = False
 
     def _check_id(self, id):
@@ -76,11 +79,18 @@ class Maven(object):
                                'such as jaxen:jaxen:1.1.6' % id)
 
     def _download_jar(self, id):
-        """Download the specified jar and its transitive dependencies. """
         group, artifact, version = id.split(':')
         jar = artifact + '-' + version + '.jar'
         pom = artifact + '-' + version + '.pom'
         log = artifact + '__download.log'
+        target_path = self._generate_jar_path(id)
+        console.info('Downloading %s from central repository...' % jar)
+        if not version.endswith('-SNAPSHOT'):
+            if (os.path.isfile(os.path.join(target_path, jar)) and
+                os.path.isfile(os.path.join(target_path, pom))):
+                console.info('%s met local cache, done.' % id)
+                return True
+
         central_repository = ''
         if self.__central_repository:
             central_repository = '-DremoteRepositories=%s' % self.__central_repository
@@ -99,30 +109,51 @@ class Maven(object):
             '-Dversion=%s' % version,
             '-Dtype=pom',
             '> %s' % log])
-        console.info('Downloading %s from central repository...' % jar)
         ret = subprocess.call(cmd, shell=True)
-        target_path = self._generate_jar_path(id)
         log_path = os.path.join(target_path, log)
         os.rename(log, log_path)
         if ret != 0:
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
-                                jar, log_path))
+                                id, log_path))
             return False
+        return True
 
+    def _download_dependency(self, id):
+        console.info('Resolving %s dependencies...' % id)
+        group, artifact, version = id.split(':')
+        target_path = self._generate_jar_path(id)
         classpath = 'classpath.txt'
-        log = artifact + '__classpath.log'
+        if not version.endswith('-SNAPSHOT'):
+            if os.path.isfile(os.path.join(target_path, classpath)):
+                console.info('%s met local cache, done.' % id)
+                return True
+        target_path = self._generate_jar_path(id)
+        pom = os.path.join(target_path, artifact + '-' + version + '.pom')
+        log = os.path.join(target_path, artifact + '__classpath.log')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
+                        '-DincludeScope=runtime',
                         '-Dmdep.outputFile=%s' % classpath,
-                        '-f %s' % os.path.join(target_path, pom),
-                        '> %s' % os.path.join(target_path, log)])
-        console.info('Resolving %s dependencies...' % jar)
+                        '-f %s' % pom,
+                        '> %s' % log])
         ret = subprocess.call(cmd, shell=True)
         if ret:
-            console.warning('Error occurred when resolving %s dependencies' % jar)
+            console.warning('Error occurred when resolving %s dependencies, '
+                            ' Check %s for more details.' % (id, log))
             return False
-        classpath = os.path.join(target_path, classpath)
+        return True
+
+    def _download_artifact(self, id):
+        """Download the specified jar and its transitive dependencies. """
+        if not self._download_jar(id):
+            return False
+        if not self._download_dependency(id):
+            return False
+        group, artifact, version = id.split(':')
+        jar = artifact + '-' + version + '.jar'
+        target_path = self._generate_jar_path(id)
+        classpath = os.path.join(target_path, 'classpath.txt')
         with open(classpath) as f:
             # Read the first line
             self.__jar_database[id] = (os.path.join(target_path, jar), f.readline())
@@ -134,9 +165,9 @@ class Maven(object):
         self._check_config()
         self._check_id(id)
         if not id in self.__jar_database:
-            success = self._download_jar(id)
+            success = self._download_artifact(id)
             if not success:
-                console.error_exit('download jar failed')
+                console.error_exit('Download %s failed' % id)
                 return '';
         if jar:
             return self.__jar_database[id][0]
