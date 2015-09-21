@@ -540,7 +540,7 @@ class CcTarget(Target):
             obj = '%s_%s_object' % (self._var_name_of(src),
                                     self._regular_variable_name(self.name))
             target_path = self._target_file_path() + '.objs/%s' % src
-            source_path = self._source_file_path(src)
+            source_path = self._target_file_path(src)  # Also find generated files
             self._write_rule(
                     '%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
                     ', source = "%s")' % (obj, env_name, target_path, source_path))
