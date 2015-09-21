@@ -6,7 +6,7 @@
 
 
 """
-Implement java_library, java_binary and java_test
+Implement java_library, java_binary, java_test and java_fat_library
 """
 
 
@@ -366,6 +366,30 @@ class JavaTest(JavaBinary):
             onejar, self.data['java_jar_var'], ','.join(dep_jar_vars)))
 
 
+class JavaFatLibrary(JavaTarget):
+    """JavaFatLibrary"""
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings, kwargs):
+        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
+                            resources, source_encoding, warnings, kwargs)
+
+    def scons_rules(self):
+        self._prepare_to_generate_rule()
+        self._generate_jar()
+        dep_jar_vars, dep_jars = self._get_pack_deps()
+        self._generate_fat_jar(dep_jar_vars, dep_jars)
+
+    def _generate_fat_jar(self, dep_jar_vars, dep_jars):
+        var_name = self._var_name('fatjar')
+        jar_vars = []
+        if self.data.get('java_jar_var'):
+            jar_vars = [self.data.get('java_jar_var')]
+        jar_vars.extend(dep_jar_vars)
+        self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + %s)' % (
+            var_name, self._env_name(),
+            self._target_file_path() + '.fat.jar',
+            ','.join(jar_vars), dep_jars))
+
+
 def maven_jar(name, id):
     target = MavenJar(name, id, is_implicit_added=False)
     blade.blade.register_target(target)
@@ -435,7 +459,26 @@ def java_test(name,
     blade.blade.register_target(target)
 
 
+def java_fat_library(name,
+                     srcs=[],
+                     deps=[],
+                     resources=[],
+                     source_encoding='',
+                     warnings=None,
+                     **kwargs):
+    """Define java_fat_library target. """
+    target = JavaFatLibrary(name,
+                            srcs,
+                            deps,
+                            resources,
+                            source_encoding,
+                            warnings,
+                            kwargs)
+    blade.blade.register_target(target)
+
+
 build_rules.register_function(maven_jar)
 build_rules.register_function(java_binary)
 build_rules.register_function(java_library)
 build_rules.register_function(java_test)
+build_rules.register_function(java_fat_library)

@@ -454,6 +454,48 @@ def generate_one_jar(target, source, env):
                              _one_jar_boot_path)
 
 
+def _generate_fat_jar(target, deps_jar):
+    """Generate a fat jar containing the contents of all the jar dependencies. """
+    target_dir = os.path.dirname(target)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    target_fat_jar = zipfile.ZipFile(target, 'w')
+    manifest = os.path.join('META-INF', 'MANIFEST.MF')
+    first_jar = True
+    # Record paths written in the fat jar to avoid duplicate writing
+    zip_path_set = set()
+
+    for jar in deps_jar:
+        jar = zipfile.ZipFile(jar, 'r')
+        name_list = jar.namelist()
+        for name in name_list:
+            if name.upper() == manifest:
+                # Use the MANIFEST file of the first jar
+                if first_jar:
+                    target_fat_jar.writestr(name, jar.read(name))
+                    first_jar = False
+            else:
+                if name not in zip_path_set:
+                    target_fat_jar.writestr(name, jar.read(name))
+                    zip_path_set.add(name)
+
+        jar.close()
+
+    target_fat_jar.close()
+
+    return None
+
+
+def generate_fat_jar(target, source, env):
+    target = str(target[0])
+    deps_jar = []
+    for dep in source:
+        deps_jar.append(str(dep))
+
+    return _generate_fat_jar(target, deps_jar)
+
+
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
     onejar_name = os.path.basename(onejar_path)
@@ -938,6 +980,12 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     one_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_one_jar,
         one_java_message))
     top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
+
+    fat_java_message = console.inerasable('%sCreating fat jar %s$TARGET%s%s' % ( \
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
+        fat_java_message))
+    top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})
 
     java_binary_message = console.inerasable('%sGenerating java binary %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
