@@ -65,10 +65,14 @@ class BladeConfig(object):
             },
 
             'java_config': {
+                'version': '1.6',
                 'source_version': '',
                 'target_version': '',
                 'maven': 'mvn',
                 'maven_central': '',
+                'warnings':['-Werror', '-Xlint:all'],
+                'source_encoding': None,
+                'java_home':''
             },
 
             'java_binary_config': {

@@ -144,6 +144,37 @@ class Target(object):
             lib = SystemLibrary(name, self.blade)
             self.blade.register_target(lib)
 
+
+    def _unify_dep(self, dep):
+        """Unify dep to key"""
+        if dep[0] == ':':
+            # Depend on library in current directory
+            dkey = (os.path.normpath(self.path), dep[1:])
+        elif dep.startswith('//'):
+            # Depend on library in remote directory
+            if not ':' in dep:
+                raise Exception, 'Wrong format in %s:%s' % (
+                        self.path, self.name)
+            (path, lib) = dep[2:].rsplit(':', 1)
+            dkey = (os.path.normpath(path), lib)
+        elif dep.startswith('#'):
+            # System libaray, they don't have entry in BUILD so we need
+            # to add deps manually.
+            dkey = ('#', dep[1:])
+            self._add_system_library(dkey, dep)
+        else:
+            # Depend on library in relative subdirectory
+            if not ':' in dep:
+                raise Exception, 'Wrong format in %s:%s' % (
+                        self.path, self.name)
+            (path, lib) = dep.rsplit(':', 1)
+            if '..' in path:
+                raise Exception, "Don't use '..' in path"
+            dkey = (os.path.normpath('%s/%s' % (
+                                      self.path, path)), lib)
+
+        return dkey
+
     def _init_target_deps(self, deps):
         """Init the target deps.
 
@@ -157,35 +188,9 @@ class Target(object):
 
         """
         for d in deps:
-            if d[0] == ':':
-                # Depend on library in current directory
-                dkey = (os.path.normpath(self.path), d[1:])
-            elif d.startswith('//'):
-                # Depend on library in remote directory
-                if not ':' in d:
-                    raise Exception, 'Wrong format in %s:%s' % (
-                            self.path, self.name)
-                (path, lib) = d[2:].rsplit(':', 1)
-                dkey = (os.path.normpath(path), lib)
-            elif d.startswith('#'):
-                # System libaray, they don't have entry in BUILD so we need
-                # to add deps manually.
-                dkey = ('#', d[1:])
-                self._add_system_library(dkey, d)
-            else:
-                # Depend on library in relative subdirectory
-                if not ':' in d:
-                    raise Exception, 'Wrong format in %s:%s' % (
-                            self.path, self.name)
-                (path, lib) = d.rsplit(':', 1)
-                if '..' in path:
-                    raise Exception, "Don't use '..' in path"
-                dkey = (os.path.normpath('%s/%s' % (
-                                          self.path, path)), lib)
-
+            dkey = self._unify_dep(d)
             if dkey not in self.expanded_deps:
                 self.expanded_deps.append(dkey)
-
             if dkey not in self.deps:
                 self.deps.append(dkey)
 
@@ -387,7 +392,6 @@ class Target(object):
         Converting a string like thirdparty/gtest:gtest to tuple
         (target_path, target_name)
         """
-        bad_format = False
         if target_string:
             if target_string.startswith('#'):
                 return ('#', target_string[1:])
@@ -397,15 +401,10 @@ class Target(object):
                 if path.startswith('//'):
                     path = path[2:]
                 return (path, name.strip())
-            else:
-                bad_format = True
-        else:
-            bad_format = True
 
-        if bad_format:
-            console.error_exit('invalid target lib format: %s, '
-                               'should be #lib_name or lib_path:lib_name' %
-                               target_string)
+        console.error_exit('invalid target lib format: %s, '
+                           'should be #lib_name or lib_path:lib_name' %
+                           target_string)
 
 
 class SystemLibrary(Target):

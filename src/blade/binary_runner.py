@@ -123,6 +123,12 @@ class BinaryRunner(object):
                     path = path[2:]
                 path = os.path.abspath(path)
                 environ_add_path(run_env, 'LD_LIBRARY_PATH', path)
+        java_config = configparse.blade_config.get_config('java_config')
+        java_home = java_config['java_home']
+        if java_home:
+            java_home = os.path.abspath(java_home)
+            environ_add_path(run_env, 'PATH', os.path.join(java_home, 'bin'))
+
         return run_env
 
     def _prepare_test_data(self, target):
