@@ -495,19 +495,19 @@ def generate_fat_jar(target, source, env):
     return _generate_fat_jar(target, deps_jar)
 
 
-def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
+def _generate_java_binary(target_name, jar_executable_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
-    onejar_name = os.path.basename(onejar_path)
+    jar_executable_name = os.path.basename(jar_executable_path)
     target_file = open(target_name, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# *.one.jar must be in same dir
+# jar executable must be in same dir
 jar=`dirname "$0"`/"%s"
 
 exec java %s -jar "$jar" %s $@
-""" % (onejar_name, jvm_flags, run_args))
+""" % (jar_executable_name, jvm_flags, run_args))
     os.chmod(target_name, 0755)
     target_file.close()
 
@@ -517,8 +517,8 @@ exec java %s -jar "$jar" %s $@
 def generate_java_binary(target, source, env):
     """build function to generate wrapper shell script for java binary"""
     target_name = str(target[0])
-    onejar_path = str(source[0])
-    return _generate_java_binary(target_name, onejar_path, '', '')
+    jar_executable_path = str(source[0])
+    return _generate_java_binary(target_name, jar_executable_path, '', '')
 
 
 def _get_all_test_class_names_in_jar(jar):

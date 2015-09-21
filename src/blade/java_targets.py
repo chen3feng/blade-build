@@ -6,7 +6,7 @@
 
 
 """
-Implement java_library, java_binary and java_test
+Implement java_library, java_binary, java_test and java_fat_binary
 """
 
 
@@ -318,6 +318,32 @@ class JavaTest(JavaBinary):
             onejar, self.data['java_jar_var'], ','.join(dep_jar_vars)))
 
 
+class JavaFatBinary(JavaTarget):
+    """JavaFatBinary"""
+    def __init__(self, name, srcs, deps, resources, source_encoding, kwargs):
+        JavaTarget.__init__(self, name, 'java_fat_binary', srcs, deps,
+                            resources, source_encoding, kwargs)
+
+    def scons_rules(self):
+        self._prepare_to_generate_rule()
+        self._generate_jar()
+        dep_jar_vars, dep_jars = self._get_pack_deps()
+        self._generate_wrapper(self._generate_fat_jar(dep_jar_vars, dep_jars))
+
+    def _generate_fat_jar(self, dep_jar_vars, dep_jars):
+        var_name = self._var_name('fatjar')
+        self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + [%s] + %s)' % (
+            var_name, self._env_name(),
+            self._target_file_path() + '.fat.jar',
+            self.data['java_jar_var'], ','.join(dep_jar_vars), dep_jars))
+        return var_name
+
+    def _generate_wrapper(self, fatjar):
+        var_name = self._var_name()
+        self._write_rule('%s = %s.JavaBinary(target="%s", source=%s)' % (
+            var_name, self._env_name(), self._target_file_path(), fatjar))
+
+
 def java_library(name,
                  srcs=[],
                  deps=[],
@@ -376,6 +402,23 @@ def java_test(name,
     blade.blade.register_target(target)
 
 
+def java_fat_binary(name,
+                    srcs=[],
+                    deps=[],
+                    resources=[],
+                    source_encoding='',
+                    **kwargs):
+    """Define java_fat_binary target. """
+    target = JavaFatBinary(name,
+                           srcs,
+                           deps,
+                           resources,
+                           source_encoding,
+                           kwargs)
+    blade.blade.register_target(target)
+
+
 build_rules.register_function(java_binary)
 build_rules.register_function(java_library)
 build_rules.register_function(java_test)
+build_rules.register_function(java_fat_binary)
