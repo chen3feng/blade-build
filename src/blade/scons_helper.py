@@ -496,19 +496,19 @@ def generate_fat_jar(target, source, env):
     return _generate_fat_jar(target, deps_jar)
 
 
-def _generate_java_binary(target_name, jar_executable_path, jvm_flags, run_args):
+def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
-    jar_executable_name = os.path.basename(jar_executable_path)
+    onejar_name = os.path.basename(onejar_path)
     target_file = open(target_name, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# jar executable must be in same dir
+# *.one.jar must be in same dir
 jar=`dirname "$0"`/"%s"
 
 exec java %s -jar "$jar" %s $@
-""" % (jar_executable_name, jvm_flags, run_args))
+""" % (onejar_name, jvm_flags, run_args))
     os.chmod(target_name, 0755)
     target_file.close()
 
@@ -518,8 +518,8 @@ exec java %s -jar "$jar" %s $@
 def generate_java_binary(target, source, env):
     """build function to generate wrapper shell script for java binary"""
     target_name = str(target[0])
-    jar_executable_path = str(source[0])
-    return _generate_java_binary(target_name, jar_executable_path, '', '')
+    onejar_path = str(source[0])
+    return _generate_java_binary(target_name, onejar_path, '', '')
 
 
 def _get_all_test_class_names_in_jar(jar):
@@ -981,8 +981,8 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         one_java_message))
     top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
 
-    fat_java_message = console.erasable('%sGenerating fat jar %s$TARGET%s%s' % ( \
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    fat_java_message = console.inerasable('%sCreating fat jar %s$TARGET%s%s' % ( \
+        colors('green'), colors('purple'), colors('green'), colors('end')))
     fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
         fat_java_message))
     top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})

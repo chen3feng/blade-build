@@ -368,28 +368,26 @@ class JavaTest(JavaBinary):
 
 class JavaFatBinary(JavaTarget):
     """JavaFatBinary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings, kwargs):
         JavaTarget.__init__(self, name, 'java_fat_binary', srcs, deps,
-                            resources, source_encoding, kwargs)
+                            resources, source_encoding, warnings, kwargs)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
-        self._generate_wrapper(self._generate_fat_jar(dep_jar_vars, dep_jars))
+        self._generate_fat_jar(dep_jar_vars, dep_jars)
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
-        self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + [%s] + %s)' % (
+        jar_vars = []
+        if self.data.get('java_jar_var'):
+            jar_vars = [self.data.get('java_jar_var')]
+        jar_vars.extend(dep_jar_vars)
+        self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + %s)' % (
             var_name, self._env_name(),
             self._target_file_path() + '.fat.jar',
-            self.data['java_jar_var'], ','.join(dep_jar_vars), dep_jars))
-        return var_name
-
-    def _generate_wrapper(self, fatjar):
-        var_name = self._var_name()
-        self._write_rule('%s = %s.JavaBinary(target="%s", source=%s)' % (
-            var_name, self._env_name(), self._target_file_path(), fatjar))
+            ','.join(jar_vars), dep_jars))
 
 
 def maven_jar(name, id):
@@ -466,6 +464,7 @@ def java_fat_binary(name,
                     deps=[],
                     resources=[],
                     source_encoding='',
+                    warnings=None,
                     **kwargs):
     """Define java_fat_binary target. """
     target = JavaFatBinary(name,
@@ -473,6 +472,7 @@ def java_fat_binary(name,
                            deps,
                            resources,
                            source_encoding,
+                           warnings,
                            kwargs)
     blade.blade.register_target(target)
 
