@@ -372,7 +372,7 @@ top_env.Append(
             'proto_descriptor_bld = Builder(action = MakeAction("%s '
             '--proto_path=. '
             '-I. %s -I=`dirname $SOURCE` '
-            '--descriptor_set_out=$TARGET --include_source_info '
+            '--descriptor_set_out=$TARGET --include_imports --include_source_info '
             '$SOURCES", generate_proto_descriptor_message))' % (
                     protoc_bin, protobuf_incs_str))
         builder_list.append('BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld}')
