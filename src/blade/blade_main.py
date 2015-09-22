@@ -65,12 +65,14 @@
 """
 
 
+import datetime
 import errno
 import fcntl
 import os
 import signal
 import subprocess
 import sys
+import time
 import traceback
 from string import Template
 
@@ -366,7 +368,10 @@ def query(options):
 def main(blade_path):
     exit_code = 0
     try:
+        start_time = time.time()
         exit_code = _main(blade_path)
+        cost_time = int(time.time() - start_time)
+        console.info('cost time: %ss' % datetime.timedelta(seconds=cost_time))
     except SystemExit, e:
         exit_code = e.code
     except KeyboardInterrupt:

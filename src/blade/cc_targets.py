@@ -558,6 +558,9 @@ class CcTarget(Target):
                     objs_name,
                     dep_var_name))
 
+        objs_dirname = self._target_file_path() + '.objs'
+        self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dirname))
+
 
 class CcLibrary(CcTarget):
     """A cc target subclass.

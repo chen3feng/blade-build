@@ -48,7 +48,7 @@ class JavaTargetMixIn(object):
             if maven.is_valid_id(dep):
                 self._add_maven_dep(dep)
                 continue
-            dkey = self._convert_string_to_target_helper(dep)
+            dkey = self._unify_dep(dep)
             if dkey not in self.deps:
                 self.deps.append(dkey)
             if dkey not in self.expanded_deps:
@@ -62,6 +62,7 @@ class JavaTargetMixIn(object):
             blade.blade.register_target(target)
         self.deps.append(key)
         self.expanded_deps.append(key)
+        return key
 
     def _filter_deps(self, deps):
         filtered_deps = []
@@ -73,9 +74,31 @@ class JavaTargetMixIn(object):
                 filtered_deps.append(dep)
         return filtered_deps, filterouted_deps
 
+    def _unify_java_deps(self, deps):
+        dkeys = []
+        for dep in deps:
+            if maven.is_valid_id(dep):
+                dkey = self._add_maven_dep(dep)
+                dkeys.append(dkey)
+                continue
+            dkey = self._unify_dep(dep)
+            dkeys.append(dkey)
+        return dkeys
+
+
     def _get_classes_dir(self):
         """Return path of classes dir. """
         return self._target_file_path() + '.classes'
+
+    def __extract_dep_jars(self, dkey, dep_jar_vars, dep_jars):
+        dep = self.target_database[dkey]
+        jar = dep.data.get('java_jar_var')
+        if jar:
+            dep_jar_vars.append(jar)
+        else:
+            jar = dep.data.get('binary_jar')
+            if jar:
+                dep_jars.append(jar)
 
     def __get_deps(self, deps):
         """
@@ -84,18 +107,18 @@ class JavaTargetMixIn(object):
         dep_jar_vars = []
         dep_jars = []
         for d in deps:
-            dep = self.target_database[d]
-            jar = dep.data.get('java_jar_var')
-            if jar:
-                dep_jar_vars.append(jar)
-            else:
-                jar = dep.data.get('binary_jar')
-                if jar:
-                    dep_jars.append(jar)
+            self.__extract_dep_jars(d, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
     def _get_compile_deps(self):
-        return self.__get_deps(self.deps)
+        dep_jar_vars, dep_jars = self.__get_deps(self.deps)
+        # Add all expanded_deps in direct deps to result
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            exported_deps = dep.data.get('exported_deps', [])
+            for edkey in exported_deps:
+                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+        return dep_jar_vars, dep_jars
 
     def _get_pack_deps(self):
         return self.__get_deps(self.expanded_deps)
@@ -140,6 +163,8 @@ class JavaTargetMixIn(object):
         version = java_config['version']
         source_version = java_config['source_version']
         target_version = java_config['target_version']
+        # JAVAVERSION must be set because scons need it to deduce class names
+        # from java source.
         self._write_rule('%s.Replace(JAVAVERSION="%s")' % (
             self._env_name(), version))
 
@@ -288,14 +313,15 @@ class JavaTarget(Target, JavaTargetMixIn):
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings,
-                 prebuilt,
-                 binary_jar, kwargs):
+                 warnings, prebuilt, binary_jar, exported_deps, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
-        JavaTarget.__init__(self, name, type, srcs, deps, resources,
+        exported_deps = var_to_list(exported_deps)
+        all_deps = var_to_list(deps) + exported_deps
+        JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
                             source_encoding, warnings, kwargs)
+        self.data['exported_deps'] = self._unify_java_deps(exported_deps)
         if prebuilt:
             if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
@@ -403,6 +429,7 @@ def java_library(name,
                  warnings=None,
                  prebuilt=False,
                  binary_jar='',
+                 exported_deps=[],
                  **kwargs):
     """Define java_library target. """
     target = JavaLibrary(name,
@@ -413,6 +440,7 @@ def java_library(name,
                          warnings,
                          prebuilt,
                          binary_jar,
+                         exported_deps,
                          kwargs)
     blade.blade.register_target(target)
 
