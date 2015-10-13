@@ -313,8 +313,8 @@ class JavaTarget(Target, JavaTargetMixIn):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 prebuilt, binary_jar, exported_deps, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 warnings, prebuilt, binary_jar, exported_deps, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -396,10 +396,9 @@ class JavaTest(JavaBinary):
 
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, kwargs):
-        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps, resources,
-                            source_encoding, warnings, kwargs)
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings, kwargs):
+        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
+                            resources, source_encoding, warnings, kwargs)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
