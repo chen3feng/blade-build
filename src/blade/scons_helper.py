@@ -434,13 +434,8 @@ def _generate_jar(target, sources, resources, env):
     global option_verbose
     if option_verbose:
         print cmd
-    p = subprocess.Popen(cmd,
-                         env=os.environ,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         shell=True,
-                         universal_newlines=True)
-    stdout, stderr = p.communicate()
+    p = subprocess.Popen(cmd, env=os.environ, shell=True)
+    p.communicate()
     return p.returncode
 
 
