@@ -28,6 +28,7 @@ import sys
 import tempfile
 import time
 import zipfile
+import glob
 
 import SCons
 import SCons.Action
@@ -393,6 +394,66 @@ def process_java_resources(target, source, env):
         target_path = os.path.join(target_dir, src.attributes.target_path)
         shutil.copy2(str(src), target_path)
     return None
+
+
+_java_build_timestamp = None
+
+
+def _generate_jar(target, sources, resources):
+    """Generate a jar containing the sources and resources. """
+    classes_dir = target.replace('.jar', '.classes')
+    resources_dir = target.replace('.jar', '.resources')
+
+    target_jar = zipfile.ZipFile(target, 'w')
+    jar_path_set = set()
+    manifest = os.path.join('META-INF', 'MANIFEST.MF')
+    target_jar.writestr(manifest,
+                        '''Manifest-Version: 1.0
+
+''')
+
+    if os.path.exists(classes_dir):
+        for source in sources:
+            if not source.endswith('.class'):
+                continue
+
+            jar_path = os.path.relpath(source, classes_dir)
+            if jar_path not in jar_path_set:
+                jar_path_set.add(jar_path)
+                target_jar.write(source, jar_path)
+
+            if '$' not in source:
+                inner_classes = glob.glob(source[:-6] + '$*.class')
+                for inner_class in inner_classes:
+                    if os.path.getmtime(inner_class) >= _java_build_timestamp:
+                        jar_path = os.path.relpath(inner_class, classes_dir)
+                        if jar_path not in jar_path_set:
+                            jar_path_set.add(jar_path)
+                            target_jar.write(inner_class, jar_path)
+
+    if os.path.exists(resources_dir):
+        for resource in resources:
+            target_jar.write(resource, os.path.relpath(resource, resources_dir))
+
+    target_jar.close()
+
+    return None
+
+
+def generate_jar(target, source, env):
+    target = str(target[0])
+    sources = []
+    index = 0
+    for src in source:
+        if str(src).endswith('.class'):
+            sources.append(str(src))
+            index += 1
+        else:
+            break
+
+    resources = [str(src) for src in source[index:]]
+
+    return _generate_jar(target, sources, resources)
 
 
 _one_jar_boot_path = None
@@ -945,9 +1006,11 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
         top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
 
+    global _java_build_timestamp
+    _java_build_timestamp = time.time()
+
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
-        'jar cf $TARGET -C `dirname $SOURCE` .',
-        '$JARCOMSTR'))
+        generate_jar, '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
 
     # Scons has many bugs with generated sources file,
