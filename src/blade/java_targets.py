@@ -204,8 +204,6 @@ class JavaTargetMixIn(object):
         dep_jar_vars, dep_jars = self._get_compile_deps()
         self._generate_java_classpath(dep_jar_vars, dep_jars)
         classes_dir = self._get_classes_dir()
-        if self.data['clean_classes']:
-            self._write_rule('%s.Execute(Delete("%s"))' % (env_name, classes_dir))
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
                 var_name, env_name, classes_dir, srcs))
         self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
@@ -226,7 +224,7 @@ class JavaTargetMixIn(object):
         if resources_var:
             sources.append(resources_var)
         if sources:
-            self._write_rule('%s = %s.BladeJar(target="%s", source=[%s])' % (
+            self._write_rule('%s = %s.BladeJavaJar(target="%s", source=[%s])' % (
                 var_name, env_name,
                 self._target_file_path() + '.jar', ','.join(sources)))
             self.data['java_jar_var'] = var_name
@@ -246,7 +244,6 @@ class JavaTarget(Target, JavaTargetMixIn):
                  resources,
                  source_encoding,
                  warnings,
-                 clean_classes,
                  kwargs):
         """Init method.
 
@@ -268,7 +265,6 @@ class JavaTarget(Target, JavaTargetMixIn):
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
-        self.data['clean_classes'] = clean_classes
         for dep in mvn_deps:
             self._add_maven_dep(dep)
 
@@ -318,14 +314,14 @@ class JavaTarget(Target, JavaTargetMixIn):
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 prebuilt, binary_jar, exported_deps, clean_classes, kwargs):
+                 prebuilt, binary_jar, exported_deps, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
         exported_deps = var_to_list(exported_deps)
         all_deps = var_to_list(deps) + exported_deps
         JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
-                            source_encoding, warnings, clean_classes, kwargs)
+                            source_encoding, warnings, kwargs)
         self.data['exported_deps'] = self._unify_java_deps(exported_deps)
         if prebuilt:
             if not binary_jar:
@@ -341,9 +337,9 @@ class JavaLibrary(JavaTarget):
 class JavaBinary(JavaTarget):
     """JavaBinary"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, clean_classes, kwargs):
+                 warnings, main_class, kwargs):
         JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
-                            source_encoding, warnings, clean_classes, kwargs)
+                            source_encoding, warnings, kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
 
@@ -377,10 +373,10 @@ class JavaBinary(JavaTarget):
 class JavaTest(JavaBinary):
     """JavaTarget"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, testdata, clean_classes, kwargs):
+                 warnings, main_class, testdata, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
-                            source_encoding, warnings, main_class, clean_classes, kwargs)
+                            source_encoding, warnings, main_class, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -401,9 +397,9 @@ class JavaTest(JavaBinary):
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, clean_classes, kwargs):
+                 warnings, kwargs):
         JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps, resources,
-                            source_encoding, warnings, clean_classes, kwargs)
+                            source_encoding, warnings, kwargs)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -437,7 +433,6 @@ def java_library(name,
                  prebuilt=False,
                  binary_jar='',
                  exported_deps=[],
-                 clean_classes=False,
                  **kwargs):
     """Define java_library target. """
     target = JavaLibrary(name,
@@ -449,7 +444,6 @@ def java_library(name,
                          prebuilt,
                          binary_jar,
                          exported_deps,
-                         clean_classes,
                          kwargs)
     blade.blade.register_target(target)
 
@@ -461,7 +455,6 @@ def java_binary(name,
                 resources=[],
                 source_encoding=None,
                 warnings=None,
-                clean_classes=False,
                 **kwargs):
     """Define java_binary target. """
     target = JavaBinary(name,
@@ -471,7 +464,6 @@ def java_binary(name,
                         source_encoding,
                         warnings,
                         main_class,
-                        clean_classes,
                         kwargs)
     blade.blade.register_target(target)
 
@@ -484,7 +476,6 @@ def java_test(name,
               warnings=None,
               main_class = 'org.junit.runner.JUnitCore',
               testdata=[],
-              clean_classes=False,
               **kwargs):
     """Define java_test target. """
     target = JavaTest(name,
@@ -495,7 +486,6 @@ def java_test(name,
                       warnings,
                       main_class,
                       testdata,
-                      clean_classes,
                       kwargs)
     blade.blade.register_target(target)
 
@@ -506,7 +496,6 @@ def java_fat_library(name,
                      resources=[],
                      source_encoding='',
                      warnings=None,
-                     clean_classes=False,
                      **kwargs):
     """Define java_fat_library target. """
     target = JavaFatLibrary(name,
@@ -515,7 +504,6 @@ def java_fat_library(name,
                             resources,
                             source_encoding,
                             warnings,
-                            clean_classes,
                             kwargs)
     blade.blade.register_target(target)
 

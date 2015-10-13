@@ -396,22 +396,15 @@ def process_java_resources(target, source, env):
     return None
 
 
-_java_build_timestamp = None
-
-
-def _generate_jar(target, sources, resources):
+def _generate_jar(target, sources, resources, env):
     """Generate a jar containing the sources and resources. """
     classes_dir = target.replace('.jar', '.classes')
     resources_dir = target.replace('.jar', '.resources')
 
-    target_jar = zipfile.ZipFile(target, 'w')
+    cmd = []
+    cmd.append('%s cf %s' % (env['JAR'], target))
+
     jar_path_set = set()
-    manifest = os.path.join('META-INF', 'MANIFEST.MF')
-    target_jar.writestr(manifest,
-                        '''Manifest-Version: 1.0
-
-''')
-
     if os.path.exists(classes_dir):
         for source in sources:
             if not source.endswith('.class'):
@@ -420,24 +413,35 @@ def _generate_jar(target, sources, resources):
             jar_path = os.path.relpath(source, classes_dir)
             if jar_path not in jar_path_set:
                 jar_path_set.add(jar_path)
-                target_jar.write(source, jar_path)
 
             if '$' not in source:
                 inner_classes = glob.glob(source[:-6] + '$*.class')
                 for inner_class in inner_classes:
-                    if os.path.getmtime(inner_class) >= _java_build_timestamp:
+                    if os.path.getmtime(inner_class) >= os.path.getmtime(source):
                         jar_path = os.path.relpath(inner_class, classes_dir)
                         if jar_path not in jar_path_set:
                             jar_path_set.add(jar_path)
-                            target_jar.write(inner_class, jar_path)
+        for path in jar_path_set:
+            # Add quotes for file names with $
+            cmd.append("-C '%s' '%s'" % (classes_dir, path))
 
     if os.path.exists(resources_dir):
         for resource in resources:
-            target_jar.write(resource, os.path.relpath(resource, resources_dir))
+            cmd.append("-C '%s' '%s'" % (resources_dir, 
+                os.path.relpath(resource, resources_dir)))
 
-    target_jar.close()
-
-    return None
+    cmd = ' '.join(cmd)
+    global option_verbose
+    if option_verbose:
+        print cmd
+    p = subprocess.Popen(cmd,
+                         env=os.environ,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True,
+                         universal_newlines=True)
+    stdout, stderr = p.communicate()
+    return p.returncode
 
 
 def generate_jar(target, source, env):
@@ -453,7 +457,7 @@ def generate_jar(target, source, env):
 
     resources = [str(src) for src in source[index:]]
 
-    return _generate_jar(target, sources, resources)
+    return _generate_jar(target, sources, resources, env)
 
 
 _one_jar_boot_path = None
@@ -1006,11 +1010,10 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
         top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
 
-    global _java_build_timestamp
-    _java_build_timestamp = time.time()
 
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
-        generate_jar, '$JARCOMSTR'))
+        'jar cf $TARGET -C `dirname $SOURCE` .',
+        '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
 
     # Scons has many bugs with generated sources file,
@@ -1023,6 +1026,16 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         'rm -fr ${TARGET}.classes',
         '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})
+
+
+    # Scons Java builder has bugs on detecting generated .class files
+    # produced by javac: anonymous inner classes are missing in the results
+    # of Java builder no matter which JAVAVERSION(1.5, 1.6) is specified
+    # See: http://scons.tigris.org/issues/show_bug.cgi?id=1594
+    #      http://scons.tigris.org/issues/show_bug.cgi?id=2742
+    blade_java_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_jar, '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"BladeJavaJar" : blade_java_jar_bld})
 
 
     resource_message = console.erasable('%sProcess jar resource %s$SOURCES%s%s' % ( \
