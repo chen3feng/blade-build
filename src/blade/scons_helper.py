@@ -410,6 +410,8 @@ def _generate_jar(target, sources, resources, env):
             if not source.endswith('.class'):
                 continue
 
+            # Add the source from sources produced by Java builder
+            # no matter it's a normal class or inner class
             jar_path = os.path.relpath(source, classes_dir)
             if jar_path not in jar_path_set:
                 jar_path_set.add(jar_path)
