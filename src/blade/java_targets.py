@@ -224,8 +224,9 @@ class JavaTargetMixIn(object):
         if resources_var:
             sources.append(resources_var)
         if sources:
-            self._write_rule('%s = %s.Jar(target="%s", source=[%s])' % (
-                var_name, env_name, self._target_file_path(), ','.join(sources)))
+            self._write_rule('%s = %s.BladeJavaJar(target="%s", source=[%s])' % (
+                var_name, env_name,
+                self._target_file_path() + '.jar', ','.join(sources)))
             self.data['java_jar_var'] = var_name
 
 
@@ -335,7 +336,8 @@ class JavaLibrary(JavaTarget):
 
 class JavaBinary(JavaTarget):
     """JavaBinary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings, main_class, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 warnings, main_class, kwargs):
         JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
                             source_encoding, warnings, kwargs)
         self.data['main_class'] = main_class

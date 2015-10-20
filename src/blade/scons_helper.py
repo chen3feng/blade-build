@@ -28,6 +28,7 @@ import sys
 import tempfile
 import time
 import zipfile
+import glob
 
 import SCons
 import SCons.Action
@@ -393,6 +394,67 @@ def process_java_resources(target, source, env):
         target_path = os.path.join(target_dir, src.attributes.target_path)
         shutil.copy2(str(src), target_path)
     return None
+
+
+def _generate_jar(target, sources, resources, env):
+    """Generate a jar containing the sources and resources. """
+    classes_dir = target.replace('.jar', '.classes')
+    resources_dir = target.replace('.jar', '.resources')
+
+    cmd = []
+    cmd.append('%s cf %s' % (env['JAR'], target))
+
+    jar_path_set = set()
+    if os.path.exists(classes_dir):
+        for source in sources:
+            if not source.endswith('.class'):
+                continue
+
+            # Add the source from sources produced by Java builder
+            # no matter it's a normal class or inner class
+            jar_path = os.path.relpath(source, classes_dir)
+            if jar_path not in jar_path_set:
+                jar_path_set.add(jar_path)
+
+            if '$' not in source:
+                inner_classes = glob.glob(source[:-6] + '$*.class')
+                for inner_class in inner_classes:
+                    if os.path.getmtime(inner_class) >= os.path.getmtime(source):
+                        jar_path = os.path.relpath(inner_class, classes_dir)
+                        if jar_path not in jar_path_set:
+                            jar_path_set.add(jar_path)
+        for path in jar_path_set:
+            # Add quotes for file names with $
+            cmd.append("-C '%s' '%s'" % (classes_dir, path))
+
+    if os.path.exists(resources_dir):
+        for resource in resources:
+            cmd.append("-C '%s' '%s'" % (resources_dir, 
+                os.path.relpath(resource, resources_dir)))
+
+    cmd = ' '.join(cmd)
+    global option_verbose
+    if option_verbose:
+        print cmd
+    p = subprocess.Popen(cmd, env=os.environ, shell=True)
+    p.communicate()
+    return p.returncode
+
+
+def generate_jar(target, source, env):
+    target = str(target[0])
+    sources = []
+    index = 0
+    for src in source:
+        if str(src).endswith('.class'):
+            sources.append(str(src))
+            index += 1
+        else:
+            break
+
+    resources = [str(src) for src in source[index:]]
+
+    return _generate_jar(target, sources, resources, env)
 
 
 _one_jar_boot_path = None
@@ -945,6 +1007,7 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
         top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
 
+
     blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
         'jar cf $TARGET -C `dirname $SOURCE` .',
         '$JARCOMSTR'))
@@ -960,6 +1023,16 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         'rm -fr ${TARGET}.classes',
         '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})
+
+
+    # Scons Java builder has bugs on detecting generated .class files
+    # produced by javac: anonymous inner classes are missing in the results
+    # of Java builder no matter which JAVAVERSION(1.5, 1.6) is specified
+    # See: http://scons.tigris.org/issues/show_bug.cgi?id=1594
+    #      http://scons.tigris.org/issues/show_bug.cgi?id=2742
+    blade_java_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_jar, '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"BladeJavaJar" : blade_java_jar_bld})
 
 
     resource_message = console.erasable('%sProcess jar resource %s$SOURCES%s%s' % ( \
