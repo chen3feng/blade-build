@@ -12,6 +12,7 @@ from maven repository
 """
 
 import os
+import shutil
 import subprocess
 
 import configparse
@@ -110,7 +111,7 @@ class MavenCache(object):
             '> %s' % log])
         ret = subprocess.call(cmd, shell=True)
         log_path = os.path.join(target_path, log)
-        os.rename(log, log_path)
+        shutil.move(log, log_path)
         if ret != 0:
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
