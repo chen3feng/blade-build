@@ -25,3 +25,8 @@ def register_function(f):
 def get_all():
     """Get the globals dict"""
     return __build_rules
+
+
+def copy_all():
+    """Copy the globals dict """
+    return __build_rules.copy()

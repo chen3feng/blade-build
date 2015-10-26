@@ -182,7 +182,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, build_rules.get_all(), None)
+            execfile(build_file, build_rules.copy_all(), None)
         except SystemExit:
             console.error_exit('%s: fatal error, exit...' % build_file)
         except:
