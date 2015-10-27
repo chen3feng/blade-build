@@ -110,13 +110,13 @@ class MavenCache(object):
             '-Dtype=pom',
             '> %s' % log])
         ret = subprocess.call(cmd, shell=True)
-        log_path = os.path.join(target_path, log)
-        shutil.move(log, log_path)
         if ret != 0:
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
-                                id, log_path))
+                                id, log))
             return False
+        log_path = os.path.join(target_path, log)
+        shutil.move(log, log_path)
         return True
 
     def _download_dependency(self, id):
@@ -171,7 +171,7 @@ class MavenCache(object):
         if not id in self.__jar_database:
             success = self._download_artifact(id)
             if not success:
-                console.error_exit('Download %s failed' % id)
+                console.error('Download %s failed' % id)
                 return '';
         if jar:
             return self.__jar_database[id][0]
