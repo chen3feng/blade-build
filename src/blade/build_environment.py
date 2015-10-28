@@ -105,10 +105,38 @@ class BuildEnvironment(object):
             return True
         return False
 
-    def setup_ccache_env(self):
+    def setup_ccache(self):
         """Generates ccache rules. """
         if self.ccache_installed:
             self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
+
+    def setup_scons_cache(self, options):
+        """Setup scons cache"""
+        cache_dir = os.path.expanduser('~/.bladescache')
+        cache_size = 4 * 1024 * 1024 * 1024
+        if hasattr(options, 'cache_dir'):
+            if options.cache_dir == '':  # '' to disable cache
+                return
+            cache_dir = options.cache_dir
+        else:
+            console.info('using default cache dir: %s' % cache_dir)
+
+        if hasattr(options, 'cache_size') and (options.cache_size != -1):
+            cache_size = options.cache_size
+
+        self._add_rule('CacheDir("%s")' % cache_dir)
+        self._add_rule('scache_manager = build_environment.ScacheManager("%s", cache_limit=%d)' % (
+                    cache_dir, cache_size))
+        self._add_rule('Progress(scache_manager, interval=100)')
+
+        console.info('using cache directory %s' % cache_dir)
+        console.info('scache size %d' % cache_size)
+
+    def setup_build_cache(self, options):
+        if self.ccache_installed:  # Perfer ccache because it also cache warning
+            self.setup_ccache()
+        else:
+            self.setup_scons_cache(options)
 
     def setup_distcc_env(self):
         """Generates distcc rules. """
