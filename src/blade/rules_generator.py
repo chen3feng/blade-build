@@ -92,6 +92,7 @@ import os
 import subprocess
 import glob
 
+import build_environment
 import console
 import scons_helper
 
@@ -277,28 +278,7 @@ import scons_helper
             warnings, c_warnings, cxx_warnings))
 
     def _setup_cache(self):
-        if self.build_environment.ccache_installed:
-            self.build_environment.setup_ccache_env()
-        else:
-            cache_dir = os.path.expanduser('~/.bladescache')
-            cache_size = 4 * 1024 * 1024 * 1024
-            if hasattr(self.options, 'cache_dir'):
-                if not self.options.cache_dir:
-                    return
-                cache_dir = self.options.cache_dir
-            else:
-                console.info('using default cache dir: %s' % cache_dir)
-
-            if hasattr(self.options, 'cache_size') and (self.options.cache_size != -1):
-                cache_size = self.options.cache_size
-
-            self._add_rule('CacheDir("%s")' % cache_dir)
-            self._add_rule('scache_manager = ScacheManager("%s", cache_limit=%d)' % (
-                        cache_dir, cache_size))
-            self._add_rule('Progress(scache_manager, interval=100)')
-
-            self._add_rule('console.info("using cache directory %s")' % cache_dir)
-            self._add_rule('console.info("scache size %d")' % cache_size)
+        self.build_environment.setup_build_cache(self.options)
 
     def generate(self, blade_path):
         """Generates all rules. """
