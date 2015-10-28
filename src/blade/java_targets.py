@@ -36,6 +36,8 @@ class MavenJar(Target):
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance()
         self.data['binary_jar'] = maven_cache.get_jar_path(self.data['id'])
+        self.data['exported_deps'] = maven_cache.get_jar_deps_path(
+            self.data['id']).split(':')
 
 
 class JavaTargetMixIn(object):
@@ -110,18 +112,43 @@ class JavaTargetMixIn(object):
             self.__extract_dep_jars(d, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
-    def _get_compile_deps(self):
-        dep_jar_vars, dep_jars = self.__get_deps(self.deps)
-        # Add all expanded_deps in direct deps to result
-        for dkey in self.deps:
+    def __get_exported_deps(self, deps):
+        """
+        Return a tuple of (scons vars, jars)
+        """
+        dep_jar_vars = []
+        dep_jars = []
+        for dkey in deps:
             dep = self.target_database[dkey]
             exported_deps = dep.data.get('exported_deps', [])
             for edkey in exported_deps:
-                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+                if edkey in self.target_database:
+                    self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+                else:
+                    if edkey:
+                        dep_jars.append(edkey)  # exported deps by maven
+        return dep_jar_vars, dep_jars
+
+    def _get_compile_deps(self):
+        dep_jar_vars, dep_jars = self.__get_deps(self.deps)
+        exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
+        dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
+        dep_jars = sorted(list(set(dep_jars + exported_dep_jars)))
         return dep_jar_vars, dep_jars
 
     def _get_pack_deps(self):
-        return self.__get_deps(self.expanded_deps)
+        dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
+        for edkey in self.expanded_deps:
+            dep = self.target_database[edkey]
+            if dep.type == 'maven_jar':
+                exported_deps = dep.data.get('exported_deps', [])
+                for edep in exported_deps:
+                    if edep:
+                        dep_jars.append(edep)
+
+        dep_jar_vars = sorted(list(set(dep_jar_vars)))
+        dep_jars = sorted(list(set(dep_jars)))
+        return dep_jar_vars, dep_jars
 
     def _get_java_package_name(self, file_name):
         """Get the java package name from proto file if it is specified. """
