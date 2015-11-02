@@ -36,8 +36,9 @@ class MavenJar(Target):
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance()
         self.data['binary_jar'] = maven_cache.get_jar_path(self.data['id'])
-        self.data['exported_deps'] = maven_cache.get_jar_deps_path(
-            self.data['id']).split(':')
+        deps_path = maven_cache.get_jar_deps_path(self.data['id'])
+        if deps_path:
+            self.data['maven_deps'] = deps_path.split(':')
 
 
 class JavaTargetMixIn(object):
@@ -124,28 +125,31 @@ class JavaTargetMixIn(object):
             for edkey in exported_deps:
                 if edkey in self.target_database:
                     self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
-                else:
-                    if edkey:
-                        dep_jars.append(edkey)  # exported deps by maven
         return dep_jar_vars, dep_jars
+
+    def __get_maven_transitive_deps(self):
+        """
+        Return a list of maven jars stored within local repository.
+        These jars are transitive dependencies of maven_jar target.
+        """
+        maven_jars = []
+        for edkey in self.expanded_deps:
+            dep = self.target_database[edkey]
+            if dep.type == 'maven_jar':
+                maven_jars += dep.data.get('maven_deps', [])
+        return maven_jars
 
     def _get_compile_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.deps)
         exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
+        dep_jars += self.__get_maven_transitive_deps()
         dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
         dep_jars = sorted(list(set(dep_jars + exported_dep_jars)))
         return dep_jar_vars, dep_jars
 
     def _get_pack_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
-        for edkey in self.expanded_deps:
-            dep = self.target_database[edkey]
-            if dep.type == 'maven_jar':
-                exported_deps = dep.data.get('exported_deps', [])
-                for edep in exported_deps:
-                    if edep:
-                        dep_jars.append(edep)
-
+        dep_jars += self.__get_maven_transitive_deps()
         dep_jar_vars = sorted(list(set(dep_jar_vars)))
         dep_jars = sorted(list(set(dep_jars)))
         return dep_jar_vars, dep_jars
