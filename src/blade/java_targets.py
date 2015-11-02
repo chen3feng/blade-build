@@ -123,8 +123,7 @@ class JavaTargetMixIn(object):
             dep = self.target_database[dkey]
             exported_deps = dep.data.get('exported_deps', [])
             for edkey in exported_deps:
-                if edkey in self.target_database:
-                    self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
     def __get_maven_transitive_deps(self):
