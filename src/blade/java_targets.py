@@ -126,6 +126,19 @@ class JavaTargetMixIn(object):
                 self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
+    def __get_provided_deps(self, deps):
+        """
+        Return a tuple of (scons vars, jars)
+        """
+        dep_jar_vars = []
+        dep_jars = []
+        for dkey in deps:
+            dep = self.target_database[dkey]
+            provided_deps = dep.data.get('provided_deps', [])
+            for edkey in provided_deps:
+                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+        return dep_jar_vars, dep_jars
+
     def __get_maven_transitive_deps(self):
         """
         Return a list of maven jars stored within local repository.
@@ -146,12 +159,29 @@ class JavaTargetMixIn(object):
         dep_jars = sorted(list(set(dep_jars + exported_dep_jars)))
         return dep_jar_vars, dep_jars
 
-    def _get_pack_deps(self):
+    def _get_test_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
         dep_jars += self.__get_maven_transitive_deps()
         dep_jar_vars = sorted(list(set(dep_jar_vars)))
         dep_jars = sorted(list(set(dep_jars)))
         return dep_jar_vars, dep_jars
+
+    def _get_pack_deps(self):
+        """
+        Same as _get_test_deps but exclude provided dependencies.
+        """
+        dep_jar_vars, dep_jars = self._get_test_deps()
+        provided_dep_jar_vars, provided_dep_jars = self.__get_provided_deps(self.expanded_deps)
+        provided_dep_jar_vars = set(provided_dep_jar_vars)
+        provided_dep_jars = set(provided_dep_jars)
+
+        dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
+        for provided_dep_var in provided_dep_jar_vars:
+            dep_jar_vars.discard(provided_dep_var)
+        for provided_dep_jar in provided_dep_jars:
+            dep_jars.discard(provided_dep_jar)
+ 
+        return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
 
     def _get_java_package_name(self, file_name):
         """Get the java package name from proto file if it is specified. """
@@ -343,16 +373,18 @@ class JavaTarget(Target, JavaTargetMixIn):
 
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, prebuilt, binary_jar, exported_deps, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
+                 prebuilt, binary_jar, exported_deps, provided_deps, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
         exported_deps = var_to_list(exported_deps)
-        all_deps = var_to_list(deps) + exported_deps
+        provided_deps = var_to_list(provided_deps)
+        all_deps = var_to_list(deps) + exported_deps + provided_deps
         JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
                             source_encoding, warnings, kwargs)
         self.data['exported_deps'] = self._unify_java_deps(exported_deps)
+        self.data['provided_deps'] = self._unify_java_deps(provided_deps)
         if prebuilt:
             if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
@@ -413,7 +445,7 @@ class JavaTest(JavaBinary):
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_pack_deps()
+        dep_jar_vars, dep_jars = self._get_test_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars),
                                dep_jar_vars)
 
@@ -462,6 +494,7 @@ def java_library(name,
                  prebuilt=False,
                  binary_jar='',
                  exported_deps=[],
+                 provided_deps=[],
                  **kwargs):
     """Define java_library target. """
     target = JavaLibrary(name,
@@ -473,6 +506,7 @@ def java_library(name,
                          prebuilt,
                          binary_jar,
                          exported_deps,
+                         provided_deps,
                          kwargs)
     blade.blade.register_target(target)
 
