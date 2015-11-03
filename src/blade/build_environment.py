@@ -112,14 +112,11 @@ class BuildEnvironment(object):
 
     def setup_scons_cache(self, options):
         """Setup scons cache"""
-        cache_dir = os.path.expanduser('~/.bladescache')
-        cache_size = 4 * 1024 * 1024 * 1024
-        if hasattr(options, 'cache_dir'):
-            if options.cache_dir == '':  # '' to disable cache
-                return
-            cache_dir = options.cache_dir
-        else:
-            console.info('using default cache dir: %s' % cache_dir)
+        cache_dir = getattr(options, 'cache_dir', '~/.bladescache')
+        if not cache_dir:
+            # '' to disable cache
+            return
+        cache_dir = os.path.expanduser(cache_dir)
 
         if hasattr(options, 'cache_size') and (options.cache_size != -1):
             cache_size = options.cache_size

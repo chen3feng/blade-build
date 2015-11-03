@@ -135,8 +135,6 @@ class CmdArguments(object):
 
         if self.options.cache_dir is None:
             self.options.cache_dir = os.environ.get('BLADE_CACHE_DIR')
-        if self.options.cache_dir:
-            self.options.cache_dir = os.path.expanduser(self.options.cache_dir)
 
         if self.options.cache_size is None:
             self.options.cache_size = os.environ.get('BLADE_CACHE_SIZE')
