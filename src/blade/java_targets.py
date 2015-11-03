@@ -33,6 +33,10 @@ class MavenJar(Target):
             self.fullname = '%s:%s' % self.key
             self.path = '#'
 
+    def _get_java_pack_deps(self):
+        deps = self.data.get('maven_deps', [])
+        return [], deps
+
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance()
         self.data['binary_jar'] = maven_cache.get_jar_path(self.data['id'])
@@ -126,19 +130,6 @@ class JavaTargetMixIn(object):
                 self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
-    def __get_provided_deps(self, deps):
-        """
-        Return a tuple of (scons vars, jars)
-        """
-        dep_jar_vars = []
-        dep_jars = []
-        for dkey in deps:
-            dep = self.target_database[dkey]
-            provided_deps = dep.data.get('provided_deps', [])
-            for edkey in provided_deps:
-                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
-        return dep_jar_vars, dep_jars
-
     def __get_maven_transitive_deps(self):
         """
         Return a list of maven jars stored within local repository.
@@ -168,20 +159,21 @@ class JavaTargetMixIn(object):
 
     def _get_pack_deps(self):
         """
-        Same as _get_test_deps but exclude provided dependencies.
+        Recursively scan direct dependencies and exclude provided dependencies.
         """
-        dep_jar_vars, dep_jars = self._get_test_deps()
-        provided_dep_jar_vars, provided_dep_jars = self.__get_provided_deps(self.expanded_deps)
-        provided_dep_jar_vars = set(provided_dep_jar_vars)
-        provided_dep_jars = set(provided_dep_jars)
-
-        dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
-        for provided_dep_var in provided_dep_jar_vars:
-            dep_jar_vars.discard(provided_dep_var)
-        for provided_dep_jar in provided_dep_jars:
-            dep_jars.discard(provided_dep_jar)
+        deps = set(self.deps)
+        provided_deps = self.data.get('provided_deps', [])
+        for provided_dep in provided_deps:
+            deps.discard(provided_dep)
+        dep_jar_vars, dep_jars = self.__get_deps(deps)
+        
+        for dep in deps:
+            dep = self.target_database[dep]
+            jar_vars, jars = dep._get_java_pack_deps()
+            dep_jar_vars += jar_vars
+            dep_jars += jars
  
-        return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
+        return sorted(list(set(dep_jar_vars))), sorted(list(set(dep_jars)))
 
     def _get_java_package_name(self, file_name):
         """Get the java package name from proto file if it is specified. """
@@ -341,6 +333,9 @@ class JavaTarget(Target, JavaTargetMixIn):
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))
+
+    def _get_java_pack_deps(self):
+        return self._get_pack_deps()
 
     def _generate_resources(self):
         resources = self.data['resources']
