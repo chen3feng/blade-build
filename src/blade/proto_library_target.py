@@ -108,6 +108,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         proto_name = src[:-6]
         return self._target_file_path('%s_pb2.py' % proto_name)
 
+    def _get_java_pack_deps(self):
+        return self._get_pack_deps()
+
     def _get_java_package_name(self, content):
         """Get the java package name from proto file if it is specified. """
         java_package_pattern = '^\s*option\s*java_package\s*=\s*["\']([\w.]+)'

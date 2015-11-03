@@ -226,6 +226,22 @@ class Target(object):
         """
         pass
 
+    def _get_java_pack_deps(self):
+        """_get_java_pack_deps
+        
+        Returns
+        -----------
+        A tuple of (scons vars, jars)
+        
+        Description
+        -----------
+        Return java package dependencies excluding provided dependencies
+        scons vars represent targets to be built later
+        jars represent prebuilt jars or maven artifacts within local repository
+        
+        """
+        return [], []
+
     def _regular_variable_name(self, var):
         """_regular_variable_name.
 
