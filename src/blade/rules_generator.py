@@ -127,7 +127,9 @@ import scons_helper
         self._add_rule('time_value = Value("%s")' % time.asctime())
         proto_config = configparse.blade_config.get_config('proto_library_config')
         protoc_bin = proto_config['protoc']
-        protoc_java_bin = proto_config['protoc_java']
+        protoc_java_bin = protoc_bin
+        if proto_config['protoc_java']:
+            protoc_java_bin = proto_config['protoc_java']
         protobuf_path = proto_config['protobuf_path']
 
         protobuf_incs_str = _incs_list_to_string(proto_config['protobuf_incs'])

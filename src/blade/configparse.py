@@ -96,7 +96,7 @@ class BladeConfig(object):
 
             'proto_library_config': {
                 'protoc': 'thirdparty/protobuf/bin/protoc',
-                'protoc_java': 'thirdparty/protobuf/bin/protoc',
+                'protoc_java': '',
                 'protobuf_libs': [],
                 'protobuf_path': '',
                 'protobuf_incs': [],
