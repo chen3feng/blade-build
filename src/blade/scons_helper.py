@@ -899,8 +899,8 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
                 LEXCOMSTR = compile_source_message)
 
 
-def setup_proto_builders(top_env, build_dir, protoc_bin, protobuf_path,
-                         protobuf_incs_str,
+def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
+                         protobuf_path, protobuf_incs_str,
                          protoc_php_plugin, protobuf_php_path):
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
@@ -922,7 +922,7 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protobuf_path,
 
     proto_java_bld = SCons.Builder.Builder(action = MakeAction(
         "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $SOURCE" % (
-            protoc_bin, protobuf_path, build_dir),
+            protoc_java_bin, protobuf_path, build_dir),
         compile_proto_java_message))
     top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
 
