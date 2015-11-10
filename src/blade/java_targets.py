@@ -92,6 +92,13 @@ class JavaTargetMixIn(object):
             dkeys.append(dkey)
         return dkeys
 
+    def _set_pack_exclusions(self, exclusions):
+        exclusions = var_to_list(exclusions)
+        self.data['exclusions'] = []
+        for exclusion in exclusions:
+            exclusion = self._unify_dep(exclusion)
+            self.data['exclusions'].append(exclusion)
+
 
     def _get_classes_dir(self):
         """Return path of classes dir. """
@@ -173,7 +180,16 @@ class JavaTargetMixIn(object):
             dep_jar_vars += jar_vars
             dep_jars += jars
  
-        return sorted(list(set(dep_jar_vars))), sorted(list(set(dep_jars)))
+        dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
+        exclusions = self.data.get('exclusions', [])
+        if exclusions:
+            exclude_jar_vars, exclude_jars = self.__get_deps(exclusions)
+            for exclude_jar_var in exclude_jar_vars:
+                dep_jar_vars.discard(exclude_jar_var)
+            for exclude_jar in exclude_jars:
+                dep_jars.discard(exclude_jar)
+
+        return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
 
     def _get_java_package_name(self, file_name):
         """Get the java package name from proto file if it is specified. """
@@ -394,11 +410,13 @@ class JavaLibrary(JavaTarget):
 class JavaBinary(JavaTarget):
     """JavaBinary"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, kwargs):
+                 warnings, main_class, exclusions, kwargs):
         JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
                             source_encoding, warnings, kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
+        if exclusions:
+            self._set_pack_exclusions(exclusions)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -433,7 +451,7 @@ class JavaTest(JavaBinary):
                  warnings, main_class, testdata, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
-                            source_encoding, warnings, main_class, kwargs)
+                            source_encoding, warnings, main_class, None, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -453,9 +471,12 @@ class JavaTest(JavaBinary):
 
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 warnings, exclusions, kwargs):
         JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
                             resources, source_encoding, warnings, kwargs)
+        if exclusions:
+            self._set_pack_exclusions(exclusions)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -513,6 +534,7 @@ def java_binary(name,
                 resources=[],
                 source_encoding=None,
                 warnings=None,
+                exclusions=[],
                 **kwargs):
     """Define java_binary target. """
     target = JavaBinary(name,
@@ -522,6 +544,7 @@ def java_binary(name,
                         source_encoding,
                         warnings,
                         main_class,
+                        exclusions,
                         kwargs)
     blade.blade.register_target(target)
 
@@ -554,6 +577,7 @@ def java_fat_library(name,
                      resources=[],
                      source_encoding='',
                      warnings=None,
+                     exclusions=[],
                      **kwargs):
     """Define java_fat_library target. """
     target = JavaFatLibrary(name,
@@ -562,6 +586,7 @@ def java_fat_library(name,
                             resources,
                             source_encoding,
                             warnings,
+                            exclusions,
                             kwargs)
     blade.blade.register_target(target)
 
