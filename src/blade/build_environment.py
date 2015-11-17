@@ -118,16 +118,13 @@ class BuildEnvironment(object):
             return
         cache_dir = os.path.expanduser(cache_dir)
 
-        if hasattr(options, 'cache_size') and (options.cache_size != -1):
-            cache_size = options.cache_size
-
         self._add_rule('CacheDir("%s")' % cache_dir)
         self._add_rule('scache_manager = build_environment.ScacheManager("%s", cache_limit=%d)' % (
-                    cache_dir, cache_size))
+                    cache_dir, options.cache_size))
         self._add_rule('Progress(scache_manager, interval=100)')
 
         console.info('using cache directory %s' % cache_dir)
-        console.info('scache size %d' % cache_size)
+        console.info('scache size %d' % options.cache_size)
 
     def setup_build_cache(self, options):
         if self.ccache_installed:  # Perfer ccache because it also cache warning
