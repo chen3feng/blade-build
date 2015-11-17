@@ -193,8 +193,6 @@ class BinaryRunner(object):
     def _clean_env(self):
         """clean test environment. """
         for target in self.targets.values():
-            if target.type != 'cc_test':
-                continue
             self._clean_target(target)
 
     def run_target(self, target_key):
