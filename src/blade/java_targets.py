@@ -39,10 +39,12 @@ class MavenJar(Target):
 
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance()
-        self.data['binary_jar'] = maven_cache.get_jar_path(self.data['id'])
-        deps_path = maven_cache.get_jar_deps_path(self.data['id'])
-        if deps_path:
-            self.data['maven_deps'] = deps_path.split(':')
+        binary_jar = maven_cache.get_jar_path(self.data['id'])
+        if binary_jar:
+            self.data['binary_jar'] = binary_jar
+            deps_path = maven_cache.get_jar_deps_path(self.data['id'])
+            if deps_path:
+                self.data['maven_deps'] = deps_path.split(':')
 
 
 class JavaTargetMixIn(object):
