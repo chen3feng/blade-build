@@ -134,7 +134,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             return m.group(1)
         proto_name = src[:-6]
         base_name = os.path.basename(proto_name)
-        return ''.join(base_name.title().split('_'))
+        return ''.join([p[0].upper() + p[1:] for p in base_name.split('_') if p])
 
     def _proto_java_gen_file(self, src):
         """Generate the java files name of the proto library. """
