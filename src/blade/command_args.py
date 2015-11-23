@@ -133,18 +133,6 @@ class CmdArguments(object):
         self._check_plat_and_profile_options()
         self._check_color_options()
 
-        if self.options.cache_dir is None:
-            self.options.cache_dir = os.environ.get('BLADE_CACHE_DIR')
-
-        if self.options.cache_size is None:
-            self.options.cache_size = os.environ.get('BLADE_CACHE_SIZE')
-        if self.options.cache_size == 'unlimited':
-            self.options.cache_size = -1
-        if self.options.cache_size is None:
-            self.options.cache_size = 2 * 1024 * 1024 * 1024
-        else:
-            self.options.cache_size = int(self.options.cache_size) * 1024 * 1024 * 1024
-
     def _check_build_command(self):
         """check build options. """
         self._check_build_options()

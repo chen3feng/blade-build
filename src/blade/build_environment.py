@@ -112,19 +112,27 @@ class BuildEnvironment(object):
 
     def setup_scons_cache(self, options):
         """Setup scons cache"""
-        cache_dir = getattr(options, 'cache_dir', '~/.bladescache')
+
+        cache_dir = getattr(options, 'cache_dir', os.environ.get('BLADE_CACHE_DIR', '~/.bladescache'))
         if not cache_dir:
             # '' to disable cache
             return
+
+        cache_size = getattr(options, 'cache_size', os.environ.get('BLADE_CACHE_SIZE', '2'))
+        if cache_size == 'unlimited':
+            cache_size = -1
+        else:
+            cache_size = int(cache_size) * 1024 * 1024 * 1024
+
         cache_dir = os.path.expanduser(cache_dir)
 
         self._add_rule('CacheDir("%s")' % cache_dir)
         self._add_rule('scache_manager = build_environment.ScacheManager("%s", cache_limit=%d)' % (
-                    cache_dir, options.cache_size))
+                    cache_dir, cache_size))
         self._add_rule('Progress(scache_manager, interval=100)')
 
         console.info('using cache directory %s' % cache_dir)
-        console.info('scache size %d' % options.cache_size)
+        console.info('scache size %d' % cache_size)
 
     def setup_build_cache(self, options):
         if self.ccache_installed:  # Perfer ccache because it also cache warning
