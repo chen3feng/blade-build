@@ -175,13 +175,13 @@ class JavaTargetMixIn(object):
         for provided_dep in provided_deps:
             deps.discard(provided_dep)
         dep_jar_vars, dep_jars = self.__get_deps(deps)
-        
+
         for dep in deps:
             dep = self.target_database[dep]
             jar_vars, jars = dep._get_java_pack_deps()
             dep_jar_vars += jar_vars
             dep_jars += jars
- 
+
         dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
         exclusions = self.data.get('exclusions', [])
         if exclusions:
@@ -231,12 +231,19 @@ class JavaTargetMixIn(object):
     def _generate_java_versions(self):
         java_config = configparse.blade_config.get_config('java_config')
         version = java_config['version']
-        source_version = java_config['source_version']
-        target_version = java_config['target_version']
+        source_version = java_config.get('source_version', version)
+        target_version = java_config.get('target_version', version)
         # JAVAVERSION must be set because scons need it to deduce class names
-        # from java source.
+        # from java source, and the default value '1.5' is too low.
+        blade_java_version = version or '1.6'
         self._write_rule('%s.Replace(JAVAVERSION="%s")' % (
-            self._env_name(), version))
+            self._env_name(), blade_java_version))
+        if source_version:
+            self._write_rule('%s.Append(JAVACFLAGS="-source %s")' % (
+                self._env_name(), source_version))
+        if target_version:
+            self._write_rule('%s.Append(JAVACFLAGS="-target %s")' % (
+                self._env_name(), target_version))
 
     def _generate_java_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
