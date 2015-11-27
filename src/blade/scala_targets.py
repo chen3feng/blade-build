@@ -12,6 +12,7 @@ Implement scala_library, scala_fat_library and scala_test
 import blade
 import build_rules
 import configparse
+import console
 
 from target import Target
 from java_targets import JavaTargetMixIn
@@ -133,7 +134,11 @@ class ScalaTest(ScalaFatLibrary):
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
         config = configparse.blade_config.get_config('scala_test_config')
-        self._add_hardcode_java_library(config['scalatest_libs'])
+        scalatest_libs = config['scalatest_libs']
+        if scalatest_libs:
+            self._add_hardcode_java_library(scalatest_libs)
+        else:
+            console.warning('scalatest jar was not configured')
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
