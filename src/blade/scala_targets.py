@@ -133,10 +133,7 @@ class ScalaTest(ScalaFatLibrary):
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
         config = configparse.blade_config.get_config('scala_test_config')
-        scalatest_libs = config['scalatest_libs']
-        if not scalatest_libs:
-            scalatest_libs = ['org.scalatest:scalatest_2.11:2.2.4']
-        self._add_hardcode_java_library(scalatest_libs)
+        self._add_hardcode_java_library(config['scalatest_libs'])
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
