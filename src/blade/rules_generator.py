@@ -177,6 +177,10 @@ import scons_helper
         self._add_rule('scons_helper.setup_java_builders(top_env, "%s", "%s")' % (
             config['java_home'], bin_config['one_jar_boot_jar']))
 
+    def _generate_scala_builders(self):
+        config = configparse.blade_config.get_config('scala_config')
+        self._add_rule('scons_helper.setup_scala_builders(top_env, "%s")' % config['scala_home'])
+
     def _generate_other_builders(self):
         self._add_rule('scons_helper.setup_other_builders(top_env)')
 
@@ -190,6 +194,7 @@ import scons_helper
         self._generate_cuda_builders()
         self._generate_swig_builders()
         self._generate_java_builders()
+        self._generate_scala_builders()
         self._generate_other_builders()
 
     def generate_compliation_flags(self):

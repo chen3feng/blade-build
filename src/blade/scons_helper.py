@@ -613,6 +613,88 @@ def generate_java_test(target, source, env):
                                  ' '.join(test_class_names))
 
 
+def _generate_scala_jar(target, sources, resources, env):
+    """
+    Compile scala sources and generate a jar containing
+    the classes and resources.
+    """
+    scalac = env['SCALAC']
+    jar = env['JAR']
+    warnings = env['SCALACFLAGS']
+    classpath = ':'.join(env['JAVACLASSPATH'])
+    if not classpath:
+        classpath = blade_util.get_cwd()
+
+    cmd = '%s -d %s -classpath %s %s %s' % (scalac, target, classpath,
+            warnings, ' '.join(sources))
+    global option_verbose
+    if option_verbose:
+        print cmd
+    subprocess.check_call(cmd, env=os.environ, shell=True)
+
+    if resources:
+        resources_dir = target.replace('.jar', '.resources')
+        if os.path.exists(resources_dir):
+            cmd = ['%s uf %s' % (jar, target)]
+            for resource in resources:
+                cmd.append("-C '%s' '%s'" % (resources_dir,
+                    os.path.relpath(resource, resources_dir)))
+
+            cmd = ' '.join(cmd)
+            if option_verbose:
+                print cmd
+            subprocess.check_call(cmd, env=os.environ, shell=True)
+
+    return None
+
+
+def generate_scala_jar(target, source, env):
+    target = str(target[0])
+    sources = []
+    index = 0
+    for src in source:
+        if str(src).endswith('.scala'):
+            sources.append(str(src))
+            index += 1
+        else:
+            break
+
+    resources = [str(src) for src in source[index:]]
+
+    return _generate_scala_jar(target, sources, resources, env)
+
+
+def _generate_scala_test(target, fat_jar, test_class_names, env):
+    scala = env['SCALA']
+    if not os.path.isabs(scala):
+        scala = os.path.abspath(scala)
+    fat_jar_name = os.path.basename(fat_jar)
+    run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
+    script = open(target, 'w')
+    script.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+# *.fat.jar must be in same dir
+jar=`dirname "$0"`/"%s"
+
+exec %s -classpath "$jar" %s $@
+""" % (fat_jar_name, scala, run_args))
+    script.close()
+    os.chmod(target, 0755)
+
+    return None
+
+
+def generate_scala_test(target, source, env):
+    """Generate wrapper shell script for scala test. """
+    target = str(target[0])
+    fat_jar, test_jar = str(source[0]), str(source[1])
+    test_class_names = _get_all_test_class_names_in_jar(test_jar)
+
+    return _generate_scala_test(target, fat_jar, test_class_names, env)
+
+
 def MakeAction(cmd, cmdstr):
     global option_verbose
     if option_verbose:
@@ -1071,6 +1153,22 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     java_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_test, java_test_message))
     top_env.Append(BUILDERS = {"JavaTest" : java_test_bld})
+
+
+def setup_scala_builders(top_env, scala_home):
+    if scala_home:
+        top_env.Replace(SCALAC=os.path.join(scala_home, 'bin/scalac'))
+        top_env.Replace(SCALA=os.path.join(scala_home, 'bin/scala'))
+
+    scala_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_scala_jar, '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"ScalaJar" : scala_jar_bld})
+
+    scala_test_message = console.inerasable('%sGenerating scala test %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    scala_test_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_scala_test, scala_test_message))
+    top_env.Append(BUILDERS = {"ScalaTest" : scala_test_bld})
 
 
 def setup_yacc_builders(top_env):

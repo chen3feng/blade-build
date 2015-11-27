@@ -81,6 +81,10 @@ class BladeConfig(object):
             'java_test_config': {
                 'junit_libs' : [],
             },
+            'scala_config': {
+                'scala_home' : '',
+                'warnings' : '',
+            },
             'thrift_config': {
                 'thrift': 'thrift',
                 'thrift_libs': [],
@@ -234,6 +238,11 @@ def java_binary_config(append=None, **kwargs):
 def java_test_config(append=None, **kwargs):
     """java_test_config. """
     blade_config.update_config('java_test_config', append, kwargs)
+
+
+def scala_config(append=None, **kwargs):
+    """scala_config. """
+    blade_config.update_config('scala_config', append, kwargs)
 
 
 def proto_library_config(append=None, **kwargs):

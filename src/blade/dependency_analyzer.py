@@ -75,6 +75,9 @@ def _expand_deps(targets):
         elif target.type.startswith('java_'):
             for dep in target.expanded_deps:
                 targets[dep].data['generate_java'] = True
+        elif target.type.startswith('scala_'):
+            for dep in target.expanded_deps:
+                targets[dep].data['generate_scala'] = True
 
 
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):

@@ -34,6 +34,7 @@ import cu_targets
 import gen_rule_target
 import java_jar_target
 import java_targets
+import scala_targets
 import lex_yacc_target
 import proto_library_target
 import py_targets

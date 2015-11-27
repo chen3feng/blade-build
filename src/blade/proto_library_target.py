@@ -183,7 +183,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # self._write_rule('%s.Append(JARCHDIR="%s")' % (env_name, classes_dir))
         self._write_rule('%s = %s.Jar(target="%s", source=%s)' % (
             var_name, env_name, self._target_file_path(), classes_var))
-        self.data['java_jar_var'] = var_name
+        self.data['jar_var'] = var_name
 
     def _proto_php_rules(self):
         """Generate php files. """
@@ -233,7 +233,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         direct_targets = self.blade.get_direct_targets()
 
         if (getattr(options, 'generate_java', False) or
-            self.data.get('generate_java')):
+            self.data.get('generate_java') or
+            self.data.get('generate_scala')):
             self._proto_java_rules()
 
         if (getattr(options, 'generate_php', False) or
