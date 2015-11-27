@@ -287,6 +287,19 @@ class JavaTargetMixIn(object):
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
+    def _generate_resources(self):
+        resources = self.data['resources']
+        if not resources:
+            return ''
+        resources = [self._source_file_path(res) for res in resources]
+        env_name = self._env_name()
+        var_name = self._var_name('resources')
+        resources_dir = self._target_file_path() + '.resources'
+        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
+            var_name, env_name, resources_dir, resources))
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
+        return var_name
+
     def _generate_generated_java_jar(self, var_name, srcs):
         env_name = self._env_name()
         self._write_rule('%s = %s.GeneratedJavaJar(target="%s" + top_env["JARSUFFIX"], source=[%s])' % (
@@ -361,21 +374,6 @@ class JavaTarget(Target, JavaTargetMixIn):
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
-
-    def _generate_resources(self):
-        resources = self.data['resources']
-        if not resources:
-            return None
-        srcs = []
-        for src in resources:
-            srcs.append(self._source_file_path(src))
-        var_name = self._var_name('resources')
-        env_name = self._env_name()
-        resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
-            var_name, env_name, resources_dir, srcs))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
-        return var_name
 
     def _generate_classes(self):
         if not self.srcs:

@@ -72,19 +72,6 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
 
-    def _generate_resources(self):
-        resources = self.data['resources']
-        if not resources:
-            return ''
-        resources = [self._source_file_path(res) for res in resources]
-        env_name = self._env_name()
-        var_name = self._var_name('resources')
-        resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
-            var_name, env_name, resources_dir, resources))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
-        return var_name
-
     def _generate_jar(self):
         sources = [self._source_file_path(src) for src in self.srcs]
         # Do not generate jar when there is no source
