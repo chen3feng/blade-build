@@ -32,6 +32,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  deps,
                  optimize,
                  deprecated,
+                 generate_descriptors,
                  source_encoding,
                  blade,
                  kwargs):
@@ -69,6 +70,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['java_sources_explict_dependency'] = []
         self.data['python_vars'] = []
         self.data['python_sources'] = []
+        self.data['generate_descriptors'] = generate_descriptors
 
     def _check_proto_srcs_name(self, srcs_list):
         """_check_proto_srcs_name.
@@ -107,6 +109,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Generate the python file name. """
         proto_name = src[:-6]
         return self._target_file_path('%s_pb2.py' % proto_name)
+
+    def _proto_gen_descriptor_file(self, name):
+        """Generate the descriptor file name. """
+        return self._target_file_path('%s.descriptors.pb' % name)
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
@@ -218,6 +224,13 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             ', '.join(self.data['python_vars'])))
         self.data['python_var'] = py_lib_var
 
+    def _proto_descriptor_rules(self):
+        """Generate descriptor files. """
+        proto_srcs = [os.path.join(self.path, src) for src in self.srcs]
+        proto_descriptor_file = self._proto_gen_descriptor_file(self.name)
+        self._write_rule('%s.ProtoDescriptors("%s", %s)' % (
+                self._env_name(), proto_descriptor_file, proto_srcs))
+
     def scons_rules(self):
         """scons_rules.
 
@@ -244,6 +257,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if (getattr(options, 'generate_python', False) or
             self.data.get('generate_python')):
             self._proto_python_rules()
+
+        if self.data['generate_descriptors']:
+            self._proto_descriptor_rules()
 
         self._setup_cc_flags()
 
@@ -290,6 +306,7 @@ def proto_library(name,
                   deps=[],
                   optimize=[],
                   deprecated=False,
+                  generate_descriptors=False,
                   source_encoding='iso-8859-1',
                   **kwargs):
     """proto_library target. """
@@ -298,6 +315,7 @@ def proto_library(name,
                                         deps,
                                         optimize,
                                         deprecated,
+                                        generate_descriptors,
                                         source_encoding,
                                         blade.blade,
                                         kwargs)

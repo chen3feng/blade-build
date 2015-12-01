@@ -996,6 +996,9 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
+    generate_proto_descriptor_message = console.inerasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
     proto_bld = SCons.Builder.Builder(action = MakeAction(
         "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $SOURCE" % (
             protoc_bin, protobuf_incs_str, build_dir),
@@ -1019,6 +1022,13 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
             protoc_bin, protobuf_incs_str, build_dir),
         compile_proto_python_message))
     top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
+
+    proto_descriptor_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --proto_path=. -I. %s -I=`dirname $SOURCE` '
+        '--descriptor_set_out=$TARGET --include_imports --include_source_info '
+        '$SOURCES' % (protoc_bin, protobuf_incs_str),
+        generate_proto_descriptor_message))
+    top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
 
 
 def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
