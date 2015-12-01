@@ -38,7 +38,8 @@ class BinaryRunner(object):
                          'java_binary',
                          'java_test',
                          'py_binary',
-                         'py_test']
+                         'py_test',
+                         'scala_test']
         self.target_database = target_database
 
     def _executable(self, target):

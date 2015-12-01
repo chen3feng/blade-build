@@ -108,7 +108,7 @@ class JavaTargetMixIn(object):
 
     def __extract_dep_jars(self, dkey, dep_jar_vars, dep_jars):
         dep = self.target_database[dkey]
-        jar = dep.data.get('java_jar_var')
+        jar = dep.data.get('jar_var')
         if jar:
             dep_jar_vars.append(jar)
         else:
@@ -287,11 +287,24 @@ class JavaTargetMixIn(object):
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
+    def _generate_resources(self):
+        resources = self.data['resources']
+        if not resources:
+            return ''
+        resources = [self._source_file_path(res) for res in resources]
+        env_name = self._env_name()
+        var_name = self._var_name('resources')
+        resources_dir = self._target_file_path() + '.resources'
+        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
+            var_name, env_name, resources_dir, resources))
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
+        return var_name
+
     def _generate_generated_java_jar(self, var_name, srcs):
         env_name = self._env_name()
         self._write_rule('%s = %s.GeneratedJavaJar(target="%s" + top_env["JARSUFFIX"], source=[%s])' % (
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
-        self.data['java_jar_var'] = var_name
+        self.data['jar_var'] = var_name
 
     def _generate_java_jar(self, var_name, classes_var, resources_var):
         env_name = self._env_name()
@@ -304,7 +317,7 @@ class JavaTargetMixIn(object):
             self._write_rule('%s = %s.BladeJavaJar(target="%s", source=[%s])' % (
                 var_name, env_name,
                 self._target_file_path() + '.jar', ','.join(sources)))
-            self.data['java_jar_var'] = var_name
+            self.data['jar_var'] = var_name
 
 
 class JavaTarget(Target, JavaTargetMixIn):
@@ -361,21 +374,6 @@ class JavaTarget(Target, JavaTargetMixIn):
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
-
-    def _generate_resources(self):
-        resources = self.data['resources']
-        if not resources:
-            return None
-        srcs = []
-        for src in resources:
-            srcs.append(self._source_file_path(src))
-        var_name = self._var_name('resources')
-        env_name = self._env_name()
-        resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
-            var_name, env_name, resources_dir, srcs))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
-        return var_name
 
     def _generate_classes(self):
         if not self.srcs:
@@ -439,8 +437,8 @@ class JavaBinary(JavaTarget):
     def _generate_one_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('onejar')
         jar_vars = []
-        if self.data.get('java_jar_var'):
-            jar_vars = [self.data.get('java_jar_var')]
+        if self.data.get('jar_var'):
+            jar_vars = [self.data.get('jar_var')]
         jar_vars.extend(dep_jar_vars)
         self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + %s)' % (
             var_name, self._env_name(),
@@ -475,7 +473,7 @@ class JavaTest(JavaBinary):
         var_name = self._var_name()
         self._write_rule('%s = %s.JavaTest(target="%s", source=[%s, %s] + [%s])' % (
             var_name, self._env_name(), self._target_file_path(),
-            onejar, self.data['java_jar_var'], ','.join(dep_jar_vars)))
+            onejar, self.data['jar_var'], ','.join(dep_jar_vars)))
 
 
 class JavaFatLibrary(JavaTarget):
@@ -496,8 +494,8 @@ class JavaFatLibrary(JavaTarget):
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
         jar_vars = []
-        if self.data.get('java_jar_var'):
-            jar_vars = [self.data.get('java_jar_var')]
+        if self.data.get('jar_var'):
+            jar_vars = [self.data.get('jar_var')]
         jar_vars.extend(dep_jar_vars)
         self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + %s)' % (
             var_name, self._env_name(),
