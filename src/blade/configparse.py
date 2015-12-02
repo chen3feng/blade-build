@@ -84,6 +84,7 @@ class BladeConfig(object):
             'scala_config': {
                 'scala_home' : '',
                 'warnings' : '',
+                'source_encoding' : None,
             },
             'scala_test_config': {
                 'scalatest_libs' : '',

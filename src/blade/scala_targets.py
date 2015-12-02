@@ -31,6 +31,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                  srcs,
                  deps,
                  resources,
+                 source_encoding,
                  warnings,
                  kwargs):
         """Init method.
@@ -50,10 +51,21 @@ class ScalaTarget(Target, JavaTargetMixIn):
                         blade.blade,
                         kwargs)
         self.data['resources'] = resources
+        if source_encoding:
+            self.data['source_encoding'] = source_encoding
         if warnings:
             self.data['warnings'] = warnings
         for dep in mvn_deps:
             self._add_maven_dep(dep)
+
+    def _generate_scala_source_encoding(self):
+        source_encoding = self.data.get('source_encoding')
+        if not source_encoding:
+            config = configparse.blade_config.get_config('scala_config')
+            source_encoding = config['source_encoding']
+        if source_encoding:
+            self._write_rule('%s.Append(SCALACFLAGS=["-encoding %s"])' % (
+                self._env_name(), source_encoding))
 
     def _generate_scala_warnings(self):
         warnings = self.data.get('warnings')
@@ -62,12 +74,13 @@ class ScalaTarget(Target, JavaTargetMixIn):
             warnings = config['warnings']
             if not warnings:
                 warnings = '-nowarn'
-        self._write_rule('%s.Append(SCALACFLAGS="%s")' % (
+        self._write_rule('%s.Append(SCALACFLAGS=["%s"])' % (
             self._env_name(), warnings))
 
     def _prepare_to_generate_rule(self):
         """Do some preparation before generating scons rule. """
         self._clone_env()
+        self._generate_scala_source_encoding()
         self._generate_scala_warnings()
 
     def _get_java_pack_deps(self):
@@ -91,9 +104,10 @@ class ScalaTarget(Target, JavaTargetMixIn):
 
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
-    def __init__(self, name, srcs, deps, resources, warnings, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
+                 kwargs):
         ScalaTarget.__init__(self, name, 'scala_library', srcs, deps,
-                             resources, warnings, kwargs)
+                             resources, source_encoding, warnings, kwargs)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -102,9 +116,10 @@ class ScalaLibrary(ScalaTarget):
 
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
-    def __init__(self, name, srcs, deps, resources, warnings, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
+                 kwargs):
         ScalaTarget.__init__(self, name, 'scala_fat_library', srcs, deps,
-                             resources, warnings, kwargs)
+                             resources, source_encoding, warnings, kwargs)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -127,9 +142,9 @@ class ScalaFatLibrary(ScalaTarget):
 
 class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
-    def __init__(self, name, srcs, deps, resources, warnings,
+    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  testdata, kwargs):
-        ScalaFatLibrary.__init__(self, name, srcs, deps, resources,
+        ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
                                  warnings, kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
@@ -157,6 +172,7 @@ def scala_library(name,
                   srcs=[],
                   deps=[],
                   resources=[],
+                  source_encoding=None,
                   warnings=None,
                   **kwargs):
     """Define scala_library target. """
@@ -164,6 +180,7 @@ def scala_library(name,
                           srcs,
                           deps,
                           resources,
+                          source_encoding,
                           warnings,
                           kwargs)
     blade.blade.register_target(target)
@@ -173,6 +190,7 @@ def scala_fat_library(name,
                       srcs=[],
                       deps=[],
                       resources=[],
+                      source_encoding=None,
                       warnings=None,
                       **kwargs):
     """Define scala_fat_library target. """
@@ -180,6 +198,7 @@ def scala_fat_library(name,
                              srcs,
                              deps,
                              resources,
+                             source_encoding,
                              warnings,
                              kwargs)
     blade.blade.register_target(target)
@@ -189,6 +208,7 @@ def scala_test(name,
                srcs,
                deps=[],
                resources=[],
+               source_encoding=None,
                warnings=None,
                testdata=[],
                **kwargs):
@@ -197,6 +217,7 @@ def scala_test(name,
                        srcs,
                        deps,
                        resources,
+                       source_encoding,
                        warnings,
                        testdata,
                        kwargs)

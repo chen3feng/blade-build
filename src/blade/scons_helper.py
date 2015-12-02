@@ -620,13 +620,13 @@ def _generate_scala_jar(target, sources, resources, env):
     """
     scalac = env['SCALAC']
     jar = env['JAR']
-    warnings = env['SCALACFLAGS']
+    options = ' '.join(env['SCALACFLAGS'])
     classpath = ':'.join(env['JAVACLASSPATH'])
     if not classpath:
         classpath = blade_util.get_cwd()
 
     cmd = '%s -d %s -classpath %s %s %s' % (scalac, target, classpath,
-            warnings, ' '.join(sources))
+            options, ' '.join(sources))
     global option_verbose
     if option_verbose:
         print cmd
