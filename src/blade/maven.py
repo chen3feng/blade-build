@@ -171,7 +171,7 @@ class MavenCache(object):
         if not id in self.__jar_database:
             success = self._download_artifact(id)
             if not success:
-                console.error('Download %s failed' % id)
+                console.warning('Download %s failed' % id)
                 return '';
         if jar:
             return self.__jar_database[id][0]

@@ -17,6 +17,7 @@ import blade
 import blade_util
 import build_rules
 import configparse
+import console
 import maven
 
 from blade_util import var_to_list
@@ -72,6 +73,16 @@ class JavaTargetMixIn(object):
         self.deps.append(key)
         self.expanded_deps.append(key)
         return key
+
+    def _collect_maven_dep_ids(self):
+        maven_dep_ids = set()
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            if dep.type == 'maven_jar':
+                id = dep.data.get('id')
+                if id:
+                    maven_dep_ids.add(id)
+        return maven_dep_ids
 
     def _filter_deps(self, deps):
         filtered_deps = []
@@ -139,31 +150,74 @@ class JavaTargetMixIn(object):
                 self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
         return dep_jar_vars, dep_jars
 
-    def __get_maven_transitive_deps(self):
+    def __get_maven_transitive_deps(self, deps):
         """
         Return a list of maven jars stored within local repository.
         These jars are transitive dependencies of maven_jar target.
         """
         maven_jars = []
-        for edkey in self.expanded_deps:
-            dep = self.target_database[edkey]
+        for key in deps:
+            dep = self.target_database[key]
             if dep.type == 'maven_jar':
                 maven_jars += dep.data.get('maven_deps', [])
         return maven_jars
 
+    def _detect_maven_conflicted_deps(self, dep_jars):
+        """
+        Maven dependencies might have conflict: same group and artifact
+        but different version. Select higher version by default unless
+        a specific version of maven dependency is specified as a direct
+        dependency of the target
+        """
+        dep_jars, conflicted_jars = set(dep_jars), set()
+        maven_dep_ids = self._collect_maven_dep_ids()
+        maven_jar_dict = {}  # (group, artifact) -> (version, name, jar)
+        maven_repo = '.m2/repository/'
+        for dep_jar in dep_jars:
+            if maven_repo not in dep_jar:
+                continue
+            parts = dep_jar[dep_jar.find(maven_repo) + len(maven_repo):].split('/')
+            if len(parts) < 4:
+                continue
+            name, version, artifact, group = (parts[-1], parts[-2],
+                                              parts[-3], '.'.join(parts[:-3]))
+            key = (group, artifact)
+            id = ':'.join((group, artifact, version))
+            if key in maven_jar_dict:
+                old_value = maven_jar_dict[key]
+                old_id = ':'.join((group, artifact, old_value[0]))
+                if old_id in maven_dep_ids:
+                    conflicted_jars.add(dep_jar)
+                elif id in maven_dep_ids or version > old_value[0]:
+                    conflicted_jars.add(old_value[2])
+                    maven_jar_dict[key] = (version, name, dep_jar)
+                else:
+                    conflicted_jars.add(dep_jar)
+                value = maven_jar_dict[key]
+                console.warning('Detect maven dependency conflict between %s '
+                                'and %s in %s. Use %s' % (id,
+                                ':'.join([key[0], key[1], old_value[0]]),
+                                self.fullname,
+                                ':'.join([key[0], key[1], value[0]])))
+            else:
+                maven_jar_dict[key] = (version, name, dep_jar)
+
+        dep_jars -= conflicted_jars
+        return sorted(list(dep_jars))
+
     def _get_compile_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.deps)
         exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
-        dep_jars += self.__get_maven_transitive_deps()
+        dep_jars += self.__get_maven_transitive_deps(self.deps)
         dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
-        dep_jars = sorted(list(set(dep_jars + exported_dep_jars)))
+        dep_jars = self._detect_maven_conflicted_deps(dep_jars + exported_dep_jars)
         return dep_jar_vars, dep_jars
 
     def _get_test_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
-        dep_jars += self.__get_maven_transitive_deps()
+        dep_jars += self.__get_maven_transitive_deps(self.expanded_deps)
         dep_jar_vars = sorted(list(set(dep_jar_vars)))
-        dep_jars = sorted(list(set(dep_jars)))
+        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
         return dep_jar_vars, dep_jars
 
     def _get_pack_deps(self):
@@ -429,6 +483,7 @@ class JavaBinary(JavaTarget):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
+        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
 
     def _get_all_depended_jars(self):
@@ -489,6 +544,7 @@ class JavaFatLibrary(JavaTarget):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
+        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
         self._generate_fat_jar(dep_jar_vars, dep_jars)
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
