@@ -12,6 +12,7 @@ Implement java_library, java_binary, java_test and java_fat_library
 
 import os
 import re
+from distutils.version import LooseVersion
 
 import blade
 import blade_util
@@ -74,7 +75,7 @@ class JavaTargetMixIn(object):
         self.expanded_deps.append(key)
         return key
 
-    def _collect_maven_dep_ids(self):
+    def _get_maven_dep_ids(self):
         maven_dep_ids = set()
         for dkey in self.deps:
             dep = self.target_database[dkey]
@@ -170,7 +171,7 @@ class JavaTargetMixIn(object):
         dependency of the target
         """
         dep_jars, conflicted_jars = set(dep_jars), set()
-        maven_dep_ids = self._collect_maven_dep_ids()
+        maven_dep_ids = self._get_maven_dep_ids()
         maven_jar_dict = {}  # (group, artifact) -> (version, name, jar)
         maven_repo = '.m2/repository/'
         for dep_jar in dep_jars:
@@ -188,7 +189,7 @@ class JavaTargetMixIn(object):
                 old_id = ':'.join((group, artifact, old_value[0]))
                 if old_id in maven_dep_ids:
                     conflicted_jars.add(dep_jar)
-                elif id in maven_dep_ids or version > old_value[0]:
+                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_value[0]):
                     conflicted_jars.add(old_value[2])
                     maven_jar_dict[key] = (version, name, dep_jar)
                 else:
