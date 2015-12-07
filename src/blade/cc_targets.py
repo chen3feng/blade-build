@@ -215,9 +215,11 @@ class CcTarget(Target):
     def _setup_as_flags(self):
         """_setup_as_flags. """
         env_name = self._env_name()
-        as_flags = self._get_as_flags()
+        as_flags, aspp_flags = self._get_as_flags()
         if as_flags:
             self._write_rule('%s.Append(ASFLAGS=%s)' % (env_name, as_flags))
+        if aspp_flags:
+            self._write_rule('%s.Append(ASPPFLAGS=%s)' % (env_name, aspp_flags))
 
     def _setup_link_flags(self):
         """linkflags. """
@@ -290,7 +292,8 @@ class CcTarget(Target):
         """
         options = self.blade.get_options()
         as_flags = ["--" + options.m]
-        return as_flags
+        aspp_flags = ["-Wa,--" + options.m]
+        return as_flags, aspp_flags
 
 
     def _dep_is_library(self, dep):
