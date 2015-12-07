@@ -163,7 +163,7 @@ class JavaTargetMixIn(object):
                 maven_jars += dep.data.get('maven_deps', [])
         return maven_jars
 
-    def _detect_maven_conflicted_deps(self, dep_jars):
+    def _detect_maven_conflicted_deps(self, scope, dep_jars):
         """
         Maven dependencies might have conflict: same group and artifact
         but different version. Select higher version by default unless
@@ -172,7 +172,7 @@ class JavaTargetMixIn(object):
         """
         dep_jars, conflicted_jars = set(dep_jars), set()
         maven_dep_ids = self._get_maven_dep_ids()
-        maven_jar_dict = {}  # (group, artifact) -> (version, name, jar)
+        maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
         maven_repo = '.m2/repository/'
         for dep_jar in dep_jars:
             if maven_repo not in dep_jar:
@@ -186,22 +186,27 @@ class JavaTargetMixIn(object):
             id = ':'.join((group, artifact, version))
             if key in maven_jar_dict:
                 old_value = maven_jar_dict[key]
+                if version == old_value[0]:
+                    # jar must be different because dep_jars is a set
+                    old_value[1].add(dep_jar)
+                    continue
                 old_id = ':'.join((group, artifact, old_value[0]))
                 if old_id in maven_dep_ids:
                     conflicted_jars.add(dep_jar)
                 elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_value[0]):
-                    conflicted_jars.add(old_value[2])
-                    maven_jar_dict[key] = (version, name, dep_jar)
+                    conflicted_jars |= old_value[1]
+                    maven_jar_dict[key] = (version, set([dep_jar]))
                 else:
                     conflicted_jars.add(dep_jar)
                 value = maven_jar_dict[key]
-                console.warning('Detect maven dependency conflict between %s '
-                                'and %s in %s. Use %s' % (id,
+                console.warning('%s: Detect maven dependency conflict between'
+                                ' %s and %s during %s. Use %s' % (
+                                self.fullname, id,
                                 ':'.join([key[0], key[1], old_value[0]]),
-                                self.fullname,
+                                scope,
                                 ':'.join([key[0], key[1], value[0]])))
             else:
-                maven_jar_dict[key] = (version, name, dep_jar)
+                maven_jar_dict[key] = (version, set([dep_jar]))
 
         dep_jars -= conflicted_jars
         return sorted(list(dep_jars))
@@ -211,14 +216,15 @@ class JavaTargetMixIn(object):
         exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
         dep_jars += self.__get_maven_transitive_deps(self.deps)
         dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
-        dep_jars = self._detect_maven_conflicted_deps(dep_jars + exported_dep_jars)
+        dep_jars = self._detect_maven_conflicted_deps('compile',
+            dep_jars + exported_dep_jars)
         return dep_jar_vars, dep_jars
 
     def _get_test_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
         dep_jars += self.__get_maven_transitive_deps(self.expanded_deps)
         dep_jar_vars = sorted(list(set(dep_jar_vars)))
-        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
+        dep_jars = self._detect_maven_conflicted_deps('test', dep_jars)
         return dep_jar_vars, dep_jars
 
     def _get_pack_deps(self):
@@ -484,7 +490,7 @@ class JavaBinary(JavaTarget):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
-        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
+        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
 
     def _get_all_depended_jars(self):
@@ -545,7 +551,7 @@ class JavaFatLibrary(JavaTarget):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
-        dep_jars = self._detect_maven_conflicted_deps(dep_jars)
+        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
         self._generate_fat_jar(dep_jar_vars, dep_jars)
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
