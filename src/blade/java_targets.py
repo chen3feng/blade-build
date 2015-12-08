@@ -27,13 +27,9 @@ from target import Target
 
 class MavenJar(Target):
     """MavenJar"""
-    def __init__(self, name, id, is_implicit_added):
+    def __init__(self, name, id):
         Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
         self.data['id'] = id
-        if is_implicit_added:
-            self.key = ('#', name)
-            self.fullname = '%s:%s' % self.key
-            self.path = '#'
 
     def _get_java_pack_deps(self):
         deps = self.data.get('maven_deps', [])
@@ -56,24 +52,11 @@ class JavaTargetMixIn(object):
     def _add_hardcode_java_library(self, deps):
         """Add hardcode dep list to key's deps. """
         for dep in deps:
-            if maven.is_valid_id(dep):
-                self._add_maven_dep(dep)
-                continue
             dkey = self._unify_dep(dep)
             if dkey not in self.deps:
                 self.deps.append(dkey)
             if dkey not in self.expanded_deps:
                 self.expanded_deps.append(dkey)
-
-    def _add_maven_dep(self, id):
-        name = blade_util.regular_variable_name(id).replace(':', '_')
-        key = ('#', name)
-        if not key in self.target_database:
-            target = MavenJar(name, id, is_implicit_added=True)
-            blade.blade.register_target(target)
-        self.deps.append(key)
-        self.expanded_deps.append(key)
-        return key
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -85,23 +68,9 @@ class JavaTargetMixIn(object):
                     maven_dep_ids.add(id)
         return maven_dep_ids
 
-    def _filter_deps(self, deps):
-        filtered_deps = []
-        filterouted_deps = []
-        for dep in deps:
-            if maven.is_valid_id(dep):
-                filterouted_deps.append(dep)
-            else:
-                filtered_deps.append(dep)
-        return filtered_deps, filterouted_deps
-
     def _unify_java_deps(self, deps):
         dkeys = []
         for dep in deps:
-            if maven.is_valid_id(dep):
-                dkey = self._add_maven_dep(dep)
-                dkeys.append(dkey)
-                continue
             dkey = self._unify_dep(dep)
             dkeys.append(dkey)
         return dkeys
@@ -402,7 +371,7 @@ class JavaTarget(Target, JavaTargetMixIn):
 
         """
         srcs = var_to_list(srcs)
-        deps, mvn_deps = self._filter_deps(var_to_list(deps))
+        deps = var_to_list(deps)
         resources = var_to_list(resources)
 
         Target.__init__(self,
@@ -416,8 +385,6 @@ class JavaTarget(Target, JavaTargetMixIn):
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
-        for dep in mvn_deps:
-            self._add_maven_dep(dep)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -567,7 +534,7 @@ class JavaFatLibrary(JavaTarget):
 
 
 def maven_jar(name, id):
-    target = MavenJar(name, id, is_implicit_added=False)
+    target = MavenJar(name, id)
     blade.blade.register_target(target)
 
 

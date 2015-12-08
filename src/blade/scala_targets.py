@@ -40,7 +40,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
 
         """
         srcs = var_to_list(srcs)
-        deps, mvn_deps = self._filter_deps(var_to_list(deps))
+        deps = var_to_list(deps)
         resources = var_to_list(resources)
 
         Target.__init__(self,
@@ -55,8 +55,6 @@ class ScalaTarget(Target, JavaTargetMixIn):
             self.data['source_encoding'] = source_encoding
         if warnings:
             self.data['warnings'] = warnings
-        for dep in mvn_deps:
-            self._add_maven_dep(dep)
 
     def _generate_scala_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
