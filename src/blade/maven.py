@@ -79,9 +79,11 @@ class MavenCache(object):
             console.error_exit('Invalid id %s: Id should be group:artifact:version, '
                                'such as jaxen:jaxen:1.1.6' % id)
 
-    def _download_jar(self, id):
+    def _download_jar(self, id, classifier):
         group, artifact, version = id.split(':')
         jar = artifact + '-' + version + '.jar'
+        if classifier:
+            jar = artifact + '-' + version + '-' + classifier + '.jar'
         pom = artifact + '-' + version + '.pom'
         log = artifact + '__download.log'
         target_path = self._generate_jar_path(id)
@@ -102,13 +104,13 @@ class MavenCache(object):
                         '> %s' % log])
 
         cmd = ' '.join([self.__maven,
-            'org.apache.maven.plugins:maven-dependency-plugin:2.10:get '
-            #'dependency:get '
-            '-DgroupId=%s' % group,
-            '-DartifactId=%s' % artifact,
-            '-Dversion=%s' % version,
-            '-Dtype=pom',
-            '> %s' % log])
+                        'dependency:get',
+                        '-DgroupId=%s' % group,
+                        '-DartifactId=%s' % artifact,
+                        '-Dversion=%s' % version])
+        if classifier:
+            cmd += ' -Dclassifier=%s' % classifier
+        cmd += ' > %s' % log
         ret = subprocess.call(cmd, shell=True)
         if ret != 0:
             console.warning('Error occurred when downloading %s from central '
@@ -127,7 +129,6 @@ class MavenCache(object):
             if os.path.isfile(os.path.join(target_path, classpath)):
                 return True
         console.info('Downloading %s dependencies...' % id)
-        target_path = self._generate_jar_path(id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         log = os.path.join(target_path, artifact + '__classpath.log')
         cmd = ' '.join([self.__maven,
@@ -143,13 +144,15 @@ class MavenCache(object):
             return False
         return True
 
-    def _download_artifact(self, id):
+    def _download_artifact(self, id, classifier):
         """Download the specified jar and its transitive dependencies. """
-        if not self._download_jar(id):
+        if not self._download_jar(id, classifier):
             return False
 
         group, artifact, version = id.split(':')
         jar = artifact + '-' + version + '.jar'
+        if classifier:
+            jar = artifact + '-' + version + '-' + classifier + '.jar'
         target_path = self._generate_jar_path(id)
 
         if not self._download_dependency(id):
@@ -164,12 +167,12 @@ class MavenCache(object):
 
         return True
 
-    def _get_path_from_database(self, id, jar):
+    def _get_path_from_database(self, id, classifier, jar):
         """get_path_from_database. """
         self._check_config()
         self._check_id(id)
         if not id in self.__jar_database:
-            success = self._download_artifact(id)
+            success = self._download_artifact(id, classifier)
             if not success:
                 console.warning('Download %s failed' % id)
                 return '';
@@ -178,7 +181,7 @@ class MavenCache(object):
         else:
             return self.__jar_database[id][1]
 
-    def get_jar_path(self, id):
+    def get_jar_path(self, id, classifier):
         """get_jar_path
 
         Return local jar path corresponding to the id specified in the
@@ -186,14 +189,14 @@ class MavenCache(object):
         Download jar files and its transitive dependencies if needed.
 
         """
-        return self._get_path_from_database(id, True)
+        return self._get_path_from_database(id, classifier, True)
 
-    def get_jar_deps_path(self, id):
+    def get_jar_deps_path(self, id, classifier):
         """get_jar_deps_path
 
         Return a string of the dependencies path separated by colon.
         This string can be used in java -cp later.
 
         """
-        return self._get_path_from_database(id, False)
+        return self._get_path_from_database(id, classifier, False)
 
