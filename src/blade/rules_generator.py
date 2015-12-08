@@ -267,6 +267,10 @@ import scons_helper
                         cc_config['cxxflags'],
                         ld_env_str, linkflags))
 
+        # The default ASPPFLAGS of scons is same as ASFLAGS,
+        # this is incorrect for gcc/gas
+        self._add_rule("top_env.Replace(ASPPFLAGS='')")
+
         self._setup_cache()
 
         if build_with_distcc:
