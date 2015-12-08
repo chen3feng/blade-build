@@ -970,6 +970,7 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
                 CXXCOMSTR = compile_source_message,
                 CCCOMSTR = compile_source_message,
                 ASCOMSTR = assembling_source_message,
+                ASPPCOMSTR = assembling_source_message,
                 SHCCCOMSTR = compile_source_message,
                 SHCXXCOMSTR = compile_source_message,
                 ARCOMSTR = link_library_message,

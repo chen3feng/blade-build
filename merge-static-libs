@@ -2,15 +2,16 @@
 
 set -e
 
-if [ $# -lt 1 ]; then
+if [[ $# < 1 || $# == 1 && "$1" == '--help' ]]; then
     echo "Usage <blade-target-name> [build arguments]"
     exit 1;
 fi
 
-target_pattern="^:[A-Za-z0-9+_.-]+$"
+target_pattern=":[A-Za-z0-9+_.-]+$"
 
 if [[ ! "$1" =~ $target_pattern ]]; then
     echo "Invalid target name, can only be :name"
+    exit 1;
 fi
 
 # :poppy -> poppy
@@ -38,6 +39,7 @@ syslibpattern="^.+"
 echo "$o" | while read line; do
     if [[ "$line" =~ $libpattern ]]; then
         lib="blade-bin/${line/://lib}.a"
+        echo "ADDLIB $lib"
         echo "ADDLIB $lib" >> $macname
     else
         if [[ -n "$line" ]]; then
@@ -55,5 +57,5 @@ echo "END" >> $macname
 
 ar -M < $macname
 ranlib $libname
-rm $macname
+# rm $macname
 echo "$libname generated"
