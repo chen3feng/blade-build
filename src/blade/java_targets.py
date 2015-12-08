@@ -27,9 +27,10 @@ from target import Target
 
 class MavenJar(Target):
     """MavenJar"""
-    def __init__(self, name, id):
+    def __init__(self, name, id, classifier):
         Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
         self.data['id'] = id
+        self.data['classifier'] = classifier
 
     def _get_java_pack_deps(self):
         deps = self.data.get('maven_deps', [])
@@ -37,10 +38,12 @@ class MavenJar(Target):
 
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance()
-        binary_jar = maven_cache.get_jar_path(self.data['id'])
+        binary_jar = maven_cache.get_jar_path(self.data['id'],
+                                              self.data['classifier'])
         if binary_jar:
             self.data['binary_jar'] = binary_jar
-            deps_path = maven_cache.get_jar_deps_path(self.data['id'])
+            deps_path = maven_cache.get_jar_deps_path(self.data['id'],
+                                                      self.data['classifier'])
             if deps_path:
                 self.data['maven_deps'] = deps_path.split(':')
 
@@ -533,8 +536,8 @@ class JavaFatLibrary(JavaTarget):
             ','.join(jar_vars), dep_jars))
 
 
-def maven_jar(name, id):
-    target = MavenJar(name, id)
+def maven_jar(name, id, classifier=''):
+    target = MavenJar(name, id, classifier)
     blade.blade.register_target(target)
 
 
