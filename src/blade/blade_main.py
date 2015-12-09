@@ -198,6 +198,64 @@ def _check_code_style(opened_files):
     return 0
 
 
+def _build(options):
+    if options.scons_only:
+        return 0
+
+    scons_options = '--duplicate=soft-copy --cache-show'
+    scons_options += ' -j %s' % options.jobs
+    if options.keep_going:
+        scons_options += ' -k'
+    if options.scons_options:
+        scons_options += ' '
+        scons_options += options.scons_options
+
+    p = subprocess.Popen('scons %s' % scons_options, shell=True)
+    try:
+        p.wait()
+        if p.returncode:
+            console.error('building failure')
+            return p.returncode
+    except:  # KeyboardInterrupt
+        return 1
+    return 0
+
+
+def build(options):
+    return _build(options)
+
+
+def run(options):
+    ret = _build(options)
+    if ret:
+        return ret
+    return blade.blade.run(run_target)
+
+
+def test(options):
+    ret = _build(options)
+    if ret:
+        return ret
+    return blade.blade.test()
+
+
+def clean(options):
+    console.info('cleaning...(hint: please specify --generate-dynamic to '
+                 'clean your so)')
+    cmd = 'scons --duplicate=soft-copy -c -s --cache-show'
+    if options.scons_options:
+        cmd += ' '
+        cmd += options.scons_options
+    p = subprocess.Popen(cmd, shell=True)
+    p.wait()
+    console.info('cleaning done.')
+    return p.returncode
+
+
+def query(options):
+    return blade.blade.query(query_targets)
+
+
 def _main(blade_path):
     """The main entry of blade. """
 
@@ -307,70 +365,14 @@ def _main(blade_path):
     return 0
 
 
-def _build(options):
-    if options.scons_only:
-        return 0
-
-    scons_options = '--duplicate=soft-copy --cache-show'
-    scons_options += ' -j %s' % options.jobs
-    if options.keep_going:
-        scons_options += ' -k'
-    if options.scons_options:
-        scons_options += ' '
-        scons_options += options.scons_options
-
-    p = subprocess.Popen('scons %s' % scons_options, shell=True)
-    try:
-        p.wait()
-        if p.returncode:
-            console.error('building failure')
-            return p.returncode
-    except:  # KeyboardInterrupt
-        return 1
-    return 0
-
-
-def build(options):
-    return _build(options)
-
-
-def run(options):
-    ret = _build(options)
-    if ret:
-        return ret
-    return blade.blade.run(run_target)
-
-
-def test(options):
-    ret = _build(options)
-    if ret:
-        return ret
-    return blade.blade.test()
-
-
-def clean(options):
-    console.info('cleaning...(hint: please specify --generate-dynamic to '
-                 'clean your so)')
-    cmd = 'scons --duplicate=soft-copy -c -s --cache-show'
-    if options.scons_options:
-        cmd += ' '
-        cmd += options.scons_options
-    p = subprocess.Popen(cmd, shell=True)
-    p.wait()
-    console.info('cleaning done.')
-    return p.returncode
-
-
-def query(options):
-    return blade.blade.query(query_targets)
-
-
 def main(blade_path):
     exit_code = 0
     try:
         start_time = time.time()
         exit_code = _main(blade_path)
         cost_time = int(time.time() - start_time)
+        if exit_code == 0:
+            console.info('success')
         console.info('cost time: %ss' % datetime.timedelta(seconds=cost_time))
     except SystemExit, e:
         exit_code = e.code
