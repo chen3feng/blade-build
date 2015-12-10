@@ -103,9 +103,14 @@ class ScalaTarget(Target, JavaTargetMixIn):
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 kwargs):
-        ScalaTarget.__init__(self, name, 'scala_library', srcs, deps,
+                 exported_deps, provided_deps, kwargs):
+        exported_deps = var_to_list(exported_deps)
+        provided_deps = var_to_list(provided_deps)
+        all_deps = var_to_list(deps) + exported_deps + provided_deps
+        ScalaTarget.__init__(self, name, 'scala_library', srcs, all_deps,
                              resources, source_encoding, warnings, kwargs)
+        self.data['exported_deps'] = self._unify_deps(exported_deps)
+        self.data['provided_deps'] = self._unify_deps(provided_deps)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -115,14 +120,17 @@ class ScalaLibrary(ScalaTarget):
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 kwargs):
+                 exclusions, kwargs):
         ScalaTarget.__init__(self, name, 'scala_fat_library', srcs, deps,
                              resources, source_encoding, warnings, kwargs)
+        if exclusions:
+            self._set_pack_exclusions(exclusions)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
+        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
         self._generate_fat_jar(dep_jar_vars, dep_jars)
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
@@ -143,7 +151,7 @@ class ScalaTest(ScalaFatLibrary):
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  testdata, kwargs):
         ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
-                                 warnings, kwargs)
+                                 warnings, [], kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
         config = configparse.blade_config.get_config('scala_test_config')
@@ -172,6 +180,8 @@ def scala_library(name,
                   resources=[],
                   source_encoding=None,
                   warnings=None,
+                  exported_deps=[],
+                  provided_deps=[],
                   **kwargs):
     """Define scala_library target. """
     target = ScalaLibrary(name,
@@ -180,6 +190,8 @@ def scala_library(name,
                           resources,
                           source_encoding,
                           warnings,
+                          exported_deps,
+                          provided_deps,
                           kwargs)
     blade.blade.register_target(target)
 
@@ -190,6 +202,7 @@ def scala_fat_library(name,
                       resources=[],
                       source_encoding=None,
                       warnings=None,
+                      exclusions=[],
                       **kwargs):
     """Define scala_fat_library target. """
     target = ScalaFatLibrary(name,
@@ -198,6 +211,7 @@ def scala_fat_library(name,
                              resources,
                              source_encoding,
                              warnings,
+                             exclusions,
                              kwargs)
     blade.blade.register_target(target)
 

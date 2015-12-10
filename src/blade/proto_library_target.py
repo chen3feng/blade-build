@@ -60,7 +60,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # Hardcode deps rule to thirdparty protobuf lib.
         self._add_hardcode_library(protobuf_libs)
         self._add_hardcode_java_library(protobuf_java_libs)
-        self.data['exported_deps'] = self._unify_java_deps(protobuf_java_libs)
+        self.data['exported_deps'] = self._unify_deps(protobuf_java_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True

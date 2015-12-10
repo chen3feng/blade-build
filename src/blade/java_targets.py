@@ -71,7 +71,7 @@ class JavaTargetMixIn(object):
                     maven_dep_ids.add(id)
         return maven_dep_ids
 
-    def _unify_java_deps(self, deps):
+    def _unify_deps(self, deps):
         dkeys = []
         for dep in deps:
             dkey = self._unify_dep(dep)
@@ -432,8 +432,8 @@ class JavaLibrary(JavaTarget):
         all_deps = var_to_list(deps) + exported_deps + provided_deps
         JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
                             source_encoding, warnings, kwargs)
-        self.data['exported_deps'] = self._unify_java_deps(exported_deps)
-        self.data['provided_deps'] = self._unify_java_deps(provided_deps)
+        self.data['exported_deps'] = self._unify_deps(exported_deps)
+        self.data['provided_deps'] = self._unify_deps(provided_deps)
         if prebuilt:
             if not binary_jar:
                 self.data['binary_jar'] = name + '.jar'
