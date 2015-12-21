@@ -373,7 +373,7 @@ def main(blade_path):
         cost_time = int(time.time() - start_time)
         if exit_code == 0:
             console.info('success')
-        console.info('cost time: %ss' % datetime.timedelta(seconds=cost_time))
+        console.info('cost time is %ss' % datetime.timedelta(seconds=cost_time))
     except SystemExit, e:
         exit_code = e.code
     except KeyboardInterrupt:
