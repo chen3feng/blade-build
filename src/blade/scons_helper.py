@@ -486,17 +486,19 @@ def _generate_one_jar(target,
     for dep in deps_jar:
         dep_name = os.path.basename(dep)
         target_one_jar.write(dep, os.path.join('lib', dep_name))
-        # Copy resources from the dependency to the root of target jar
-        dep_jar = zipfile.ZipFile(dep, 'r')
-        dep_name_list = dep_jar.namelist()
-        for name in dep_name_list:
+
+    # Copy resources to the root of target onejar
+    for jar in [main_jar] + deps_jar:
+        jar = zipfile.ZipFile(jar, 'r')
+        jar_name_list = jar.namelist()
+        for name in jar_name_list:
             if name.endswith('.class') or name.upper().startswith('META-INF'):
                 continue
-            data = dep_jar.read(name)
+            data = jar.read(name)
             if data and name not in jar_path_set:
                 jar_path_set.add(name)
                 target_one_jar.writestr(name, data)
-        dep_jar.close()
+        jar.close()
 
     # Manifest
     # Note that the manifest file must end with a new line or carriage return
