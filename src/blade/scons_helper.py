@@ -470,12 +470,14 @@ def _generate_one_jar(target,
         os.makedirs(target_dir)
 
     target_one_jar = zipfile.ZipFile(target, 'w')
+    jar_path_set = set()
     # Copy files from one-jar-boot.jar to the target jar
     zip_file = zipfile.ZipFile(one_jar_boot_path, 'r')
     name_list = zip_file.namelist()
     for name in name_list:
         if not name.lower().endswith('manifest.mf'): # Exclude manifest
             target_one_jar.writestr(name, zip_file.read(name))
+            jar_path_set.add(name)
     zip_file.close()
 
     # Main jar and dependencies
@@ -484,6 +486,19 @@ def _generate_one_jar(target,
     for dep in deps_jar:
         dep_name = os.path.basename(dep)
         target_one_jar.write(dep, os.path.join('lib', dep_name))
+
+    # Copy resources to the root of target onejar
+    for jar in [main_jar] + deps_jar:
+        jar = zipfile.ZipFile(jar, 'r')
+        jar_name_list = jar.namelist()
+        for name in jar_name_list:
+            if name.endswith('.class') or name.upper().startswith('META-INF'):
+                continue
+            data = jar.read(name)
+            if data and name not in jar_path_set:
+                jar_path_set.add(name)
+                target_one_jar.writestr(name, data)
+        jar.close()
 
     # Manifest
     # Note that the manifest file must end with a new line or carriage return
@@ -602,12 +617,10 @@ def _get_all_test_class_names_in_jar(jar):
 
 
 def generate_java_test(target, source, env):
-    """build function to generate wrapper shell script for java binary"""
+    """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
     onejar_path = str(source[0])
-    test_class_names = []
-    for src in source[1:]:
-        test_class_names += _get_all_test_class_names_in_jar(str(src))
+    test_class_names = _get_all_test_class_names_in_jar(str(source[1]))
 
     return _generate_java_binary(target_name, onejar_path, '',
                                  ' '.join(test_class_names))
