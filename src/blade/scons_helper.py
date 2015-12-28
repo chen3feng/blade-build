@@ -494,10 +494,9 @@ def _generate_one_jar(target,
         for name in jar_name_list:
             if name.endswith('.class') or name.upper().startswith('META-INF'):
                 continue
-            data = jar.read(name)
-            if data and name not in jar_path_set:
+            if name not in jar_path_set:
                 jar_path_set.add(name)
-                target_one_jar.writestr(name, data)
+                target_one_jar.writestr(name, jar.read(name))
         jar.close()
 
     # Manifest
@@ -620,7 +619,8 @@ def generate_java_test(target, source, env):
     """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
     onejar_path = str(source[0])
-    test_class_names = _get_all_test_class_names_in_jar(str(source[1]))
+    test_jar = str(source[1])
+    test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
     return _generate_java_binary(target_name, onejar_path, '',
                                  ' '.join(test_class_names))
