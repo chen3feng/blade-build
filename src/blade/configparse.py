@@ -80,6 +80,7 @@ class BladeConfig(object):
             },
             'java_test_config': {
                 'junit_libs' : [],
+                'jacoco_home' : '',
             },
             'scala_config': {
                 'scala_home' : '',

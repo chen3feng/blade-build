@@ -615,6 +615,24 @@ def _get_all_test_class_names_in_jar(jar):
     return test_class_names
 
 
+def _generate_java_test_flags(env):
+    """Returns jvm runtime flags based on the environment passed in. """
+    jvm_flags = []
+    env_dict = env.Dictionary()
+    jacoco_agent = env_dict.get('JACOCOAGENT')
+    if jacoco_agent:
+        jacoco_agent = os.path.abspath(jacoco_agent)
+        target_under_test_package = env_dict.get('JAVATARGETUNDERTESTPKG')
+        if target_under_test_package:
+            options = []
+            options.append('includes=%s' % ':'.join(
+                [p + '.*' for p in target_under_test_package if p]))
+            options.append('output=file')
+            jvm_flags.append('-javaagent:%s=%s' % (jacoco_agent, ','.join(options)))
+
+    return ' '.join(jvm_flags)
+
+
 def generate_java_test(target, source, env):
     """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
@@ -622,7 +640,8 @@ def generate_java_test(target, source, env):
     test_jar = str(source[1])
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
-    return _generate_java_binary(target_name, onejar_path, '',
+    return _generate_java_binary(target_name, onejar_path,
+                                 _generate_java_test_flags(env),
                                  ' '.join(test_class_names))
 
 

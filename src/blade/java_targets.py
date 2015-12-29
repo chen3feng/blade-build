@@ -227,8 +227,23 @@ class JavaTargetMixIn(object):
 
         return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
 
-    def _get_java_package_name(self, file_name):
-        """Get the java package name from proto file if it is specified. """
+    def _get_java_package_name(self):
+        """
+        Get java package name. Usually all the sources are within the same package.
+        However, there are cases where BUILD is in the parent directory and sources
+        are located in subdirectories each of which defines its own package.
+        """
+        if not self.srcs:
+            return []
+        packages = set()
+        for src in self.srcs:
+            package = self._get_source_package_name(self._source_file_path(src))
+            if package:
+                packages.add(package)
+        return sorted(list(packages))
+
+    def _get_source_package_name(self, file_name):
+        """Get the java package name from source file if it is specified. """
         if not os.path.isfile(file_name):
             return ''
         package_pattern = '^\s*package\s+([\w.]+)'
@@ -252,7 +267,7 @@ class JavaTargetMixIn(object):
                 if pos > 0:
                     path.add(src[:pos + len(seg)])
                     continue
-            package = self._get_java_package_name(src)
+            package = self._get_source_package_name(src)
             if package:
                 package = package.replace('.', '/') + '/'
                 pos = src.find(package)
@@ -488,18 +503,31 @@ class JavaBinary(JavaTarget):
 class JavaTest(JavaBinary):
     """JavaTarget"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, testdata, kwargs):
+                 warnings, main_class, testdata, target_under_test, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, None, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
+        if target_under_test:
+            self.data['target_under_test'] = self._unify_dep(target_under_test)
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_test_deps()
         self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
+
+    def _prepare_to_generate_rule(self):
+        JavaBinary._prepare_to_generate_rule(self)
+        self._generate_target_under_test_package()
+
+    def _generate_target_under_test_package(self):
+        target_under_test = self.data.get('target_under_test')
+        if target_under_test:
+            target = self.target_database[target_under_test]
+            self._write_rule('%s.Append(JAVATARGETUNDERTESTPKG=%s)' % (
+                self._env_name(), target._get_java_package_name()))
 
     def _generate_wrapper(self, onejar):
         var_name = self._var_name()
@@ -597,6 +625,7 @@ def java_test(name,
               warnings=None,
               main_class = 'org.junit.runner.JUnitCore',
               testdata=[],
+              target_under_test='',
               **kwargs):
     """Define java_test target. """
     target = JavaTest(name,
@@ -607,6 +636,7 @@ def java_test(name,
                       warnings,
                       main_class,
                       testdata,
+                      target_under_test,
                       kwargs)
     blade.blade.register_target(target)
 

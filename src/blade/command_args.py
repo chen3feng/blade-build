@@ -256,6 +256,11 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Add build options to support GNU gcov to do coverage test.')
 
+        parser.add_argument(
+            '--coverage', dest='coverage',
+            action='store_true', default=False,
+            help='Add build options to support coverage test.')
+
     def _add_query_arguments(self, parser):
         """Add query arguments for parser. """
         self.__add_plat_profile_arguments(parser)
