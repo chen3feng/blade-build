@@ -298,6 +298,8 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _show_skipped_tests_summary(self):
         """show tests skipped summary. """
+        if not self.skipped_tests:
+            return
         console.info('%d tests skipped when doing incremental test' % len(self.skipped_tests))
         console.info('to run all tests, please specify --full-test argument')
 

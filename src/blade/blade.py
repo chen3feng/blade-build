@@ -362,27 +362,28 @@ class Blade(object):
         keywords = ['thirdparty']
         return keywords
 
-    def tune_parallel_jobs_num(self):
+    def parallel_jobs_num(self):
         """Tune the jobs num. """
+        # User has the highest priority
         user_jobs_num = self.__options.jobs
+        if user_jobs_num > 0:
+            return user_jobs_num
+
+        # Calculate job numbers smartly
         jobs_num = 0
-        cpu_core_num = cpu_count()
         distcc_enabled = configparse.blade_config.get_config('distcc_config')['enabled']
 
         if distcc_enabled and self.build_environment.distcc_env_prepared:
-            jobs_num = int(1.5 * len(self.build_environment.get_distcc_hosts_list())) + 1
-            if jobs_num > 20:
-                jobs_num = 20
-            if jobs_num and self.__options.jobs != jobs_num:
-                self.__options.jobs = jobs_num
-        elif self.__options.jobs < 1:
-            if cpu_core_num <= 4:
-                self.__options.jobs = 2 * cpu_core_num
-            else:
-                self.__options.jobs = cpu_core_num
-                if self.__options.jobs > 8:
-                    self.__options.jobs = 8
-        if self.__options.jobs != user_jobs_num:
+            # Distcc cost doesn;t much local cpu, jobs can be quite large.
+            distcc_num = len(self.build_environment.get_distcc_hosts_list())
+            jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
+        else:
+            cpu_core_num = cpu_count()
+            # machines with cpu_core_num > 4 is usually shared by multiple users,
+            # set an upper bound to avoid interfering other users
+            jobs_num = min(2 * cpu_core_num, 8)
+
+        if jobs_num != user_jobs_num:
             console.info('tunes the parallel jobs number(-j N) to be %d' % (
-                self.__options.jobs))
-        return self.__options.jobs
+                jobs_num))
+        return jobs_num

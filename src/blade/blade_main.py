@@ -203,7 +203,7 @@ def _build(options):
         return 0
 
     scons_options = '--duplicate=soft-copy --cache-show'
-    scons_options += ' -j %s' % options.jobs
+    scons_options += ' -j %s' % blade.blade.parallel_jobs_num()
     if options.keep_going:
         scons_options += ' -k'
     if options.scons_options:
@@ -337,10 +337,6 @@ def _main(blade_path):
         # Flush the printing
         sys.stdout.flush()
         sys.stderr.flush()
-
-        # Tune the jobs num
-        if command in ['build', 'run', 'test']:
-            options.jobs = blade.blade.tune_parallel_jobs_num()
 
         # Switch case due to different sub command
         action = {
