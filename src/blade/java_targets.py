@@ -27,13 +27,16 @@ from target import Target
 
 class MavenJar(Target):
     """MavenJar"""
-    def __init__(self, name, id, classifier):
+    def __init__(self, name, id, classifier, transitive):
         Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
         self.data['id'] = id
         self.data['classifier'] = classifier
+        self.data['transitive'] = transitive
 
     def _get_java_pack_deps(self):
-        deps = self.data.get('maven_deps', [])
+        deps = []
+        if self.data.get('transitive'):
+            deps = self.data.get('maven_deps', [])
         return [], deps
 
     def scons_rules(self):
@@ -533,8 +536,8 @@ class JavaFatLibrary(JavaTarget):
             ','.join(jar_vars), dep_jars))
 
 
-def maven_jar(name, id, classifier=''):
-    target = MavenJar(name, id, classifier)
+def maven_jar(name, id, classifier='', transitive=True):
+    target = MavenJar(name, id, classifier, transitive)
     blade.blade.register_target(target)
 
 
