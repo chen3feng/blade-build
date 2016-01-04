@@ -530,7 +530,7 @@ def generate_one_jar(target, source, env):
                              _one_jar_boot_path)
 
 
-def _generate_fat_jar(target, deps_jar):
+def _generate_fat_jar(target, deps_jar, env):
     """Generate a fat jar containing the contents of all the jar dependencies. """
     target_dir = os.path.dirname(target)
     if not os.path.exists(target_dir):
@@ -548,8 +548,14 @@ def _generate_fat_jar(target, deps_jar):
         for name in name_list:
             if name.upper() == manifest:
                 # Use the MANIFEST file of the first jar
+                # TODO(wentingli): Merge manifest from dependency jars
                 if first_jar:
-                    target_fat_jar.writestr(name, jar.read(name))
+                    main_class = env.Dictionary().get('JAVAMAINCLASS')
+                    if main_class:
+                        target_fat_jar.writestr(manifest,
+                            'Manifest-Version: 1.0\nMain-Class: %s\n\n' % main_class)
+                    else:
+                        target_fat_jar.writestr(name, jar.read(name))
                     first_jar = False
             else:
                 if name not in zip_path_set:
@@ -569,22 +575,22 @@ def generate_fat_jar(target, source, env):
     for dep in source:
         deps_jar.append(str(dep))
 
-    return _generate_fat_jar(target, deps_jar)
+    return _generate_fat_jar(target, deps_jar, env)
 
 
-def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
+def _generate_java_binary(target_name, exejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
-    onejar_name = os.path.basename(onejar_path)
+    exejar_name = os.path.basename(exejar_path)
     target_file = open(target_name, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# *.one.jar must be in same dir
+# %s must be in same dir
 jar=`dirname "$0"`/"%s"
 
 exec java %s -jar "$jar" %s $@
-""" % (onejar_name, jvm_flags, run_args))
+""" % (exejar_name, exejar_name, jvm_flags, run_args))
     os.chmod(target_name, 0755)
     target_file.close()
 
@@ -594,8 +600,8 @@ exec java %s -jar "$jar" %s $@
 def generate_java_binary(target, source, env):
     """build function to generate wrapper shell script for java binary"""
     target_name = str(target[0])
-    onejar_path = str(source[0])
-    return _generate_java_binary(target_name, onejar_path, '', '')
+    exejar_path = str(source[0])
+    return _generate_java_binary(target_name, exejar_path, '', '')
 
 
 def _get_all_test_class_names_in_jar(jar):
@@ -636,11 +642,11 @@ def _generate_java_test_flags(env):
 def generate_java_test(target, source, env):
     """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
-    onejar_path = str(source[0])
+    exejar_path = str(source[0])
     test_jar = str(source[1])
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
-    return _generate_java_binary(target_name, onejar_path,
+    return _generate_java_binary(target_name, exejar_path,
                                  _generate_java_test_flags(env),
                                  ' '.join(test_class_names))
 
