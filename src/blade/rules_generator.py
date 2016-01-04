@@ -294,12 +294,11 @@ import scons_helper
         self.build_environment.setup_build_cache(self.options)
 
     def generate_extra_flags(self):
-        if getattr(self.options, 'coverage', False):
-            config = configparse.blade_config.get_config('java_test_config')
-            jacoco_home = config['jacoco_home']
-            if jacoco_home:
-                jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
-                self._add_rule('top_env.Replace(JACOCOAGENT="%s")' % jacoco_agent)
+        config = configparse.blade_config.get_config('java_test_config')
+        jacoco_home = config['jacoco_home']
+        if jacoco_home:
+            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
+            self._add_rule('top_env.Replace(JACOCOAGENT="%s")' % jacoco_agent)
 
     def generate(self, blade_path):
         """Generates all rules. """
