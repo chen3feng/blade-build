@@ -419,7 +419,9 @@ def _generate_jar(target, sources, resources, env):
             if '$' not in source:
                 inner_classes = glob.glob(source[:-6] + '$*.class')
                 for inner_class in inner_classes:
-                    if os.path.getmtime(inner_class) >= os.path.getmtime(source):
+                    # Collect inner classes with small time difference
+                    if abs(os.path.getmtime(inner_class) -
+                           os.path.getmtime(source)) < 3:
                         jar_path = os.path.relpath(inner_class, classes_dir)
                         if jar_path not in jar_path_set:
                             jar_path_set.add(jar_path)
