@@ -530,7 +530,7 @@ def generate_one_jar(target, source, env):
                              _one_jar_boot_path)
 
 
-def _generate_fat_jar(target, deps_jar):
+def _generate_fat_jar(target, deps_jar, env):
     """Generate a fat jar containing the contents of all the jar dependencies. """
     target_dir = os.path.dirname(target)
     if not os.path.exists(target_dir):
@@ -548,8 +548,14 @@ def _generate_fat_jar(target, deps_jar):
         for name in name_list:
             if name.upper() == manifest:
                 # Use the MANIFEST file of the first jar
+                # TODO(wentingli): Create manifest from dependency jars
                 if first_jar:
-                    target_fat_jar.writestr(name, jar.read(name))
+                    main_class = env.Dictionary().get('JAVAMAINCLASS')
+                    if main_class:
+                        target_fat_jar.writestr(manifest,
+                            'Manifest-Version: 1.0\nMain-Class: %s\n\n' % main_class)
+                    else:
+                        target_fat_jar.writestr(name, jar.read(name))
                     first_jar = False
             else:
                 if name not in zip_path_set:
@@ -569,7 +575,7 @@ def generate_fat_jar(target, source, env):
     for dep in source:
         deps_jar.append(str(dep))
 
-    return _generate_fat_jar(target, deps_jar)
+    return _generate_fat_jar(target, deps_jar, env)
 
 
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
@@ -615,15 +621,56 @@ def _get_all_test_class_names_in_jar(jar):
     return test_class_names
 
 
+def _generate_java_test_coverage_flag(env):
+    """Returns java test coverage flags based on the environment passed in. """
+    env_dict = env.Dictionary()
+    jacoco_agent = env_dict.get('JACOCOAGENT')
+    if jacoco_agent:
+        jacoco_agent = os.path.abspath(jacoco_agent)
+        target_under_test_package = env_dict.get('JAVATARGETUNDERTESTPKG')
+        if target_under_test_package:
+            options = []
+            options.append('includes=%s' % ':'.join(
+                [p + '.*' for p in target_under_test_package if p]))
+            options.append('output=file')
+            return '-javaagent:%s=%s' % (jacoco_agent, ','.join(options))
+
+    return ''
+
+
+def _generate_java_test(target_name, exejar_path, jvm_flags, run_args, env):
+    exejar_name = os.path.basename(exejar_path)
+    target_file = open(target_name, 'w')
+    target_file.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+# %s must be in same dir
+jar=`dirname "$0"`/"%s"
+
+if [ -n "$BLADE_COVERAGE" ]
+then
+  coverage_options="%s"
+fi
+
+exec java $coverage_options %s -jar "$jar" %s $@
+""" % (exejar_name, exejar_name, _generate_java_test_coverage_flag(env),
+       jvm_flags, run_args))
+    os.chmod(target_name, 0755)
+    target_file.close()
+
+    return None
+
+
 def generate_java_test(target, source, env):
     """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
-    onejar_path = str(source[0])
+    exejar_path = str(source[0])
     test_jar = str(source[1])
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
-    return _generate_java_binary(target_name, onejar_path, '',
-                                 ' '.join(test_class_names))
+    return _generate_java_test(target_name, exejar_path, '',
+                               ' '.join(test_class_names), env)
 
 
 def _generate_scala_jar(target, sources, resources, env):

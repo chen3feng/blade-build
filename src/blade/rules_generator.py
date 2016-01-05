@@ -293,6 +293,13 @@ import scons_helper
     def _setup_cache(self):
         self.build_environment.setup_build_cache(self.options)
 
+    def generate_extra_flags(self):
+        config = configparse.blade_config.get_config('java_test_config')
+        jacoco_home = config['jacoco_home']
+        if jacoco_home:
+            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
+            self._add_rule('top_env.Replace(JACOCOAGENT="%s")' % jacoco_agent)
+
     def generate(self, blade_path):
         """Generates all rules. """
         self.generate_imports_functions(blade_path)
@@ -300,6 +307,7 @@ import scons_helper
         self.generate_compliation_verbose()
         self.generate_builders()
         self.generate_compliation_flags()
+        self.generate_extra_flags()
         self.generate_version_file()
         return self.rules_buf
 
