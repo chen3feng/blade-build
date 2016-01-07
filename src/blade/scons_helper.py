@@ -532,6 +532,22 @@ def generate_one_jar(target, source, env):
                              _one_jar_boot_path)
 
 
+def _signature_file(name):
+    parts = name.upper().split('/')
+    if len(parts) == 2:
+        for suffix in ('.SF', '.DSA', '.RSA'):
+            if parts[1].endswith(suffix):
+                return True
+        if parts[1].startswith('SIG-'):
+            return True
+    return False
+
+
+_FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
+                                'META-INF/LICENSE', 'META-INF/README',
+                                'META-INF/NOTICE', 'META-INF/INDEX.LIST'])
+
+
 def _generate_fat_jar(target, deps_jar, env):
     """Generate a fat jar containing the contents of all the jar dependencies. """
     target_dir = os.path.dirname(target)
@@ -540,32 +556,45 @@ def _generate_fat_jar(target, deps_jar, env):
 
     target_fat_jar = zipfile.ZipFile(target, 'w')
     manifest = os.path.join('META-INF', 'MANIFEST.MF')
-    first_jar = True
     # Record paths written in the fat jar to avoid duplicate writing
-    zip_path_set = set()
+    zip_path_dict = {}
+    zip_path_conflicts = 0
 
-    for jar in deps_jar:
-        jar = zipfile.ZipFile(jar, 'r')
+    for dep_jar in deps_jar:
+        jar = zipfile.ZipFile(dep_jar, 'r')
         name_list = jar.namelist()
         for name in name_list:
-            if name.upper() == manifest:
-                # Use the MANIFEST file of the first jar
-                # TODO(wentingli): Create manifest from dependency jars
-                if first_jar:
-                    main_class = env.Dictionary().get('JAVAMAINCLASS')
-                    if main_class:
-                        target_fat_jar.writestr(manifest,
-                            'Manifest-Version: 1.0\nMain-Class: %s\n\n' % main_class)
-                    else:
-                        target_fat_jar.writestr(name, jar.read(name))
-                    first_jar = False
+            exclude = False
+            for exclusion in _FATJAR_EXCLUSIONS:
+                if name.upper().startswith(exclusion):
+                    exclude = True
+                    break
+
+            if exclude or name.upper() == manifest or _signature_file(name):
+                continue
             else:
-                if name not in zip_path_set:
+                if name not in zip_path_dict:
                     target_fat_jar.writestr(name, jar.read(name))
-                    zip_path_set.add(name)
+                    zip_path_dict[name] = os.path.basename(dep_jar)
+                else:
+                    zip_path_conflicts += 1
+                    global option_verbose
+                    if option_verbose and jar.read(name):
+                        console.warning('%s: duplicate path %s found in {%s, %s}' % (
+                            os.path.basename(target), name,
+                            zip_path_dict[name], os.path.basename(dep_jar)))
 
         jar.close()
 
+    console.warning('%s: Found %d conflicts when packaging' % (
+        os.path.basename(target), zip_path_conflicts))
+    # TODO(wentingli): Create manifest from dependency jars later if needed
+    contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
+    main_class = env.Dictionary().get('JAVAMAINCLASS')
+    if main_class:
+        contents += 'Main-Class: %s\n' % main_class
+    contents += '\n'
+    target_fat_jar.writestr(manifest, contents)
     target_fat_jar.close()
 
     return None
