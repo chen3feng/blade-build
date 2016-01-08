@@ -543,19 +543,19 @@ def _is_signature_file(name):
     return False
 
 
+_JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
                                 'META-INF/LICENSE', 'META-INF/README',
                                 'META-INF/NOTICE', 'META-INF/INDEX.LIST'])
 
 
 def _is_fat_jar_excluded(name):
-    manifest = os.path.join('META-INF', 'MANIFEST.MF')
     name = name.upper()
     for exclusion in _FATJAR_EXCLUSIONS:
         if name.startswith(exclusion):
             return True
 
-    return name == manifest or _is_signature_file(name)
+    return name == _JAR_MANIFEST or _is_signature_file(name)
 
 
 def _generate_fat_jar(target, deps_jar, env):
@@ -565,7 +565,6 @@ def _generate_fat_jar(target, deps_jar, env):
         os.makedirs(target_dir)
 
     target_fat_jar = zipfile.ZipFile(target, 'w')
-    manifest = os.path.join('META-INF', 'MANIFEST.MF')
     # Record paths written in the fat jar to avoid duplicate writing
     zip_path_dict = {}
     zip_path_conflicts = 0
@@ -599,7 +598,7 @@ def _generate_fat_jar(target, deps_jar, env):
     if main_class:
         contents += 'Main-Class: %s\n' % main_class
     contents += '\n'
-    target_fat_jar.writestr(manifest, contents)
+    target_fat_jar.writestr(_JAR_MANIFEST, contents)
     target_fat_jar.close()
 
     return None
