@@ -81,11 +81,27 @@ class JavaTargetMixIn(object):
             dkeys.append(dkey)
         return dkeys
 
+    def __is_valid_maven_id_with_wildcards(self, id):
+        wildcard = False
+        for part in id.split(':'):
+            if wildcard and part != '*':
+                return False
+            if part == '*':
+                wildcard = True
+        return True
+
     def _set_pack_exclusions(self, exclusions):
         exclusions = var_to_list(exclusions)
         self.data['exclusions'] = []
         for exclusion in exclusions:
             if maven.is_valid_id(exclusion):
+                if '*' in exclusion:
+                    if not self.__is_valid_maven_id_with_wildcards(exclusion):
+                        console.warning('%s: Invalid maven id with wildcards %s. '
+                                        'Ignored. The valid id could be: '
+                                        'group:artifact:*, group:*:*, *:*:*' %
+                                        (self.fullname, exclusion))
+                        continue
                 self.data['exclusions'].append(exclusion)
             else:
                 console.warning('%s: Exclusions only support maven id '
