@@ -266,8 +266,8 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_java_coverage_report(self):
         config = configparse.blade_config.get_config('java_test_config')
         jacoco_home = config['jacoco_home']
-        coverage_report_libs = config['coverage_report_libs']
-        if not jacoco_home or not coverage_report_libs:
+        coverage_reporter = config['coverage_reporter']
+        if not jacoco_home or not coverage_reporter:
             console.warning('Missing jacoco home or coverage report library '
                             'in global configuration. '
                             'Abort java coverage report generation.')
@@ -280,7 +280,7 @@ class TestRunner(binary_runner.BinaryRunner):
         coverage_data = self._get_java_coverage_data()
         if coverage_data:
             cmd = ['java -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
-                coverage_report_libs, jacoco_libs)]
+                coverage_reporter, jacoco_libs)]
             cmd.append(report_dir)
             for data in coverage_data:
                 cmd.append(','.join(data))
