@@ -16,6 +16,7 @@
 
 import os
 import sys
+import subprocess
 import time
 
 import binary_runner
@@ -77,6 +78,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self.run_all_reason = ''
         self.title_str = '=' * 13
         self.skipped_tests = []
+        self.coverage = getattr(options, 'coverage', False)
         if not self.options.fulltest:
             if os.path.exists(self.inctest_md5_file):
                 try:
@@ -233,6 +235,64 @@ class TestRunner(binary_runner.BinaryRunner):
         for key in list(diff_keys):
             self.test_stamp['md5'][key] = self.last_test_stamp['md5'][key]
 
+    def _get_java_coverage_data(self):
+        """
+        Return a list of tuples(source directory, class directory, execution data)
+        for each java_test.
+            source directory: source directory of java_library target under test
+            class directory: class directory of java_library target under test
+            execution data: jacoco.exec collected by jacoco agent during testing
+        """
+        coverage_data = []
+        for key in self.tests_run_map:
+            target = self.targets[key]
+            if target.type != 'java_test':
+                continue
+            execution_data = os.path.join(self._runfiles_dir(target), 'jacoco.exec')
+            if not os.path.isfile(execution_data):
+                continue
+            target_under_test = target.data.get('target_under_test')
+            if not target_under_test:
+                continue
+            target_under_test = self.target_database[target_under_test]
+            sources = [target_under_test._source_file_path(src)
+                       for src in target_under_test.srcs]
+            source_dir = target_under_test._java_sources_paths(sources)[0]
+            class_dir = target_under_test._get_classes_dir()
+            coverage_data.append((source_dir, class_dir, execution_data))
+
+        return coverage_data
+
+    def _generate_java_coverage_report(self):
+        config = configparse.blade_config.get_config('java_test_config')
+        jacoco_home = config['jacoco_home']
+        coverage_report_libs = config['coverage_report_libs']
+        if not jacoco_home or not coverage_report_libs:
+            console.warning('Missing jacoco home or coverage report library '
+                            'in global configuration. '
+                            'Abort java coverage report generation.')
+            return
+        jacoco_libs = os.path.join(jacoco_home, 'lib', 'jacocoant.jar')
+        report_dir = os.path.join(self.build_dir, 'java', 'coverage_report')
+        if not os.path.exists(report_dir):
+            os.makedirs(report_dir)
+
+        coverage_data = self._get_java_coverage_data()
+        if coverage_data:
+            cmd = ['java -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
+                coverage_report_libs, jacoco_libs)]
+            cmd.append(report_dir)
+            for data in coverage_data:
+                cmd.append(','.join(data))
+            cmd = ' '.join(cmd)
+            console.info('Generating java coverage report')
+            console.info(cmd)
+            if subprocess.call(cmd, shell=True):
+                console.warning('Failed to generate java coverage report')
+
+    def _generate_coverage_report(self):
+        self._generate_java_coverage_report()
+
     def _check_inctest_md5sum_file(self):
         """check the md5sum file size, remove it when it is too large.
            It is 2G by default.
@@ -304,7 +364,7 @@ class TestRunner(binary_runner.BinaryRunner):
         console.info('to run all tests, please specify --full-test argument')
 
     def run(self):
-        """Run all the cc_test target programs. """
+        """Run all the test target programs. """
         failed_targets = []
         self._generate_inctest_run_list()
         tests_run_list = []
@@ -331,6 +391,8 @@ class TestRunner(binary_runner.BinaryRunner):
             pprof_path = config['pprof_path']
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
+            if self.coverage:
+                test_env['BLADE_COVERAGE'] = 'true'
             tests_run_list.append((target,
                                    self._runfiles_dir(target),
                                    test_env,
@@ -341,6 +403,9 @@ class TestRunner(binary_runner.BinaryRunner):
                                   concurrent_jobs,
                                   self.tests_run_map)
         scheduler.schedule_jobs()
+
+        if self.coverage:
+            self._generate_coverage_report()
 
         self._clean_env()
         console.info('%s Testing Summary %s' % (self.title_str, self.title_str))
