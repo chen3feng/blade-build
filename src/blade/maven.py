@@ -34,14 +34,15 @@ class MavenCache(object):
 
     __instance = None
     @staticmethod
-    def instance():
+    def instance(log_dir):
         if not MavenCache.__instance:
-            MavenCache.__instance = MavenCache()
+            MavenCache.__instance = MavenCache(log_dir)
         return MavenCache.__instance
 
-    def __init__(self):
+    def __init__(self, log_dir):
         """Init method. """
 
+        self.__log_dir = log_dir
         # jar database
         #   key: jar id in the format group:artifact:version
         #   value: tuple
@@ -86,6 +87,7 @@ class MavenCache(object):
             jar = artifact + '-' + version + '-' + classifier + '.jar'
         pom = artifact + '-' + version + '.pom'
         log = artifact + '__download.log'
+        log_path = os.path.join(self.__log_dir, log)
         target_path = self._generate_jar_path(id)
         if not version.endswith('-SNAPSHOT'):
             if (os.path.isfile(os.path.join(target_path, jar)) and
@@ -101,7 +103,7 @@ class MavenCache(object):
                         'dependency:get',
                         central_repository,
                         '-Dartifact=%s' % id,
-                        '> %s' % log])
+                        '> %s' % log_path])
 
         cmd = ' '.join([self.__maven,
                         'dependency:get',
@@ -110,15 +112,14 @@ class MavenCache(object):
                         '-Dversion=%s' % version])
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
-        cmd += ' > %s' % log
+        cmd += ' > %s' % log_path
         ret = subprocess.call(cmd, shell=True)
         if ret != 0:
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
-                                id, log))
+                            id, log_path))
             return False
-        log_path = os.path.join(target_path, log)
-        shutil.move(log, log_path)
+        shutil.move(log_path, os.path.join(target_path, log))
         return True
 
     def _download_dependency(self, id):
