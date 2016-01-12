@@ -268,7 +268,7 @@ class TestRunner(binary_runner.BinaryRunner):
         jacoco_home = config['jacoco_home']
         coverage_reporter = config['coverage_reporter']
         if not jacoco_home or not coverage_reporter:
-            console.warning('Missing jacoco home or coverage report library '
+            console.warning('Missing jacoco home or coverage report generator '
                             'in global configuration. '
                             'Abort java coverage report generation.')
             return
