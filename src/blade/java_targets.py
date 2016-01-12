@@ -81,13 +81,54 @@ class JavaTargetMixIn(object):
             dkeys.append(dkey)
         return dkeys
 
+    def __is_valid_maven_id_with_wildcards(self, id):
+        wildcard = False
+        for part in id.split(':'):
+            if wildcard and part != '*':
+                return False
+            if part == '*':
+                wildcard = True
+        return True
+
     def _set_pack_exclusions(self, exclusions):
         exclusions = var_to_list(exclusions)
         self.data['exclusions'] = []
         for exclusion in exclusions:
-            exclusion = self._unify_dep(exclusion)
-            self.data['exclusions'].append(exclusion)
+            if maven.is_valid_id(exclusion):
+                if '*' in exclusion:
+                    if not self.__is_valid_maven_id_with_wildcards(exclusion):
+                        console.warning('%s: Invalid maven id with wildcards %s. '
+                                        'Ignored. The valid id could be: '
+                                        'group:artifact:*, group:*:*, *:*:*' %
+                                        (self.fullname, exclusion))
+                        continue
+                self.data['exclusions'].append(exclusion)
+            else:
+                console.warning('%s: Exclusions only support maven id '
+                                'group:artifact:version. Ignore %s' % (
+                                self.fullname, exclusion))
 
+    def _process_pack_exclusions(self, jars):
+        """Exclude jars specified by exclusions from input jars. """
+        exclusions = self.data.get('exclusions', [])
+        if exclusions:
+            jars = set(jars)
+            jars_excluded = set()
+            for exclusion in exclusions:
+                group, artifact, version = exclusion.split(':')
+                group = group.replace('.', '/')
+                jar_path = '.m2/repository'
+                for part in (group, artifact, version):
+                    if part == '*':
+                        break
+                    jar_path = os.path.join(jar_path, part)
+                for jar in jars:
+                    if jar_path in jar:
+                        jars_excluded.add(jar)
+
+            jars -= jars_excluded
+
+        return jars
 
     def _get_classes_dir(self):
         """Return path of classes dir. """
@@ -217,13 +258,7 @@ class JavaTargetMixIn(object):
             dep_jars += jars
 
         dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
-        exclusions = self.data.get('exclusions', [])
-        if exclusions:
-            exclude_jar_vars, exclude_jars = self.__get_deps(exclusions)
-            for exclude_jar_var in exclude_jar_vars:
-                dep_jar_vars.discard(exclude_jar_var)
-            for exclude_jar in exclude_jars:
-                dep_jars.discard(exclude_jar)
+        dep_jars = self._process_pack_exclusions(dep_jars)
 
         return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
 
