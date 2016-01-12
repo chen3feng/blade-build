@@ -1,3 +1,4 @@
+
 ReportGenerator.java is used to generate java code coverage report by use of JaCoCo API.
 java_report_generator.jar is the package of class files compiled from ReportGenerator.java
 by the following command:
