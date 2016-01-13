@@ -42,6 +42,8 @@ class MavenCache(object):
     def __init__(self, log_dir):
         """Init method. """
 
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
         self.__log_dir = log_dir
         # jar database
         #   key: jar id in the format group:artifact:version
@@ -94,7 +96,7 @@ class MavenCache(object):
                 os.path.isfile(os.path.join(target_path, pom))):
                 return True
 
-        console.info('Downloading %s from central repository...' % jar)
+        console.info('Downloading %s from central repository...' % id)
         central_repository = ''
         if self.__central_repository:
             central_repository = '-DremoteRepositories=%s' % self.__central_repository
@@ -140,8 +142,8 @@ class MavenCache(object):
                         '> %s' % log])
         ret = subprocess.call(cmd, shell=True)
         if ret:
-            console.warning('Error occurred when resolving %s dependencies, '
-                            ' Check %s for more details.' % (id, log))
+            console.warning('Error occurred when resolving %s dependencies. '
+                            'Check %s for more details.' % (id, log))
             return False
         return True
 
