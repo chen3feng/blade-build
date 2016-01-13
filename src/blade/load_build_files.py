@@ -101,6 +101,7 @@ def enable_if(cond, true_value, false_value=None):
         ret = []
     return ret
 
+
 def glob(srcs, excludes=[]):
     """A global function can be called in BUILD to specify a set of files using patterns"""
     srcs = var_to_list(srcs)
@@ -138,8 +139,24 @@ def glob(srcs, excludes=[]):
 
     return sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
 
+
+# Each include in a BUILD file can only affect itself
+__current_globles = None
+
+
+# Include a defination file in a BUILD file
+def include(name):
+    if name.startswith('//'):
+        dir = blade.blade.get_root_dir()
+        name = name[2:]
+    else:
+        dir = blade.blade.get_current_source_path()
+    execfile(os.path.join(dir, name), __current_globles, None)
+
+
 build_rules.register_function(enable_if)
 build_rules.register_function(glob)
+build_rules.register_function(include)
 
 
 IGNORE_IF_FAIL = 0
@@ -183,7 +200,9 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
-            execfile(build_file, build_rules.get_all(), None)
+            global __current_globles
+            __current_globles = build_rules.get_all()
+            execfile(build_file, __current_globles, None)
         except SystemExit:
             console.error_exit('%s: fatal error, exit...' % build_file)
         except:
