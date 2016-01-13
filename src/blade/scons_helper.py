@@ -714,18 +714,20 @@ def _generate_scala_jar(target, sources, resources, env):
     the classes and resources.
     """
     scalac = env['SCALAC']
+    java = env['JAVA']
     jar = env['JAR']
     options = ' '.join(env['SCALACFLAGS'])
     classpath = ':'.join(env['JAVACLASSPATH'])
     if not classpath:
         classpath = blade_util.get_cwd()
 
-    cmd = '%s -d %s -classpath %s %s %s' % (scalac, target, classpath,
-            options, ' '.join(sources))
+    cmd = 'JAVACMD=%s %s -d %s -classpath %s %s %s' % (java, scalac, target,
+            classpath, options, ' '.join(sources))
     global option_verbose
     if option_verbose:
         print cmd
-    subprocess.check_call(cmd, env=os.environ, shell=True)
+    if subprocess.call(cmd, env=os.environ, shell=True):
+        return 1
 
     if resources:
         resources_dir = target.replace('.jar', '.resources')
@@ -738,7 +740,8 @@ def _generate_scala_jar(target, sources, resources, env):
             cmd = ' '.join(cmd)
             if option_verbose:
                 print cmd
-            subprocess.check_call(cmd, env=os.environ, shell=True)
+            if subprocess.call(cmd, env=os.environ, shell=True):
+                return 1
 
     return None
 
@@ -1192,6 +1195,7 @@ def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
 
 def setup_java_builders(top_env, java_home, one_jar_boot_path):
     if java_home:
+        top_env.Replace(JAVA=os.path.join(java_home, 'bin/java'))
         top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
         top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
 
