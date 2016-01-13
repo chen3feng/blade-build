@@ -726,7 +726,7 @@ def _generate_scala_jar(target, sources, resources, env):
     global option_verbose
     if option_verbose:
         print cmd
-    if subprocess.call(cmd, env=os.environ, shell=True):
+    if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
         return 1
 
     if resources:
@@ -737,11 +737,9 @@ def _generate_scala_jar(target, sources, resources, env):
                 cmd.append("-C '%s' '%s'" % (resources_dir,
                     os.path.relpath(resource, resources_dir)))
 
-            cmd = ' '.join(cmd)
             if option_verbose:
-                print cmd
-            if subprocess.call(cmd, env=os.environ, shell=True):
-                return 1
+                print ' '.join(cmd)
+            return echospawn(args=cmd, env=os.environ, sh=None, cmd=None, escape=None)
 
     return None
 
