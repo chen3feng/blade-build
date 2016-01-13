@@ -40,7 +40,7 @@ class MavenJar(Target):
         return [], deps
 
     def scons_rules(self):
-        maven_cache = maven.MavenCache.instance()
+        maven_cache = maven.MavenCache.instance(blade.blade.get_build_path())
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
         if binary_jar:
