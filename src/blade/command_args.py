@@ -252,11 +252,6 @@ class CmdArguments(object):
             help='Add build options to support GNU gprof.')
 
         parser.add_argument(
-            '--gcov', dest='gcov',
-            action='store_true', default=False,
-            help='Add build options to support GNU gcov to do coverage test.')
-
-        parser.add_argument(
             '--coverage', dest='coverage',
             action='store_true', default=False,
             help='Add build options to support coverage test.')
