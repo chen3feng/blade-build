@@ -252,9 +252,10 @@ class CmdArguments(object):
             help='Add build options to support GNU gprof.')
 
         parser.add_argument(
-            '--gcov', dest='gcov',
+            '--gcov', dest='coverage',
             action='store_true', default=False,
-            help='Add build options to support GNU gcov to do coverage test.')
+            help='Add build options to support GNU gcov to do coverage test. '
+                 '--gcov is deprecated, please use --coverage.')
 
         parser.add_argument(
             '--coverage', dest='coverage',

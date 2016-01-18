@@ -234,7 +234,7 @@ class CcFlagsManager(object):
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
-        if getattr(self.options, 'gcov', False):
+        if getattr(self.options, 'coverage', False):
             if SconsPlatform().gcc_version > '4.1':
                 flags_except_warning.append('--coverage')
                 linkflags.append('--coverage')
