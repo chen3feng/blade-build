@@ -14,3 +14,9 @@ cu_binary(
         ':template_cpu',
     ],
 )
+
+cu_test(
+    name = 'cu_test',
+    srcs = 'cu_test.cu',
+    deps = ':template_cpu',
+)

@@ -13,6 +13,7 @@
 
 import os
 import blade
+import configparse
 
 import build_rules
 from blade_util import var_to_list
@@ -303,3 +304,79 @@ def cu_binary(name,
 
 
 build_rules.register_function(cu_binary)
+
+
+class CuTest(CuBinary):
+    """A scons cu target subclass
+
+    This class is derived from SconsCuTarget and it generates the cu_test
+    rules according to user options.
+    """
+    def __init__(self,
+                 name,
+                 srcs,
+                 deps,
+                 warning,
+                 defs,
+                 incs,
+                 extra_cppflags,
+                 extra_linkflags,
+                 testdata,
+                 always_run,
+                 exclusive,
+                 blade,
+                 kwargs):
+        CuBinary.__init__(self,
+                          name,
+                          srcs,
+                          deps,
+                          warning,
+                          defs,
+                          incs,
+                          extra_cppflags,
+                          extra_linkflags,
+                          blade,
+                          kwargs)
+        self.type = 'cu_test'
+        self.data['testdata'] = var_to_list(testdata)
+        self.data['always_run'] = always_run
+        self.data['exclusive'] = exclusive
+
+        cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        gtest_lib = var_to_list(cc_test_config['gtest_libs'])
+        gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
+
+        # Hardcode deps rule to thirdparty gtest main lib.
+        self._add_hardcode_library(gtest_lib)
+        self._add_hardcode_library(gtest_main_lib)
+
+
+def cu_test(name,
+            srcs=[],
+            deps=[],
+            warning='yes',
+            defs=[],
+            incs=[],
+            extra_cppflags=[],
+            extra_linkflags=[],
+            testdata=[],
+            always_run=False,
+            exclusive=False,
+            **kwargs):
+    target = CuTest(name,
+                    srcs,
+                    deps,
+                    warning,
+                    defs,
+                    incs,
+                    extra_cppflags,
+                    extra_linkflags,
+                    testdata,
+                    always_run,
+                    exclusive,
+                    blade.blade,
+                    kwargs)
+    blade.blade.register_target(target)
+
+
+build_rules.register_function(cu_test)
