@@ -60,7 +60,14 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # Hardcode deps rule to thirdparty protobuf lib.
         self._add_hardcode_library(protobuf_libs)
         self._add_hardcode_java_library(protobuf_java_libs)
-        self.data['exported_deps'] = self._unify_deps(protobuf_java_libs)
+
+        # Normally a proto target depends on another proto target when
+        # it references a message defined in that target. Then in the
+        # generated code there is public API with return type/arguments
+        # defined outside and in java it needs to export that dependency,
+        # which is also the case for java protobuf library.
+        self.data['exported_deps'] = self._unify_deps(var_to_list(deps))
+        self.data['exported_deps'] += self._unify_deps(protobuf_java_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
