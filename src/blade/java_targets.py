@@ -238,6 +238,7 @@ class JavaTargetMixIn(object):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
         dep_jars += self.__get_maven_transitive_deps(self.expanded_deps)
         dep_jar_vars = sorted(list(set(dep_jar_vars)))
+        dep_jars = self._process_pack_exclusions(dep_jars)
         dep_jars = self._detect_maven_conflicted_deps('test', dep_jars)
         return dep_jar_vars, dep_jars
 
@@ -567,10 +568,11 @@ class JavaFatLibrary(JavaTarget):
 class JavaTest(JavaBinary):
     """JavaTarget"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, packaging, testdata, target_under_test, kwargs):
+                 warnings, main_class, packaging, exclusions,
+                 testdata, target_under_test, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
-                            source_encoding, warnings, main_class, None, kwargs)
+                            source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
         self.data['packaging'] = packaging
         self.data['testdata'] = var_to_list(testdata)
@@ -668,6 +670,7 @@ def java_test(name,
               warnings=None,
               main_class = 'org.junit.runner.JUnitCore',
               packaging='one-jar',
+              exclusions=[],
               testdata=[],
               target_under_test='',
               **kwargs):
@@ -680,6 +683,7 @@ def java_test(name,
                       warnings,
                       main_class,
                       packaging,
+                      exclusions,
                       testdata,
                       target_under_test,
                       kwargs)
