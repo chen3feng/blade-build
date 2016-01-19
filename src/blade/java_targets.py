@@ -12,6 +12,7 @@ Implement java_library, java_binary, java_test and java_fat_library
 
 import os
 import re
+import Queue
 from distutils.version import LooseVersion
 
 import blade
@@ -156,16 +157,25 @@ class JavaTargetMixIn(object):
 
     def __get_exported_deps(self, deps):
         """
-        Return a tuple of (scons vars, jars)
+        Recursively get exported dependencies and return a tuple of (scons vars, jars)
         """
-        dep_jar_vars = []
-        dep_jars = []
-        for dkey in deps:
-            dep = self.target_database[dkey]
-            exported_deps = dep.data.get('exported_deps', [])
-            for edkey in exported_deps:
-                self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
-        return dep_jar_vars, dep_jars
+        dep_jar_vars, dep_jars = [], []
+        q = Queue.Queue(0)
+        for key in deps:
+            q.put(key)
+
+        keys = set()
+        while not q.empty():
+            key = q.get()
+            if key not in keys:
+                keys.add(key)
+                dep = self.target_database[key]
+                exported_deps = dep.data.get('exported_deps', [])
+                for edkey in exported_deps:
+                    self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+                    q.put(edkey)
+
+        return list(set(dep_jar_vars)), list(set(dep_jars))
 
     def __get_maven_transitive_deps(self, deps):
         """
