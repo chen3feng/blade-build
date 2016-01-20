@@ -673,25 +673,21 @@ def _generate_java_test_coverage_flag(env):
     return ''
 
 
-def _generate_java_test(target_name, exejar_path, jvm_flags, run_args, env):
-    exejar_name = os.path.basename(exejar_path)
-    target_file = open(target_name, 'w')
+def _generate_java_test(target, main_class, jars, jvm_flags, run_args, env):
+    target_file = open(target, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
-
-# %s must be in same dir
-jar=`dirname "$0"`/"%s"
 
 if [ -n "$BLADE_COVERAGE" ]
 then
   coverage_options="%s"
 fi
 
-exec java $coverage_options %s -jar "$jar" %s $@
-""" % (exejar_name, exejar_name, _generate_java_test_coverage_flag(env),
-       jvm_flags, run_args))
-    os.chmod(target_name, 0755)
+exec java $coverage_options -classpath %s %s %s %s $@
+""" % (_generate_java_test_coverage_flag(env), ':'.join(jars),
+       jvm_flags, main_class, run_args))
+    os.chmod(target, 0755)
     target_file.close()
 
     return None
@@ -700,11 +696,14 @@ exec java $coverage_options %s -jar "$jar" %s $@
 def generate_java_test(target, source, env):
     """build function to generate wrapper shell script for java test"""
     target_name = str(target[0])
-    exejar_path = str(source[0])
+    main_class = str(source[0])
     test_jar = str(source[1])
+    jars = []
+    for jar in source[1:]:
+        jars.append(os.path.abspath(str(jar)))
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
-    return _generate_java_test(target_name, exejar_path, '',
+    return _generate_java_test(target_name, main_class, jars, '',
                                ' '.join(test_class_names), env)
 
 

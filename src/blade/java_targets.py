@@ -593,10 +593,7 @@ class JavaTest(JavaBinary):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_test_deps()
-        generate_test_jar = self._generate_one_jar
-        if self.data.get('packaging') == 'fat-jar':
-            generate_test_jar = self._generate_fat_jar
-        self._generate_wrapper(generate_test_jar(dep_jar_vars, dep_jars))
+        self._generate_java_test(dep_jar_vars, dep_jars)
 
     def _prepare_to_generate_rule(self):
         JavaBinary._prepare_to_generate_rule(self)
@@ -612,11 +609,15 @@ class JavaTest(JavaBinary):
             self._write_rule('%s.Append(JAVATARGETUNDERTESTPKG=%s)' % (
                 self._env_name(), target._get_java_package_name()))
 
-    def _generate_wrapper(self, testjar):
+    def _generate_java_test(self, dep_jar_vars, dep_jars):
         var_name = self._var_name()
-        self._write_rule('%s = %s.JavaTest(target="%s", source=[%s, %s])' % (
-            var_name, self._env_name(), self._target_file_path(),
-            testjar, self.data['jar_var']))
+        jar_var = self.data.get('jar_var')
+        if jar_var:
+            self._write_rule('%s = %s.JavaTest(target="%s", '
+                             'source=[Value("%s")] + [%s] + [%s] + %s)' % (
+                var_name, self._env_name(), self._target_file_path(),
+                self.data['main_class'], jar_var,
+                ','.join(dep_jar_vars), dep_jars))
 
 
 def maven_jar(name, id, classifier='', transitive=True):
@@ -673,7 +674,7 @@ def java_binary(name,
 
 
 def java_test(name,
-              srcs=[],
+              srcs,
               deps=[],
               resources=[],
               source_encoding=None,
