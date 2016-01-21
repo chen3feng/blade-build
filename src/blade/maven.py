@@ -14,6 +14,7 @@ from maven repository
 import os
 import shutil
 import subprocess
+import time
 
 import configparse
 import console
@@ -62,6 +63,10 @@ class MavenCache(object):
         self.__local_repository = os.path.expanduser(local_repository)
         self.__need_check_config = True
 
+        # Download the snapshot artifact daily
+        self.__build_time = time.time()
+        self.__snapshot_artifact_update_interval = 86400
+
     def _generate_jar_path(self, id):
         """Generate jar path within local repository. """
         group, artifact, version = id.split(':')
@@ -91,9 +96,14 @@ class MavenCache(object):
         log = artifact + '__download.log'
         log_path = os.path.join(self.__log_dir, log)
         target_path = self._generate_jar_path(id)
-        if not version.endswith('-SNAPSHOT'):
-            if (os.path.isfile(os.path.join(target_path, jar)) and
-                os.path.isfile(os.path.join(target_path, pom))):
+        target_log = os.path.join(target_path, log)
+        if (os.path.isfile(os.path.join(target_path, jar)) and
+            os.path.isfile(os.path.join(target_path, pom))):
+            if not version.endswith('-SNAPSHOT'):
+                return True
+            if (os.path.isfile(target_log) and
+               (self.__build_time - os.path.getmtime(target_log) <
+                self.__snapshot_artifact_update_interval)):
                 return True
 
         console.info('Downloading %s from central repository...' % id)
@@ -121,19 +131,24 @@ class MavenCache(object):
                             'repository. Check %s for more details.' % (
                             id, log_path))
             return False
-        shutil.move(log_path, os.path.join(target_path, log))
+        shutil.move(log_path, target_log)
         return True
 
     def _download_dependency(self, id):
         group, artifact, version = id.split(':')
         target_path = self._generate_jar_path(id)
+        log = os.path.join(target_path, artifact + '__classpath.log')
         classpath = 'classpath.txt'
-        if not version.endswith('-SNAPSHOT'):
-            if os.path.isfile(os.path.join(target_path, classpath)):
+        if os.path.isfile(os.path.join(target_path, classpath)):
+            if not version.endswith('-SNAPSHOT'):
                 return True
+            if (os.path.isfile(log) and
+               (self.__build_time - os.path.getmtime(log) <
+                self.__snapshot_artifact_update_interval)):
+                return True
+
         console.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
-        log = os.path.join(target_path, artifact + '__classpath.log')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
                         '-DincludeScope=runtime',
