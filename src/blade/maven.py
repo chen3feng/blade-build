@@ -46,8 +46,8 @@ class MavenCache(object):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         self.__log_dir = log_dir
-        # jar database
-        #   key: jar id in the format group:artifact:version
+        #   key: (id, classifier)
+        #     id: jar id in the format group:artifact:version
         #   value: tuple
         #     tuple[0]: jar path
         #     tuple[1]: jar dependencies paths separated by colon,
@@ -89,11 +89,12 @@ class MavenCache(object):
 
     def _download_jar(self, id, classifier):
         group, artifact, version = id.split(':')
+        pom = artifact + '-' + version + '.pom'
         jar = artifact + '-' + version + '.jar'
+        log = artifact + '__download.log'
         if classifier:
             jar = artifact + '-' + version + '-' + classifier + '.jar'
-        pom = artifact + '-' + version + '.pom'
-        log = artifact + '__download.log'
+            log = artifact + '-' + classifier + '__download.log'
         log_path = os.path.join(self.__log_dir, log)
         target_path = self._generate_jar_path(id)
         target_log = os.path.join(target_path, log)
@@ -106,16 +107,12 @@ class MavenCache(object):
                 self.__snapshot_artifact_update_interval)):
                 return True
 
+        if classifier:
+            id = '%s:%s' % (id, classifier)
         console.info('Downloading %s from central repository...' % id)
         central_repository = ''
         if self.__central_repository:
             central_repository = '-DremoteRepositories=%s' % self.__central_repository
-
-        cmd = ' '.join([self.__maven,
-                        'dependency:get',
-                        central_repository,
-                        '-Dartifact=%s' % id,
-                        '> %s' % log_path])
 
         cmd = ' '.join([self.__maven,
                         'dependency:get',
@@ -125,8 +122,7 @@ class MavenCache(object):
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' > %s' % log_path
-        ret = subprocess.call(cmd, shell=True)
-        if ret != 0:
+        if subprocess.call(cmd, shell=True):
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
                             id, log_path))
@@ -134,11 +130,14 @@ class MavenCache(object):
         shutil.move(log_path, target_log)
         return True
 
-    def _download_dependency(self, id):
+    def _download_dependency(self, id, classifier):
         group, artifact, version = id.split(':')
         target_path = self._generate_jar_path(id)
-        log = os.path.join(target_path, artifact + '__classpath.log')
-        classpath = 'classpath.txt'
+        log, classpath = artifact + '__classpath.log', 'classpath.txt'
+        if classifier:
+            log = artifact + '-' + classifier + '__classpath.log'
+            classpath = 'classpath-%s.txt' % classifier
+        log = os.path.join(target_path, log)
         if os.path.isfile(os.path.join(target_path, classpath)):
             if not version.endswith('-SNAPSHOT'):
                 return True
@@ -147,16 +146,26 @@ class MavenCache(object):
                 self.__snapshot_artifact_update_interval)):
                 return True
 
+        if classifier:
+            id = '%s:%s' % (id, classifier)
+            # Currently analyzing dependencies of classifier jar
+            # usually fails. Here when there is no classpath.txt
+            # file but classpath.log exists, that means the failure
+            # of analyzing dependencies last time
+            if (not os.path.exists(os.path.join(target_path, classpath))
+                and os.path.exists(log)):
+                return False
+
         console.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
                         '-DincludeScope=runtime',
-                        '-Dmdep.outputFile=%s' % classpath,
-                        '-f %s' % pom,
-                        '> %s' % log])
-        ret = subprocess.call(cmd, shell=True)
-        if ret:
+                        '-Dmdep.outputFile=%s' % classpath])
+        if classifier:
+            cmd += ' -Dclassifier=%s' % classifier
+        cmd += ' -f %s > %s' % (pom, log)
+        if subprocess.call(cmd, shell=True):
             console.warning('Error occurred when resolving %s dependencies. '
                             'Check %s for more details.' % (id, log))
             return False
@@ -168,20 +177,21 @@ class MavenCache(object):
             return False
 
         group, artifact, version = id.split(':')
+        target_path = self._generate_jar_path(id)
         jar = artifact + '-' + version + '.jar'
+        classpath = os.path.join(target_path, 'classpath.txt')
         if classifier:
             jar = artifact + '-' + version + '-' + classifier + '.jar'
-        target_path = self._generate_jar_path(id)
+            classpath = os.path.join(target_path, 'classpath-%s.txt' % classifier)
 
-        if not self._download_dependency(id):
-            self.__jar_database[id] = (os.path.join(target_path, jar), '')
+        if not self._download_dependency(id, classifier):
             # Ignore dependency download error
-            return True
-
-        classpath = os.path.join(target_path, 'classpath.txt')
-        with open(classpath) as f:
-            # Read the first line
-            self.__jar_database[id] = (os.path.join(target_path, jar), f.readline())
+            self.__jar_database[(id, classifier)] = (os.path.join(target_path, jar), '')
+        else:
+            with open(classpath) as f:
+                # Read the first line
+                self.__jar_database[(id, classifier)] = (os.path.join(target_path, jar),
+                                                         f.readline())
 
         return True
 
@@ -189,15 +199,14 @@ class MavenCache(object):
         """get_path_from_database. """
         self._check_config()
         self._check_id(id)
-        if not id in self.__jar_database:
-            success = self._download_artifact(id, classifier)
-            if not success:
+        if (id, classifier) not in self.__jar_database:
+            if not self._download_artifact(id, classifier):
                 console.warning('Download %s failed' % id)
                 return '';
         if jar:
-            return self.__jar_database[id][0]
+            return self.__jar_database[(id, classifier)][0]
         else:
-            return self.__jar_database[id][1]
+            return self.__jar_database[(id, classifier)][1]
 
     def get_jar_path(self, id, classifier):
         """get_jar_path
