@@ -307,3 +307,50 @@ def py_binary(name,
 
 
 build_rules.register_function(py_binary)
+
+
+class PythonTestTarget(PythonBinaryTarget):
+    """A python test target subclass.
+
+    This class is derived from SconsTarget and generates python test.
+
+    """
+    def __init__(self,
+                 name,
+                 srcs,
+                 deps,
+                 main,
+                 testdata,
+                 blade,
+                 kwargs):
+        """Init method. """
+        PythonBinaryTarget.__init__(
+                self,
+                name,
+                srcs,
+                deps,
+                main,
+                blade,
+                kwargs)
+        self.type = 'py_test'
+        self.data['testdata'] = testdata
+
+
+def py_test(name,
+            srcs=[],
+            deps=[],
+            main=None,
+            testdata=[],
+            **kwargs):
+    """python test. """
+    target = PythonTestTarget(name,
+                              srcs,
+                              deps,
+                              main,
+                              testdata,
+                              blade.blade,
+                              kwargs)
+    blade.blade.register_target(target)
+
+
+build_rules.register_function(py_test)
