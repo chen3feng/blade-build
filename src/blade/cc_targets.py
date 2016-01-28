@@ -291,8 +291,8 @@ class CcTarget(Target):
 
         """
         options = self.blade.get_options()
-        as_flags = ["--" + options.m]
-        aspp_flags = ["-Wa,--" + options.m]
+        as_flags = ['-g', '--' + options.m]
+        aspp_flags = ['-Wa,--' + options.m]
         return as_flags, aspp_flags
 
 

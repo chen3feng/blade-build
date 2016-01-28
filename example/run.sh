@@ -11,7 +11,7 @@
 cd `dirname $0`
 
 # Cleanup before running
-rm -rf blade-bin build64_release/
+rm -rf blade-bin build{32,64}_{debug,release}/
 
 . setup.sh
 
