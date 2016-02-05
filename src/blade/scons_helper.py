@@ -1022,6 +1022,7 @@ def make_top_env(build_dir):
     """Make the top level scons envrionment object"""
     os.environ['LC_ALL'] = 'C'
     top_env = SCons.Environment.Environment(ENV=os.environ)
+    top_env.EnsureSConsVersion(2, 0)
     # Optimization options, see http://www.scons.org/wiki/GoFastButton
     top_env.Decider('MD5-timestamp')
     top_env.SetOption('implicit_cache', 1)
