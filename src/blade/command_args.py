@@ -273,7 +273,7 @@ class CmdArguments(object):
         parser.add_argument(
             '--depended', dest='depended',
             action='store_true', default=False,
-            help='Show all targets that depened on the target being queried.')
+            help='Show all targets that depend on the target being queried.')
         parser.add_argument(
             '--output-to-dot', dest='output_to_dot', type=str,
             help='The name of file to output query results as dot(graphviz) '
