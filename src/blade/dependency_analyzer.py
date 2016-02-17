@@ -37,15 +37,17 @@ def analyze_deps(related_targets):
     Input: related targets after loading targets from BUILD files.
            {(target_path, target_name) : (target_data), ...}
 
-    Output:the targets that are expanded and the keys sorted
-           [all the targets keys] - sorted
-           {(target_path, target_name) : (target_data with deps expanded), ...}
+    Output:
+        1. the targets that are expanded
+            {(target_path, target_name) : (target_data with deps expanded), ...}
+        2. the keys sorted
+            [all the targets keys] - sorted
+        3. the targets successors dict which is the transpose of #1
+            {(target_path, target_name) : [the depended target keys]}
 
     """
     _expand_deps(related_targets)
-    keys_list_sorted = _topological_sort(related_targets)
-
-    return keys_list_sorted
+    return _topological_sort(related_targets)
 
 
 def _expand_deps(targets):
@@ -162,4 +164,4 @@ def _topological_sort(pairlist):
                 if numpreds[y] == 0:
                     answer.append(y)
 
-    return answer
+    return answer, successors

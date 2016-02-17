@@ -78,6 +78,9 @@ class Blade(object):
         # Used to generate build rules in correct order.
         self.__sorted_targets_keys = []
 
+        # The depended targets dict after topological sorting
+        self.__depended_targets = {}
+
         # Inidcating that whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
@@ -124,7 +127,8 @@ class Blade(object):
     def analyze_targets(self):
         """Expand the targets. """
         console.info('analyzing dependency graph...')
-        self.__sorted_targets_keys = analyze_deps(self.__build_targets)
+        (self.__sorted_targets_keys,
+         self.__depended_targets) = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
 
         console.info('analyzing done.')
@@ -143,7 +147,8 @@ class Blade(object):
         """Generate the build script. """
         self.load_targets()
         self.analyze_targets()
-        self.generate_build_rules()
+        if self.__command != 'query':
+            self.generate_build_rules()
 
     def run(self, target):
         """Run the target. """
@@ -190,7 +195,6 @@ class Blade(object):
                     depended_by = result_map[key][1]
                     console.info('//%s:%s is depended by the following targets:' % (
                             key[0], key[1]))
-                    depended_by.sort(key=lambda x: x, reverse=False)
                     for d in depended_by:
                         print '%s:%s' % (d[0], d[1])
         return 0
@@ -253,15 +257,10 @@ class Blade(object):
                         query_list.append((t_path, tkey[1]))
         result_map = {}
         for key in query_list:
-            result_map[key] = ([], [])
             deps = all_targets[key].expanded_deps
-            deps.sort(key=lambda x: x, reverse=False)
-            depended_by = []
-            for tkey in all_targets:
-                if key in all_targets[tkey].expanded_deps:
-                    depended_by.append(tkey)
-            depended_by.sort(key=lambda x: x, reverse=False)
-            result_map[key] = (list(deps), list(depended_by))
+            # depended_by = [k for k in all_targets if key in all_targets[k].expanded_deps]
+            depended_by = self.__depended_targets[key]
+            result_map[key] = (sorted(deps), sorted(depended_by))
         return result_map
 
     def get_build_path(self):
