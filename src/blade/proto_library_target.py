@@ -85,17 +85,28 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         Checks whether the proto file's name ends with 'proto'.
 
         """
-        err = 0
         for src in srcs_list:
-            base_name = os.path.basename(src)
-            pos = base_name.rfind('.')
-            if pos == -1:
-                err = 1
-            file_suffix = base_name[pos + 1:]
-            if file_suffix != 'proto':
-                err = 1
-            if err == 1:
-                console.error_exit('invalid proto file name %s' % src)
+            if not src.endswith('.proto'):
+                console.error_exit('Invalid proto file name %s' % src)
+
+    def _check_proto_deps(self):
+        """Only proto_library or gen_rule target is allowed as deps. """
+        proto_config = configparse.blade_config.get_config('proto_library_config')
+        protobuf_libs = var_to_list(proto_config['protobuf_libs'])
+        protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
+        protobuf_libs = [self._unify_dep(d) for d in protobuf_libs + protobuf_java_libs]
+        for dkey in self.deps:
+            if dkey in protobuf_libs:
+                continue
+            dep = self.target_database[dkey]
+            if dep.type != 'proto_library' and dep.type != 'gen_rule':
+                console.error_exit('%s: Invalid dep %s. Proto_library can '
+                    'only depend on proto_library or gen_rule.' %
+                    (self.fullname, dep.fullname))
+
+    def _prepare_to_generate_rule(self):
+        CcTarget._prepare_to_generate_rule(self)
+        self._check_proto_deps()
 
     def _generate_header_files(self):
         """Whether this target generates header files during building."""
