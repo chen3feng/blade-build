@@ -35,10 +35,7 @@ class MavenJar(Target):
         self.data['transitive'] = transitive
 
     def _get_java_pack_deps(self):
-        deps = []
-        if self.data.get('transitive'):
-            deps = self.data.get('maven_deps', [])
-        return [], deps
+        return [], self.data.get('maven_deps', [])
 
     def scons_rules(self):
         maven_cache = maven.MavenCache.instance(blade.blade.get_build_path())
@@ -46,10 +43,11 @@ class MavenJar(Target):
                                               self.data['classifier'])
         if binary_jar:
             self.data['binary_jar'] = binary_jar
-            deps_path = maven_cache.get_jar_deps_path(self.data['id'],
-                                                      self.data['classifier'])
-            if deps_path:
-                self.data['maven_deps'] = deps_path.split(':')
+            if self.data.get('transitive'):
+                deps_path = maven_cache.get_jar_deps_path(
+                    self.data['id'], self.data['classifier'])
+                if deps_path:
+                    self.data['maven_deps'] = deps_path.split(':')
 
 
 class JavaTargetMixIn(object):

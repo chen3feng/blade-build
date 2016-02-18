@@ -110,10 +110,6 @@ class MavenCache(object):
         if classifier:
             id = '%s:%s' % (id, classifier)
         console.info('Downloading %s from central repository...' % id)
-        central_repository = ''
-        if self.__central_repository:
-            central_repository = '-DremoteRepositories=%s' % self.__central_repository
-
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -121,13 +117,17 @@ class MavenCache(object):
                         '-Dversion=%s' % version])
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
-        cmd += ' > %s' % log_path
-        if subprocess.call(cmd, shell=True):
+        if subprocess.call('%s > %s' % (cmd, log_path), shell=True):
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
                             id, log_path))
-            return False
-        shutil.move(log_path, target_log)
+            cmd += ' -Dtransitive=false'
+            if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'),
+                               shell=True):
+                return False
+            console.warning('Download standalone artifact %s successfully, but '
+                            'its transitive dependencies are unavailable.' % id)
+        shutil.copy(log_path, target_log)
         return True
 
     def _download_dependency(self, id, classifier):
