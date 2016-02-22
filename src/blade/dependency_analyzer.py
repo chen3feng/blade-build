@@ -134,6 +134,8 @@ def _topological_sort(pairlist):
     for second, target in pairlist.items():
         if second not in numpreds:
             numpreds[second] = 0
+        if second not in successors:
+            successors[second] = []
         deps = target.expanded_deps
         for first in deps:
             # make sure every elt is a key in numpreds
