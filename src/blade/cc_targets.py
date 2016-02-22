@@ -509,7 +509,8 @@ class CcTarget(Target):
 
         lib_str = self._get_dynamic_deps_lib_list()
         if self.srcs or self.expanded_deps:
-            self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
+            if not self.data.get('allow_undefined'):
+                self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
                              % self._env_name())
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
                     var_name,
@@ -588,6 +589,7 @@ class CcLibrary(CcTarget):
                  deprecated,
                  extra_cppflags,
                  extra_linkflags,
+                 allow_undefined,
                  blade,
                  kwargs):
         """Init method.
@@ -615,6 +617,7 @@ class CcLibrary(CcTarget):
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
+        self.data['allow_undefined'] = allow_undefined
 
     def _rpath_link(self, dynamic):
         lib_path = self._prebuilt_cc_library_target_path(dynamic)
@@ -658,6 +661,7 @@ def cc_library(name,
                deprecated=False,
                extra_cppflags=[],
                extra_linkflags=[],
+               allow_undefined=False,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -674,6 +678,7 @@ def cc_library(name,
                        deprecated,
                        extra_cppflags,
                        extra_linkflags,
+                       allow_undefined,
                        blade.blade,
                        kwargs)
     if pre_build:
