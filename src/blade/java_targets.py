@@ -459,8 +459,7 @@ class JavaTargetMixIn(object):
         for i, resource in enumerate(resources):
             src, dst = resource[0], os.path.join(resources_dir, resource[1])
             res_var = self._var_name('resources__%s' % i)
-            self._write_rule('%s = %s.Command(target = "%s", source = "%s", '
-                             'action = Copy("$TARGET", "$SOURCE"))' %
+            self._write_rule('%s = %s.JavaResource(target = "%s", source = "%s")' %
                              (res_var, env_name, dst, src))
             self._write_rule('%s.append(%s)' % (resources_var_name, res_var))
             self._write_rule('%s.append("%s")' % (resources_path_var_name, dst))

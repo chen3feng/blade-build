@@ -388,11 +388,8 @@ def _emit_java_resources(target, source, env):
 
 
 def process_java_resources(target, source, env):
-    """Copy source resource file into .resources dir"""
-    target_dir = str(target[0].attributes.java_classdir)
-    for src in source:
-        target_path = os.path.join(target_dir, src.attributes.target_path)
-        shutil.copy2(str(src), target_path)
+    """Copy source resource file into .resources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
     return None
 
 
@@ -1228,11 +1225,7 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     resource_message = console.erasable('%sProcess jar resource %s$SOURCES%s%s' % ( \
         colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     java_resource_bld = SCons.Builder.Builder(
-            action = MakeAction(
-                process_java_resources, resource_message),
-            emitter = _emit_java_resources,
-            target_factory = SCons.Node.FS.Entry,
-            source_factory = SCons.Node.FS.Entry)
+        action = MakeAction(process_java_resources, resource_message))
     top_env.Append(BUILDERS = {"JavaResource" : java_resource_bld})
 
     global _one_jar_boot_path
