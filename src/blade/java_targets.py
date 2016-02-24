@@ -320,7 +320,18 @@ class JavaTargetMixIn(object):
 
         return full_path, jar_path
 
-    def _process_resources(self, resources):
+    def _process_resources(self, resource_list):
+        resources = []
+        for resource in resource_list:
+            if isinstance(resource, tuple):
+                src, dst = resource[0], resource[1]
+            elif isinstance(resource, str):
+                src, dst = resource, ''
+            else:
+                console.error_exit('%s: Invalid resource %s. Resource should '
+                                   'be either str or tuple.' % (self.fullname, resource))
+            resources.append((src, dst))
+
         results = set()
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
@@ -437,24 +448,25 @@ class JavaTargetMixIn(object):
     def _generate_resources(self):
         resources = self.data['resources']
         if not resources:
-            return ''
+            return '', ''
         resources = self._process_resources(resources)
         env_name = self._env_name()
-        var_name = self._var_name('resources')
-        path_var_name = self._var_name('resources_path')
+        resources_var_name = self._var_name('resources')
+        resources_path_var_name = self._var_name('resources_path')
         resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s, %s = [], []' % (var_name, path_var_name))
+        self._write_rule('%s, %s = [], []' % (
+            resources_var_name, resources_path_var_name))
         for i, resource in enumerate(resources):
             src, dst = resource[0], os.path.join(resources_dir, resource[1])
-            res_var = self._var_name('resources_%s' % i)
+            res_var = self._var_name('resources__%s' % i)
             self._write_rule('%s = %s.Command(target = "%s", source = "%s", '
                              'action = Copy("$TARGET", "$SOURCE"))' %
                              (res_var, env_name, dst, src))
-            self._write_rule('%s.Depends(%s, "%s")' % (env_name, res_var, src))
-            self._write_rule('%s.append(%s)' % (var_name, res_var))
-            self._write_rule('%s.append("%s")' % (path_var_name, dst))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
-        return var_name
+            self._write_rule('%s.append(%s)' % (resources_var_name, res_var))
+            self._write_rule('%s.append("%s")' % (resources_path_var_name, dst))
+        self._write_rule('%s.Clean(%s, "%s")' % (
+            env_name, resources_var_name, resources_dir))
+        return resources_var_name, resources_path_var_name
 
     def _generate_generated_java_jar(self, var_name, srcs):
         env_name = self._env_name()
@@ -462,7 +474,8 @@ class JavaTargetMixIn(object):
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
         self.data['jar_var'] = var_name
 
-    def _generate_java_jar(self, var_name, classes_var, resources_var):
+    def _generate_java_jar(self, var_name, classes_var,
+                           resources_var, resources_path_var):
         env_name = self._env_name()
         sources = []
         if classes_var:
@@ -475,10 +488,8 @@ class JavaTargetMixIn(object):
                 self._target_file_path() + '.jar', ','.join(sources)))
             self.data['jar_var'] = var_name
             if resources_var:
-                self._write_rule('%s.Depends(%s, %s)' % (
-                    env_name, var_name, resources_var))
                 self._write_rule('%s.Depends(%s, Value(%s))' % (
-                    env_name, var_name, self._var_name('resources_path')))
+                    env_name, var_name, resources_path_var))
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
@@ -524,17 +535,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         deps,
                         blade.blade,
                         kwargs)
-        self.data['resources'] = []
-        for resource in resources:
-            if isinstance(resource, tuple):
-                src, dst = resource[0], resource[1]
-            elif isinstance(resource, str):
-                src, dst = resource, ''
-            else:
-                console.error_exit('%s: Invalid resource %s. Resource should '
-                                   'be either str or tuple.' % (self.fullname, resource))
-            self.data['resources'].append((src, dst))
-
+        self.data['resources'] = resources
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
@@ -566,8 +567,9 @@ class JavaTarget(Target, JavaTargetMixIn):
     def _generate_jar(self):
         var_name = self._var_name('jar')
         classes_var = self._generate_classes()
-        resources_var = self._generate_resources()
-        self._generate_java_jar(var_name, classes_var, resources_var)
+        resources_var, resources_path_var = self._generate_resources()
+        self._generate_java_jar(var_name, classes_var,
+                                resources_var, resources_path_var)
 
 
 class JavaLibrary(JavaTarget):

@@ -89,14 +89,18 @@ class ScalaTarget(Target, JavaTargetMixIn):
         # Do not generate jar when there is no source
         if not sources:
             return
+        env_name = self._env_name()
         var_name = self._var_name('jar')
         dep_jar_vars, dep_jars = self._get_compile_deps()
         self._generate_java_classpath(dep_jar_vars, dep_jars)
-        resources_var = self._generate_resources()
+        resources_var, resources_path_var = self._generate_resources()
         self._write_rule('%s = %s.ScalaJar(target="%s", source=%s + [%s])' % (
-            var_name, self._env_name(),
+            var_name, env_name,
             self._target_file_path() + '.jar', sources, resources_var))
         self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
+        if resources_var:
+            self._write_rule('%s.Depends(%s, Value(%s))' % (
+                env_name, var_name, resources_path_var))
         self.data['jar_var'] = var_name
 
 
