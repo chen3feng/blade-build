@@ -298,6 +298,54 @@ class JavaTargetMixIn(object):
 
         return ''
 
+    def _get_resource_path(self, resource):
+        """
+        Given a resource return its full path within the workspace
+        and mapping path in the jar.
+        """
+        full_path, res_path, jar_path = '', resource[0], resource[1]
+        if '..' in res_path:
+            console.error_exit('%s: Invalid resource %s. Relative path is not allowed.'
+                               % (self.fullname, res_path))
+        elif res_path.startswith('//'):
+            res_path = res_path[2:]
+            full_path = res_path
+            if not jar_path:
+                jar_path = res_path
+        else:
+            full_path = self._source_file_path(res_path)
+            if not jar_path:
+                # Mapping rules from maven standard layout
+                jar_path = self._java_resource_path(res_path)
+
+        return full_path, jar_path
+
+    def _process_resources(self, resource_list):
+        resources = []
+        for resource in resource_list:
+            if isinstance(resource, tuple):
+                src, dst = resource[0], resource[1]
+            elif isinstance(resource, str):
+                src, dst = resource, ''
+            else:
+                console.error_exit('%s: Invalid resource %s. Resource should '
+                                   'be either str or tuple.' % (self.fullname, resource))
+            resources.append((src, dst))
+
+        results = set()
+        for resource in resources:
+            full_path, jar_path = self._get_resource_path(resource)
+            if os.path.isfile(full_path):
+                results.add((full_path, jar_path))
+            else:
+                for dir, subdirs, files in os.walk(full_path):
+                    for f in files:
+                        f = os.path.join(dir, f)
+                        rel_path = os.path.relpath(f, full_path)
+                        results.add((f, os.path.join(jar_path, rel_path)))
+
+        return sorted(results)
+
     def _java_sources_paths(self, srcs):
         path = set()
         segs = [
@@ -320,6 +368,23 @@ class JavaTargetMixIn(object):
                     continue
 
         return list(path)
+
+    def _java_resource_path(self, resource):
+        """
+        Resource path mapping rules from local directory to jar entry. See
+        https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html
+        for maven rules.
+        """
+        segs = [
+            'src/main/resources',
+            'src/test/resources',
+            'resources',
+        ]
+        for seg in segs:
+            pos = resource.find(seg)
+            if pos != -1:
+                return resource[pos + len(seg) + 1:]  # skip separator '/'
+        return resource
 
     def _generate_java_versions(self):
         java_config = configparse.blade_config.get_config('java_config')
@@ -383,15 +448,24 @@ class JavaTargetMixIn(object):
     def _generate_resources(self):
         resources = self.data['resources']
         if not resources:
-            return ''
-        resources = [self._source_file_path(res) for res in resources]
+            return '', ''
+        resources = self._process_resources(resources)
         env_name = self._env_name()
-        var_name = self._var_name('resources')
+        resources_var_name = self._var_name('resources')
+        resources_path_var_name = self._var_name('resources_path')
         resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s = %s.JavaResource(target="%s", source=%s)' % (
-            var_name, env_name, resources_dir, resources))
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, resources_dir))
-        return var_name
+        self._write_rule('%s, %s = [], []' % (
+            resources_var_name, resources_path_var_name))
+        for i, resource in enumerate(resources):
+            src, dst = resource[0], os.path.join(resources_dir, resource[1])
+            res_var = self._var_name('resources__%s' % i)
+            self._write_rule('%s = %s.JavaResource(target = "%s", source = "%s")' %
+                             (res_var, env_name, dst, src))
+            self._write_rule('%s.append(%s)' % (resources_var_name, res_var))
+            self._write_rule('%s.append("%s")' % (resources_path_var_name, dst))
+        self._write_rule('%s.Clean(%s, "%s")' % (
+            env_name, resources_var_name, resources_dir))
+        return resources_var_name, resources_path_var_name
 
     def _generate_generated_java_jar(self, var_name, srcs):
         env_name = self._env_name()
@@ -399,7 +473,8 @@ class JavaTargetMixIn(object):
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
         self.data['jar_var'] = var_name
 
-    def _generate_java_jar(self, var_name, classes_var, resources_var):
+    def _generate_java_jar(self, var_name, classes_var,
+                           resources_var, resources_path_var):
         env_name = self._env_name()
         sources = []
         if classes_var:
@@ -411,6 +486,9 @@ class JavaTargetMixIn(object):
                 var_name, env_name,
                 self._target_file_path() + '.jar', ','.join(sources)))
             self.data['jar_var'] = var_name
+            if resources_var:
+                self._write_rule('%s.Depends(%s, Value(%s))' % (
+                    env_name, var_name, resources_path_var))
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
@@ -488,8 +566,9 @@ class JavaTarget(Target, JavaTargetMixIn):
     def _generate_jar(self):
         var_name = self._var_name('jar')
         classes_var = self._generate_classes()
-        resources_var = self._generate_resources()
-        self._generate_java_jar(var_name, classes_var, resources_var)
+        resources_var, resources_path_var = self._generate_resources()
+        self._generate_java_jar(var_name, classes_var,
+                                resources_var, resources_path_var)
 
 
 class JavaLibrary(JavaTarget):
