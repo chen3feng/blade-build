@@ -80,11 +80,6 @@ class ResourceLibrary(CcTarget):
 
         self._cc_library()
 
-        options = self.blade.get_options()
-        if (getattr(options, 'generate_dynamic', False) or
-            self.data.get('build_dynamic')):
-            self._dynamic_cc_library()
-
     def _resource_library_rules_objects(self):
         """Generate resource library object rules.  """
         env_name = self._env_name()

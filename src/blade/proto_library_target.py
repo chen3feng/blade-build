@@ -313,10 +313,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                     env_name, sources, dep_var_name))
 
         self._cc_library()
-        options = self.blade.get_options()
-        if (getattr(options, 'generate_dynamic', False) or
-            self.data.get('build_dynamic', False)):
-            self._dynamic_cc_library()
 
 
 def proto_library(name,

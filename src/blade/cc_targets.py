@@ -295,23 +295,6 @@ class CcTarget(Target):
         aspp_flags = ['-Wa,--' + options.m]
         return as_flags, aspp_flags
 
-
-    def _dep_is_library(self, dep):
-        """_dep_is_library.
-
-        Returns
-        -----------
-        True or False: Whether this dep target is library or not.
-
-        Description
-        -----------
-        Whether this dep target is library or not.
-
-        """
-        build_targets = self.blade.get_build_targets()
-        target_type = build_targets[dep].type
-        return target_type.endswith('_library')
-
     def _export_incs_list(self):
         """_export_incs_list.
         TODO
@@ -348,20 +331,17 @@ class CcTarget(Target):
         lib_list = []
         link_all_symbols_lib_list = []
         for dep in deps:
-            if not self._dep_is_library(dep):
-                continue
-
             dep_target = build_targets[dep]
             # system lib
             if dep_target.type == 'system_library':
                 lib_name = "'%s'" % dep_target.name
             else:
-                lib_name = dep_target._var_name()
-
-            if dep_target.data.get('link_all_symbols'):
-                link_all_symbols_lib_list.append(lib_name)
-            else:
-                lib_list.append(lib_name)
+                lib_name = dep_target.data.get('static_cc_library_var')
+            if lib_name:
+                if dep_target.data.get('link_all_symbols'):
+                    link_all_symbols_lib_list.append(lib_name)
+                else:
+                    lib_list.append(lib_name)
 
         return (link_all_symbols_lib_list, lib_list)
 
@@ -381,19 +361,17 @@ class CcTarget(Target):
         deps = self.expanded_deps
         lib_list = []
         for lib in deps:
-            if not self._dep_is_library(lib):
-                continue
-
-            if (build_targets[lib].type == 'cc_library' and
-                not build_targets[lib].srcs):
+            dep_target = build_targets[lib]
+            if (dep_target.type == 'cc_library' and
+                not dep_target.srcs):
                 continue
             # system lib
             if lib[0] == '#':
                 lib_name = "'%s'" % lib[1]
             else:
-                lib_name = self._generate_variable_name(lib[0], lib[1], 'dynamic')
-
-            lib_list.append(lib_name)
+                lib_name = dep_target.data.get('dynamic_cc_library_var')
+            if lib_name:
+                lib_list.append(lib_name)
 
         return lib_list
 
@@ -426,7 +404,7 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _prebuilt_cc_library(self, dynamic):
+    def _prebuilt_cc_library(self):
         """prebuilt cc library rules. """
         # We allow a prebuilt cc_library doesn't exist if it is not used.
         # So if this library is not depended by any target, don't generate any
@@ -446,8 +424,9 @@ class CcTarget(Target):
                          static_target_path, static_src_path))
         self._write_rule('%s = top_env.File("%s")' % (
             var_name, static_target_path))
+        self.data['static_cc_library_var'] = var_name
 
-        if dynamic:
+        if self._need_dynamic_library():
             dynamic_target_path = self._prebuilt_cc_library_target_path(
                     prefer_dynamic=True)
             dynamic_src_path = self._prebuilt_cc_library_src_path(
@@ -462,6 +441,7 @@ class CcTarget(Target):
             self._write_rule('%s = top_env.File("%s")' % (
                     var_name,
                     dynamic_target_path))
+            self.data['dynamic_cc_library_var'] = var_name
 
         # Make a symbol link if either lib is a so
         so_path = ''
@@ -475,7 +455,7 @@ class CcTarget(Target):
         else:
             self.file_and_link = None
 
-    def _cc_library(self):
+    def _static_cc_library(self):
         """_cc_library.
 
         It will output the cc_library rule into the buffer.
@@ -487,6 +467,7 @@ class CcTarget(Target):
                 self._env_name(),
                 self._target_file_path(),
                 self._objs_name()))
+        self.data['static_cc_library_var'] = var_name
         for dep_name in self.deps:
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
@@ -518,6 +499,19 @@ class CcTarget(Target):
                     self._target_file_path(),
                     self._objs_name(),
                     lib_str))
+        self.data['dynamic_cc_library_var'] = var_name
+
+    def _need_dynamic_library(self):
+        options = self.blade.get_options()
+        config = configparse.blade_config.get_config('cc_library_config')
+        return (getattr(options, 'generate_dynamic') or
+                self.data.get('build_dynamic') or
+                config.get('generate_dynamic'))
+
+    def _cc_library(self):
+        self._static_cc_library()
+        if self._need_dynamic_library():
+            self._dynamic_cc_library()
 
     def _cc_objects_rules(self):
         """_cc_objects_rules.
@@ -633,17 +627,11 @@ class CcLibrary(CcTarget):
         """
         self._prepare_to_generate_rule()
 
-        options = self.blade.get_options()
-        build_dynamic = (getattr(options, 'generate_dynamic', False) or
-                         self.data.get('build_dynamic'))
-
         if self.type == 'prebuilt_cc_library':
-            self._prebuilt_cc_library(build_dynamic)
+            self._prebuilt_cc_library()
         else:
             self._cc_objects_rules()
             self._cc_library()
-            if build_dynamic:
-                self._dynamic_cc_library()
 
 
 def cc_library(name,

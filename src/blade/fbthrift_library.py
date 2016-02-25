@@ -187,10 +187,6 @@ class FBThriftLibrary(CcTarget):
                          env_name, self._objs_name(), sources))
 
         self._cc_library()
-        options = self.blade.get_options()
-        if (getattr(options, 'generate_dynamic', False) or
-            self.data.get('build_dynamic')):
-            self._dynamic_cc_library()
 
 
 def fbthrift_library(name,

@@ -128,6 +128,9 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
+            },
+            'cc_library_config': {
+                'generate_dynamic' : None
             }
         }
 
@@ -210,7 +213,14 @@ def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
     blade_config.update_config('cc_binary_config', append, kwargs)
 
+
+def cc_library_config(append=None, **kwargs):
+    """cc_library_config section. """
+    blade_config.update_config('cc_library_config', append, kwargs)
+
+
 __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+
 
 def global_config(append=None, **kwargs):
     """global_config section. """

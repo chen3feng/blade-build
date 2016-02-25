@@ -110,10 +110,6 @@ class LexYaccLibrary(CcTarget):
 
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._cc_library()
-        options = self.blade.get_options()
-        if (getattr(options, 'generate_dynamic', False) or
-            self.data.get('build_dynamic', False)):
-            self._dynamic_cc_library()
 
 
 def lex_yacc_library(name,
