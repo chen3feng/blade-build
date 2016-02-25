@@ -339,7 +339,7 @@ class Blade(object):
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test_targets and target.type == 'cc_test':
+            if skip_test_targets and target.type.endswith('_test'):
                 continue
             scons_object.scons_rules()
             rules_buf.append('\n')
