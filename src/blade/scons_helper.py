@@ -49,6 +49,10 @@ option_verbose = False
 linking_tmp_dir = ''
 
 
+# build time stamp
+build_time = time.time()
+
+
 def generate_python_egg(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):
@@ -393,59 +397,54 @@ def process_java_resources(target, source, env):
     return None
 
 
-def _generate_jar(target, sources, resources, env):
-    """Generate a jar containing the sources and resources. """
+def _generate_java_jar(target, sources, resources, env):
+    """
+    Compile the java sources and generate a jar containing the classes and resources.
+    """
     classes_dir = target.replace('.jar', '.classes')
     resources_dir = target.replace('.jar', '.resources')
+    if not os.path.exists(classes_dir):
+        os.makedirs(classes_dir)
 
-    cmd = []
-    cmd.append('%s cf %s' % (env['JAR'], target))
+    java, javac, jar, options = env['JAVA'], env['JAVAC'], env['JAR'], env['JAVACFLAGS']
+    classpath = ':'.join(env['JAVACLASSPATH'])
+    if not classpath:
+        classpath = blade_util.get_cwd()
 
-    jar_path_set = set()
-    if os.path.exists(classes_dir):
-        for source in sources:
-            if not source.endswith('.class'):
-                continue
+    cmd = '%s %s -d %s -classpath %s %s' % (
+            javac, options, classes_dir, classpath, ' '.join(sources))
+    global option_verbose
+    if option_verbose:
+        print cmd
+    if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
+        return 1
 
-            # Add the source from sources produced by Java builder
-            # no matter it's a normal class or inner class
-            jar_path = os.path.relpath(source, classes_dir)
-            if jar_path not in jar_path_set:
-                jar_path_set.add(jar_path)
-
-            if '$' not in source:
-                inner_classes = glob.glob(source[:-6] + '$*.class')
-                for inner_class in inner_classes:
-                    # Collect inner classes with small time difference
-                    if abs(os.path.getmtime(inner_class) -
-                           os.path.getmtime(source)) < 3:
-                        jar_path = os.path.relpath(inner_class, classes_dir)
-                        if jar_path not in jar_path_set:
-                            jar_path_set.add(jar_path)
-        for path in jar_path_set:
-            # Add quotes for file names with $
-            cmd.append("-C '%s' '%s'" % (classes_dir, path))
+    cmd = ['%s cf %s' % (jar, target)]
+    global build_time
+    for dir, subdirs, files in os.walk(classes_dir):
+        for f in files:
+            f = os.path.join(dir, f)
+            if f.endswith('.class') and os.path.getmtime(f) >= build_time:
+                cmd.append("-C %s '%s'" % (classes_dir,
+                        os.path.relpath(f, classes_dir)))
 
     if os.path.exists(resources_dir):
         for resource in resources:
             cmd.append("-C '%s' '%s'" % (resources_dir, 
-                os.path.relpath(resource, resources_dir)))
+                    os.path.relpath(resource, resources_dir)))
 
     cmd = ' '.join(cmd)
-    global option_verbose
     if option_verbose:
         print cmd
-    p = subprocess.Popen(cmd, env=os.environ, shell=True)
-    p.communicate()
-    return p.returncode
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
-def generate_jar(target, source, env):
+def generate_java_jar(target, source, env):
     target = str(target[0])
     sources = []
     index = 0
     for src in source:
-        if str(src).endswith('.class'):
+        if str(src).endswith('.java'):
             sources.append(str(src))
             index += 1
         else:
@@ -453,7 +452,7 @@ def generate_jar(target, source, env):
 
     resources = [str(src) for src in source[index:]]
 
-    return _generate_jar(target, sources, resources, env)
+    return _generate_java_jar(target, sources, resources, env)
 
 
 _one_jar_boot_path = None
@@ -1218,7 +1217,7 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     # See: http://scons.tigris.org/issues/show_bug.cgi?id=1594
     #      http://scons.tigris.org/issues/show_bug.cgi?id=2742
     blade_java_jar_bld = SCons.Builder.Builder(action = MakeAction(
-        generate_jar, '$JARCOMSTR'))
+        generate_java_jar, '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"BladeJavaJar" : blade_java_jar_bld})
 
 
