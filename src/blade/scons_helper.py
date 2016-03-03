@@ -1221,7 +1221,7 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     top_env.Append(BUILDERS = {"BladeJavaJar" : blade_java_jar_bld})
 
 
-    resource_message = console.erasable('%sProcess jar resource %s$SOURCES%s%s' % ( \
+    resource_message = console.erasable('%sProcess Jar Resource %s$SOURCES%s%s' % ( \
         colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     java_resource_bld = SCons.Builder.Builder(
         action = MakeAction(process_java_resources, resource_message))
@@ -1230,25 +1230,25 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     global _one_jar_boot_path
     _one_jar_boot_path = one_jar_boot_path
 
-    one_java_message = console.erasable('%sGenerating one jar %s$TARGET%s%s' % ( \
+    one_java_message = console.erasable('%sGenerating One Jar %s$TARGET%s%s' % ( \
         colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
     one_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_one_jar,
         one_java_message))
     top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
 
-    fat_java_message = console.inerasable('%sCreating fat jar %s$TARGET%s%s' % ( \
+    fat_java_message = console.inerasable('%sCreating Fat Jar %s$TARGET%s%s' % ( \
         colors('green'), colors('purple'), colors('green'), colors('end')))
     fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
         fat_java_message))
     top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})
 
-    java_binary_message = console.inerasable('%sGenerating java binary %s$TARGET%s%s' % \
+    java_binary_message = console.inerasable('%sGenerating Java Binary %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     java_binary_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_binary, java_binary_message))
     top_env.Append(BUILDERS = {"JavaBinary" : java_binary_bld})
 
-    java_test_message = console.inerasable('%sGenerating java test %s$TARGET%s%s' % \
+    java_test_message = console.inerasable('%sGenerating Java Test %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     java_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_test, java_test_message))
@@ -1264,7 +1264,7 @@ def setup_scala_builders(top_env, scala_home):
         generate_scala_jar, '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"ScalaJar" : scala_jar_bld})
 
-    scala_test_message = console.inerasable('%sGenerating scala test %s$TARGET%s%s' % \
+    scala_test_message = console.inerasable('%sGenerating Scala Test %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     scala_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_scala_test, scala_test_message))
