@@ -199,7 +199,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._generate_java_classpath(dep_jar_vars, dep_jars)
         var_name = self._var_name('jar')
         self._generate_generated_java_jar(var_name, java_src_vars)
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
+        self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
 
     def _generate_java_jar(self, classes_var):
         env_name = self._env_name()

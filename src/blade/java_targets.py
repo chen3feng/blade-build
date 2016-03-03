@@ -428,9 +428,17 @@ class JavaTargetMixIn(object):
         if dep_jars:
             self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
 
-    def _generate_java_depends(self, var_name, dep_jar_vars, dep_jars):
+    def _generate_java_depends(self, var_name, dep_jar_vars, dep_jars,
+                               resources_var, resources_path_var):
+        env_name = self._env_name()
         self._write_rule('%s.Depends(%s, [%s])' % (
-            self._env_name(), var_name, ','.join(dep_jar_vars)))
+                env_name, var_name, ','.join(dep_jar_vars)))
+        if dep_jars:
+            self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
+                    env_name, var_name, env_name, sorted(dep_jars)))
+        if resources_var:
+            self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
+                    env_name, var_name, env_name, resources_path_var))
 
     def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
@@ -441,7 +449,7 @@ class JavaTargetMixIn(object):
         classes_dir = self._get_classes_dir()
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
                 var_name, env_name, classes_dir, srcs))
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
+        self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
@@ -473,22 +481,14 @@ class JavaTargetMixIn(object):
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
         self.data['jar_var'] = var_name
 
-    def _generate_java_jar(self, var_name, classes_var,
-                           resources_var, resources_path_var):
+    def _generate_java_jar(self, srcs, resources_var):
         env_name = self._env_name()
-        sources = []
-        if classes_var:
-            sources.append(classes_var)
-        if resources_var:
-            sources.append(resources_var)
-        if sources:
-            self._write_rule('%s = %s.BladeJavaJar(target="%s", source=[%s])' % (
-                var_name, env_name,
-                self._target_file_path() + '.jar', ','.join(sources)))
-            self.data['jar_var'] = var_name
-            if resources_var:
-                self._write_rule('%s.Depends(%s, Value(%s))' % (
-                    env_name, var_name, resources_path_var))
+        var_name = self._var_name('jar')
+        self._write_rule('%s = %s.BladeJavaJar(target="%s", source=%s + [%s])' % (
+                var_name, env_name, self._target_file_path() + '.jar',
+                srcs, resources_var))
+        self.data['jar_var'] = var_name
+        return var_name
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
@@ -564,11 +564,15 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._generate_java_classes(var_name, srcs)
 
     def _generate_jar(self):
-        var_name = self._var_name('jar')
-        classes_var = self._generate_classes()
+        if not self.srcs:
+            return
+        dep_jar_vars, dep_jars = self._get_compile_deps()
+        self._generate_java_classpath(dep_jar_vars, dep_jars)
+        srcs = [self._source_file_path(s) for s in self.srcs]
         resources_var, resources_path_var = self._generate_resources()
-        self._generate_java_jar(var_name, classes_var,
-                                resources_var, resources_path_var)
+        var_name = self._generate_java_jar(srcs, resources_var)
+        self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
+                                    resources_var, resources_path_var)
 
 
 class JavaLibrary(JavaTarget):
