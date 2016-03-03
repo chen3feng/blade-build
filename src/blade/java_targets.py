@@ -449,7 +449,7 @@ class JavaTargetMixIn(object):
         classes_dir = self._get_classes_dir()
         self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
                 var_name, env_name, classes_dir, srcs))
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars)
+        self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
