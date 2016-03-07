@@ -411,13 +411,14 @@ def _generate_java_jar(target, sources, resources, env):
     if not classpath:
         classpath = blade_util.get_cwd()
 
-    cmd = '%s %s -d %s -classpath %s %s' % (
-            javac, options, classes_dir, classpath, ' '.join(sources))
     global option_verbose
-    if option_verbose:
-        print cmd
-    if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
-        return 1
+    if sources:
+        cmd = '%s %s -d %s -classpath %s %s' % (
+                javac, options, classes_dir, classpath, ' '.join(sources))
+        if option_verbose:
+            print cmd
+        if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
+            return 1
 
     cmd = ['%s cf %s' % (jar, target)]
     global build_time

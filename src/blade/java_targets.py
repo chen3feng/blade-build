@@ -564,15 +564,16 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._generate_java_classes(var_name, srcs)
 
     def _generate_jar(self):
-        if not self.srcs:
-            return
-        dep_jar_vars, dep_jars = self._get_compile_deps()
-        self._generate_java_classpath(dep_jar_vars, dep_jars)
+        dep_jar_vars, dep_jars = [], []
         srcs = [self._source_file_path(s) for s in self.srcs]
+        if srcs:
+            dep_jar_vars, dep_jars = self._get_compile_deps()
+            self._generate_java_classpath(dep_jar_vars, dep_jars)
         resources_var, resources_path_var = self._generate_resources()
-        var_name = self._generate_java_jar(srcs, resources_var)
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
-                                    resources_var, resources_path_var)
+        if srcs or resources_var:
+            var_name = self._generate_java_jar(srcs, resources_var)
+            self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
+                                        resources_var, resources_path_var)
 
 
 class JavaLibrary(JavaTarget):
