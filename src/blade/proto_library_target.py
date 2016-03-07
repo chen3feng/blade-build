@@ -112,6 +112,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Whether this target generates header files during building."""
         return True
 
+    def _proto_dep_files(self):
+        """Proto files of dependencies"""
+        protos = []
+        for dep in self.deps:
+            dep = self.target_database[dep]
+            if dep.type == 'proto_library':
+                protos += [dep._source_file_path(s) for s in dep.srcs]
+        return protos
+
     def _proto_gen_files(self, src):
         """_proto_gen_files. """
         proto_name = src[:-6]
@@ -152,7 +161,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
         pattern = '^\s*option\s+java_outer_classname\s*=\s*[\'"](\w+)["\']'
-        text = open(self._source_file_path(src)).read()
         m = re.search(pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
@@ -172,6 +180,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
+        dep_proto_srcs = self._proto_dep_files()
+        env_name = self._env_name()
         java_srcs = []
         java_src_vars = []
         for src in self.srcs:
@@ -181,16 +191,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                     os.path.join(os.path.dirname(src), package_dir, java_name))
             java_srcs.append(proto_java_src)
             java_src_var = self._var_name_of(proto_java_src)
-            self._write_rule('%s = %s.ProtoJava(["%s"], "%s")' % (
-                    java_src_var,
-                    self._env_name(),
-                    proto_java_src,
-                    src_path))
+            self._write_rule('%s = %s.ProtoJava("%s", "%s")' % (
+                    java_src_var, env_name, proto_java_src, src_path))
             java_src_vars.append(java_src_var)
+            self._write_rule('%s.Depends(%s, %s)' % (
+                    env_name, java_src_var, dep_proto_srcs))
             self.data['java_sources'] = (
-                     proto_java_src,
-                     os.path.join(self.build_path, self.path),
-                     self.name)
+                    proto_java_src,
+                    os.path.join(self.build_path, self.path),
+                    self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
 
         self._generate_java_versions()
