@@ -17,6 +17,7 @@
 
 
 import os
+import re
 import py_compile
 import shutil
 import signal
@@ -1075,6 +1076,24 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
                 LEXCOMSTR = compile_source_message)
 
 
+proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
+
+
+def proto_scan_func(node, env, path, arg):
+    contents = node.get_text_contents()
+    protos = proto_import_re.findall(contents)
+    if not protos:
+        return []
+    results = []
+    for proto in protos:
+        for dir in path:
+            f = os.path.join(str(dir), proto)
+            if os.path.exists(f):
+                results.append(f)
+                break
+    return env.File(results)
+
+
 def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
                          protobuf_path, protobuf_incs_str,
                          protoc_php_plugin, protobuf_php_path):
@@ -1123,6 +1142,14 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         '$SOURCES' % (protoc_bin, protobuf_incs_str),
         generate_proto_descriptor_message))
     top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
+
+    top_env.Append(PROTOPATH = ['.', protobuf_path])
+    proto_scan = top_env.Scanner(name = 'ProtoScanner',
+                                 function = proto_scan_func,
+                                 argument = None,
+                                 skeys = ['.proto'],
+                                 path_function = SCons.Scanner.FindPathDirs('PROTOPATH'))
+    top_env.Append(SCANNERS = proto_scan)
 
 
 def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
