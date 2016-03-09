@@ -1144,12 +1144,12 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
 
     top_env.Append(PROTOPATH = ['.', protobuf_path])
-    proto_scan = top_env.Scanner(name = 'ProtoScanner',
-                                 function = proto_scan_func,
-                                 argument = None,
-                                 skeys = ['.proto'],
-                                 path_function = SCons.Scanner.FindPathDirs('PROTOPATH'))
-    top_env.Append(SCANNERS = proto_scan)
+    proto_scanner = top_env.Scanner(name = 'ProtoScanner',
+                                    function = proto_scan_func,
+                                    argument = None,
+                                    skeys = ['.proto'],
+                                    path_function = SCons.Scanner.FindPathDirs('PROTOPATH'))
+    top_env.Append(SCANNERS = proto_scanner)
 
 
 def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
