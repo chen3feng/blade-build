@@ -112,15 +112,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Whether this target generates header files during building."""
         return True
 
-    def _proto_dep_files(self):
-        """Proto files of dependencies"""
-        protos = []
-        for dep in self.deps:
-            dep = self.target_database[dep]
-            if dep.type == 'proto_library':
-                protos += [dep._source_file_path(s) for s in dep.srcs]
-        return protos
-
     def _proto_gen_files(self, src):
         """_proto_gen_files. """
         proto_name = src[:-6]
@@ -180,7 +171,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_java_rules(self):
         """Generate scons rules for the java files from proto file. """
-        dep_proto_srcs = self._proto_dep_files()
         env_name = self._env_name()
         java_srcs = []
         java_src_vars = []
@@ -194,8 +184,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self._write_rule('%s = %s.ProtoJava("%s", "%s")' % (
                     java_src_var, env_name, proto_java_src, src_path))
             java_src_vars.append(java_src_var)
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    env_name, java_src_var, dep_proto_srcs))
             self.data['java_sources'] = (
                     proto_java_src,
                     os.path.join(self.build_path, self.path),
