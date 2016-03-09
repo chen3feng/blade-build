@@ -561,7 +561,7 @@ def _generate_fat_jar(target, deps_jar, env):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
-    target_fat_jar = zipfile.ZipFile(target, 'w')
+    target_fat_jar = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
     # Record paths written in the fat jar to avoid duplicate writing
     zip_path_dict = {}
     zip_path_conflicts = 0
