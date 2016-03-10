@@ -1077,20 +1077,34 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
 
 
 proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
+proto_import_public_re = re.compile(r'^import\s+public\s+"(\S+)"\s*;\s*$', re.M)
 
 
 def proto_scan_func(node, env, path, arg):
     contents = node.get_text_contents()
     protos = proto_import_re.findall(contents)
+    protos += proto_import_public_re.findall(contents)
     if not protos:
         return []
-    results = []
-    for proto in protos:
+
+    def _find_proto(proto, path):
         for dir in path:
             f = os.path.join(str(dir), proto)
             if os.path.exists(f):
-                results.append(f)
-                break
+                return f
+        return ''
+
+    results = []
+    for proto in protos:
+        f = _find_proto(proto, path)
+        if f:
+            results.append(f)
+            public_protos = proto_import_public_re.findall(open(f).read())
+            for public_proto in public_protos:
+                public_proto = _find_proto(public_proto, path)
+                if public_proto:
+                    results.append(public_proto)
+
     return env.File(results)
 
 
