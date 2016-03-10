@@ -133,6 +133,10 @@ class JavaTargetMixIn(object):
         """Return path of classes dir. """
         return self._target_file_path() + '.classes'
 
+    def _get_sources_dir(self):
+        """Return path of sources dir. """
+        return self._target_file_path() + '.sources'
+
     def __extract_dep_jars(self, dkey, dep_jar_vars, dep_jars):
         dep = self.target_database[dkey]
         jar = dep.data.get('jar_var')
@@ -453,6 +457,23 @@ class JavaTargetMixIn(object):
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
+    def _generate_sources(self):
+        """
+        Generate java sources in the build directory for the subsequent
+        code coverage. The layout is based on the package parsed from sources.
+        Note that the classes are still compiled from the sources in the
+        source directory.
+        """
+        env_name = self._env_name()
+        sources_dir = self._get_sources_dir()
+        for source in self.srcs:
+            src = self._source_file_path(source)
+            package = self._get_source_package_name(src)
+            dst = os.path.join(sources_dir, package.replace('.', '/'),
+                               os.path.basename(source))
+            self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
+                             (env_name, dst, src))
+
     def _generate_resources(self):
         resources = self.data['resources']
         if not resources:
@@ -564,6 +585,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._generate_java_classes(var_name, srcs)
 
     def _generate_jar(self):
+        self._generate_sources()
         dep_jar_vars, dep_jars = [], []
         srcs = [self._source_file_path(s) for s in self.srcs]
         if srcs:
