@@ -392,8 +392,14 @@ def _emit_java_resources(target, source, env):
     return tlist, slist
 
 
+def process_java_sources(target, source, env):
+    """Copy source file into .sources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
 def process_java_resources(target, source, env):
-    """Copy source resource file into .resources dir. """
+    """Copy resource file into .resources dir. """
     shutil.copy2(str(source[0]), str(target[0]))
     return None
 
@@ -1268,6 +1274,12 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     java_resource_bld = SCons.Builder.Builder(
         action = MakeAction(process_java_resources, resource_message))
     top_env.Append(BUILDERS = {"JavaResource" : java_resource_bld})
+
+    source_message = console.erasable('%sProcess Java Source %s$SOURCES%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    java_source_bld = SCons.Builder.Builder(
+        action = MakeAction(process_java_sources, source_message))
+    top_env.Append(BUILDERS = {"JavaSource" : java_source_bld})
 
     global _one_jar_boot_path
     _one_jar_boot_path = one_jar_boot_path
