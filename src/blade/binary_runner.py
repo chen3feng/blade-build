@@ -70,24 +70,22 @@ class BinaryRunner(object):
                     file_list.append(prebuilt_file)
         return file_list
 
-    def __check_link_name(self, link_name, link_name_list):
-        """check the link name is valid or not. """
-        link_name_norm = os.path.normpath(link_name)
-        if link_name in link_name_list:
-            return 'AMBIGUOUS', None
-        long_path = ''
-        short_path = ''
-        for item in link_name_list:
+    def __check_test_data_dest(self, target, dest, dest_list):
+        """Check whether the destination of test data is valid or not. """
+        dest_norm = os.path.normpath(dest)
+        if dest in dest_list:
+            console.error_exit('Ambiguous testdata of %s: %s, exit...' % (
+                               target.fullname, dest))
+        for item in dest_list:
             item_norm = os.path.normpath(item)
-            if len(link_name_norm) >= len(item_norm):
-                (long_path, short_path) = (link_name_norm, item_norm)
+            if len(dest_norm) >= len(item_norm):
+                long_path, short_path = dest_norm, item_norm
             else:
-                (long_path, short_path) = (item_norm, link_name_norm)
-            if long_path.startswith(short_path) and (
-                    long_path[len(short_path)] == '/'):
-                return 'INCOMPATIBLE', item
-        else:
-            return 'VALID', None
+                long_path, short_path = item_norm, dest_norm
+            if (long_path.startswith(short_path) and
+                long_path[len(short_path)] == '/'):
+                console.error_exit('%s could not exist with %s in testdata of %s' % (
+                                   dest, item, target.fullname))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
@@ -135,54 +133,40 @@ class BinaryRunner(object):
     def _prepare_test_data(self, target):
         if 'testdata' not in target.data:
             return
-        link_name_list = []
+        runfiles_dir = self._runfiles_dir(target)
+        dest_list = []
         for i in target.data['testdata']:
             if isinstance(i, tuple):
-                data_target = i[0]
-                link_name = i[1]
+                src, dest = i
             else:
-                data_target = link_name = i
-            if '..' in data_target:
+                src = dest = i
+            if '..' in src:
+                console.warning('%s: Relative path is not allowed in testdata source. '
+                                'Ignored %s.' % (target.fullname, src))
                 continue
-            if link_name.startswith('//'):
-                link_name = link_name[2:]
-            err_msg, item = self.__check_link_name(link_name, link_name_list)
-            if err_msg == 'AMBIGUOUS':
-                console.error_exit('Ambiguous testdata of //%s:%s: %s, exit...' % (
-                             target.path, target.name, link_name))
-            elif err_msg == 'INCOMPATIBLE':
-                console.error_exit('%s could not exist with %s in testdata of //%s:%s' % (
-                           link_name, item, target.path, target.name))
-            link_name_list.append(link_name)
+            if src.startswith('//'):
+                src = src[2:]
+            else:
+                src = os.path.join(target.path, src)
+            if dest.startswith('//'):
+                dest = dest[2:]
+            dest = os.path.normpath(dest)
+            self.__check_test_data_dest(target, dest, dest_list)
+            dest_list.append(dest)
+            dest_path = os.path.join(runfiles_dir, dest)
+            if os.path.exists(dest_path):
+                console.warning('%s: %s already existed, could not prepare testdata.' %
+                                (target.fullname, dest))
+                continue
             try:
-                os.makedirs(os.path.dirname('%s/%s' % (
-                        self._runfiles_dir(target), link_name)))
+                os.makedirs(os.path.dirname(dest_path))
             except OSError:
                 pass
 
-            symlink_name = os.path.abspath('%s/%s' % (
-                                self._runfiles_dir(target), link_name))
-            symlink_valid = False
-            if os.path.lexists(symlink_name):
-                if os.path.exists(symlink_name):
-                    symlink_valid = True
-                    console.warning('%s already existed, could not prepare '
-                                    'testdata for //%s:%s' % (
-                                        link_name, target.path, target.name))
-                else:
-                    os.remove(symlink_name)
-                    console.warning('%s already existed, but it is a broken '
-                                    'symbolic link, blade will remove it and '
-                                    'make a new one.' % link_name)
-            if data_target.startswith('//'):
-                data_target = data_target[2:]
-                dest_data_file = os.path.abspath(data_target)
-            else:
-                dest_data_file = os.path.abspath('%s/%s' % (target.path, data_target))
-
-            if not symlink_valid:
-                os.symlink(dest_data_file,
-                           '%s/%s' % (self._runfiles_dir(target), link_name))
+            if os.path.isfile(src):
+                shutil.copy2(src, dest_path)
+            elif os.path.isdir(src):
+                shutil.copytree(src, dest_path)
 
     def _clean_target(self, target):
         """clean the test target environment. """
