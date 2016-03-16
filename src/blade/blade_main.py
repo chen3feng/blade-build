@@ -233,9 +233,10 @@ def run(options):
 
 
 def test(options):
-    ret = _build(options)
-    if ret:
-        return ret
+    if not options.no_build:
+        ret = _build(options)
+        if ret:
+            return ret
     return blade.blade.test()
 
 
