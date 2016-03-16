@@ -255,9 +255,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target_under_test:
                 continue
             target_under_test = self.target_database[target_under_test]
-            sources = [target_under_test._source_file_path(src)
-                       for src in target_under_test.srcs]
-            source_dir = target_under_test._java_sources_paths(sources)[0]
+            source_dir = target_under_test._get_sources_dir()
             class_dir = target_under_test._get_classes_dir()
             coverage_data.append((source_dir, class_dir, execution_data))
 
