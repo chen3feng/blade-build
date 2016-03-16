@@ -306,6 +306,11 @@ class CmdArguments(object):
             dest='show_details', default=False,
             help='Shows the test result in detail and provides a file.')
 
+        parser.add_argument(
+            '--no-build', action='store_true',
+            dest='no_build', default=False,
+            help='Run tests directly without build.')
+
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
         parser.add_argument(
