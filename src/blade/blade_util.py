@@ -121,10 +121,10 @@ def get_cwd():
 
 
 def environ_add_path(env, key, path):
-    """Add path to PATH link environments, sucn as PATH, LD_LIBRARY_PATH, etc"""
+    """Add path to PATH link environments, such as PATH, LD_LIBRARY_PATH, etc"""
     old = env.get(key)
     if old:
-        env[key] = old + ':' + path
+        env[key] = path + ':' + old
     else:
         env[key] = path
 
