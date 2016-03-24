@@ -680,15 +680,14 @@ class JavaFatLibrary(JavaTarget):
 
 
 class JavaTest(JavaBinary):
-    """JavaTarget"""
+    """JavaTest"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, packaging, exclusions,
+                 warnings, main_class, exclusions,
                  testdata, target_under_test, kwargs):
         java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
-        self.data['packaging'] = packaging
         self.data['testdata'] = var_to_list(testdata)
         if target_under_test:
             self.data['target_under_test'] = self._unify_dep(target_under_test)
@@ -702,9 +701,6 @@ class JavaTest(JavaBinary):
     def _prepare_to_generate_rule(self):
         JavaBinary._prepare_to_generate_rule(self)
         self._generate_target_under_test_package()
-        if self.data.get('packaging') == 'fat-jar':
-            self._write_rule('%s.Replace(JAVAMAINCLASS="%s")' % (
-                self._env_name(), self.data.get('main_class', '')))
 
     def _generate_target_under_test_package(self):
         target_under_test = self.data.get('target_under_test')
@@ -784,7 +780,6 @@ def java_test(name,
               source_encoding=None,
               warnings=None,
               main_class = 'org.junit.runner.JUnitCore',
-              packaging='one-jar',
               exclusions=[],
               testdata=[],
               target_under_test='',
@@ -797,7 +792,6 @@ def java_test(name,
                       source_encoding,
                       warnings,
                       main_class,
-                      packaging,
                       exclusions,
                       testdata,
                       target_under_test,
