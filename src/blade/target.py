@@ -267,7 +267,7 @@ class Target(object):
         -----------
         path: the target's path
         name: the target's name
-        suffix: the suffix to be appened to the variable
+        suffix: the suffix to be appended to the variable
 
         Returns
         -----------
@@ -275,7 +275,7 @@ class Target(object):
 
         Description
         -----------
-        Concatinating target path, target name and suffix and returns.
+        Concatenating target path, target name and suffix and returns.
 
         """
         suffix_str = ''
@@ -294,7 +294,7 @@ class Target(object):
 
         Description
         -----------
-        Concatinating target path, target name to be environment var and returns.
+        Concatenating target path, target name to be environment var and returns.
 
         """
         return 'env_%s' % self._generate_variable_name(self.path, self.name)
@@ -346,7 +346,7 @@ class Target(object):
 
         Description
         -----------
-        Concatinating building path, target path and target name to be full
+        Concatenating building path, target path and target name to be full
         file path.
 
         """
@@ -384,7 +384,7 @@ class Target(object):
     def scons_rules(self):
         """scons_rules.
 
-        This method should be impolemented in subclass.
+        This method should be implemented in subclass.
 
         """
         console.error_exit('%s: should be subclassing' % self.type)
