@@ -596,6 +596,9 @@ class JavaTarget(Target, JavaTargetMixIn):
             var_name = self._generate_java_jar(srcs, resources_var)
             self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
                                         resources_var, resources_path_var)
+            self._add_target_var('jar', var_name)
+            return var_name
+        return ''
 
 
 class JavaLibrary(JavaTarget):
@@ -614,13 +617,16 @@ class JavaLibrary(JavaTarget):
         self.data['provided_deps'] = self._unify_deps(provided_deps)
         if prebuilt:
             if not binary_jar:
-                self.data['binary_jar'] = name + '.jar'
+                binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
+            self._add_default_target_var('jar', self.data['binary_jar'])
 
     def scons_rules(self):
         if self.type != 'prebuilt_java_library':
             self._prepare_to_generate_rule()
-            self._generate_jar()
+            jar_var = self._generate_jar()
+            if jar_var:
+                self._add_default_target_var('jar', jar_var)
 
 
 class JavaBinary(JavaTarget):
@@ -676,7 +682,8 @@ class JavaFatLibrary(JavaTarget):
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
         dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
-        self._generate_fat_jar(dep_jar_vars, dep_jars)
+        fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
+        self._add_default_target_var('fatjar', fatjar_var)
 
 
 class JavaTest(JavaBinary):
