@@ -17,11 +17,12 @@ import re
 
 import blade
 import build_rules
+import console
 from blade_util import var_to_list
 from target import Target
 
 
-location_re = re.compile(r'\$\(location\s+(//\S+:\S+)(\s+\w*)?\)')
+location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 class GenRuleTarget(Target):
@@ -57,9 +58,9 @@ class GenRuleTarget(Target):
 
         self.data['outs'] = outs
         self.data['locations'] = []
-        print 'Before: ' + cmd
+        console.info('Before: ' + cmd)
         self.data['cmd'] = location_re.sub(self._process_location_reference, cmd)
-        print 'After: ' + self.data['cmd']
+        console.info('After: ' + self.data['cmd'])
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
@@ -71,6 +72,7 @@ class GenRuleTarget(Target):
         key, type = m.groups()
         if not type:
             type = ''
+        type = type.strip()
         key = self._unify_dep(key)
         self.data['locations'].append((key, type))
         if key not in self.expanded_deps:
@@ -114,6 +116,9 @@ class GenRuleTarget(Target):
             target_vars = []
             for key, type in locations:
                 target_var = targets[key]._get_target_var(type)
+                if not target_var:
+                    console.error_exit('%s: Invalid location reference %s %s' %
+                            (self.fullname, key, type))
                 target_vars.append(target_var)
             cmd = '"%s" %% (%s)' % (cmd, ','.join(['str(%s[0])' % v for v in target_vars]))
         else:

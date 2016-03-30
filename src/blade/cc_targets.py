@@ -461,20 +461,22 @@ class CcTarget(Target):
         It will output the cc_library rule into the buffer.
 
         """
+        env_name = self._env_name()
         var_name = self._var_name()
         self._write_rule('%s = %s.Library("%s", %s)' % (
                 var_name,
-                self._env_name(),
+                env_name,
                 self._target_file_path(),
                 self._objs_name()))
         self.data['static_cc_library_var'] = var_name
+        self._add_default_target_var('a', var_name)
         for dep_name in self.deps:
             dep = self.target_database[dep_name]
             if not dep._generate_header_files():
                 continue
             dep_var_name = dep._var_name()
             self._write_rule('%s.Depends(%s, %s)' % (
-                    self._env_name(),
+                    env_name,
                     var_name,
                     dep_var_name))
 
@@ -487,19 +489,21 @@ class CcTarget(Target):
         self._setup_link_flags()
 
         var_name = self._var_name('dynamic')
+        env_name = self._env_name()
 
         lib_str = self._get_dynamic_deps_lib_list()
         if self.srcs or self.expanded_deps:
             if not self.data.get('allow_undefined'):
                 self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
-                             % self._env_name())
+                        % env_name)
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
                     var_name,
-                    self._env_name(),
+                    env_name,
                     self._target_file_path(),
                     self._objs_name(),
                     lib_str))
-        self.data['dynamic_cc_library_var'] = var_name
+            self.data['dynamic_cc_library_var'] = var_name
+            self._add_target_var('so', var_name)
 
     def _need_dynamic_library(self):
         options = self.blade.get_options()

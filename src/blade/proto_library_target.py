@@ -197,14 +197,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         var_name = self._var_name('jar')
         self._generate_generated_java_jar(var_name, java_src_vars)
         self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
-
-    def _generate_java_jar(self, classes_var):
-        env_name = self._env_name()
-        var_name = self._var_name('jar')
-        # self._write_rule('%s.Append(JARCHDIR="%s")' % (env_name, classes_dir))
-        self._write_rule('%s = %s.Jar(target="%s", source=%s)' % (
-            var_name, env_name, self._target_file_path(), classes_var))
-        self.data['jar_var'] = var_name
+        self._add_target_var('jar', var_name)
 
     def _proto_php_rules(self):
         """Generate php files. """
