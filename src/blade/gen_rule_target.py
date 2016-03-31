@@ -13,11 +13,16 @@
 
 
 import os
+import re
 
 import blade
 import build_rules
+import console
 from blade_util import var_to_list
 from target import Target
+
+
+location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 class GenRuleTarget(Target):
@@ -52,12 +57,27 @@ class GenRuleTarget(Target):
                         kwargs)
 
         self.data['outs'] = outs
-        self.data['cmd'] = cmd
+        self.data['locations'] = []
+        self.data['cmd'] = location_re.sub(self._process_location_reference, cmd)
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
         return ','.join(['"%s"' % os.path.join(self.build_path, path, src)
             for src in srcs])
+
+    def _process_location_reference(self, m):
+        """Process target location reference in the command. """
+        key, type = m.groups()
+        if not type:
+            type = ''
+        type = type.strip()
+        key = self._unify_dep(key)
+        self.data['locations'].append((key, type))
+        if key not in self.expanded_deps:
+            self.expanded_deps.append(key)
+        if key not in self.deps:
+            self.deps.append(key)
+        return '%s'
 
     def _generate_header_files(self):
         """Whether this target generates header files during building."""
@@ -74,9 +94,9 @@ class GenRuleTarget(Target):
         """
         self._clone_env()
 
-        # Build java source according to its option
         env_name = self._env_name()
         var_name = self._var_name()
+        targets = self.blade.get_build_targets()
 
         srcs_str = ''
         if not self.srcs:
@@ -89,7 +109,19 @@ class GenRuleTarget(Target):
         cmd = cmd.replace('$FIRST_SRC', '$SOURCE')
         cmd = cmd.replace('$FIRST_OUT', '$TARGET')
         cmd = cmd.replace('$BUILD_DIR', self.build_path)
-        self._write_rule('%s = %s.Command([%s], [%s], "%s")' % (
+        locations = self.data['locations']
+        if locations:
+            target_vars = []
+            for key, type in locations:
+                target_var = targets[key]._get_target_var(type)
+                if not target_var:
+                    console.error_exit('%s: Invalid location reference %s %s' %
+                            (self.fullname, ':'.join(key), type))
+                target_vars.append(target_var)
+            cmd = '"%s" %% (%s)' % (cmd, ','.join(['str(%s[0])' % v for v in target_vars]))
+        else:
+            cmd = '"%s"' % cmd
+        self._write_rule('%s = %s.Command([%s], [%s], %s)' % (
                 var_name,
                 env_name,
                 self._srcs_list(self.path, self.data['outs']),
@@ -97,23 +129,20 @@ class GenRuleTarget(Target):
                 cmd))
 
         # TODO(phongchen): add Target.get_all_vars
-        targets = self.blade.get_build_targets()
         dep_var_list = []
         dep_skip_list = ['system_library', 'prebuilt_cc_library']
         for i in self.expanded_deps:
-            dep_target = targets[i]
-            if dep_target.type in dep_skip_list:
+            dep = targets[i]
+            if dep.type in dep_skip_list:
                 continue
-            elif dep_target.type == 'swig_library':
-                dep_var_name = dep_target._var_name('dynamic_py')
+
+            if dep.type == 'swig_library':
+                dep_var_name = dep._var_name('dynamic_py')
                 dep_var_list.append(dep_var_name)
-                dep_var_name = dep_target._var_name('dynamic_java')
+                dep_var_name = dep._var_name('dynamic_java')
                 dep_var_list.append(dep_var_name)
-            elif dep_target.type == 'java_jar':
-                dep_var_list += dep_target.data.get('java_jars', [])
             else:
-                dep_var_name = dep_target._var_name()
-                dep_var_list.append(dep_var_name)
+                dep_var_list += dep._get_target_vars()
 
         for dep_var_name in dep_var_list:
             self._write_rule('%s.Depends(%s, %s)' % (env_name,

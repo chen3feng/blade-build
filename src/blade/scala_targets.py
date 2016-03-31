@@ -88,7 +88,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
         sources = [self._source_file_path(src) for src in self.srcs]
         # Do not generate jar when there is no source
         if not sources:
-            return
+            return ''
         env_name = self._env_name()
         var_name = self._var_name('jar')
         dep_jar_vars, dep_jars = self._get_compile_deps()
@@ -100,6 +100,8 @@ class ScalaTarget(Target, JavaTargetMixIn):
         self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
                                     resources_var, resources_path_var)
         self.data['jar_var'] = var_name
+        self._add_target_var('jar', var_name)
+        return var_name
 
 
 class ScalaLibrary(ScalaTarget):
@@ -116,7 +118,9 @@ class ScalaLibrary(ScalaTarget):
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
-        self._generate_jar()
+        jar_var = self._generate_jar()
+        if jar_var:
+            self._add_default_target_var('jar', jar_var)
 
 
 class ScalaFatLibrary(ScalaTarget):
@@ -133,7 +137,8 @@ class ScalaFatLibrary(ScalaTarget):
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_pack_deps()
         dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
-        self._generate_fat_jar(dep_jar_vars, dep_jars)
+        fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
+        self._add_default_target_var('fatjar', fatjar_var)
 
 
 class ScalaTest(ScalaFatLibrary):
