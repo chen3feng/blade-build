@@ -370,10 +370,13 @@ class Target(object):
 
         Description
         -----------
-        Keep track of the scons variable built by scons rules
+        Keep track of the scons variable built by scons rules.
+        Set the default target if needed.
 
         """
         self.data['targets'][target_type] = scons_var
+        if not self.data['default_target']:
+            self.data['default_target'] = scons_var
 
     def _add_default_target_var(self, target_type, scons_var):
         """
@@ -411,13 +414,7 @@ class Target(object):
         """
         if target_type:
             return self.data['targets'].get(target_type, '')
-        default_target = self.data['default_target']
-        if default_target:
-            return default_target
-        target_vars = self._get_target_vars()
-        if len(target_vars) == 1:
-            return target_vars[0]
-        return ''
+        return self.data['default_target']
 
     def _get_target_vars(self):
         """
