@@ -306,8 +306,8 @@ def _main(blade_path):
     current_building_path = s.substitute(m=options.m, profile=options.profile)
     if not os.path.exists(current_building_path):
         os.mkdir(current_building_path)
-    log = os.path.join(current_building_path, 'blade.log')
-    console.log = open(log, 'w')
+    log_file = os.path.join(current_building_path, 'blade.log')
+    console.set_log_file(log_file)
 
     lock_file_fd = None
     locked_scons = False

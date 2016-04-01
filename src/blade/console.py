@@ -19,7 +19,7 @@ import sys
 
 
 # Global log file for detailed output during build
-log = None
+_log = None
 
 
 # Global color enabled or not
@@ -43,6 +43,12 @@ _colors['end']    = '\033[0m'
 # cursor movement
 _CLEAR_LINE = '\033[2K'
 _CURSUR_UP = '\033[A'
+
+
+def set_log_file(log_file):
+    """Set the global log file. """
+    global _log
+    _log = open(log_file, 'w')
 
 
 def inerasable(msg):
@@ -69,7 +75,7 @@ def colors(name):
 def error(msg):
     """dump error message. """
     msg = 'Blade(error): ' + msg
-    debug(msg)
+    log(msg)
     if color_enabled:
         msg = _colors['red'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -84,7 +90,7 @@ def error_exit(msg, code=1):
 def warning(msg):
     """dump warning message but continue. """
     msg = 'Blade(warning): ' + msg
-    debug(msg)
+    log(msg)
     if color_enabled:
         msg = _colors['yellow'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -94,13 +100,18 @@ def info(msg, prefix=True):
     """dump info message. """
     if prefix:
         msg = 'Blade(info): ' + msg
-    debug(msg)
+    log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
     print >>sys.stderr, msg
 
 
 def debug(msg):
-    """Dump debug message into log file. """
-    if log:
-        print >>log, msg
+    """dump debug message. """
+    log(msg)
+
+
+def log(msg):
+    """Dump message into log file. """
+    if _log:
+        print >>_log, msg
