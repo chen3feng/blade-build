@@ -18,6 +18,10 @@ import os
 import sys
 
 
+# Global log file for detailed output during build
+log = None
+
+
 # Global color enabled or not
 color_enabled = (sys.stdout.isatty() and
                  os.environ['TERM'] not in ('emacs', 'dumb'))
@@ -49,7 +53,7 @@ def inerasable(msg):
 
 
 def erasable(msg):
-    """Make msg does't cause new line when output"""
+    """Make msg not cause new line when output"""
     if color_enabled:
         return _CLEAR_LINE + msg + _CURSUR_UP
     return msg
@@ -65,6 +69,7 @@ def colors(name):
 def error(msg):
     """dump error message. """
     msg = 'Blade(error): ' + msg
+    debug(msg)
     if color_enabled:
         msg = _colors['red'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -79,6 +84,7 @@ def error_exit(msg, code=1):
 def warning(msg):
     """dump warning message but continue. """
     msg = 'Blade(warning): ' + msg
+    debug(msg)
     if color_enabled:
         msg = _colors['yellow'] + msg + _colors['end']
     print >>sys.stderr, msg
@@ -88,7 +94,13 @@ def info(msg, prefix=True):
     """dump info message. """
     if prefix:
         msg = 'Blade(info): ' + msg
+    debug(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
     print >>sys.stderr, msg
 
+
+def debug(msg):
+    """Dump debug message into log file. """
+    if log:
+        print >>log, msg
