@@ -22,6 +22,10 @@ import sys
 _log = None
 
 
+# Whether verbose output on the console or not
+_verbose = False
+
+
 # Global color enabled or not
 color_enabled = (sys.stdout.isatty() and
                  os.environ['TERM'] not in ('emacs', 'dumb'))
@@ -49,6 +53,12 @@ def set_log_file(log_file):
     """Set the global log file. """
     global _log
     _log = open(log_file, 'w')
+
+
+def set_verbose(verbose):
+    """Set the global verbose. """
+    global _verbose
+    _verbose = verbose
 
 
 def inerasable(msg):
@@ -109,6 +119,8 @@ def info(msg, prefix=True):
 def debug(msg):
     """dump debug message. """
     log(msg)
+    if _verbose:
+        print >>sys.stderr, msg
 
 
 def log(msg):
