@@ -100,10 +100,13 @@ import scons_helper
 
         if getattr(self.options, 'verbose', False):
             self._add_rule('scons_helper.option_verbose = True')
+            self._add_rule('console.set_verbose(True)')
 
         self._add_rule((
                 """if not os.path.exists('%s'):
     os.mkdir('%s')""") % (self.build_dir, self.build_dir))
+        self._add_rule('console.set_log_file("%s")' % os.path.join(
+                self.build_dir, 'blade_scons.log'))
 
     def generate_top_level_env(self):
         """generates top level environment. """

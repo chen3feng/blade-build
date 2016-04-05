@@ -418,12 +418,10 @@ def _generate_java_jar(target, sources, resources, env):
     if not classpath:
         classpath = blade_util.get_cwd()
 
-    global option_verbose
     if sources:
         cmd = '%s %s -d %s -classpath %s %s' % (
                 javac, options, classes_dir, classpath, ' '.join(sources))
-        if option_verbose:
-            print cmd
+        console.debug(cmd)
         if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
             return 1
 
@@ -442,8 +440,7 @@ def _generate_java_jar(target, sources, resources, env):
                     os.path.relpath(resource, resources_dir)))
 
     cmd = ' '.join(cmd)
-    if option_verbose:
-        print cmd
+    console.debug(cmd)
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -584,9 +581,7 @@ def _generate_fat_jar(target, deps_jar, env):
                 else:
                     if not name.endswith('/'):  # Not a directory
                         zip_path_conflicts += 1
-                        global option_verbose
-                        if option_verbose:
-                            console.warning('%s: duplicate path %s found in {%s, %s}' % (
+                        console.log('%s: duplicate path %s found in {%s, %s}' % (
                                 target, name, zip_path_dict[name],
                                 os.path.basename(dep_jar)))
 
@@ -594,7 +589,7 @@ def _generate_fat_jar(target, deps_jar, env):
 
     if zip_path_conflicts:
         console.warning('%s: Found %d conflicts when packaging. '
-                        'Add --verbose to see details.' % (
+                        'See blade_scons.log in the build directory for details.' % (
                         target, zip_path_conflicts))
     # TODO(wentingli): Create manifest from dependency jars later if needed
     contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
@@ -726,9 +721,7 @@ def _generate_scala_jar(target, sources, resources, env):
 
     cmd = 'JAVACMD=%s %s -d %s -classpath %s %s %s' % (java, scalac, target,
             classpath, options, ' '.join(sources))
-    global option_verbose
-    if option_verbose:
-        print cmd
+    console.debug(cmd)
     if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
         return 1
 
@@ -740,8 +733,7 @@ def _generate_scala_jar(target, sources, resources, env):
                 cmd.append("-C '%s' '%s'" % (resources_dir,
                     os.path.relpath(resource, resources_dir)))
 
-            if option_verbose:
-                print ' '.join(cmd)
+            console.debug(cmd)
             return echospawn(args=cmd, env=os.environ, sh=None, cmd=None, escape=None)
 
     return None

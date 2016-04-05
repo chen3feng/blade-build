@@ -304,6 +304,10 @@ def _main(blade_path):
     build_path_format = configparse.blade_config.configs['global_config']['build_path_template']
     s = Template(build_path_format)
     current_building_path = s.substitute(m=options.m, profile=options.profile)
+    if not os.path.exists(current_building_path):
+        os.mkdir(current_building_path)
+    log_file = os.path.join(current_building_path, 'blade.log')
+    console.set_log_file(log_file)
 
     lock_file_fd = None
     locked_scons = False

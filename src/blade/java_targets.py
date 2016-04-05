@@ -227,10 +227,10 @@ class JavaTargetMixIn(object):
                 else:
                     conflicted_jars.add(dep_jar)
                 value = maven_jar_dict[key]
-                console.warning('%s: Maven dependency version conflict '
-                                '%s:%s:{%s, %s} during %s. Use %s' % (
-                                self.fullname, key[0], key[1],
-                                version, old_value[0], scope, value[0]))
+                console.debug('%s: Maven dependency version conflict '
+                              '%s:%s:{%s, %s} during %s. Use %s' % (
+                              self.fullname, key[0], key[1],
+                              version, old_value[0], scope, value[0]))
             else:
                 maven_jar_dict[key] = (version, set([dep_jar]))
 
