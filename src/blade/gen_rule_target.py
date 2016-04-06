@@ -99,10 +99,12 @@ class GenRuleTarget(Target):
         targets = self.blade.get_build_targets()
 
         srcs_str = ''
-        if not self.srcs:
-            srcs_str = 'time_value'
-        else:
+        if self.srcs:
             srcs_str = self._srcs_list(self.path, self.srcs)
+        elif self.expanded_deps:
+            srcs_str = ''
+        else:
+            srcs_str = 'time_value'
         cmd = self.data['cmd']
         cmd = cmd.replace('$SRCS', '$SOURCES')
         cmd = cmd.replace('$OUTS', '$TARGETS')
