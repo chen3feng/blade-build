@@ -55,7 +55,6 @@ class Target(object):
         self.data = {}
 
         self._check_name()
-        self._check_kwargs(kwargs)
         self._check_srcs()
         self._check_deps_in_build_file(deps)
         self._init_target_deps(deps)
@@ -74,11 +73,6 @@ class Target(object):
         if '/' in self.name:
             console.error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
                 self.path, self.name))
-
-    def _check_kwargs(self, kwargs):
-        if kwargs:
-            console.error_exit('//%s:%s: unrecognized options %s' % (
-                self.path, self.name, kwargs))
 
     # Keep the relationship of all src -> target.
     # Used by build rules to ensure that a source file occurres in
