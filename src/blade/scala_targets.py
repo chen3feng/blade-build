@@ -56,6 +56,13 @@ class ScalaTarget(Target, JavaTargetMixIn):
         if warnings:
             self.data['warnings'] = warnings
 
+    def _generate_scala_target_platform(self):
+        config = configparse.blade_config.get_config('scala_config')
+        target_platform = config['target_platform']
+        if target_platform:
+            self._write_rule('%s.Append(SCALACFLAGS=["-target:%s"])' % (
+                self._env_name(), target_platform))
+
     def _generate_scala_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if not source_encoding:
@@ -78,6 +85,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _prepare_to_generate_rule(self):
         """Do some preparation before generating scons rule. """
         self._clone_env()
+        self._generate_scala_target_platform()
         self._generate_scala_source_encoding()
         self._generate_scala_warnings()
 

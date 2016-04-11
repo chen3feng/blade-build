@@ -85,6 +85,7 @@ class BladeConfig(object):
             },
             'scala_config': {
                 'scala_home' : '',
+                'target_platform' : '',
                 'warnings' : '',
                 'source_encoding' : None,
             },
@@ -185,8 +186,6 @@ class BladeConfig(object):
             if k in config:
                 if isinstance(config[k], list):
                     user_config[k] = var_to_list(user_config[k])
-                else:
-                    user_config[k] = user_config[k]
             else:
                 console.warning('%s: %s: unknown config item name: %s' %
                         (self.current_file_name, section_name, k))
