@@ -85,6 +85,7 @@ class BladeConfig(object):
             },
             'scala_config': {
                 'scala_home' : '',
+                'target_platform' : '',
                 'warnings' : '',
                 'source_encoding' : None,
             },
