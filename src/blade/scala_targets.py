@@ -168,13 +168,16 @@ class ScalaTest(ScalaFatLibrary):
         self._prepare_to_generate_rule()
         self._generate_jar()
         dep_jar_vars, dep_jars = self._get_test_deps()
-        self._generate_test(self._generate_fat_jar(dep_jar_vars, dep_jars))
+        self._generate_test(dep_jar_vars, dep_jars)
 
-    def _generate_test(self, fat_jar_var):
+    def _generate_test(self, dep_jar_vars, dep_jars):
         var_name = self._var_name()
-        self._write_rule('%s = %s.ScalaTest(target="%s", source=[%s, %s])' % (
-            var_name, self._env_name(), self._target_file_path(),
-            fat_jar_var, self.data['jar_var']))
+        jar_var = self.data.get('jar_var')
+        if jar_var:
+            self._write_rule('%s = %s.ScalaTest(target="%s", '
+                             'source=[%s] + [%s] + %s)' % (
+                    var_name, self._env_name(), self._target_file_path(),
+                    jar_var, ','.join(dep_jar_vars), dep_jars))
 
 
 def scala_library(name,

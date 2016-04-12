@@ -755,22 +755,18 @@ def generate_scala_jar(target, source, env):
     return _generate_scala_jar(target, sources, resources, env)
 
 
-def _generate_scala_test(target, fat_jar, test_class_names, env):
-    scala = env['SCALA']
-    if not os.path.isabs(scala):
-        scala = os.path.abspath(scala)
-    fat_jar_name = os.path.basename(fat_jar)
+def _generate_scala_test(target, jars, test_class_names, env):
+    scala, java = env['SCALA'], env['JAVA']
+    scala, java = os.path.abspath(scala), os.path.abspath(java)
     run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
     script = open(target, 'w')
     script.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# *.fat.jar must be in same dir
-jar=`dirname "$0"`/"%s"
+JAVACMD=%s exec %s -classpath %s %s $@
 
-exec %s -classpath "$jar" %s $@
-""" % (fat_jar_name, scala, run_args))
+""" % (java, scala, ':'.join(jars), run_args))
     script.close()
     os.chmod(target, 0755)
 
@@ -780,10 +776,11 @@ exec %s -classpath "$jar" %s $@
 def generate_scala_test(target, source, env):
     """Generate wrapper shell script for scala test. """
     target = str(target[0])
-    fat_jar, test_jar = str(source[0]), str(source[1])
+    test_jar = str(source[0])
+    jars = [os.path.abspath(str(jar)) for jar in source]
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
 
-    return _generate_scala_test(target, fat_jar, test_class_names, env)
+    return _generate_scala_test(target, jars, test_class_names, env)
 
 
 def MakeAction(cmd, cmdstr):
