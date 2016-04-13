@@ -589,8 +589,8 @@ def _generate_fat_jar(target, deps_jar, env):
 
     if zip_path_conflicts:
         console.warning('%s: Found %d conflicts when packaging. '
-                        'See blade_scons.log in the build directory for details.' % (
-                        target, zip_path_conflicts))
+                        'See %s for details.' % (
+                        target, zip_path_conflicts, console.get_log_file()))
     # TODO(wentingli): Create manifest from dependency jars later if needed
     contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
     main_class = env.Dictionary().get('JAVAMAINCLASS')
@@ -605,11 +605,9 @@ def _generate_fat_jar(target, deps_jar, env):
 
 def generate_fat_jar(target, source, env):
     target = str(target[0])
-    deps_jar = []
-    for dep in source:
-        deps_jar.append(str(dep))
+    dep_jars = [str(dep) for dep in source]
 
-    return _generate_fat_jar(target, deps_jar, env)
+    return _generate_fat_jar(target, dep_jars, env)
 
 
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):

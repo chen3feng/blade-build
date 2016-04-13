@@ -55,6 +55,11 @@ def set_log_file(log_file):
     _log = open(log_file, 'w')
 
 
+def get_log_file():
+    """Return the global log file name. """
+    return _log.name
+
+
 def set_verbose(verbose):
     """Set the global verbose. """
     global _verbose
