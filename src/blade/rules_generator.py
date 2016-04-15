@@ -105,6 +105,7 @@ import scons_helper
         self._add_rule((
                 """if not os.path.exists('%s'):
     os.mkdir('%s')""") % (self.build_dir, self.build_dir))
+        self._add_rule('scons_helper.blade_path = "%s"' % blade_path)
         self._add_rule('console.set_log_file("%s")' % os.path.join(
                 self.build_dir, 'blade_scons.log'))
 
