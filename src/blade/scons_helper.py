@@ -611,11 +611,8 @@ def generate_fat_jar(target, source, env):
     target = str(target[0])
     dep_jars = [str(dep) for dep in source]
 
-    global blade_path
-    if not blade_path:
-        blade_path = blade_util.get_cwd()
-
     # Create a new process for fatjar packaging to avoid GIL
+    global blade_path
     cmd = 'PYTHONPATH=%s:$PYTHONPATH python -m fatjar %s %s' % (
         blade_path, target, ' '.join(dep_jars))
     p = subprocess.Popen(cmd,
