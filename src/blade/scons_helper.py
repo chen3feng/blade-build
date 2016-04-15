@@ -46,6 +46,10 @@ from console import colors
 option_verbose = False
 
 
+# blade path
+blade_path = os.path.dirname(__file__)
+
+
 # linking tmp dir
 linking_tmp_dir = ''
 
@@ -607,7 +611,23 @@ def generate_fat_jar(target, source, env):
     target = str(target[0])
     dep_jars = [str(dep) for dep in source]
 
-    return _generate_fat_jar(target, dep_jars, env)
+    # Create a new process for fatjar packaging to avoid GIL
+    global blade_path
+    cmd = 'PYTHONPATH=%s:$PYTHONPATH python -m fatjar %s %s' % (
+        blade_path, target, ' '.join(dep_jars))
+    p = subprocess.Popen(cmd,
+                         env=os.environ,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True,
+                         universal_newlines=True)
+    stdout, stderr = p.communicate()
+    if stdout:
+        console.warning('%s See %s for details.' % (
+            stdout.rstrip(), console.get_log_file()))
+    if stderr:
+        console.log(stderr)
+    return p.returncode
 
 
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
