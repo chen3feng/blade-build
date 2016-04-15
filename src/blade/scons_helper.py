@@ -47,7 +47,7 @@ option_verbose = False
 
 
 # blade path
-blade_path = ''
+blade_path = os.path.dirname(__file__)
 
 
 # linking tmp dir
