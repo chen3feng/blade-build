@@ -161,7 +161,7 @@ class CcTarget(Target):
     def _objs_name(self):
         """_objs_name.
 
-        Concatinating target path, target name to be objs var and returns.
+        Concatenating target path, target name to be objs var and returns.
 
         """
         return 'objs_%s' % self._generate_variable_name(self.path, self.name)
@@ -390,10 +390,7 @@ class CcTarget(Target):
     def _get_dynamic_deps_lib_list(self):
         """Returns the libs string. """
         lib_list = self._dynamic_deps_list()
-        lib_str = 'LIBS=[]'
-        if lib_list:
-            lib_str = 'LIBS=[%s]' % ','.join(lib_list)
-        return lib_str
+        return 'LIBS=[%s]' % ','.join(lib_list)
 
     def _prebuilt_cc_library_is_depended(self):
         build_targets = self.blade.get_build_targets()
@@ -732,7 +729,7 @@ class CcBinary(CcTarget):
         self._add_hardcode_library(link_libs)
 
     def _get_rpath_links(self):
-        """Get rpath_links from dependies"""
+        """Get rpath_links from dependencies"""
         dynamic_link = self.data['dynamic_link']
         build_targets = self.blade.get_build_targets()
         rpath_links = []
@@ -780,6 +777,7 @@ class CcBinary(CcTarget):
             self._target_file_path(),
             self._objs_name(),
             lib_str))
+        self._add_default_target_var('bin', var_name)
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
@@ -806,6 +804,7 @@ class CcBinary(CcTarget):
             self._target_file_path(),
             self._objs_name(),
             lib_str))
+        self._add_default_target_var('bin', var_name)
 
         self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
@@ -958,6 +957,7 @@ class CcPlugin(CcTarget):
                     self._target_file_path(),
                     self._objs_name(),
                     lib_str))
+            self._add_default_target_var('so', var_name)
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
