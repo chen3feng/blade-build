@@ -13,16 +13,13 @@
 
 
 import os
-import re
 
 import blade
 import build_rules
 import console
 from blade_util import var_to_list
+from blade_util import location_re
 from target import Target
-
-
-location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 class GenRuleTarget(Target):

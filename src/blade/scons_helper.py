@@ -28,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tarfile
 import zipfile
 import glob
 
@@ -801,6 +802,42 @@ def generate_scala_test(target, source, env):
     return _generate_scala_test(target, jars, test_class_names, env)
 
 
+def process_package_source(target, source, env):
+    """Copy source file into .sources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
+def _get_tar_mode_from_suffix(suffix):
+    return {
+        'tar' : 'w',
+        'tar.gz' : 'w:gz',
+        'tgz' : 'w:gz',
+        'tar.bz2' : 'w:bz2',
+        'tbz' : 'w:bz2',
+    }[suffix]
+
+
+def generate_package(target, source, env):
+    """Generate a package containing all of the source files. """
+    target = str(target[0])
+    sources = [str(s) for s in source]
+    suffix = env['PACKAGESUFFIX']
+    mode = _get_tar_mode_from_suffix(suffix)
+
+    tar = tarfile.open(target, mode)
+    sources_dir = target.replace(suffix, 'sources')
+    for f in sources:
+        if f.startswith(sources_dir):
+            rel_path = os.path.relpath(f, sources_dir)
+            tar.add(f, rel_path)
+        else:
+            tar.add(f, os.path.basename(f))
+
+    tar.close()
+    return None
+
+
 def MakeAction(cmd, cmdstr):
     global option_verbose
     if option_verbose:
@@ -1374,10 +1411,25 @@ def setup_python_builders(top_env):
     top_env.Append(BUILDERS = {"PythonBinary" : python_binary_bld})
 
 
+def setup_package_builders(top_env):
+    source_message = console.erasable('%sProcess Package Source %s$SOURCES%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    source_bld = SCons.Builder.Builder(
+        action = MakeAction(process_package_source, source_message))
+    top_env.Append(BUILDERS = {"PackageSource" : source_bld})
+
+    package_message = console.inerasable('%sCreating Package %s$TARGET%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    package_bld = SCons.Builder.Builder(
+        action = MakeAction(generate_package, package_message))
+    top_env.Append(BUILDERS = {"Package" : package_bld})
+
+
 def setup_other_builders(top_env):
     setup_yacc_builders(top_env)
     setup_resource_builders(top_env)
     setup_python_builders(top_env)
+    setup_package_builders(top_env)
 
 
 def setup_swig_builders(top_env, build_dir):

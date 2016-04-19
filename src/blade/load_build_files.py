@@ -36,6 +36,7 @@ import java_jar_target
 import java_targets
 import scala_targets
 import lex_yacc_target
+import package_target
 import proto_library_target
 import py_targets
 import resource_library_target
