@@ -1419,7 +1419,7 @@ def setup_package_builders(top_env):
     top_env.Append(BUILDERS = {"PackageSource" : source_bld})
 
     package_message = console.inerasable('%sCreating Package %s$TARGET%s%s' % (
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        colors('green'), colors('purple'), colors('green'), colors('end')))
     package_bld = SCons.Builder.Builder(
         action = MakeAction(generate_package, package_message))
     top_env.Append(BUILDERS = {"Package" : package_bld})
