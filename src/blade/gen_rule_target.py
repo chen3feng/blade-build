@@ -64,16 +64,8 @@ class GenRuleTarget(Target):
 
     def _process_location_reference(self, m):
         """Process target location reference in the command. """
-        key, type = m.groups()
-        if not type:
-            type = ''
-        type = type.strip()
-        key = self._unify_dep(key)
+        key, type = self._add_location_reference_target(m)
         self.data['locations'].append((key, type))
-        if key not in self.expanded_deps:
-            self.expanded_deps.append(key)
-        if key not in self.deps:
-            self.deps.append(key)
         return '%s'
 
     def _generate_header_files(self):

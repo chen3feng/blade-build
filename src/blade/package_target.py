@@ -86,16 +86,8 @@ class PackageTarget(Target):
 
     def _add_location_reference(self, m, dst):
         """Add target location reference. """
-        key, type = m.groups()
-        if not type:
-            type = ''
-        type = type.strip()
-        key = self._unify_dep(key)
+        key, type = self._add_location_reference_target(m)
         self.data['locations'].append((key, type, dst))
-        if key not in self.expanded_deps:
-            self.expanded_deps.append(key)
-        if key not in self.deps:
-            self.deps.append(key)
 
     def _get_source_path(self, src, dst):
         """
