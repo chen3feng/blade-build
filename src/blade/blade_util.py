@@ -15,6 +15,7 @@
 
 import fcntl
 import os
+import re
 import string
 import subprocess
 
@@ -25,6 +26,9 @@ try:
     import hashlib as md5
 except ImportError:
     import md5
+
+
+location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 def md5sum_str(user_str):
