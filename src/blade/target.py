@@ -150,6 +150,55 @@ class Target(object):
             lib = SystemLibrary(name, self.blade)
             self.blade.register_target(lib)
 
+    def _add_location_reference_target(self, m):
+        """
+
+        Parameters
+        -----------
+        m: A match object capturing the key and type of the referred target
+
+        Returns
+        -----------
+        (key, type): the key and type of the referred target
+
+        Description
+        -----------
+        Location reference makes it possible to refer to the build output of
+        another target in the code base.
+
+        General form:
+            $(location //path/to:target)
+
+        Some target types may produce more than one output according to the
+        build options. Then each output can be referenced by an additional
+        type tag:
+            $(location //path:name)         # default target output
+            $(location //path:name jar)     # jar output
+            $(location //path:name so)      # so output
+
+        Note that this method accepts a match object instead of a simple str.
+        You could match/search/sub location references in a string with functions
+        or RegexObject in re module. For example:
+
+            m = {location regular expression}.search(s)
+            if m:
+                key, type = self._add_location_reference_target(m)
+            else:
+                # Not a location reference
+
+        """
+        if m:
+            key, type = m.groups()
+            if not type:
+                type = ''
+            type = type.strip()
+            key = self._unify_dep(key)
+            if key not in self.expanded_deps:
+                self.expanded_deps.append(key)
+            if key not in self.deps:
+                self.deps.append(key)
+            return key, type
+
 
     def _unify_dep(self, dep):
         """Unify dep to key"""
