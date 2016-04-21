@@ -66,10 +66,7 @@ class PackageTarget(Target):
         self.data['sources'], self.data['locations'] = [], []
         self._process_srcs(srcs)
 
-        if out:
-            if not out.endswith(type):
-                out += '.%s' % type
-        else:
+        if not out:
             out = '%s.%s' % (name, type)
         self.data['out'] = out
 
@@ -186,7 +183,7 @@ def package(name,
             srcs,
             deps=[],
             type='tar',
-            out='',
+            out=None,
             **kwargs):
     package_target = PackageTarget(name,
                                    srcs,
