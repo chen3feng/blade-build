@@ -27,6 +27,7 @@ _package_types = frozenset([
     'tgz',
     'tar.bz2',
     'tbz',
+    'zip',
 ])
 
 
@@ -43,6 +44,7 @@ class PackageTarget(Target):
                  srcs,
                  deps,
                  type,
+                 out,
                  blade,
                  kwargs):
         srcs = var_to_list(srcs)
@@ -63,6 +65,10 @@ class PackageTarget(Target):
         self.data['type'] = type
         self.data['sources'], self.data['locations'] = [], []
         self._process_srcs(srcs)
+
+        if not out:
+            out = '%s.%s' % (name, type)
+        self.data['out'] = out
 
     def _process_srcs(self, srcs):
         """
@@ -158,15 +164,15 @@ class PackageTarget(Target):
         var_name = self._var_name()
 
         source_vars, location_vars, package_path_list = [], [], []
-        sources_dir = self._target_file_path() + '.sources'
-        package_type = self.data['type']
+        target = self._target_file_path(self.data['out'])
+        sources_dir = target + '.sources'
         self._generate_source_rules(source_vars, package_path_list, sources_dir)
         self._generate_location_reference_rules(location_vars,
                                                 package_path_list, sources_dir)
-        self._write_rule('%s = %s.Package(target="%s.%s", source=[%s] + [%s])' % (
-                         var_name, env_name,
-                         self._target_file_path(), package_type,
+        self._write_rule('%s = %s.Package(target="%s", source=[%s] + [%s])' % (
+                         var_name, env_name, target,
                          ','.join(source_vars), ','.join(location_vars)))
+        package_type = self.data['type']
         self._write_rule('%s.Append(PACKAGESUFFIX="%s")' % (env_name, package_type))
         if package_path_list:
             self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
@@ -177,11 +183,13 @@ def package(name,
             srcs,
             deps=[],
             type='tar',
+            out=None,
             **kwargs):
     package_target = PackageTarget(name,
                                    srcs,
                                    deps,
                                    type,
+                                   out,
                                    blade.blade,
                                    kwargs)
     blade.blade.register_target(package_target)
