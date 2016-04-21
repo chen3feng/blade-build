@@ -818,15 +818,12 @@ def _get_tar_mode_from_suffix(suffix):
     }[suffix]
 
 
-def generate_package(target, source, env):
-    """Generate a package containing all of the source files. """
-    target = str(target[0])
-    sources = [str(s) for s in source]
-    suffix = env['PACKAGESUFFIX']
+def _generate_tar_package(target, sources, suffix):
+    """Generate a tar ball containing all of the source files. """
     mode = _get_tar_mode_from_suffix(suffix)
-
     tar = tarfile.open(target, mode)
-    sources_dir = target.replace(suffix, 'sources')
+    sources_dir = target.replace('.' + suffix, '.sources')
+
     for f in sources:
         if f.startswith(sources_dir):
             rel_path = os.path.relpath(f, sources_dir)
@@ -836,6 +833,33 @@ def generate_package(target, source, env):
 
     tar.close()
     return None
+
+
+def _generate_zip_package(target, sources):
+    """Generate a zip archive containing all of the source files. """
+    zip = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
+    sources_dir = target.replace('.zip', '.sources')
+
+    for f in sources:
+        if f.startswith(sources_dir):
+            rel_path = os.path.relpath(f, sources_dir)
+            zip.write(f, rel_path)
+        else:
+            zip.write(f, os.path.basename(f))
+
+    zip.close()
+    return None
+
+
+def generate_package(target, source, env):
+    """Generate a package containing all of the source files. """
+    target = str(target[0])
+    sources = [str(s) for s in source]
+    suffix = env['PACKAGESUFFIX']
+    if suffix == 'zip':
+        return _generate_zip_package(target, sources)
+    else:
+        return _generate_tar_package(target, sources, suffix)
 
 
 def MakeAction(cmd, cmdstr):

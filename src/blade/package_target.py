@@ -27,6 +27,7 @@ _package_types = frozenset([
     'tgz',
     'tar.bz2',
     'tbz',
+    'zip',
 ])
 
 
