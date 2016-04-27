@@ -40,6 +40,14 @@ def md5sum_str(user_str):
     return m.hexdigest()
 
 
+def md5sum_file(file_name):
+    """Calculate md5sum of the file. """
+    f = open(file_name)
+    digest = md5sum_str(f.read())
+    f.close()
+    return digest
+
+
 def md5sum(obj):
     """Calculate md5sum and returns it. """
     return md5sum_str(obj)

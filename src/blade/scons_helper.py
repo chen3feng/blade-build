@@ -188,9 +188,7 @@ def generate_python_library(target, source, env):
     for s in source:
         src = str(s)
         pyc = _compile_python(src, build_dir)
-        f = open(src)
-        digest = blade_util.md5sum(f.read())
-        f.close()
+        digest = blade_util.md5sum_file(src)
         srcs.append((src, pyc, digest))
     data['srcs'] = srcs
     target_file.write(str(data))
