@@ -188,7 +188,10 @@ def generate_python_library(target, source, env):
     for s in source:
         src = str(s)
         _compile_python(src, build_dir)
-        srcs.append(src)
+        f = open(src)
+        digest = blade_util.md5sum(f.read())
+        f.close()
+        srcs.append((src, digest))
     data['srcs'] = srcs
     target_file.write(str(data))
     target_file.close()
@@ -219,9 +222,9 @@ def generate_python_binary(target, source, env):
             libfile.close()
             pylib_base_dir = data['base_dir']
             for libsrc in data['srcs']:
-                arcname = os.path.relpath(libsrc, pylib_base_dir)
+                arcname = os.path.relpath(libsrc[0], pylib_base_dir)
                 _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-                target_file.write(libsrc, arcname)
+                target_file.write(libsrc[0], arcname)
         else:
             _compile_python(src, build_dir)
             arcname = os.path.relpath(src, base_dir)
