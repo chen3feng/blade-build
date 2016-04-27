@@ -187,8 +187,9 @@ def generate_python_library(target, source, env):
     srcs = []
     for s in source:
         src = str(s)
-        _compile_python(src, build_dir)
-        srcs.append(src)
+        pyc = _compile_python(src, build_dir)
+        digest = blade_util.md5sum_file(src)
+        srcs.append((src, pyc, digest))
     data['srcs'] = srcs
     target_file.write(str(data))
     target_file.close()
@@ -218,15 +219,17 @@ def generate_python_binary(target, source, env):
             data = eval(libfile.read())
             libfile.close()
             pylib_base_dir = data['base_dir']
-            for libsrc in data['srcs']:
+            for libsrc, pyc, digest in data['srcs']:
                 arcname = os.path.relpath(libsrc, pylib_base_dir)
                 _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
+                target_file.write(pyc, arcname + 'c')
         else:
-            _compile_python(src, build_dir)
+            pyc = _compile_python(src, build_dir)
             arcname = os.path.relpath(src, base_dir)
             _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
             target_file.write(src, arcname)
+            target_file.write(pyc, arcname + 'c')
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py
