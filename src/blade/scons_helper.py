@@ -205,9 +205,9 @@ def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
 
 
 def generate_python_binary(target, source, env):
-    """The action for generate python executable file"""
+    """The action to generate python executable file. """
     target_name = str(target[0])
-    build_dir = env['BUILD_DIR']
+    base_dir, build_dir = env.get('BASE_DIR', ''), env['BUILD_DIR']
     target_file = zipfile.ZipFile(target_name, 'w', zipfile.ZIP_DEFLATED)
     dirs = set()
     dirs_with_init_py = set()
@@ -217,19 +217,20 @@ def generate_python_binary(target, source, env):
             libfile = open(src)
             data = eval(libfile.read())
             libfile.close()
-            base_dir = data['base_dir']
+            pylib_base_dir = data['base_dir']
             for libsrc in data['srcs']:
-                arcname = os.path.relpath(libsrc, base_dir)
+                arcname = os.path.relpath(libsrc, pylib_base_dir)
                 _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
         else:
             _compile_python(src, build_dir)
-            _update_init_py_dirs(src, dirs, dirs_with_init_py)
-            target_file.write(src)
+            arcname = os.path.relpath(src, base_dir)
+            _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+            target_file.write(src, arcname)
 
-    # insert __init__.py into each dir if missing
+    # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py
-    for dir in dirs_missing_init_py:
+    for dir in sorted(dirs_missing_init_py):
         target_file.writestr(os.path.join(dir, '__init__.py'), '')
     target_file.writestr('__init__.py', '')
     target_file.close()
@@ -1416,12 +1417,12 @@ def setup_resource_builders(top_env):
 
 
 def setup_python_builders(top_env):
-    compile_python_egg_message = console.erasable('%sGenerating python egg %s$TARGET%s%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
-    compile_python_library_message = console.erasable('%sGenerating python library %s$TARGET%s%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
-    compile_python_binary_message = console.inerasable('%sGenerating python binary %s$TARGET%s%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_python_egg_message = console.inerasable('%sGenerating Python Egg %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    compile_python_library_message = console.inerasable('%sGenerating Python Library %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    compile_python_binary_message = console.inerasable('%sGenerating Python Binary %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
 
     python_egg_bld = SCons.Builder.Builder(action = MakeAction(generate_python_egg,
         compile_python_egg_message))
