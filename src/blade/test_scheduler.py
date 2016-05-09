@@ -36,16 +36,14 @@ signal_map = {-1: 'SIGHUP', -2: 'SIGINT', -3: 'SIGQUIT',
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, worker_args, proc_func, args):
+    def __init__(self, id, job_queue, job_handler, redirect):
         """Init methods for this thread. """
         threading.Thread.__init__(self)
-        self.worker_args = worker_args
-        self.func_args = args
-        self.job_handler = proc_func
-        self.thread_id = int(self.worker_args)
-        self.start_working_time = time.time()
-        self.end_working_time = None
+        self.thread_id = id
+        self.job_queue, self.job_handler = job_queue, job_handler
+        self.redirect = redirect
         self.ret = None
+        self.job_start, self.job_process = 0, None
         console.info('blade test executor %d starts to work' % self.thread_id)
 
     def __process(self):
@@ -58,16 +56,27 @@ class WorkerThread(threading.Thread):
         """returns worker result to caller. """
         return self.ret
 
+    def set_job_process(self, p):
+        """Set the popen object if the job is run in a subprocess. """
+        self.job_process = p
+
+    def check_job_timeout(self, now, timeout):
+        """Check whether the job is timeout or not. """
+        if self.job_start and self.job_process is not None:
+            if self.job_start + timeout < now:
+                self.job_process.terminate()
+
     def run(self):
         """executes and runs here. """
         try:
             if self.job_handler:
-                self.ret = self.job_handler(*self.func_args)
-                self.end_working_time = time.time()
-                return True
+                job_queue = self.job_queue
+                while not job_queue.empty():
+                    self.job_start = time.time()
+                    self.ret = self.job_handler(job_queue.get(), self.redirect, self)
+                    self.job_start, self.job_process = 0, None
             else:
                 self.__process()
-                return True
         except:
             (ErrorType, ErrorValue, ErrorTB) = sys.exc_info()
             print sys.exc_info()
@@ -82,11 +91,9 @@ class TestScheduler(object):
         self.jobs = jobs
         self.tests_run_map = tests_run_map
         self.tests_run_map_lock = threading.Lock()
-        self.worker_threads = []
         self.cpu_core_num = blade_util.cpu_count()
         self.num_of_tests = len(self.tests_list)
         self.max_worker_threads = 16
-        self.threads = []
         self.test_timeout = 600  # 10 minutes for each test
         self.failed_targets = []
         self.failed_targets_lock = threading.Lock()
@@ -122,30 +129,7 @@ class TestScheduler(object):
             result = '%s:%s' % (result, returncode)
         return result
 
-    def _check_job_timeout(self, p, test_name):
-        """Check whether the subprocess of the test job is timeout.
-
-        As soon as this method returns, the subprocess is either
-        completed normally or terminated because of timeout, which
-        could be checked by the return value.
-        """
-        timeout = False
-        running_time = 0
-        while p.poll() is None:
-            time.sleep(2)  # Check every 2 seconds
-            running_time += 2
-            if running_time >= self.test_timeout:
-                timeout = True
-                console.error('%s time out.' % test_name)
-                if p.stdout:
-                    console.info('Output of %s:\n%s' % (
-                                 test_name, p.stdout.read(1024)))
-                p.terminate()
-                time.sleep(1)
-
-        return timeout
-
-    def _run_job_redirect(self, job):
+    def _run_job_redirect(self, job, job_thread):
         """run job and redirect the output. """
         target, run_dir, test_env, cmd = job
         test_name = target.fullname
@@ -160,18 +144,16 @@ class TestScheduler(object):
                              stderr=subprocess.STDOUT,
                              close_fds=True,
                              shell=shell)
+        job_thread.set_job_process(p)
 
-        timeout = self._check_job_timeout(p, test_name)
-        stdout = ''
-        if not timeout:
-            stdout = p.stdout.read()
+        stdout = p.communicate()[0]
         result = self.__get_result(p.returncode)
         console.info('Output of %s:\n%s\n%s finished: %s\n' % (
                      test_name, stdout, test_name, result))
 
         return p.returncode
 
-    def _run_job(self, job):
+    def _run_job(self, job, job_thread):
         """run job, do not redirect the output. """
         target, run_dir, test_env, cmd = job
         test_name = target.fullname
@@ -180,52 +162,50 @@ class TestScheduler(object):
             cmd = subprocess.list2cmdline(cmd)
         console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
-        self._check_job_timeout(p, test_name)
+        job_thread.set_job_process(p)
+        p.wait()
         result = self.__get_result(p.returncode)
         console.info('%s finished : %s\n' % (test_name, result))
 
         return p.returncode
 
-    def _process_command(self, job_queue, redirect):
+    def _process_job(self, job, redirect, job_thread):
         """process routine.
 
         Each test is a tuple (target, run_dir, env, cmd)
 
         """
-        while not job_queue.empty():
-            job = job_queue.get()
-            target = job[0]
-            start_time = time.time()
+        target = job[0]
+        start_time = time.time()
 
-            try:
-                if redirect:
-                    returncode = self._run_job_redirect(job)
-                else:
-                    returncode = self._run_job(job)
-            except OSError, e:
-                console.error('%s: Create test process error: %s' %
-                              (target.fullname, str(e)))
-                returncode = 255
+        try:
+            if redirect:
+                returncode = self._run_job_redirect(job, job_thread)
+            else:
+                returncode = self._run_job(job, job_thread)
+        except OSError, e:
+            console.error('%s: Create test process error: %s' %
+                          (target.fullname, str(e)))
+            returncode = 255
 
-            costtime = time.time() - start_time
+        costtime = time.time() - start_time
 
-            if returncode:
-                target.data['test_exit_code'] = returncode
-                self.failed_targets_lock.acquire()
-                self.failed_targets.append(target)
-                self.failed_targets_lock.release()
+        if returncode:
+            target.data['test_exit_code'] = returncode
+            self.failed_targets_lock.acquire()
+            self.failed_targets.append(target)
+            self.failed_targets_lock.release()
 
-            self.tests_run_map_lock.acquire()
-            run_item_map = self.tests_run_map.get(target.key, {})
-            if run_item_map:
-                run_item_map['result'] = self.__get_result(returncode)
-                run_item_map['costtime'] = costtime
-            self.tests_run_map_lock.release()
+        self.tests_run_map_lock.acquire()
+        run_item_map = self.tests_run_map.get(target.key, {})
+        if run_item_map:
+            run_item_map['result'] = self.__get_result(returncode)
+            run_item_map['costtime'] = costtime
+        self.tests_run_map_lock.release()
 
-            self.num_of_run_tests_lock.acquire()
-            self.num_of_run_tests += 1
-            self.num_of_run_tests_lock.release()
-        return True
+        self.num_of_run_tests_lock.acquire()
+        self.num_of_run_tests += 1
+        self.num_of_run_tests_lock.release()
 
     def print_summary(self):
         """print the summary output of tests. """
@@ -237,6 +217,21 @@ class TestScheduler(object):
         # blade can't be terminated by Ctrl-C
         while t.isAlive():
             t.join(1)
+
+    def _wait_worker_threads(self, threads):
+        """Wait for worker threads to complete. """
+        while threads:
+            time.sleep(2)  # Check every 2 seconds
+            now = time.time()
+            dead_threads = []
+            for t in threads:
+                if t.isAlive():
+                    t.check_job_timeout(now, self.test_timeout)
+                else:
+                    dead_threads.append(t)
+
+            for dt in dead_threads:
+                threads.remove(dt)
 
     def schedule_jobs(self):
         """scheduler. """
@@ -253,20 +248,20 @@ class TestScheduler(object):
             else:
                 self.job_queue.put(i)
 
-        test_arg = [self.job_queue, num_of_workers > 1]
+        redirect = num_of_workers > 1
+        threads = []
         for i in range(num_of_workers):
-            t = WorkerThread((i), self._process_command, args=test_arg)
+            t = WorkerThread(i, self.job_queue, self._process_job, redirect)
             t.start()
-            self.threads.append(t)
-        for t in self.threads:
-            self._join_thread(t)
+            threads.append(t)
+        self._wait_worker_threads(threads)
 
         if not self.exclusive_job_queue.empty():
             console.info('spawn 1 worker to run exclusive tests')
-            test_arg = [self.exclusive_job_queue, False]
-            last_t = WorkerThread((num_of_workers), self._process_command, args=test_arg)
+            last_t = WorkerThread(num_of_workers, self.exclusive_job_queue,
+                                  self._process_job, False)
             last_t.start()
-            self._join_thread(last_t)
+            self._wait_worker_threads([last_t])
 
         self.print_summary()
         return True
