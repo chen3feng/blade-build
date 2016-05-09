@@ -87,7 +87,7 @@ class TestScheduler(object):
         self.num_of_tests = len(self.tests_list)
         self.max_worker_threads = 16
         self.threads = []
-        self.tests_stdout_map = {}
+        self.test_timeout = 600  # 10 minutes for each test
         self.failed_targets = []
         self.failed_targets_lock = threading.Lock()
         self.tests_stdout_lock = threading.Lock()
@@ -122,10 +122,33 @@ class TestScheduler(object):
             result = '%s:%s' % (result, returncode)
         return result
 
+    def _check_job_timeout(self, p, test_name):
+        """Check whether the subprocess of the test job is timeout.
+
+        As soon as this method returns, the subprocess is either
+        completed normally or terminated because of timeout, which
+        could be checked by the return value.
+        """
+        timeout = False
+        running_time = 0
+        while p.poll() is None:
+            time.sleep(2)  # Check every 2 seconds
+            running_time += 2
+            if running_time >= self.test_timeout:
+                timeout = True
+                console.error('%s time out.' % test_name)
+                if p.stdout:
+                    console.info('Output of %s:\n%s' % (
+                                 test_name, p.stdout.read(1024)))
+                p.terminate()
+                time.sleep(1)
+
+        return timeout
+
     def _run_job_redirect(self, job):
-        """run job, redirect the output. """
-        (target, run_dir, test_env, cmd) = job
-        test_name = '%s:%s' % (target.path, target.name)
+        """run job and redirect the output. """
+        target, run_dir, test_env, cmd = job
+        test_name = target.fullname
         shell = target.data.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
@@ -138,25 +161,28 @@ class TestScheduler(object):
                              close_fds=True,
                              shell=shell)
 
-        (stdout, stderr) = p.communicate()
+        timeout = self._check_job_timeout(p, test_name)
+        stdout = ''
+        if not timeout:
+            stdout = p.stdout.read()
         result = self.__get_result(p.returncode)
-        console.info('Output of %s:\n%s\n%s finished: %s\n' % (test_name,
-                stdout, test_name, result))
+        console.info('Output of %s:\n%s\n%s finished: %s\n' % (
+                     test_name, stdout, test_name, result))
 
         return p.returncode
 
     def _run_job(self, job):
         """run job, do not redirect the output. """
-        (target, run_dir, test_env, cmd) = job
+        target, run_dir, test_env, cmd = job
+        test_name = target.fullname
         shell = target.data.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
-        p.wait()
+        self._check_job_timeout(p, test_name)
         result = self.__get_result(p.returncode)
-        console.info('%s/%s finished : %s\n' % (
-             target.path, target.name, result))
+        console.info('%s finished : %s\n' % (test_name, result))
 
         return p.returncode
 
@@ -169,7 +195,6 @@ class TestScheduler(object):
         while not job_queue.empty():
             job = job_queue.get()
             target = job[0]
-            target_key = '%s:%s' % (target.path, target.name)
             start_time = time.time()
 
             try:
@@ -179,7 +204,7 @@ class TestScheduler(object):
                     returncode = self._run_job(job)
             except OSError, e:
                 console.error('%s: Create test process error: %s' %
-                              (target_key, str(e)))
+                              (target.fullname, str(e)))
                 returncode = 255
 
             costtime = time.time() - start_time
