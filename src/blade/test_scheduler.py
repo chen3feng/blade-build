@@ -20,6 +20,7 @@ import time
 import traceback
 
 import blade_util
+import configparse
 import console
 
 
@@ -45,7 +46,8 @@ class WorkerThread(threading.Thread):
         self.redirect = redirect
         self.ret = None
         self.job_start, self.job_timeout = 0, 0
-        self.job_process, self.job_name = None, ''
+        self.job_process = None
+        self.job_name = ''
         self.job_is_timeout = False
         self.job_lock = threading.Lock()
         console.info('blade test executor %d starts to work' % self.thread_id)
@@ -63,7 +65,8 @@ class WorkerThread(threading.Thread):
     def cleanup_job(self):
         """Clean up job data. """
         self.job_start, self.job_timeout = 0, 0
-        self.job_process, self.job_name = None, ''
+        self.job_process = None
+        self.job_name = ''
         self.job_is_timeout = False
 
     def set_job_data(self, p, name, timeout):
@@ -95,9 +98,11 @@ class WorkerThread(threading.Thread):
                 while not job_queue.empty():
                     self.job_start = time.time()
                     self.ret = self.job_handler(job_queue.get(), self.redirect, self)
-                    self.job_lock.acquire()
-                    self.cleanup_job()
-                    self.job_lock.release()
+                    try:
+                        self.job_lock.acquire()
+                        self.cleanup_job()
+                    finally:
+                        self.job_lock.release()
             else:
                 self.__process()
         except:
@@ -117,7 +122,6 @@ class TestScheduler(object):
         self.cpu_core_num = blade_util.cpu_count()
         self.num_of_tests = len(self.tests_list)
         self.max_worker_threads = 16
-        self.test_timeout = 60  # 1 minute for each test by default
         self.failed_targets = []
         self.failed_targets_lock = threading.Lock()
         self.tests_stdout_lock = threading.Lock()
@@ -160,8 +164,6 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        if not timeout:
-            timeout = self.test_timeout
         console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
@@ -187,8 +189,6 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        if not timeout:
-            timeout = self.test_timeout
         console.info('Running %s' % cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
@@ -249,13 +249,16 @@ class TestScheduler(object):
 
     def _wait_worker_threads(self, threads):
         """Wait for worker threads to complete. """
+        config = configparse.blade_config.get_config('global_config')
+        test_timeout = config['test_timeout']
         while threads:
             time.sleep(1)  # Check every second
             now = time.time()
             dead_threads = []
             for t in threads:
                 if t.isAlive():
-                    t.check_job_timeout(now)
+                    if test_timeout is not None:
+                        t.check_job_timeout(now)
                 else:
                     dead_threads.append(t)
 
