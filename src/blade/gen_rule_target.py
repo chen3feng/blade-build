@@ -73,6 +73,9 @@ class GenRuleTarget(Target):
         # Be conservative: Assume gen_rule always generates header files.
         return True
 
+    def _allow_duplicate_source(self):
+        return True
+
     def scons_rules(self):
         """scons_rules.
 
