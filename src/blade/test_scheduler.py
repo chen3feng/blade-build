@@ -109,7 +109,7 @@ class TestScheduler(object):
         self.cpu_core_num = blade_util.cpu_count()
         self.num_of_tests = len(self.tests_list)
         self.max_worker_threads = 16
-        self.test_timeout = 300  # 10 minutes for each test
+        self.test_timeout = 600  # 10 minutes for each test
         self.failed_targets = []
         self.failed_targets_lock = threading.Lock()
         self.tests_stdout_lock = threading.Lock()
