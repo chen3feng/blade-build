@@ -38,6 +38,7 @@ class BladeConfig(object):
             'global_config' : {
                 'build_path_template': 'build${m}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
+                'test_timeout': 0,
             },
 
             'cc_test_config': {
