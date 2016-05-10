@@ -45,7 +45,7 @@ class WorkerThread(threading.Thread):
         self.job_handler = job_handler
         self.redirect = redirect
         self.ret = None
-        self.job_start, self.job_timeout = 0, 0
+        self.job_start_time, self.job_timeout = 0, 0
         self.job_process = None
         self.job_name = ''
         self.job_is_timeout = False
@@ -64,7 +64,7 @@ class WorkerThread(threading.Thread):
 
     def cleanup_job(self):
         """Clean up job data. """
-        self.job_start, self.job_timeout = 0, 0
+        self.job_start_time, self.job_timeout = 0, 0
         self.job_process = None
         self.job_name = ''
         self.job_is_timeout = False
@@ -80,15 +80,17 @@ class WorkerThread(threading.Thread):
         The caller should invoke this method repeatedly so that a job
         which takes a very long time would be timeout sooner or later.
         """
-        self.job_lock.acquire()
-        if (not self.job_is_timeout and
-            self.job_start and self.job_timeout and
-            self.job_name and self.job_process is not None):
-            if self.job_start + self.job_timeout < now:
-                self.job_is_timeout = True
-                console.error('%s: TIMEOUT\n' % self.job_name)
-                self.job_process.terminate()
-        self.job_lock.release()
+        try:
+            self.job_lock.acquire()
+            if (not self.job_is_timeout and self.job_start_time and
+                self.job_timeout is not None and
+                self.job_name and self.job_process is not None):
+                if self.job_start_time + self.job_timeout < now:
+                    self.job_is_timeout = True
+                    console.error('%s: TIMEOUT\n' % self.job_name)
+                    self.job_process.terminate()
+        finally:
+            self.job_lock.release()
 
     def run(self):
         """executes and runs here. """
@@ -96,7 +98,7 @@ class WorkerThread(threading.Thread):
             if self.job_handler:
                 job_queue = self.job_queue
                 while not job_queue.empty():
-                    self.job_start = time.time()
+                    self.job_start_time = time.time()
                     self.ret = self.job_handler(job_queue.get(), self.redirect, self)
                     try:
                         self.job_lock.acquire()
