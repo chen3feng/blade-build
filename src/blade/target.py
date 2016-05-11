@@ -128,12 +128,12 @@ class Target(object):
             else:
                 target_existed = Target.__src_target_map[src]
                 if target_existed != target:
-                    # Always preserve the target which allows
+                    # Always preserve the target which disallows
                     # duplicate source files in the map
                     if target_existed[1]:
-                        pass
-                    elif target[1]:
                         Target.__src_target_map[src] = target
+                    elif target[1]:
+                        pass
                     else:
                         message = 'Source file %s belongs to {%s, %s}' % (
                                   s, target_existed[0], target[0])
