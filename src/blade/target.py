@@ -88,8 +88,12 @@ class Target(object):
             console.error_exit('//%s:%s: unrecognized options %s' % (
                 self.path, self.name, kwargs))
 
+    def _allow_duplicate_source(self):
+        """Whether the target allows duplicate source file with other targets. """
+        return False
+
     # Keep the relationship of all src -> target.
-    # Used by build rules to ensure that a source file occurres in
+    # Used by build rules to ensure that a source file occurs in
     # exactly one target(only library target).
     __src_target_map = {}
 
@@ -105,37 +109,38 @@ class Target(object):
             else:
                 srcset.add(s)
         if dups:
-            console.error_exit('%s:%s Duplicate source file paths: %s ' % (
-                self.path, self.name, dups))
+            console.error_exit('%s Duplicate source file paths: %s ' % (
+                               self.fullname, dups))
 
         # Check if one file belongs to two different targets.
         config = configparse.blade_config.get_config('global_config')
         action = config.get('duplicated_source_action')
-        allow_dup_src_type_list = ['cc_binary', 'cc_test', 'gen_rule']
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
-                console.error_exit('%s:%s Invalid source file path: %s. '
+                console.error_exit('%s Invalid source file path: %s. '
                     'can only be relative path, and must in current directory '
-                    'or subdirectories' % (self.path, self.name, s))
+                    'or subdirectories.' % (self.fullname, s))
 
-            src_key = os.path.normpath('%s/%s' % (self.path, s))
-            src_value = '%s %s:%s' % (
-                    self.type, self.path, self.name)
-            if src_key in Target.__src_target_map:
-                value_existed = Target.__src_target_map[src_key]
-                  # May insert multiple time in test because of not unloading module
-                if (value_existed != src_value and
-                    not (value_existed.split(' ')[0] in allow_dup_src_type_list and
-                         self.type in allow_dup_src_type_list)):
-                    message = 'Source file %s belongs to both %s and %s' % (
-                              s, value_existed, src_value)
-                    if action == 'error':
-                        console.error_exit(message)
-                    elif action == 'warning':
-                        console.warning(message)
-                    elif action == 'none' or not action:
+            src = os.path.normpath(os.path.join(self.path, s))
+            target = self.fullname, self._allow_duplicate_source()
+            if src not in Target.__src_target_map:
+                Target.__src_target_map[src] = target
+            else:
+                target_existed = Target.__src_target_map[src]
+                if target_existed != target:
+                    # Always preserve the target which disallows
+                    # duplicate source files in the map
+                    if target_existed[1]:
+                        Target.__src_target_map[src] = target
+                    elif target[1]:
                         pass
-            Target.__src_target_map[src_key] = src_value
+                    else:
+                        message = 'Source file %s belongs to {%s, %s}' % (
+                                  s, target_existed[0], target[0])
+                        if action == 'error':
+                            console.error_exit(message)
+                        elif action == 'warning':
+                            console.warning(message)
 
     def _add_hardcode_library(self, hardcode_dep_list):
         """Add hardcode dep list to key's deps. """

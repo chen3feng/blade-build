@@ -728,6 +728,9 @@ class CcBinary(CcTarget):
         link_libs = var_to_list(cc_binary_config['extra_libs'])
         self._add_hardcode_library(link_libs)
 
+    def _allow_duplicate_source(self):
+        return True
+
     def _get_rpath_links(self):
         """Get rpath_links from dependencies"""
         dynamic_link = self.data['dynamic_link']
