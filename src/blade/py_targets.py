@@ -138,7 +138,11 @@ class PythonTarget(Target):
                         kwargs)
 
         if base:
-            self.data['python_base'] = base
+            if not base.startswith('//'):
+                console.error_exit('%s: Invalid base directory %s. Option base should '
+                                   'be a directory starting with \'//\' from BLADE_ROOT directory.' %
+                                   (self.fullname, base))
+            self.data['python_base'] = base[2:]
         self.data['python_sources'] = [self._source_file_path(s) for s in srcs]
 
     def _prepare_to_generate_rule(self):
