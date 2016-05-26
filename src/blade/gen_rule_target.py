@@ -115,7 +115,8 @@ class GenRuleTarget(Target):
             cmd = '"%s" %% (%s)' % (cmd, ','.join(['str(%s[0])' % v for v in target_vars]))
         else:
             cmd = '"%s"' % cmd
-        self._write_rule('%s = %s.Command([%s], [%s], %s)' % (
+        self._write_rule('%s = %s.Command([%s], [%s], '
+                         '[%s, "@ls $TARGETS > /dev/null"])' % (
                 var_name,
                 env_name,
                 self._srcs_list(self.path, self.data['outs']),
