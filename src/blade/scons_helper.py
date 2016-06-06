@@ -881,6 +881,7 @@ def generate_shell_test(target, source, env):
     script = open(target, 'w')
     print >>script, '#!/bin/sh'
     print >>script, '# Auto generated wrapper shell script by blade\n'
+    print >>script, 'set -e\n'
     for s in source:
         print >>script, '. %s' % os.path.abspath(str(s))
     print >>script
