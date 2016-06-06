@@ -110,7 +110,7 @@ class CuTarget(CcTarget):
         sources = []
         for src in self.srcs:
             obj = '%s_%s_object' % (var_name,
-                                    self._regular_variable_name(self.name))
+                                    self._regular_variable_name(src))
             target_path = os.path.join(
                     self.build_path, self.path, '%s.objs' % self.name, src)
             self._write_rule(
