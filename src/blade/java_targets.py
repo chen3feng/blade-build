@@ -812,7 +812,7 @@ def java_fat_library(name,
                      srcs=[],
                      deps=[],
                      resources=[],
-                     source_encoding='',
+                     source_encoding=None,
                      warnings=None,
                      exclusions=[],
                      **kwargs):
