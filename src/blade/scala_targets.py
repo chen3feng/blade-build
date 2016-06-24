@@ -50,7 +50,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                         deps,
                         blade.blade,
                         kwargs)
-        self.data['resources'] = resources
+        self._process_resources(resources)
         if source_encoding:
             self.data['source_encoding'] = source_encoding
         if warnings:

@@ -23,6 +23,7 @@ import console
 import maven
 
 from blade_util import var_to_list
+from blade_util import location_re
 from target import Target
 
 
@@ -128,6 +129,28 @@ class JavaTargetMixIn(object):
             jars -= jars_excluded
 
         return jars
+
+    def _process_resources(self, resources):
+        """
+        Process resources which could be regular files/directories or
+        location references.
+        """
+        self.data['resources'], self.data['location_resources'] = [], []
+        for resource in resources:
+            if isinstance(resource, tuple):
+                src, dst = resource
+            elif isinstance(resource, str):
+                src, dst = resource, ''
+            else:
+                console.error_exit('%s: Invalid resource %s. Resource should '
+                                   'be either str or tuple.' % (self.fullname, resource))
+
+            m = location_re.search(src)
+            if m:
+                key, type = self._add_location_reference_target(m)
+                self.data['location_resources'].append((key, type, dst))
+            else:
+                self.data['resources'].append((src, dst))
 
     def _get_classes_dir(self):
         """Return path of classes dir. """
@@ -324,18 +347,7 @@ class JavaTargetMixIn(object):
 
         return full_path, jar_path
 
-    def _process_resources(self, resource_list):
-        resources = []
-        for resource in resource_list:
-            if isinstance(resource, tuple):
-                src, dst = resource[0], resource[1]
-            elif isinstance(resource, str):
-                src, dst = resource, ''
-            else:
-                console.error_exit('%s: Invalid resource %s. Resource should '
-                                   'be either str or tuple.' % (self.fullname, resource))
-            resources.append((src, dst))
-
+    def _process_regular_resources(self, resources):
         results = set()
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
@@ -474,24 +486,58 @@ class JavaTargetMixIn(object):
             self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
                              (env_name, dst, src))
 
+    def _generate_regular_resources(self, resources,
+                                    resources_var, resources_path_var):
+        env_name = self._env_name()
+        resources_dir = self._target_file_path() + '.resources'
+        resources = self._process_regular_resources(resources)
+        for i, resource in enumerate(resources):
+            src, dst = resource[0], os.path.join(resources_dir, resource[1])
+            res_var = self._var_name('resources__%s' % i)
+            self._write_rule('%s = %s.JavaResource(target = "%s", source = "%s")' %
+                             (res_var, env_name, dst, src))
+            self._write_rule('%s.append(%s)' % (resources_var, res_var))
+            self._write_rule('%s.append("%s")' % (resources_path_var, dst))
+
+    def _generate_location_resources(self, resources,
+                                     resources_var, resources_path_var):
+        env_name = self._env_name()
+        resources_dir = self._target_file_path() + '.resources'
+        targets = self.blade.get_build_targets()
+        for i, resource in enumerate(resources):
+            key, type, dst = resource
+            target = targets[key]
+            target_var = target._get_target_var(type)
+            if not target_var:
+                console.warning('%s: Location %s %s is missing. Ignored.' %
+                                (self.fullname, key, type))
+                continue
+            if dst:
+                dst_path = os.path.join(resources_dir, dst)
+            else:
+                dst_path = os.path.join(resources_dir, '${SOURCE.file}')
+            res_var = self._var_name('location_resources__%s' % i)
+            self._write_rule('%s = %s.JavaResource(target = "%s", source = %s)' %
+                             (res_var, env_name, dst_path, target_var))
+            self._write_rule('%s.append(%s)' % (resources_var, res_var))
+            if dst:
+                self._write_rule('%s.append("%s")' % (resources_path_var, dst_path))
+
     def _generate_resources(self):
         resources = self.data['resources']
-        if not resources:
+        locations = self.data['location_resources']
+        if not resources and not locations:
             return '', ''
-        resources = self._process_resources(resources)
         env_name = self._env_name()
         resources_var_name = self._var_name('resources')
         resources_path_var_name = self._var_name('resources_path')
         resources_dir = self._target_file_path() + '.resources'
         self._write_rule('%s, %s = [], []' % (
             resources_var_name, resources_path_var_name))
-        for i, resource in enumerate(resources):
-            src, dst = resource[0], os.path.join(resources_dir, resource[1])
-            res_var = self._var_name('resources__%s' % i)
-            self._write_rule('%s = %s.JavaResource(target = "%s", source = "%s")' %
-                             (res_var, env_name, dst, src))
-            self._write_rule('%s.append(%s)' % (resources_var_name, res_var))
-            self._write_rule('%s.append("%s")' % (resources_path_var_name, dst))
+        self._generate_regular_resources(resources, resources_var_name,
+                                         resources_path_var_name)
+        self._generate_location_resources(locations, resources_var_name,
+                                          resources_path_var_name)
         self._write_rule('%s.Clean(%s, "%s")' % (
             env_name, resources_var_name, resources_dir))
         return resources_var_name, resources_path_var_name
@@ -555,7 +601,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         deps,
                         blade.blade,
                         kwargs)
-        self.data['resources'] = resources
+        self._process_resources(resources)
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
