@@ -660,12 +660,14 @@ class JavaBinary(JavaTarget):
             var_name, self._env_name(),
             self._target_file_path() + '.one.jar', self.data['main_class'],
             ','.join(jar_vars), dep_jars))
+        self._add_target_var('onejar', var_name)
         return var_name
 
     def _generate_wrapper(self, onejar):
         var_name = self._var_name()
         self._write_rule('%s = %s.JavaBinary(target="%s", source=%s)' % (
             var_name, self._env_name(), self._target_file_path(), onejar))
+        self._add_default_target_var('bin', var_name)
 
 
 class JavaFatLibrary(JavaTarget):

@@ -638,16 +638,19 @@ def generate_fat_jar(target, source, env):
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
     onejar_name = os.path.basename(onejar_path)
+    full_path = os.path.abspath(onejar_path)
     target_file = open(target_name, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# *.one.jar must be in same dir
 jar=`dirname "$0"`/"%s"
+if [ ! -f "$jar" ]; then
+  jar="%s"
+fi
 
 exec java %s -jar "$jar" %s $@
-""" % (onejar_name, jvm_flags, run_args))
+""" % (onejar_name, full_path, jvm_flags, run_args))
     os.chmod(target_name, 0755)
     target_file.close()
 
