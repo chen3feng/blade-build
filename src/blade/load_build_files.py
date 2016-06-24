@@ -40,6 +40,7 @@ import package_target
 import proto_library_target
 import py_targets
 import resource_library_target
+import sh_test_target
 import swig_library_target
 import thrift_library
 import fbthrift_library

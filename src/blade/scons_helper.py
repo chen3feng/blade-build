@@ -638,16 +638,19 @@ def generate_fat_jar(target, source, env):
 def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     """generate a wrapper shell script to run jar"""
     onejar_name = os.path.basename(onejar_path)
+    full_path = os.path.abspath(onejar_path)
     target_file = open(target_name, 'w')
     target_file.write(
 """#!/bin/sh
 # Auto generated wrapper shell script by blade
 
-# *.one.jar must be in same dir
 jar=`dirname "$0"`/"%s"
+if [ ! -f "$jar" ]; then
+  jar="%s"
+fi
 
 exec java %s -jar "$jar" %s $@
-""" % (onejar_name, jvm_flags, run_args))
+""" % (onejar_name, full_path, jvm_flags, run_args))
     os.chmod(target_name, 0755)
     target_file.close()
 
@@ -863,6 +866,31 @@ def generate_package(target, source, env):
         return _generate_zip_package(target, sources, sources_dir)
     else:
         return _generate_tar_package(target, sources, sources_dir, suffix)
+
+
+def generate_shell_test_data(target, source, env):
+    """Generate test data used by shell script for subsequent execution. """
+    target = str(target[0])
+    testdata = open(target, 'w')
+    for i in range(0, len(source), 2):
+        print >>testdata, os.path.abspath(str(source[i])), source[i + 1]
+    testdata.close()
+    return None
+
+
+def generate_shell_test(target, source, env):
+    """Generate a shell wrapper to run shell scripts in source one by one. """
+    target = str(target[0])
+    script = open(target, 'w')
+    print >>script, '#!/bin/sh'
+    print >>script, '# Auto generated wrapper shell script by blade\n'
+    print >>script, 'set -e\n'
+    for s in source:
+        print >>script, '. %s' % os.path.abspath(str(s))
+    print >>script
+    script.close()
+    os.chmod(target, 0755)
+    return None
 
 
 def MakeAction(cmd, cmdstr):
@@ -1452,11 +1480,26 @@ def setup_package_builders(top_env):
     top_env.Append(BUILDERS = {"Package" : package_bld})
 
 
+def setup_shell_builders(top_env):
+    shell_test_data_message = console.erasable('%sGenerating Shell Test Data %s$TARGET%s%s' %
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    shell_test_data_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_shell_test_data, shell_test_data_message))
+    top_env.Append(BUILDERS = {"ShellTestData" : shell_test_data_bld})
+
+    shell_test_message = console.inerasable('%sGenerating Shell Test %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    shell_test_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_shell_test, shell_test_message))
+    top_env.Append(BUILDERS = {"ShellTest" : shell_test_bld})
+
+
 def setup_other_builders(top_env):
     setup_yacc_builders(top_env)
     setup_resource_builders(top_env)
     setup_python_builders(top_env)
     setup_package_builders(top_env)
+    setup_shell_builders(top_env)
 
 
 def setup_swig_builders(top_env, build_dir):

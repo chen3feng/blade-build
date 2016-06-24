@@ -39,7 +39,8 @@ class BinaryRunner(object):
                          'java_test',
                          'py_binary',
                          'py_test',
-                         'scala_test']
+                         'scala_test',
+                         'sh_test']
         self.target_database = target_database
 
     def _executable(self, target):
@@ -167,6 +168,26 @@ class BinaryRunner(object):
                 shutil.copy2(src, dest_path)
             elif os.path.isdir(src):
                 shutil.copytree(src, dest_path)
+
+        self._prepare_extra_test_data(target)
+
+    def _prepare_extra_test_data(self, target):
+        """Prepare extra test data specified in the .testdata file if it exists. """
+        testdata = os.path.join(self.build_dir, target.path,
+                                '%s.testdata' % target.name)
+        if os.path.isfile(testdata):
+            runfiles_dir = self._runfiles_dir(target)
+            for line in open(testdata):
+                data = line.strip().split()
+                if len(data) == 1:
+                    src, dst = data[0], ''
+                else:
+                    src, dst = data[0], data[1]
+                dst = os.path.join(runfiles_dir, dst)
+                dst_dir = os.path.dirname(dst)
+                if not os.path.isdir(dst_dir):
+                    os.makedirs(dst_dir)
+                shutil.copy2(src, dst)
 
     def _clean_target(self, target):
         """clean the test target environment. """
