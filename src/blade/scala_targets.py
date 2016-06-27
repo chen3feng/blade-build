@@ -107,7 +107,6 @@ class ScalaTarget(Target, JavaTargetMixIn):
             self._target_file_path() + '.jar', sources, resources_var))
         self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
                                     resources_var, resources_path_var)
-        self.data['jar_var'] = var_name
         self._add_target_var('jar', var_name)
         return var_name
 
@@ -172,7 +171,7 @@ class ScalaTest(ScalaFatLibrary):
 
     def _generate_test(self, dep_jar_vars, dep_jars):
         var_name = self._var_name()
-        jar_var = self.data.get('jar_var')
+        jar_var = self._get_target_var('jar')
         if jar_var:
             self._write_rule('%s = %s.ScalaTest(target="%s", '
                              'source=[%s] + [%s] + %s)' % (
