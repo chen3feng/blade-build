@@ -162,7 +162,7 @@ class JavaTargetMixIn(object):
 
     def __extract_dep_jars(self, dkey, dep_jar_vars, dep_jars):
         dep = self.target_database[dkey]
-        jar = dep.data.get('jar_var')
+        jar = dep._get_target_var('jar')
         if jar:
             dep_jar_vars.append(jar)
         else:
@@ -546,7 +546,6 @@ class JavaTargetMixIn(object):
         env_name = self._env_name()
         self._write_rule('%s = %s.GeneratedJavaJar(target="%s" + top_env["JARSUFFIX"], source=[%s])' % (
             var_name, env_name, self._target_file_path(), ','.join(srcs)))
-        self.data['jar_var'] = var_name
 
     def _generate_java_jar(self, srcs, resources_var):
         env_name = self._env_name()
@@ -554,14 +553,13 @@ class JavaTargetMixIn(object):
         self._write_rule('%s = %s.BladeJavaJar(target="%s", source=%s + [%s])' % (
                 var_name, env_name, self._target_file_path() + '.jar',
                 srcs, resources_var))
-        self.data['jar_var'] = var_name
         return var_name
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('fatjar')
         jar_vars = []
-        if self.data.get('jar_var'):
-            jar_vars = [self.data.get('jar_var')]
+        if self._get_target_var('jar'):
+            jar_vars = [self._get_target_var('jar')]
         jar_vars.extend(dep_jar_vars)
         self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + %s)' % (
             var_name, self._env_name(),
@@ -699,8 +697,8 @@ class JavaBinary(JavaTarget):
     def _generate_one_jar(self, dep_jar_vars, dep_jars):
         var_name = self._var_name('onejar')
         jar_vars = []
-        if self.data.get('jar_var'):
-            jar_vars = [self.data.get('jar_var')]
+        if self._get_target_var('jar'):
+            jar_vars = [self._get_target_var('jar')]
         jar_vars.extend(dep_jar_vars)
         self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + %s)' % (
             var_name, self._env_name(),
@@ -766,7 +764,7 @@ class JavaTest(JavaBinary):
 
     def _generate_java_test(self, dep_jar_vars, dep_jars):
         var_name = self._var_name()
-        jar_var = self.data.get('jar_var')
+        jar_var = self._get_target_var('jar')
         if jar_var:
             self._write_rule('%s = %s.JavaTest(target="%s", '
                              'source=[Value("%s")] + [%s] + [%s] + %s)' % (
