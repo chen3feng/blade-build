@@ -138,11 +138,13 @@ import scons_helper
         protobuf_incs_str = _incs_list_to_string(proto_config['protobuf_incs'])
         protobuf_php_path = proto_config['protobuf_php_path']
         protoc_php_plugin = proto_config['protoc_php_plugin']
+        protoc_go_plugin = proto_config['protoc_go_plugin']
         self._add_rule('scons_helper.setup_proto_builders(top_env, "%s", protoc_bin="%s", '
                        'protoc_java_bin="%s", protobuf_path="%s", protobuf_incs_str="%s", '
-                       'protobuf_php_path="%s", protoc_php_plugin="%s")' % (
+                       'protobuf_php_path="%s", protoc_php_plugin="%s", '
+                       'protoc_go_plugin="%s")' % (
             self.build_dir, protoc_bin, protoc_java_bin, protobuf_path, protobuf_incs_str,
-            protobuf_php_path, protoc_php_plugin))
+            protobuf_php_path, protoc_php_plugin, protoc_go_plugin))
 
     def _generate_thrift_builders(self):
         # Generate thrift library builders.

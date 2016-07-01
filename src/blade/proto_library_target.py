@@ -128,6 +128,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         proto_name = src[:-6]
         return self._target_file_path('%s_pb2.py' % proto_name)
 
+    def _proto_gen_go_file(self, src):
+        """Generate the go file name. """
+        proto_name = src[:-6]
+        return self._target_file_path('%s.pb.go' % proto_name)
+
     def _proto_gen_descriptor_file(self, name):
         """Generate the descriptor file name. """
         return self._target_file_path('%s.descriptors.pb' % name)
@@ -137,7 +142,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _get_java_package_name(self, content):
         """Get the java package name from proto file if it is specified. """
-        java_package_pattern = '^\s*option\s*java_package\s*=\s*["\']([\w.]+)'
+        java_package_pattern = '^\s*option\s+java_package\s*=\s*["\']([\w.]+)'
         m = re.search(java_package_pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
@@ -232,6 +237,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             ', '.join(self.data['python_vars'])))
         self.data['python_var'] = py_lib_var
 
+    def _proto_go_rules(self):
+        """Generate go files. """
+        env_name = self._env_name()
+        var_name = self._var_name('go')
+        self._write_rule('%s = []' % var_name)
+        for src in self.srcs:
+            proto_src = os.path.join(self.path, src)
+            go_src = self._proto_gen_go_file(src)
+            var = self._var_name_of(src, 'go')
+            self._write_rule('%s = %s.ProtoGo("%s", "%s")' % (
+                             var, env_name, go_src, proto_src))
+            self._write_rule('%s.append(%s)' % (var_name, var))
+
     def _proto_descriptor_rules(self):
         """Generate descriptor files. """
         proto_srcs = [os.path.join(self.path, src) for src in self.srcs]
@@ -265,6 +283,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if (getattr(options, 'generate_python', False) or
             self.data.get('generate_python')):
             self._proto_python_rules()
+
+        if (getattr(options, 'generate_go', False) or
+            self.data.get('generate_go')):
+            self._proto_go_rules()
 
         if self.data['generate_descriptors']:
             self._proto_descriptor_rules()

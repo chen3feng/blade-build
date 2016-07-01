@@ -1147,7 +1147,7 @@ def proto_scan_func(node, env, path, arg):
 
 def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
                          protobuf_path, protobuf_incs_str,
-                         protoc_php_plugin, protobuf_php_path):
+                         protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
@@ -1158,6 +1158,9 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
     compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_go_message = console.erasable('%sCompiling %s$SOURCE%s to go source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
     generate_proto_descriptor_message = console.inerasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
@@ -1186,6 +1189,12 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
             protoc_bin, protobuf_incs_str, build_dir),
         compile_proto_python_message))
     top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
+
+    proto_go_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. --plugin=protoc-gen-go=%s -I. %s -I=`dirname $SOURCE` --go_out=%s $SOURCE" % (
+        protoc_bin, protoc_go_plugin, protobuf_incs_str, build_dir),
+        compile_proto_go_message))
+    top_env.Append(BUILDERS = {"ProtoGo" : proto_go_bld})
 
     proto_descriptor_bld = SCons.Builder.Builder(action = MakeAction(
         '%s --proto_path=. -I. %s -I=`dirname $SOURCE` '
