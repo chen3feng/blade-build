@@ -115,6 +115,7 @@ class BladeConfig(object):
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
                 'protobuf_java_libs' : [],
+                'protoc_go_plugin': '',
             },
 
             'cc_config': {

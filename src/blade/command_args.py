@@ -202,6 +202,11 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Generate python files for proto_library and thrift_library.')
 
+        parser.add_argument(
+            '--generate-go', dest='generate_go',
+            action='store_true', default=False,
+            help='Generate go files for proto_library.')
+
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
