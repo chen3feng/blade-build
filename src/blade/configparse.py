@@ -93,6 +93,10 @@ class BladeConfig(object):
             'scala_test_config': {
                 'scalatest_libs' : '',
             },
+            'go_config' : {
+                'go' : '',
+                'go_home' : '',  # GOPATH
+            },
             'thrift_config': {
                 'thrift': 'thrift',
                 'thrift_libs': [],
@@ -116,6 +120,9 @@ class BladeConfig(object):
                 'protoc_php_plugin': '',
                 'protobuf_java_libs' : [],
                 'protoc_go_plugin': '',
+                # All the generated go source files will be placed
+                # into $GOPATH/src/protobuf_go_path
+                'protobuf_go_path': '',
             },
 
             'cc_config': {
@@ -265,6 +272,11 @@ def scala_config(append=None, **kwargs):
 def scala_test_config(append=None, **kwargs):
     """scala_test_config. """
     blade_config.update_config('scala_test_config', append, kwargs)
+
+
+def go_config(append=None, **kwargs):
+    """go_config. """
+    blade_config.update_config('go_config', append, kwargs)
 
 
 def proto_library_config(append=None, **kwargs):
