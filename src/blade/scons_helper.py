@@ -1222,7 +1222,9 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
 
     proto_go_bld = SCons.Builder.Builder(action = MakeAction(
-        generate_proto_go_source, compile_proto_go_message))
+        generate_proto_go_source, compile_proto_go_message),
+        PROTOC = protoc_bin, PROTOCGOPLUGIN = protoc_go_plugin,
+        PROTOBUFINCS = protobuf_incs_str, BUILDDIR = build_dir)
     top_env.Append(BUILDERS = {"ProtoGo" : proto_go_bld})
 
     proto_go_source_bld = SCons.Builder.Builder(

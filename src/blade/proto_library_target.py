@@ -245,13 +245,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if not go_home:
             console.error_exit('%s: go_home is not configured in BLADE_ROOT.' % self.fullname)
         proto_config = configparse.blade_config.get_config('proto_library_config')
-        self._write_rule('%s.Replace(PROTOC="%s")' % (env_name, proto_config['protoc']))
-        self._write_rule('%s.Replace(PROTOCGOPLUGIN="%s")' % (env_name, proto_config['protoc_go_plugin']))
         proto_go_path = proto_config['protobuf_go_path']
         self._write_rule('%s.Replace(PROTOBUFGOPATH="%s")' % (env_name, proto_go_path))
-        self._write_rule('%s.Replace(PROTOBUFINCS="%s")' % (env_name,
-            ' '.join(['-I%s' % inc for inc in proto_config['protobuf_incs']])))
-        self._write_rule('%s.Replace(BUILDDIR="%s")' % (env_name, self.build_path))
         self._write_rule('%s = []' % var_name)
         for src in self.srcs:
             proto_src = os.path.join(self.path, src)
