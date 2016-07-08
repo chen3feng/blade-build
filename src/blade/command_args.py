@@ -288,6 +288,10 @@ class CmdArguments(object):
             '--output-to-dot', dest='output_to_dot', type=str,
             help='The name of file to output query results as dot(graphviz) '
                  'format.')
+        parser.add_argument(
+            '--output-tree', dest='output_tree',
+            action='store_true', default=False,
+            help='Show the dependency tree of the specified target.')
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """
