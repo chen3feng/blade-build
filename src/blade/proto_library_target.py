@@ -241,14 +241,30 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Generate go files. """
         env_name = self._env_name()
         var_name = self._var_name('go')
+        go_home = configparse.blade_config.get_config('go_config')['go_home']
+        if not go_home:
+            console.error_exit('%s: go_home is not configured in BLADE_ROOT.' % self.fullname)
+        proto_config = configparse.blade_config.get_config('proto_library_config')
+        proto_go_path = proto_config['protobuf_go_path']
+        self._write_rule('%s.Replace(PROTOBUFGOPATH="%s")' % (env_name, proto_go_path))
         self._write_rule('%s = []' % var_name)
         for src in self.srcs:
             proto_src = os.path.join(self.path, src)
             go_src = self._proto_gen_go_file(src)
-            var = self._var_name_of(src, 'go')
+            go_src_var = self._var_name_of(src, 'go_src')
             self._write_rule('%s = %s.ProtoGo("%s", "%s")' % (
-                             var, env_name, go_src, proto_src))
-            self._write_rule('%s.append(%s)' % (var_name, var))
+                             go_src_var, env_name, go_src, proto_src))
+            # Copy the generated go sources to $GOPATH
+            # according to the standard go directory layout
+            proto_dir = os.path.dirname(src)
+            proto_name = os.path.basename(src)
+            go_dst = os.path.join(go_home, 'src', proto_go_path, self.path,
+                                  proto_dir, proto_name.replace('.', '_'),
+                                  os.path.basename(go_src))
+            go_dst_var = self._var_name_of(src, 'go_dst')
+            self._write_rule('%s = %s.ProtoGoSource("%s", %s)' % (
+                             go_dst_var, env_name, go_dst, go_src_var))
+            self._write_rule('%s.append(%s)' % (var_name, go_dst_var))
 
     def _proto_descriptor_rules(self):
         """Generate descriptor files. """
