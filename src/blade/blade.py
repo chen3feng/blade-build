@@ -171,6 +171,7 @@ class Blade(object):
         print_deps = getattr(self.__options, 'deps', False)
         print_depended = getattr(self.__options, 'depended', False)
         dot_file = getattr(self.__options, 'output_to_dot', '')
+        print_dep_tree = getattr(self.__options, 'output_tree', False)
         result_map = self.query_helper(targets)
         if dot_file:
             print_mode = 0
@@ -182,13 +183,16 @@ class Blade(object):
             self.output_dot(result_map, print_mode, dot_file)
         else:
             if print_deps:
-                for key in result_map:
-                    print '\n'
-                    deps = result_map[key][0]
-                    console.info('//%s:%s depends on the following targets:' % (
-                            key[0], key[1]))
-                    for d in deps:
-                        print '%s:%s' % (d[0], d[1])
+                if print_dep_tree:
+                    self.query_dependency_tree(targets)
+                else:
+                    for key in result_map:
+                        print '\n'
+                        deps = result_map[key][0]
+                        console.info('//%s:%s depends on the following targets:' % (
+                                key[0], key[1]))
+                        for d in deps:
+                            print '%s:%s' % (d[0], d[1])
             if print_depended:
                 for key in result_map:
                     print '\n'
@@ -262,6 +266,37 @@ class Blade(object):
             depended_by = self.__depended_targets[key]
             result_map[key] = (sorted(deps), sorted(depended_by))
         return result_map
+
+    def query_dependency_tree(self, targets):
+        """Query the dependency tree of the specified targets. """
+        query_targets = []
+        for target in targets:
+            if ':' not in target:
+                console.error_exit(
+                    'Target %s is not supported by dependency tree query. '
+                    'The target should be in the format directory:name.' % target)
+            path, name = target.split(':')
+            relpath = os.path.relpath(self.__working_dir, self.__root_dir)
+            path = os.path.normpath(os.path.join(relpath, path))
+            query_targets.append((path, name))
+
+        for key in query_targets:
+            console.info('')
+            self._query_dependency_tree(key, 0, self.__build_targets)
+            console.info('')
+
+    def _query_dependency_tree(self, key, level, build_targets):
+        """Query the dependency tree of the specified target recursively. """
+        path, name = key
+        if level == 0:
+            output = '%s:%s' % (path, name)
+        elif level == 1:
+            output = '%s %s:%s' % ('+-', path, name)
+        else:
+            output = '%s%s %s:%s' % ('|  ' * (level - 1), '+-', path, name)
+        console.info(console.colors('end') + console.colors('gray') + output)
+        for dkey in build_targets[key].deps:
+            self._query_dependency_tree(dkey, level + 1, build_targets)
 
     def get_build_path(self):
         """The current building path. """
