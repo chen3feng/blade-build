@@ -853,6 +853,36 @@ def copy_proto_go_source(target, source, env):
     return None
 
 
+def _generate_go_package(target, source, env):
+    go, go_home = env['GOCMD'], env['GOHOME']
+    cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
+    console.debug(cmd)
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+
+
+def generate_go_library(target, source, env):
+    """
+    Generate go package object. Note that the sources should be
+    in the same directory and the go tool compiles them as a whole
+    by designating the package path.
+    """
+    return _generate_go_package(target, source, env)
+
+
+def generate_go_binary(target, source, env):
+    """Generate go command executable. """
+    return _generate_go_package(target, source, env)
+
+
+def generate_go_test(target, source, env):
+    """Generate go test binary. """
+    go, go_home = env['GOCMD'], env['GOHOME']
+    cmd = 'GOPATH=%s %s test -c -o %s %s' % (
+          go_home, go, target[0], env['GOPACKAGE'])
+    console.debug(cmd)
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+
+
 def MakeAction(cmd, cmdstr):
     global option_verbose
     if option_verbose:
@@ -1398,6 +1428,31 @@ def setup_scala_builders(top_env, scala_home):
     scala_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_scala_test, scala_test_message))
     top_env.Append(BUILDERS = {"ScalaTest" : scala_test_bld})
+
+
+def setup_go_builders(top_env, go_cmd, go_home):
+    if go_cmd:
+        top_env.Replace(GOCMD=go_cmd)
+    if go_home:
+        top_env.Replace(GOHOME=go_home)
+
+    go_library_message = console.inerasable('%sGenerating Go Package %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_library_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_library, go_library_message))
+    top_env.Append(BUILDERS = {"GoLibrary" : go_library_builder})
+
+    go_binary_message = console.inerasable('%sGenerating Go Executable %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_binary_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_binary, go_binary_message))
+    top_env.Append(BUILDERS = {"GoBinary" : go_binary_builder})
+
+    go_test_message = console.inerasable('%sGenerating Go Test %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_test_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_test, go_test_message))
+    top_env.Append(BUILDERS = {"GoTest" : go_test_builder})
 
 
 def setup_yacc_builders(top_env):
