@@ -265,6 +265,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self._write_rule('%s = %s.ProtoGoSource("%s", %s)' % (
                              go_dst_var, env_name, go_dst, go_src_var))
             self._write_rule('%s.append(%s)' % (var_name, go_dst_var))
+        self._add_target_var('go', var_name)
 
     def _proto_descriptor_rules(self):
         """Generate descriptor files. """

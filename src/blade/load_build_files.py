@@ -32,6 +32,7 @@ from pathlib import Path
 import cc_targets
 import cu_targets
 import gen_rule_target
+import go_targets
 import java_jar_target
 import java_targets
 import scala_targets
