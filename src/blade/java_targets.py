@@ -664,12 +664,23 @@ class JavaLibrary(JavaTarget):
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
 
+    def _generate_prebuilt_jar(self):
+        env_name = self._env_name()
+        var_name = self._var_name('jar')
+        self._write_rule('%s = %s.File(["%s"])' % (
+                         var_name, env_name, self.data['binary_jar']))
+        return var_name
+
     def scons_rules(self):
-        if self.type != 'prebuilt_java_library':
+        if self.type == 'prebuilt_java_library':
+            self._clone_env()
+            jar_var = self._generate_prebuilt_jar()
+        else:
             self._prepare_to_generate_rule()
             jar_var = self._generate_jar()
-            if jar_var:
-                self._add_default_target_var('jar', jar_var)
+
+        if jar_var:
+            self._add_default_target_var('jar', jar_var)
 
 
 class JavaBinary(JavaTarget):
