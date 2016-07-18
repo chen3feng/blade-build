@@ -663,7 +663,6 @@ class JavaLibrary(JavaTarget):
             if not binary_jar:
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
-            self._add_default_target_var('jar', self.data['binary_jar'])
 
     def scons_rules(self):
         if self.type != 'prebuilt_java_library':
