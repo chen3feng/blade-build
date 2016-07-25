@@ -18,6 +18,7 @@
 import os
 import time
 
+import blade_util
 import configparse
 import console
 
@@ -92,6 +93,7 @@ import os
 import subprocess
 import glob
 
+import blade_util
 import build_environment
 import console
 import scons_helper
@@ -107,6 +109,15 @@ import scons_helper
     os.mkdir('%s')""") % (self.build_dir, self.build_dir))
         self._add_rule('console.set_log_file("%s")' % os.path.join(
                 self.build_dir, 'blade_scons.log'))
+
+        # Add java_home/bin into PATH to make scons
+        # construction variables of java work as expected
+        # See http://scons.org/faq.html#SCons_Questions
+        java_config = configparse.blade_config.get_config('java_config')
+        java_home = java_config['java_home']
+        if java_home:
+            self._add_rule('blade_util.environ_add_path(os.environ, "PATH", '
+                           'os.path.join("%s", "bin"))' % java_home)
 
     def generate_top_level_env(self):
         """generates top level environment. """
