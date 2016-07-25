@@ -18,7 +18,6 @@
 import os
 import time
 
-import blade_util
 import configparse
 import console
 
