@@ -362,7 +362,6 @@ def _generate_java_jar(target, sources, resources, env):
     if sources:
         cmd = '%s %s -d %s -classpath %s %s' % (
                 javac, options, classes_dir, classpath, ' '.join(sources))
-        console.debug(cmd)
         if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
             return 1
 
@@ -381,7 +380,6 @@ def _generate_java_jar(target, sources, resources, env):
                     os.path.relpath(resource, resources_dir)))
 
     cmd = ' '.join(cmd)
-    console.debug(cmd)
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -679,7 +677,6 @@ def _generate_scala_jar(target, sources, resources, env):
 
     cmd = 'JAVACMD=%s %s -d %s -classpath %s %s %s' % (java, scalac, target,
             classpath, options, ' '.join(sources))
-    console.debug(cmd)
     if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
         return 1
 
@@ -691,7 +688,6 @@ def _generate_scala_jar(target, sources, resources, env):
                 cmd.append("-C '%s' '%s'" % (resources_dir,
                     os.path.relpath(resource, resources_dir)))
 
-            console.debug(cmd)
             return echospawn(args=cmd, env=os.environ, sh=None, cmd=None, escape=None)
 
     return None
@@ -843,7 +839,6 @@ def generate_proto_go_source(target, source, env):
     cmd = '%s --proto_path=. --plugin=protoc-gen-go=%s -I. %s -I=%s --go_out=%s:%s %s' % (
            env['PROTOC'], env['PROTOCGOPLUGIN'], env['PROTOBUFINCS'],
            os.path.dirname(str(source)), parameters, env['BUILDDIR'], source)
-    console.debug(cmd)
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -856,7 +851,6 @@ def copy_proto_go_source(target, source, env):
 def _generate_go_package(target, source, env):
     go, go_home = env['GOCMD'], env['GOHOME']
     cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
-    console.debug(cmd)
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -879,7 +873,6 @@ def generate_go_test(target, source, env):
     go, go_home = env['GOCMD'], env['GOHOME']
     cmd = 'GOPATH=%s %s test -c -o %s %s' % (
           go_home, go, target[0], env['GOPACKAGE'])
-    console.debug(cmd)
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -922,12 +915,12 @@ def error_colorize(message):
     return console.inerasable(''.join(colored_message))
 
 
-def _colored_echo(stdout, stderr):
-    """Echo error colored message"""
+def _echo(stdout, stderr):
+    """Echo messages to stdout and stderr. """
     if stdout:
-        sys.stdout.write(error_colorize(stdout))
+        sys.stdout.write(stdout)
     if stderr:
-        sys.stderr.write(error_colorize(stderr))
+        sys.stderr.write(stderr)
 
 
 def echospawn(sh, escape, cmd, args, env):
@@ -937,22 +930,29 @@ def echospawn(sh, escape, cmd, args, env):
         asciienv[key] = str(value)
 
     cmdline = ' '.join(args)
-    p = subprocess.Popen(
-        cmdline,
-        env=asciienv,
-        stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        shell=True,
-        universal_newlines=True)
-    (stdout, stderr) = p.communicate()
+    console.debug(cmdline)
+    p = subprocess.Popen(cmdline,
+                         env=asciienv,
+                         stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         shell=True,
+                         universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    global option_verbose
+    if not option_verbose:
+        if stdout:
+            stdout = error_colorize(stdout)
+        if stderr:
+            stderr = error_colorize(stderr)
 
     if p.returncode:
         if p.returncode != -signal.SIGINT:
             # Error
-            _colored_echo(stdout, stderr)
+            _echo(stdout, stderr)
     else:
         # Only warnings
-        _colored_echo(stdout, stderr)
+        _echo(stdout, stderr)
 
     return p.returncode
 
@@ -1137,9 +1137,7 @@ def get_link_program_message():
 def setup_compliation_verbose(top_env, color_enabled, verbose):
     """Generates color and verbose message. """
     console.color_enabled = color_enabled
-
-    if not verbose:
-        top_env["SPAWN"] = echospawn
+    top_env["SPAWN"] = echospawn
 
     compile_source_message = get_compile_source_message()
     link_program_message = get_link_program_message()
