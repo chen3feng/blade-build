@@ -77,7 +77,7 @@ class SconsFileHeaderGenerator(object):
                 'blade_root_dir="%s", build_dir="%s", profile="%s", '
                 'gcc_version="%s", svn_roots=%s)' % (
                     blade_root_dir, self.build_dir, self.options.profile,
-                    self.gcc_version, self.svn_roots))
+                    self.gcc_version, sorted(self.svn_roots)))
 
     def generate_imports_functions(self, blade_path):
         """Generates imports and functions. """
