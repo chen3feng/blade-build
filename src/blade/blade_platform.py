@@ -36,15 +36,8 @@ class SconsPlatform(object):
         """Get the gcc version. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
-        p = subprocess.Popen(
-            gcc + ' --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' --version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
             return version
@@ -54,15 +47,8 @@ class SconsPlatform(object):
     def _get_nvcc_version():
         """Get the nvcc version. """
         nvcc = os.environ.get('NVCC', 'nvcc')
-        p = subprocess.Popen(
-            nvcc + ' --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute(nvcc + ' --version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[5]
             return version
@@ -71,15 +57,8 @@ class SconsPlatform(object):
     @staticmethod
     def _get_python_include():
         """Get the python include dir. """
-        p = subprocess.Popen(
-            'python-config --includes',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('python-config --includes')
+        if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             header = include_line.split()[0][2:]
             return header
@@ -87,15 +66,8 @@ class SconsPlatform(object):
 
     @staticmethod
     def _get_php_include():
-        p = subprocess.Popen(
-            'php-config --includes',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('php-config --includes')
+        if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
             header_list = ["'%s'" % s[2:] for s in headers]
@@ -110,15 +82,8 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        p = subprocess.Popen(
-            'java -version',
-            env=os.environ,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('java -version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
             version = version.replace('"', '')
@@ -135,15 +100,8 @@ class SconsPlatform(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        p = subprocess.Popen(
-            'nvcc --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('nvcc --version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[4]
             version = version.replace(',', '')
@@ -152,6 +110,17 @@ class SconsPlatform(object):
                 include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
                 return include_list
         return []
+
+    @staticmethod
+    def _execute(cmd):
+        p = subprocess.Popen(cmd,
+                             env=os.environ,
+                             stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             shell=True,
+                             universal_newlines=True)
+        stdout, stderr = p.communicate()
+        return p.returncode, stdout, stderr
 
     def get_gcc_version(self):
         """Returns gcc version. """
