@@ -43,7 +43,7 @@ class SconsFileHeaderGenerator(object):
         self.python_inc = python_inc
         self.cuda_inc = cuda_inc
         self.build_environment = build_environment
-        self.ccflags_manager = CcFlagsManager(options)
+        self.ccflags_manager = CcFlagsManager(options, gcc_version)
         self.env_list = ['env_with_error', 'env_no_warning']
 
         self.svn_roots = svn_roots
@@ -232,7 +232,7 @@ import scons_helper
         console.info('CXX=%s' % cxx_str)
         console.info('LD=%s' % ld_str)
 
-        self.ccflags_manager.set_cpp_str(cpp_str)
+        self.ccflags_manager.set_cc(cc_str)
 
         # To modify CC, CXX, LD according to the building environment and
         # project configuration
