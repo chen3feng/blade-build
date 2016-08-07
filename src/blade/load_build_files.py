@@ -136,7 +136,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     old_current_source_path = blade.get_current_source_path()
     blade.set_current_source_path(source_dir)
     build_file = os.path.join(source_dir, 'BUILD')
-    if os.path.exists(build_file):
+    if os.path.exists(build_file) and not os.path.isdir(build_file):
         try:
             # The magic here is that a BUILD file is a Python script,
             # which can be loaded and executed by execfile().
