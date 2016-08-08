@@ -82,7 +82,7 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute('java -version')
+        returncode, stdout, stderr = SconsPlatform._execute('java -version', True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
@@ -112,10 +112,13 @@ class SconsPlatform(object):
         return []
 
     @staticmethod
-    def _execute(cmd):
+    def _execute(cmd, redirect_stderr_to_stdout = False):
+        redirect_stderr = subprocess.PIPE
+        if redirect_stderr_to_stdout:
+            redirect_stderr = subprocess.STDOUT
         p = subprocess.Popen(cmd,
                              env=os.environ,
-                             stderr=subprocess.PIPE,
+                             stderr=redirect_stderr,
                              stdout=subprocess.PIPE,
                              shell=True,
                              universal_newlines=True)
@@ -163,7 +166,7 @@ class CcFlagsManager(object):
         supported_flags, unsupported_flags = [], []
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -c -x %s %s - > /dev/null 2>&1' % (
+                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
                    self.cc, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
