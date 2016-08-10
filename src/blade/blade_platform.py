@@ -82,7 +82,8 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute('java -version', True)
+        returncode, stdout, stderr = SconsPlatform._execute(
+                'java -version', redirect_stderr_to_stdout = True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
