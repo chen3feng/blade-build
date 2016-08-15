@@ -96,6 +96,10 @@ class CcTarget(Target):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
+        if self.data.get('hip_version'):
+            cc_config = configparse.blade_config.get_config('cc_config')
+            self._write_rule('%s.Append(HIPCC="%s")' % (
+                             self._env_name(), cc_config['hipcc']))
 
     def _clone_env(self):
         """Select env. """
@@ -266,14 +270,17 @@ class CcTarget(Target):
         cpp_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
-
         if (self.blade.get_options().profile == 'release' or
             self.data.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
             # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
             cpp_flags += ['-fno-omit-frame-pointer']
 
+        # Other flags
         cpp_flags += self.data.get('extra_cppflags', [])
+        hip_version = self.data.get('hip_version')
+        if hip_version:
+            cpp_flags.append('--version=%s' % hip_version)
 
         # Incs
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
@@ -540,9 +547,11 @@ class CcTarget(Target):
                                     self._regular_variable_name(self.name))
             target_path = self._target_file_path() + '.objs/%s' % src
             source_path = self._target_file_path(src)  # Also find generated files
-            self._write_rule(
-                    '%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
+            rule = ('%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
                     ', source = "%s")' % (obj, env_name, target_path, source_path))
+            if self.data.get('hip_version'):
+                rule = rule[:-1] + ', CXX = "$HIPCC")'
+            self._write_rule(rule)
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -566,7 +575,7 @@ class CcLibrary(CcTarget):
     """A cc target subclass.
 
     This class is derived from SconsTarget and it generates the library
-    rules including dynamic library rules accoring to user option.
+    rules including dynamic library rules according to user option.
 
     """
     def __init__(self,
@@ -585,6 +594,7 @@ class CcLibrary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
+                 hip_version,
                  blade,
                  kwargs):
         """Init method.
@@ -613,6 +623,7 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
+        self.data['hip_version'] = hip_version
 
     def _rpath_link(self, dynamic):
         lib_path = self._prebuilt_cc_library_target_path(dynamic)
@@ -651,6 +662,7 @@ def cc_library(name,
                extra_cppflags=[],
                extra_linkflags=[],
                allow_undefined=False,
+               hip_version=None,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -668,6 +680,7 @@ def cc_library(name,
                        extra_cppflags,
                        extra_linkflags,
                        allow_undefined,
+                       hip_version,
                        blade.blade,
                        kwargs)
     if pre_build:
