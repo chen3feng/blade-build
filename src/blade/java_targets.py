@@ -553,6 +553,10 @@ class JavaTargetMixIn(object):
         self._write_rule('%s = %s.BladeJavaJar(target="%s", source=%s + [%s])' % (
                 var_name, env_name, self._target_file_path() + '.jar',
                 srcs, resources_var))
+        # BladeJavaJar builder puts the generated classes
+        # into .class directory during jar building
+        classes_dir = self._get_classes_dir()
+        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
