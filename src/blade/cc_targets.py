@@ -542,7 +542,7 @@ class CcTarget(Target):
             rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
                          (target_path, source_path))
             if self.data.get('hip'):
-                rule_args += ', CXX = "$HIPCC"'
+                rule_args += ', CXX = "$HIPCXX"'
             self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
