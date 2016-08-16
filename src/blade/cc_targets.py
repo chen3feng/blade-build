@@ -266,7 +266,6 @@ class CcTarget(Target):
         cpp_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
-
         if (self.blade.get_options().profile == 'release' or
             self.data.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
@@ -540,9 +539,11 @@ class CcTarget(Target):
                                     self._regular_variable_name(self.name))
             target_path = self._target_file_path() + '.objs/%s' % src
             source_path = self._target_file_path(src)  # Also find generated files
-            self._write_rule(
-                    '%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
-                    ', source = "%s")' % (obj, env_name, target_path, source_path))
+            rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
+                         (target_path, source_path))
+            if self.data.get('hip'):
+                rule_args += ', CXX = "$HIPCXX"'
+            self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -566,7 +567,7 @@ class CcLibrary(CcTarget):
     """A cc target subclass.
 
     This class is derived from SconsTarget and it generates the library
-    rules including dynamic library rules accoring to user option.
+    rules including dynamic library rules according to user option.
 
     """
     def __init__(self,
@@ -585,6 +586,7 @@ class CcLibrary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
+                 hip,
                  blade,
                  kwargs):
         """Init method.
@@ -613,6 +615,7 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
+        self.data['hip'] = hip
 
     def _rpath_link(self, dynamic):
         lib_path = self._prebuilt_cc_library_target_path(dynamic)
@@ -651,6 +654,7 @@ def cc_library(name,
                extra_cppflags=[],
                extra_linkflags=[],
                allow_undefined=False,
+               hip=False,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -668,6 +672,7 @@ def cc_library(name,
                        extra_cppflags,
                        extra_linkflags,
                        allow_undefined,
+                       hip,
                        blade.blade,
                        kwargs)
     if pre_build:

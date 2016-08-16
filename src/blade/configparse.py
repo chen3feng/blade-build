@@ -138,6 +138,7 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
+                'hipcc' : None,
             },
             'cc_library_config': {
                 'generate_dynamic' : None
