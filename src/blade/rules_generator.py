@@ -266,10 +266,11 @@ import scons_helper
                         building_var=ld_str,
                         condition=build_with_dccc)
 
-        cc_env_str = 'CC="%s", CXX="%s"' % (cc_str, cxx_str)
+        cc_config = configparse.blade_config.get_config('cc_config')
+        cc_env_str = ('CC="%s", CXX="%s", HIPCXX="%s"' % (
+                      cc_str, cxx_str, cc_config['hipcc']))
         ld_env_str = 'LINK="%s"' % ld_str
 
-        cc_config = configparse.blade_config.get_config('cc_config')
         extra_incs = cc_config['extra_incs']
         extra_incs_str = ', '.join(['"%s"' % inc for inc in extra_incs])
         if not extra_incs_str:

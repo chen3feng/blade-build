@@ -96,10 +96,6 @@ class CcTarget(Target):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
-        if self.data.get('hip_version'):
-            cc_config = configparse.blade_config.get_config('cc_config')
-            self._write_rule('%s.Append(HIPCC="%s")' % (
-                             self._env_name(), cc_config['hipcc']))
 
     def _clone_env(self):
         """Select env. """
@@ -276,11 +272,7 @@ class CcTarget(Target):
             # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
             cpp_flags += ['-fno-omit-frame-pointer']
 
-        # Other flags
         cpp_flags += self.data.get('extra_cppflags', [])
-        hip_version = self.data.get('hip_version')
-        if hip_version:
-            cpp_flags.append('--version=%s' % hip_version)
 
         # Incs
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
@@ -547,11 +539,11 @@ class CcTarget(Target):
                                     self._regular_variable_name(self.name))
             target_path = self._target_file_path() + '.objs/%s' % src
             source_path = self._target_file_path(src)  # Also find generated files
-            rule = ('%s = %s.SharedObject(target = "%s" + top_env["OBJSUFFIX"]'
-                    ', source = "%s")' % (obj, env_name, target_path, source_path))
-            if self.data.get('hip_version'):
-                rule = rule[:-1] + ', CXX = "$HIPCC")'
-            self._write_rule(rule)
+            rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
+                         (target_path, source_path))
+            if self.data.get('hip'):
+                rule_args += ', CXX = "$HIPCC"'
+            self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -594,7 +586,7 @@ class CcLibrary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
-                 hip_version,
+                 hip,
                  blade,
                  kwargs):
         """Init method.
@@ -623,7 +615,7 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
-        self.data['hip_version'] = hip_version
+        self.data['hip'] = hip
 
     def _rpath_link(self, dynamic):
         lib_path = self._prebuilt_cc_library_target_path(dynamic)
@@ -662,7 +654,7 @@ def cc_library(name,
                extra_cppflags=[],
                extra_linkflags=[],
                allow_undefined=False,
-               hip_version=None,
+               hip=False,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -680,7 +672,7 @@ def cc_library(name,
                        extra_cppflags,
                        extra_linkflags,
                        allow_undefined,
-                       hip_version,
+                       hip,
                        blade.blade,
                        kwargs)
     if pre_build:
