@@ -545,7 +545,7 @@ class CcTarget(Target):
                 rule_args += ', CXX = "$HIPCXX"'
             self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
             if self.data.get('hip'):
-                self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
+                self._hipcc_object_rules(obj, source_path)
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -563,6 +563,16 @@ class CcTarget(Target):
         if objs:
             objs_dirname = self._target_file_path() + '.objs'
             self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dirname))
+
+    def _hipcc_object_rules(self, obj, src):
+        """Touch the source file if needed and generate specific object rules for hipcc. """
+        env_name = self._env_name()
+        self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
+        if not os.path.exists(src):
+            dir = os.path.dirname(src)
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
+            open(src, 'w').close()
 
 
 class CcLibrary(CcTarget):
