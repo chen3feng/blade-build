@@ -223,16 +223,16 @@ import scons_helper
         toolchain_dir = os.environ.get('TOOLCHAIN_DIR', '')
         if toolchain_dir and not toolchain_dir.endswith('/'):
             toolchain_dir += '/'
-        cpp_str = toolchain_dir + os.environ.get('CPP', 'cpp')
-        cc_str = toolchain_dir + os.environ.get('CC', 'gcc')
-        cxx_str = toolchain_dir + os.environ.get('CXX', 'g++')
-        ld_str = toolchain_dir + os.environ.get('LD', 'g++')
-        console.info('CPP=%s' % cpp_str)
-        console.info('CC=%s' % cc_str)
-        console.info('CXX=%s' % cxx_str)
-        console.info('LD=%s' % ld_str)
+        cpp = toolchain_dir + os.environ.get('CPP', 'cpp')
+        cc = toolchain_dir + os.environ.get('CC', 'gcc')
+        cxx = toolchain_dir + os.environ.get('CXX', 'g++')
+        ld = toolchain_dir + os.environ.get('LD', 'g++')
+        console.info('CPP=%s' % cpp)
+        console.info('CC=%s' % cc)
+        console.info('CXX=%s' % cxx)
+        console.info('LD=%s' % ld)
 
-        self.ccflags_manager.set_cc(cc_str)
+        self.ccflags_manager.set_cc(cc)
 
         # To modify CC, CXX, LD according to the building environment and
         # project configuration
@@ -240,12 +240,12 @@ import scons_helper
                              self.build_environment.distcc_env_prepared)
         cc_str = self._append_prefix_to_building_var(
                          prefix='distcc',
-                         building_var=cc_str,
+                         building_var=cc,
                          condition=build_with_distcc)
 
         cxx_str = self._append_prefix_to_building_var(
                          prefix='distcc',
-                         building_var=cxx_str,
+                         building_var=cxx,
                          condition=build_with_distcc)
 
         build_with_ccache = self.build_environment.ccache_installed
@@ -263,12 +263,12 @@ import scons_helper
                            self.build_environment.dccc_env_prepared)
         ld_str = self._append_prefix_to_building_var(
                         prefix='dccc',
-                        building_var=ld_str,
+                        building_var=ld,
                         condition=build_with_dccc)
 
         cc_config = configparse.blade_config.get_config('cc_config')
-        cc_env_str = ('CC="%s", CXX="%s", HIPCXX="%s"' % (
-                      cc_str, cxx_str, cc_config['hipcc']))
+        cc_env_str = ('CC="%s", CXX="%s", HIPCXX="%s %s"' % (
+                      cc_str, cxx_str, cc_config['hipcc'], cxx))
         ld_env_str = 'LINK="%s"' % ld_str
 
         extra_incs = cc_config['extra_incs']
