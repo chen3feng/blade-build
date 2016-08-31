@@ -34,6 +34,7 @@ class CcTarget(Target):
                  target_type,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
@@ -50,6 +51,8 @@ class CcTarget(Target):
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
+        if visibility is not None:
+            visibility = var_to_list(visibility)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
         export_incs = var_to_list(export_incs)
@@ -62,7 +65,7 @@ class CcTarget(Target):
                         target_type,
                         srcs,
                         deps,
-                        None,
+                        visibility,
                         blade,
                         kwargs)
 
@@ -587,6 +590,7 @@ class CcLibrary(CcTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
@@ -612,6 +616,7 @@ class CcLibrary(CcTarget):
                           'cc_library',
                           srcs,
                           deps,
+                          visibility,
                           warning,
                           defs,
                           incs,
@@ -654,6 +659,7 @@ class CcLibrary(CcTarget):
 def cc_library(name,
                srcs=[],
                deps=[],
+               visibility=None,
                warning='yes',
                defs=[],
                incs=[],
@@ -673,6 +679,7 @@ def cc_library(name,
     target = CcLibrary(name,
                        srcs,
                        deps,
+                       visibility,
                        warning,
                        defs,
                        incs,
@@ -729,6 +736,7 @@ class CcBinary(CcTarget):
                           'cc_binary',
                           srcs,
                           deps,
+                          None,
                           warning,
                           defs,
                           incs,
@@ -925,6 +933,7 @@ class CcPlugin(CcTarget):
                           'cc_plugin',
                           srcs,
                           deps,
+                          None,
                           warning,
                           defs,
                           incs,

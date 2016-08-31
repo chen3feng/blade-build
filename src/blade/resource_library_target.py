@@ -40,6 +40,7 @@ class ResourceLibrary(CcTarget):
                           'resource_library',
                           srcs,
                           deps,
+                          None,
                           '',
                           [],
                           [],

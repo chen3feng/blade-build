@@ -54,6 +54,7 @@ class CuTarget(CcTarget):
                           target_type,
                           srcs,
                           deps,
+                          None,
                           warning,
                           defs,
                           incs,

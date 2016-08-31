@@ -52,6 +52,7 @@ class ThriftLibrary(CcTarget):
                           'thrift_library',
                           srcs,
                           deps,
+                          None,
                           '',
                           [], [], [], optimize, [], [],
                           blade,
