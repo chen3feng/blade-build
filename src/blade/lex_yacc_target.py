@@ -42,6 +42,7 @@ class LexYaccLibrary(CcTarget):
                           'lex_yacc_library',
                           srcs,
                           deps,
+                          None,
                           'yes',
                           [], [], [], [], [], [],
                           blade,

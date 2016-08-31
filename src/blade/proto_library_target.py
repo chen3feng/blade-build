@@ -48,6 +48,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                           'proto_library',
                           srcs,
                           deps,
+                          None,
                           '',
                           [], [], [], optimize, [], [],
                           blade,
