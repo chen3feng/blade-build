@@ -315,6 +315,10 @@ class Target(object):
         if visibility is None:
             return
 
+        visibility = var_to_list(visibility)
+        if visibility == ['PUBLIC']:
+            return
+
         self.visibility = []
         for v in visibility:
             self._check_format(v)

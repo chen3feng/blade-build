@@ -51,8 +51,6 @@ class CcTarget(Target):
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
-        if visibility is not None:
-            visibility = var_to_list(visibility)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
         export_incs = var_to_list(export_incs)
