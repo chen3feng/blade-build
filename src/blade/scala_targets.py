@@ -48,6 +48,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                         type,
                         srcs,
                         deps,
+                        None,
                         blade.blade,
                         kwargs)
         self._process_resources(resources)

@@ -47,6 +47,7 @@ class ShellTest(Target):
                         'sh_test',
                         srcs,
                         deps,
+                        None,
                         blade.blade,
                         kwargs)
 

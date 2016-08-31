@@ -30,7 +30,7 @@ from target import Target
 class MavenJar(Target):
     """MavenJar"""
     def __init__(self, name, id, classifier, transitive):
-        Target.__init__(self, name, 'maven_jar', [], [], blade.blade, {})
+        Target.__init__(self, name, 'maven_jar', [], [], None, blade.blade, {})
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
@@ -601,6 +601,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         type,
                         srcs,
                         deps,
+                        None,
                         blade.blade,
                         kwargs)
         self._process_resources(resources)

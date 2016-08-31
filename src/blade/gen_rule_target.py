@@ -50,6 +50,7 @@ class GenRuleTarget(Target):
                         'gen_rule',
                         srcs,
                         deps,
+                        None,
                         blade,
                         kwargs)
 

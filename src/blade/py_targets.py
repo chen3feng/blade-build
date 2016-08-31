@@ -45,6 +45,7 @@ class PythonEggTarget(Target):
                         'py_egg',
                         srcs,
                         deps,
+                        None,
                         blade,
                         kwargs)
 
@@ -134,6 +135,7 @@ class PythonTarget(Target):
                         type,
                         srcs,
                         deps,
+                        None,
                         blade.blade,
                         kwargs)
 

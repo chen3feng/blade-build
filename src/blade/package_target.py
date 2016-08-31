@@ -55,6 +55,7 @@ class PackageTarget(Target):
                         'package',
                         [],
                         deps,
+                        None,
                         blade,
                         kwargs)
 

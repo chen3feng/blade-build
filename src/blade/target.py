@@ -32,6 +32,7 @@ class Target(object):
                  target_type,
                  srcs,
                  deps,
+                 visibility,
                  blade,
                  kwargs):
         """Init method.
@@ -52,6 +53,7 @@ class Target(object):
         self.srcs = srcs
         self.deps = []
         self.expanded_deps = []
+        self.visibility = 'PUBLIC'
         self.data = {}
         config = configparse.blade_config.get_config('global_config')
         self.data['test_timeout'] = config['test_timeout']
@@ -65,8 +67,9 @@ class Target(object):
         self._check_name()
         self._check_kwargs(kwargs)
         self._check_srcs()
-        self._check_deps_in_build_file(deps)
+        self._check_deps(deps)
         self._init_target_deps(deps)
+        self._init_visibility(visibility)
         self.scons_rule_buf = []
         self.__cached_generate_header_files = None
 
@@ -256,29 +259,68 @@ class Target(object):
             if dkey not in self.deps:
                 self.deps.append(dkey)
 
-    def _check_deps_in_build_file(self, deps):
-        """_check_deps_in_build_file.
+    def _check_format(self, t):
+        """
 
         Parameters
         -----------
-        name: the target's name
+        t: could be a dep or visibility specified in BUILD file
+
+        Description
+        -----------
+        Do some basic format check.
+
+        """
+        if not (t.startswith(':') or t.startswith('#') or
+                t.startswith('//') or t.startswith('./')):
+            console.error_exit('%s: Invalid %s.' % (self.fullname, t))
+        if t.count(':') > 1:
+            console.error_exit('%s: Invalid %s, missing \',\' between?' %
+                               (self.fullname, t))
+
+    def _check_deps(self, deps):
+        """_check_deps
+
+        Parameters
+        -----------
         deps: the deps list in BUILD file
 
         Description
         -----------
-        Checks that whether users' build file is consistent with
-        blade's rule.
+        Check whether deps are in valid format.
 
         """
-        name = self.name
         for dep in deps:
-            if not (dep.startswith(':') or dep.startswith('#') or
-                    dep.startswith('//') or dep.startswith('./')):
-                console.error_exit('%s/%s: Invalid dep in %s.' % (
-                    self.path, name, dep))
-            if dep.count(':') > 1:
-                console.error_exit('%s/%s: Invalid dep %s, missing \',\' between 2 deps?' %
-                            (self.path, name, dep))
+            self._check_format(dep)
+
+    def _init_visibility(self, visibility):
+        """
+
+        Parameters
+        -----------
+        visibility: the visibility list in BUILD file
+
+        Description
+        -----------
+        Visibility determines whether another target is able to depend
+        on this target.
+
+        Visibility specify a list of targets in the same form as deps,
+        i.e. //path/to:target. The default value of visibility is PUBLIC,
+        which means this target is visible globally within the code base.
+        Note that targets inside the same BUILD file are always visible
+        to each other.
+        
+        """
+        if visibility is None:
+            return
+
+        self.visibility = []
+        for v in visibility:
+            self._check_format(v)
+            key = self._unify_dep(v)
+            if key not in self.visibility:
+                self.visibility.append(key)
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon deprecated target.
@@ -554,7 +596,7 @@ class Target(object):
 class SystemLibrary(Target):
     def __init__(self, name, blade):
         name = name[1:]
-        Target.__init__(self, name, 'system_library', [], [], blade, {})
+        Target.__init__(self, name, 'system_library', [], [], None, blade, {})
         self.key = ('#', name)
         self.fullname = '%s:%s' % self.key
         self.path = '#'

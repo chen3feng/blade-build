@@ -62,6 +62,7 @@ class CcTarget(Target):
                         target_type,
                         srcs,
                         deps,
+                        None,
                         blade,
                         kwargs)
 
