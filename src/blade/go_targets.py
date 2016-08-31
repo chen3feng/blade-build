@@ -41,6 +41,7 @@ class GoTarget(Target):
                         type,
                         srcs,
                         deps,
+                        None,
                         blade.blade,
                         kwargs)
 
