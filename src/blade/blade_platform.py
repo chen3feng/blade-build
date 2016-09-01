@@ -157,18 +157,20 @@ class CcFlagsManager(object):
     This class manages the compile warning flags.
 
     """
-    def __init__(self, options, gcc_version):
+    def __init__(self, options, build_dir, gcc_version):
         self.cc = ''
         self.options = options
+        self.build_dir = build_dir
         self.gcc_version = gcc_version
 
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
+        obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
-                   self.cc, language, flag))
+                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
+                   self.cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
