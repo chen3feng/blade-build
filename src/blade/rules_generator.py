@@ -43,7 +43,7 @@ class SconsFileHeaderGenerator(object):
         self.python_inc = python_inc
         self.cuda_inc = cuda_inc
         self.build_environment = build_environment
-        self.ccflags_manager = CcFlagsManager(options, gcc_version)
+        self.ccflags_manager = CcFlagsManager(options, build_dir, gcc_version)
         self.env_list = ['env_with_error', 'env_no_warning']
 
         self.svn_roots = svn_roots
