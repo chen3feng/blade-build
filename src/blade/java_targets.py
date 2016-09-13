@@ -355,6 +355,8 @@ class JavaTargetMixIn(object):
                 results.add((full_path, jar_path))
             else:
                 for dir, subdirs, files in os.walk(full_path):
+                    # Skip over subdirs starting with '.', such as .svn
+                    subdirs[:] = [d for d in subdirs if not d.startswith('.')]
                     for f in files:
                         f = os.path.join(dir, f)
                         rel_path = os.path.relpath(f, full_path)
