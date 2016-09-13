@@ -120,6 +120,8 @@ class PackageTarget(Target):
             self.data['sources'].append((src, dst))
         else:
             for dir, subdirs, files in os.walk(src):
+                # Skip over subdirs starting with '.', such as .svn
+                subdirs[:] = [d for d in subdirs if not d.startswith('.')]
                 for f in files:
                     f = os.path.join(dir, f)
                     rel_path = os.path.relpath(f, src)
