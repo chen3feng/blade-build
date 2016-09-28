@@ -118,11 +118,13 @@ class GenRuleTarget(Target):
             cmd = '"%s"' % cmd
         self._write_rule('%s = %s.Command([%s], [%s], '
                          '[%s, "@ls $TARGETS > /dev/null"])' % (
-                var_name,
-                env_name,
-                self._srcs_list(self.path, self.data['outs']),
-                srcs_str,
-                cmd))
+                         var_name,
+                         env_name,
+                         self._srcs_list(self.path, self.data['outs']),
+                         srcs_str,
+                         cmd))
+        for i in range(len(self.data['outs'])):
+            self._add_target_var('%s' % i, '%s[%s]' % (var_name, i))
 
         # TODO(phongchen): add Target.get_all_vars
         dep_var_list = []
