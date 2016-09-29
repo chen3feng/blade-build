@@ -457,6 +457,10 @@ class JavaTargetMixIn(object):
         if resources_var:
             self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
                     env_name, var_name, env_name, resources_path_var))
+        locations = self.data.get('location_resources')
+        if locations:
+            self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
+                env_name, var_name, env_name, sorted(set(locations))))
 
     def _generate_java_classes(self, var_name, srcs):
         env_name = self._env_name()
@@ -501,8 +505,7 @@ class JavaTargetMixIn(object):
             self._write_rule('%s.append(%s)' % (resources_var, res_var))
             self._write_rule('%s.append("%s")' % (resources_path_var, dst))
 
-    def _generate_location_resources(self, resources,
-                                     resources_var, resources_path_var):
+    def _generate_location_resources(self, resources, resources_var):
         env_name = self._env_name()
         resources_dir = self._target_file_path() + '.resources'
         targets = self.blade.get_build_targets()
@@ -522,8 +525,6 @@ class JavaTargetMixIn(object):
             self._write_rule('%s = %s.JavaResource(target = "%s", source = %s)' %
                              (res_var, env_name, dst_path, target_var))
             self._write_rule('%s.append(%s)' % (resources_var, res_var))
-            if dst:
-                self._write_rule('%s.append("%s")' % (resources_path_var, dst_path))
 
     def _generate_resources(self):
         resources = self.data['resources']
@@ -538,8 +539,7 @@ class JavaTargetMixIn(object):
             resources_var_name, resources_path_var_name))
         self._generate_regular_resources(resources, resources_var_name,
                                          resources_path_var_name)
-        self._generate_location_resources(locations, resources_var_name,
-                                          resources_path_var_name)
+        self._generate_location_resources(locations, resources_var_name)
         self._write_rule('%s.Clean(%s, "%s")' % (
             env_name, resources_var_name, resources_dir))
         return resources_var_name, resources_path_var_name
