@@ -137,8 +137,7 @@ class PackageTarget(Target):
             source_vars.append(var)
             package_path_list.append(dst)
 
-    def _generate_location_reference_rules(self, location_vars,
-                                           package_path_list, sources_dir):
+    def _generate_location_reference_rules(self, location_vars, sources_dir):
         env_name = self._env_name()
         targets = self.blade.get_build_targets()
         for i, location in enumerate(self.data['locations']):
@@ -156,7 +155,6 @@ class PackageTarget(Target):
                 self._write_rule('%s = %s.PackageSource(target = "%s", source = %s)' %
                                  (var, env_name, dst, target_var))
                 location_vars.append(var)
-                package_path_list.append(dst)
             else:
                 location_vars.append(target_var)
 
@@ -170,16 +168,20 @@ class PackageTarget(Target):
         target = self._target_file_path(self.data['out'])
         sources_dir = target + '.sources'
         self._generate_source_rules(source_vars, package_path_list, sources_dir)
-        self._generate_location_reference_rules(location_vars,
-                                                package_path_list, sources_dir)
+        self._generate_location_reference_rules(location_vars, sources_dir)
         self._write_rule('%s = %s.Package(target="%s", source=[%s] + [%s])' % (
                          var_name, env_name, target,
-                         ','.join(source_vars), ','.join(location_vars)))
+                         ','.join(source_vars), ','.join(sorted(location_vars))))
         package_type = self.data['type']
         self._write_rule('%s.Append(PACKAGESUFFIX="%s")' % (env_name, package_type))
+
         if package_path_list:
             self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
                 env_name, var_name, env_name, package_path_list))
+        locations = self.data['locations']
+        if locations:
+            self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
+                env_name, var_name, env_name, sorted(set(locations))))
 
 
 def package(name,
