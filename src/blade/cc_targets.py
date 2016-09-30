@@ -543,11 +543,11 @@ class CcTarget(Target):
             source_path = self._target_file_path(src)  # Also find generated files
             rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
                          (target_path, source_path))
-            if self.data.get('hip'):
-                rule_args += ', CXX = "$HIPCXX"'
+            if self.data.get('secure'):
+                rule_args += ', CXX = "$SECURECXX"'
             self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
-            if self.data.get('hip'):
-                self._hipcc_object_rules(obj, source_path)
+            if self.data.get('secure'):
+                self._securecc_object_rules(obj, source_path)
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -566,8 +566,8 @@ class CcTarget(Target):
             objs_dirname = self._target_file_path() + '.objs'
             self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dirname))
 
-    def _hipcc_object_rules(self, obj, src):
-        """Touch the source file if needed and generate specific object rules for hipcc. """
+    def _securecc_object_rules(self, obj, src):
+        """Touch the source file if needed and generate specific object rules for securecc. """
         env_name = self._env_name()
         self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
         if not os.path.exists(src):
@@ -601,7 +601,7 @@ class CcLibrary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
-                 hip,
+                 secure,
                  blade,
                  kwargs):
         """Init method.
@@ -631,7 +631,7 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
-        self.data['hip'] = hip
+        self.data['secure'] = secure
 
     def _rpath_link(self, dynamic):
         lib_path = self._prebuilt_cc_library_target_path(dynamic)
@@ -671,7 +671,7 @@ def cc_library(name,
                extra_cppflags=[],
                extra_linkflags=[],
                allow_undefined=False,
-               hip=False,
+               secure=False,
                **kwargs):
     """cc_library target. """
     target = CcLibrary(name,
@@ -690,7 +690,7 @@ def cc_library(name,
                        extra_cppflags,
                        extra_linkflags,
                        allow_undefined,
-                       hip,
+                       secure,
                        blade.blade,
                        kwargs)
     if pre_build:
