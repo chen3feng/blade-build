@@ -267,8 +267,8 @@ import scons_helper
                         condition=build_with_dccc)
 
         cc_config = configparse.blade_config.get_config('cc_config')
-        cc_env_str = ('CC="%s", CXX="%s", HIPCXX="%s %s"' % (
-                      cc_str, cxx_str, cc_config['hipcc'], cxx))
+        cc_env_str = ('CC="%s", CXX="%s", SECURECXX="%s %s"' % (
+                      cc_str, cxx_str, cc_config['securecc'], cxx))
         ld_env_str = 'LINK="%s"' % ld_str
 
         extra_incs = cc_config['extra_incs']
