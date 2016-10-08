@@ -5,21 +5,9 @@ cd $blade_dir
 
 echo -n "Installing vim scripts..."
 mkdir -p ~/.vim/{syntax,ftdetect,indent}
-ln -sf $blade_dir/vim/ftdetect/blade.vim ~/.vim/ftdetect/
-ln -sf $blade_dir/vim/syntax/blade.vim ~/.vim/syntax/
-ln -sf $blade_dir/vim/indent/blade.vim ~/.vim/indent/
-
-if [ ! -f ~/.vimrc ]; then
-    touch ~/.vimrc
-fi
-
-if ! grep "set filetype=blade" ~/.vimrc 2>&1 >/dev/null; then
-    cat >> ~/.vimrc << END
-augroup filetype
-    autocmd! BufRead,BufNewFile BUILD set filetype=blade
-augroup end
-END
-fi
+ln -sf $blade_dir/vim/ftdetect/* ~/.vim/ftdetect/
+ln -sf $blade_dir/vim/syntax/* ~/.vim/syntax/
+ln -sf $blade_dir/vim/indent/* ~/.vim/indent/
 echo ", Done."
 
 mkdir -p ~/bin
