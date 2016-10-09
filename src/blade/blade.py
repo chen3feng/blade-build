@@ -340,14 +340,12 @@ class Blade(object):
         It is used to do quick looking.
 
         """
-        target_key = target.key
-        # check that whether there is already a key in database
-        if target_key in self.__target_database:
-            print self.__target_database
-            console.error_exit(
-                    'target name %s is duplicate in //%s/BUILD' % (
-                        target.name, target.path))
-        self.__target_database[target_key] = target
+        key = target.key
+        # Check whether there is already a key in database
+        if key in self.__target_database:
+            console.error_exit('Target %s is duplicate in //%s/BUILD' % (
+                               target.name, target.path))
+        self.__target_database[key] = target
 
     def _is_scons_object_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
