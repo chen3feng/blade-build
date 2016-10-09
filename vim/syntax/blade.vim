@@ -1,16 +1,5 @@
-" This is the Vim syntax file for Blaze.
+" This is the Vim syntax file for Blade.
 " Author: Chen Feng <phongchen@tencent.com>
-" Usage:
-"
-" 1. cp blade.vim ~/.vim/syntax/
-" 2. Add the following to ~/.vimrc:
-"
-" augroup filetype
-"   au! BufRead,BufNewFile BUILD setfiletype blade
-" augroup end
-"
-" Or just create a new file called ~/.vim/ftdetect/blade.vim with the
-" previous lines on it.
 
 if version < 600
     syntax clear
@@ -54,4 +43,3 @@ if version >= 508 || !exists("did_blade_syn_inits")
 endif
 
 let b:current_syntax = "blade"
-
