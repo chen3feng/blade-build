@@ -768,6 +768,9 @@ def _archive_package_sources(package, sources, sources_dir):
     return manifest
 
 
+_PACKAGE_MANIFEST = 'MANIFEST.TXT'
+
+
 def _generate_tar_package(target, sources, sources_dir, suffix):
     """Generate a tar ball containing all of the source files. """
     mode = _get_tar_mode_from_suffix(suffix)
@@ -777,7 +780,7 @@ def _generate_tar_package(target, sources, sources_dir, suffix):
     m = open(manifest_path, 'w')
     print >>m, '\n'.join(manifest) + '\n'
     m.close()
-    tar.add(manifest_path, 'MANIFEST')
+    tar.add(manifest_path, _PACKAGE_MANIFEST)
     tar.close()
     return None
 
@@ -786,7 +789,7 @@ def _generate_zip_package(target, sources, sources_dir):
     """Generate a zip archive containing all of the source files. """
     zip = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
     manifest = _archive_package_sources(zip.write, sources, sources_dir)
-    zip.writestr('MANIFEST', '\n'.join(manifest) + '\n')
+    zip.writestr(_PACKAGE_MANIFEST, '\n'.join(manifest) + '\n')
     zip.close()
     return None
 
