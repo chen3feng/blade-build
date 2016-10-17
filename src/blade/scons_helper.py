@@ -753,18 +753,34 @@ def _get_tar_mode_from_suffix(suffix):
     }[suffix]
 
 
+def _archive_package_sources(package, sources, sources_dir):
+    """Archive sources into the package and return a list of source info. """
+    manifest = []
+    for s in sources:
+        f = str(s)
+        if f.startswith(sources_dir):
+            path = os.path.relpath(f, sources_dir)
+        else:
+            path = os.path.basename(f)
+        package(f, path)
+        manifest.append('%s %s' % (s.get_csig(), path))
+
+    return manifest
+
+
+_PACKAGE_MANIFEST = 'MANIFEST.TXT'
+
+
 def _generate_tar_package(target, sources, sources_dir, suffix):
     """Generate a tar ball containing all of the source files. """
     mode = _get_tar_mode_from_suffix(suffix)
     tar = tarfile.open(target, mode)
-
-    for f in sources:
-        if f.startswith(sources_dir):
-            rel_path = os.path.relpath(f, sources_dir)
-            tar.add(f, rel_path)
-        else:
-            tar.add(f, os.path.basename(f))
-
+    manifest = _archive_package_sources(tar.add, sources, sources_dir)
+    manifest_path = '%s.MANIFEST' % target
+    m = open(manifest_path, 'w')
+    print >>m, '\n'.join(manifest) + '\n'
+    m.close()
+    tar.add(manifest_path, _PACKAGE_MANIFEST)
     tar.close()
     return None
 
@@ -772,14 +788,8 @@ def _generate_tar_package(target, sources, sources_dir, suffix):
 def _generate_zip_package(target, sources, sources_dir):
     """Generate a zip archive containing all of the source files. """
     zip = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
-
-    for f in sources:
-        if f.startswith(sources_dir):
-            rel_path = os.path.relpath(f, sources_dir)
-            zip.write(f, rel_path)
-        else:
-            zip.write(f, os.path.basename(f))
-
+    manifest = _archive_package_sources(zip.write, sources, sources_dir)
+    zip.writestr(_PACKAGE_MANIFEST, '\n'.join(manifest) + '\n')
     zip.close()
     return None
 
@@ -787,13 +797,12 @@ def _generate_zip_package(target, sources, sources_dir):
 def generate_package(target, source, env):
     """Generate a package containing all of the source files. """
     target = str(target[0])
-    sources = [str(s) for s in source]
     sources_dir = target + '.sources'
     suffix = env['PACKAGESUFFIX']
     if suffix == 'zip':
-        return _generate_zip_package(target, sources, sources_dir)
+        return _generate_zip_package(target, source, sources_dir)
     else:
-        return _generate_tar_package(target, sources, sources_dir, suffix)
+        return _generate_tar_package(target, source, sources_dir, suffix)
 
 
 def generate_shell_test_data(target, source, env):
