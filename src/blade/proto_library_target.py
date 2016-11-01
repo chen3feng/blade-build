@@ -20,6 +20,45 @@ from blade_util import var_to_list
 from cc_targets import CcTarget
 
 
+class ProtocPlugin(object):
+    """A helper class for protoc plugin.
+
+    Currently blade only supports protoc plugin which generates
+    code by use of @@protoc_insertion_point mechanism. See
+    https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
+    for more details.
+
+    """
+
+    __languages = ['cpp', 'java', 'python']
+
+    def __init__(self,
+                 name,
+                 path,
+                 language,
+                 deps):
+        self.name = name
+        self.path = path
+        if language not in self.__languages:
+            console.error_exit('%s: Language %s is invalid. '
+                               'Protoc plugins in %s are supported by blade currently.' % (
+                               name, language, ', '.join(self.__languages)))
+        self.language = language
+        # Note that each plugin dep should be in the global target format
+        # since protoc plugin is defined in the global scope
+        self.deps = []
+        for dep in var_to_list(deps):
+            if dep.startswith('//'):
+                dep = dep[2:]
+            key = tuple(dep.split(':'))
+            if key not in self.deps:
+                self.deps.append(key)
+
+    def protoc_plugin_flag(self, out):
+        return '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
+               self.name, self.path, self.name, out)
+
+
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     """A scons proto library target subclass.
 
@@ -33,6 +72,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  optimize,
                  deprecated,
                  generate_descriptors,
+                 plugins,
                  source_encoding,
                  blade,
                  kwargs):
@@ -62,6 +102,24 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._add_hardcode_library(protobuf_libs)
         self._add_hardcode_java_library(protobuf_java_libs)
 
+        plugins = var_to_list(plugins)
+        self.data['protoc_plugins'] = plugins
+        # Handle protoc plugin deps according to the language
+        protoc_plugin_config = configparse.blade_config.get_config('protoc_plugin_config')
+        protoc_plugin_deps = set()
+        protoc_plugin_java_deps = set()
+        for plugin in plugins:
+            p = protoc_plugin_config[plugin]
+            for key in p.deps:
+                if key not in self.deps:
+                    self.deps.append(key)
+                if key not in self.expanded_deps:
+                    self.expanded_deps.append(key)
+                protoc_plugin_deps.add(key)
+                if p.language == 'java':
+                    protoc_plugin_java_deps.add(key)
+        self.data['protoc_plugin_deps'] = list(protoc_plugin_deps)
+
         # Normally a proto target depends on another proto target when
         # it references a message defined in that target. Then in the
         # generated code there is public API with return type/arguments
@@ -69,6 +127,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # which is also the case for java protobuf library.
         self.data['exported_deps'] = self._unify_deps(var_to_list(deps))
         self.data['exported_deps'] += self._unify_deps(protobuf_java_libs)
+        self.data['exported_deps'] += list(protoc_plugin_java_deps)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
@@ -96,8 +155,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
         protobuf_libs = [self._unify_dep(d) for d in protobuf_libs + protobuf_java_libs]
+        proto_deps = protobuf_libs + self.data['protoc_plugin_deps']
         for dkey in self.deps:
-            if dkey in protobuf_libs:
+            if dkey in proto_deps:
                 continue
             dep = self.target_database[dkey]
             if dep.type != 'proto_library' and dep.type != 'gen_rule':
@@ -275,6 +335,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._write_rule('%s.ProtoDescriptors("%s", %s)' % (
                 self._env_name(), proto_descriptor_file, proto_srcs))
 
+    def _protoc_plugin_rules(self):
+        """Generate scons rules for each protoc plugin. """
+        env_name = self._env_name()
+        config = configparse.blade_config.get_config('protoc_plugin_config')
+        for plugin in self.data['protoc_plugins']:
+            p = config[plugin]
+            self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
+                             env_name, p.language.upper(),
+                             p.protoc_plugin_flag(self.build_path)))
+
     def scons_rules(self):
         """scons_rules.
 
@@ -288,6 +358,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         options = self.blade.get_options()
         direct_targets = self.blade.get_direct_targets()
+
+        self._protoc_plugin_rules()
 
         if (getattr(options, 'generate_java', False) or
             self.data.get('generate_java') or
@@ -351,6 +423,7 @@ def proto_library(name,
                   optimize=[],
                   deprecated=False,
                   generate_descriptors=False,
+                  plugins=[],
                   source_encoding='iso-8859-1',
                   **kwargs):
     """proto_library target. """
@@ -360,6 +433,7 @@ def proto_library(name,
                                         optimize,
                                         deprecated,
                                         generate_descriptors,
+                                        plugins,
                                         source_encoding,
                                         blade.blade,
                                         kwargs)

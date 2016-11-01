@@ -1235,13 +1235,13 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
     proto_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $SOURCE" % (
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $PROTOCCPPPLUGINFLAGS $SOURCE" % (
             protoc_bin, protobuf_incs_str, build_dir),
         compile_proto_cc_message))
     top_env.Append(BUILDERS = {"Proto" : proto_bld})
 
     proto_java_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $SOURCE" % (
+        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
             protoc_java_bin, protobuf_path, build_dir),
         compile_proto_java_message))
     top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
@@ -1253,7 +1253,7 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(BUILDERS = {"ProtoPhp" : proto_php_bld})
 
     proto_python_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --python_out=%s $SOURCE" % (
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --python_out=%s $PROTOCPYTHONPLUGINFLAGS $SOURCE" % (
             protoc_bin, protobuf_incs_str, build_dir),
         compile_proto_python_message))
     top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
@@ -1274,6 +1274,10 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         '$SOURCES' % (protoc_bin, protobuf_incs_str),
         generate_proto_descriptor_message))
     top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
+
+    top_env.Replace(PROTOCCPPPLUGINFLAGS = "",
+                    PROTOCJAVAPLUGINFLAGS = "",
+                    PROTOCPYTHONPLUGINFLAGS = "")
 
     top_env.Append(PROTOPATH = ['.', protobuf_path])
     proto_scanner = top_env.Scanner(name = 'ProtoScanner',
