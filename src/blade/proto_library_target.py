@@ -35,24 +35,27 @@ class ProtocPlugin(object):
     def __init__(self,
                  name,
                  path,
-                 language,
-                 deps):
+                 code_generation):
         self.name = name
         self.path = path
-        if language not in self.__languages:
-            console.error_exit('%s: Language %s is invalid. '
-                               'Protoc plugins in %s are supported by blade currently.' % (
-                               name, language, ', '.join(self.__languages)))
-        self.language = language
-        # Note that each plugin dep should be in the global target format
-        # since protoc plugin is defined in the global scope
-        self.deps = []
-        for dep in var_to_list(deps):
-            if dep.startswith('//'):
-                dep = dep[2:]
-            key = tuple(dep.split(':'))
-            if key not in self.deps:
-                self.deps.append(key)
+        assert isinstance(code_generation, dict)
+        self.code_generation = {}
+        for language, v in code_generation.iteritems():
+            if language not in self.__languages:
+                console.error_exit('%s: Language %s is invalid. '
+                                   'Protoc plugins in %s are supported by blade currently.' % (
+                                   name, language, ', '.join(self.__languages)))
+            self.code_generation[language] = {}
+            # Note that each plugin dep should be in the global target format
+            # since protoc plugin is defined in the global scope
+            deps = []
+            for dep in var_to_list(v['deps']):
+                if dep.startswith('//'):
+                    dep = dep[2:]
+                key = tuple(dep.split(':'))
+                if key not in deps:
+                    deps.append(key)
+            self.code_generation[language]['deps'] = deps
 
     def protoc_plugin_flag(self, out):
         return '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
@@ -110,14 +113,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protoc_plugin_java_deps = set()
         for plugin in plugins:
             p = protoc_plugin_config[plugin]
-            for key in p.deps:
-                if key not in self.deps:
-                    self.deps.append(key)
-                if key not in self.expanded_deps:
-                    self.expanded_deps.append(key)
-                protoc_plugin_deps.add(key)
-                if p.language == 'java':
-                    protoc_plugin_java_deps.add(key)
+            for language, v in p.code_generation.iteritems():
+                for key in v['deps']:
+                    if key not in self.deps:
+                        self.deps.append(key)
+                    if key not in self.expanded_deps:
+                        self.expanded_deps.append(key)
+                    protoc_plugin_deps.add(key)
+                    if language == 'java':
+                        protoc_plugin_java_deps.add(key)
         self.data['protoc_plugin_deps'] = list(protoc_plugin_deps)
 
         # Normally a proto target depends on another proto target when
@@ -341,9 +345,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         config = configparse.blade_config.get_config('protoc_plugin_config')
         for plugin in self.data['protoc_plugins']:
             p = config[plugin]
-            self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
-                             env_name, p.language.upper(),
-                             p.protoc_plugin_flag(self.build_path)))
+            for language in p.code_generation:
+                self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
+                                 env_name, language.upper(),
+                                 p.protoc_plugin_flag(self.build_path)))
 
     def scons_rules(self):
         """scons_rules.
