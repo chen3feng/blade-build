@@ -112,6 +112,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protoc_plugin_deps = set()
         protoc_plugin_java_deps = set()
         for plugin in plugins:
+            if plugin not in protoc_plugin_config:
+                console.error_exit('%s: Unknown plugin %s' % (self.fullname, plugin))
             p = protoc_plugin_config[plugin]
             for language, v in p.code_generation.iteritems():
                 for key in v['deps']:

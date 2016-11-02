@@ -303,7 +303,7 @@ def proto_library_config(append=None, **kwargs):
 def protoc_plugin(**kwargs):
     """protoc_plugin. """
     if 'name' not in kwargs:
-        console.error_exit('There is no name for protoc plugin %s' % kwargs)
+        console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
     config = blade_config.get_config('protoc_plugin_config')
     config[kwargs['name']] = ProtocPlugin(**kwargs)
 
