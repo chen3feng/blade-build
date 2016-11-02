@@ -16,6 +16,7 @@ import sys
 import console
 from blade_util import var_to_list
 from cc_targets import HEAP_CHECK_VALUES
+from proto_library_target import ProtocPlugin
 
 
 # Global config object
@@ -123,6 +124,9 @@ class BladeConfig(object):
                 # All the generated go source files will be placed
                 # into $GOPATH/src/protobuf_go_path
                 'protobuf_go_path': '',
+            },
+
+            'protoc_plugin_config' : {
             },
 
             'cc_config': {
@@ -294,6 +298,14 @@ def proto_library_config(append=None, **kwargs):
             kwargs['protobuf_incs'] = [path]
 
     blade_config.update_config('proto_library_config', append, kwargs)
+
+
+def protoc_plugin(**kwargs):
+    """protoc_plugin. """
+    if 'name' not in kwargs:
+        console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
+    config = blade_config.get_config('protoc_plugin_config')
+    config[kwargs['name']] = ProtocPlugin(**kwargs)
 
 
 def thrift_library_config(append=None, **kwargs):
