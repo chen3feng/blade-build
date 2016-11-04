@@ -608,7 +608,7 @@ class CcLibrary(CcTarget):
                  kwargs):
         """Init method.
 
-        Init the cc target.
+        Init the cc library.
 
         """
         CcTarget.__init__(self,
@@ -697,8 +697,7 @@ def cc_library(name,
                        kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.path,
-                                                   target.name))
+                        "please use 'prebuilt'" % (target.path, target.name))
     blade.blade.register_target(target)
 
 
@@ -719,6 +718,7 @@ class CcBinary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 embed_version,
                  optimize,
                  dynamic_link,
                  extra_cppflags,
@@ -728,7 +728,7 @@ class CcBinary(CcTarget):
                  kwargs):
         """Init method.
 
-        Init the cc target.
+        Init the cc binary.
 
         """
         CcTarget.__init__(self,
@@ -746,6 +746,7 @@ class CcBinary(CcTarget):
                           extra_linkflags,
                           blade,
                           kwargs)
+        self.data['embed_version'] = embed_version
         self.data['dynamic_link'] = dynamic_link
         self.data['export_dynamic'] = export_dynamic
 
@@ -813,9 +814,9 @@ class CcBinary(CcTarget):
                     env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._write_rpath_links()
-        self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-        self._write_rule('%s.Requires(%s, version_obj)' % (
-                         env_name, var_name))
+        if self.data['embed_version']:
+            self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
+            self._write_rule('%s.Requires(%s, version_obj)' % (env_name, var_name))
 
     def _dynamic_cc_binary(self):
         """_dynamic_cc_binary. """
@@ -835,9 +836,9 @@ class CcBinary(CcTarget):
             lib_str))
         self._add_default_target_var('bin', var_name)
 
-        self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-        self._write_rule('%s.Requires(%s, version_obj)' % (
-                         env_name, var_name))
+        if self.data['embed_version']:
+            self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
+            self._write_rule('%s.Requires(%s, version_obj)' % (env_name, var_name))
 
         self._write_rpath_links()
 
@@ -863,6 +864,7 @@ def cc_binary(name,
               warning='yes',
               defs=[],
               incs=[],
+              embed_version=True,
               optimize=[],
               dynamic_link=False,
               extra_cppflags=[],
@@ -876,6 +878,7 @@ def cc_binary(name,
                                 warning,
                                 defs,
                                 incs,
+                                embed_version,
                                 optimize,
                                 dynamic_link,
                                 extra_cppflags,
@@ -1054,6 +1057,7 @@ class CcTest(CcBinary):
                  warning,
                  defs,
                  incs,
+                 embed_version,
                  optimize,
                  dynamic_link,
                  testdata,
@@ -1068,7 +1072,7 @@ class CcTest(CcBinary):
                  kwargs):
         """Init method.
 
-        Init the cc target.
+        Init the cc test.
 
         """
         cc_test_config = configparse.blade_config.get_config('cc_test_config')
@@ -1082,6 +1086,7 @@ class CcTest(CcBinary):
                           warning,
                           defs,
                           incs,
+                          embed_version,
                           optimize,
                           dynamic_link,
                           extra_cppflags,
@@ -1127,6 +1132,7 @@ def cc_test(name,
             warning='yes',
             defs=[],
             incs=[],
+            embed_version=False,
             optimize=[],
             dynamic_link=None,
             testdata=[],
@@ -1145,6 +1151,7 @@ def cc_test(name,
                             warning,
                             defs,
                             incs,
+                            embed_version,
                             optimize,
                             dynamic_link,
                             testdata,
