@@ -289,6 +289,13 @@ import scons_helper
                         cc_config['cxxflags'],
                         ld_env_str, linkflags))
 
+        arflags = cc_config['arflags']
+        if arflags:
+            self._add_rule('top_env.Replace(ARFLAGS="%s")' % ''.join(arflags))
+        ranlibflags = cc_config['ranlibflags']
+        if ranlibflags:
+            self._add_rule('top_env.Replace(RANLIBFLAGS="%s")' % ''.join(ranlibflags))
+
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
         self._add_rule("top_env.Replace(ASPPFLAGS='')")
