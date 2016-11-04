@@ -333,6 +333,8 @@ class CcTarget(Target):
         link_all_symbols_lib_list = []
         for dep in deps:
             dep_target = build_targets[dep]
+            if dep_target.type == 'cc_library' and not dep_target.srcs:
+                continue
             # system lib
             if dep_target.type == 'system_library':
                 lib_name = "'%s'" % dep_target.name
