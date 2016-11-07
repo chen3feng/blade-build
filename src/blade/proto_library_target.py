@@ -359,10 +359,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         """
         self._prepare_to_generate_rule()
+        if not self.srcs:
+            return
 
-        # Build java source according to its option
         env_name = self._env_name()
-
         options = self.blade.get_options()
         direct_targets = self.blade.get_direct_targets()
 
@@ -413,13 +413,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                          env_name, self._objs_name(), sources))
 
         # pb.cc depends on other proto_library
-        for dep_name in self.deps:
-            dep = self.target_database[dep_name]
-            if not dep._generate_header_files():
-                continue
-            dep_var_name = dep._var_name()
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    env_name, sources, dep_var_name))
+        self._generate_generated_header_files_depends(sources)
 
         self._cc_library()
 
