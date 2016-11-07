@@ -13,6 +13,7 @@
 
 
 import os
+import Queue
 
 import blade
 import configparse
@@ -328,10 +329,9 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        deps = self.expanded_deps
         lib_list = []
         link_all_symbols_lib_list = []
-        for dep in deps:
+        for dep in self.expanded_deps:
             dep_target = build_targets[dep]
             if dep_target.type == 'cc_library' and not dep_target.srcs:
                 continue
@@ -361,9 +361,8 @@ class CcTarget(Target):
 
         """
         build_targets = self.blade.get_build_targets()
-        deps = self.expanded_deps
         lib_list = []
-        for lib in deps:
+        for lib in self.expanded_deps:
             dep_target = build_targets[lib]
             if (dep_target.type == 'cc_library' and
                 not dep_target.srcs):
@@ -470,15 +469,6 @@ class CcTarget(Target):
                 self._objs_name()))
         self.data['static_cc_library_var'] = var_name
         self._add_default_target_var('a', var_name)
-        for dep_name in self.deps:
-            dep = self.target_database[dep_name]
-            if not dep._generate_header_files():
-                continue
-            dep_var_name = dep._var_name()
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    env_name,
-                    var_name,
-                    dep_var_name))
 
     def _dynamic_cc_library(self):
         """_dynamic_cc_library.
@@ -517,6 +507,27 @@ class CcTarget(Target):
         if self._need_dynamic_library():
             self._dynamic_cc_library()
 
+    def _generate_generated_header_files_depends(self, var_name):
+        """Generate dependencies to targets that generate header files. """
+        env_name = self._env_name()
+        q = Queue.Queue(0)
+        for key in self.deps:
+            q.put(key)
+
+        keys = set()
+        while not q.empty():
+            key = q.get()
+            if key not in keys:
+                keys.add(key)
+                dep = self.target_database[key]
+                if dep._generate_header_files():
+                    if dep.srcs:
+                        self._write_rule('%s.Depends(%s, %s)' % (
+                                         env_name, var_name, dep._var_name()))
+                    else:
+                        for k in dep.deps:
+                            q.put(k)
+
     def _cc_objects_rules(self):
         """_cc_objects_rules.
 
@@ -552,17 +563,7 @@ class CcTarget(Target):
                 self._securecc_object_rules(obj, source_path)
             objs.append(obj)
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
-
-        # Generate dependancy to all targets that generate header files
-        for dep_name in self.deps:
-            dep = self.target_database[dep_name]
-            if not dep._generate_header_files():
-                continue
-            dep_var_name = dep._var_name()
-            self._write_rule('%s.Depends(%s, %s)' % (
-                    env_name,
-                    objs_name,
-                    dep_var_name))
+        self._generate_generated_header_files_depends(objs_name)
 
         if objs:
             objs_dirname = self._target_file_path() + '.objs'
@@ -651,7 +652,7 @@ class CcLibrary(CcTarget):
 
         if self.type == 'prebuilt_cc_library':
             self._prebuilt_cc_library()
-        else:
+        elif self.srcs:
             self._cc_objects_rules()
             self._cc_library()
 
