@@ -371,7 +371,8 @@ class Blade(object):
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test and target.type.endswith('_test'):
+            if (skip_test and target.type.endswith('_test')
+                and k not in self.__direct_targets):
                 continue
             if (skip_package and target.type == 'package'
                 and k not in self.__direct_targets):
