@@ -361,9 +361,8 @@ class Blade(object):
     def gen_targets_rules(self):
         """Get the build rules and return to the object who queries this. """
         rules_buf = []
-        skip_test_targets = False
-        if getattr(self.__options, 'no_test', False):
-            skip_test_targets = True
+        skip_test = getattr(self.__options, 'no_test', False)
+        skip_package = not getattr(self.__options, 'generate_package', False)
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
@@ -372,7 +371,10 @@ class Blade(object):
             if not scons_object:
                 console.warning('not registered scons object, key %s' % str(k))
                 continue
-            if skip_test_targets and target.type.endswith('_test'):
+            if skip_test and target.type.endswith('_test'):
+                continue
+            if (skip_package and target.type == 'package'
+                and k not in self.__direct_targets):
                 continue
             scons_object.scons_rules()
             rules_buf.append('\n')
