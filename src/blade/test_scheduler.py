@@ -44,7 +44,6 @@ class WorkerThread(threading.Thread):
         self.job_queue = job_queue
         self.job_handler = job_handler
         self.redirect = redirect
-        self.ret = None
         self.job_start_time, self.job_timeout = 0, 0
         self.job_process = None
         self.job_name = ''
@@ -56,11 +55,6 @@ class WorkerThread(threading.Thread):
         """Private handler to handle one job. """
         console.info('blade worker %d starts to process' % self.thread_id)
         console.info('blade worker %d finish' % self.thread_id)
-        return
-
-    def get_return(self):
-        """returns worker result to caller. """
-        return self.ret
 
     def cleanup_job(self):
         """Clean up job data. """
@@ -99,7 +93,9 @@ class WorkerThread(threading.Thread):
                 job_queue = self.job_queue
                 while not job_queue.empty():
                     self.job_start_time = time.time()
-                    self.ret = self.job_handler(job_queue.get(), self.redirect, self)
+                    console.info('Worker %s is about to get a job from queue.' % self.thread_id)
+                    self.job_handler(job_queue.get(), self.redirect, self)
+                    console.info('Worker %s has finished processing a job.' % self.thread_id)
                     try:
                         self.job_lock.acquire()
                         self.cleanup_job()
@@ -126,7 +122,6 @@ class TestScheduler(object):
         self.max_worker_threads = 16
         self.failed_targets = []
         self.failed_targets_lock = threading.Lock()
-        self.tests_stdout_lock = threading.Lock()
         self.num_of_run_tests = 0
         self.num_of_run_tests_lock = threading.Lock()
         self.job_queue = Queue.Queue(0)
@@ -134,21 +129,13 @@ class TestScheduler(object):
 
     def __get_workers_num(self):
         """get the number of thread workers. """
-        max_workers = max([self.cpu_core_num, self.max_worker_threads])
-        if max_workers == 0:
-            max_workers = self.max_worker_threads
-
+        max_workers = max(self.cpu_core_num, self.max_worker_threads)
         if self.jobs <= 1:
             return 1
         elif self.jobs > max_workers:
             self.jobs = max_workers
 
-        if self.num_of_tests <= self.jobs:
-            return self.num_of_tests
-        else:
-            return self.jobs
-
-        return 1
+        return min(self.num_of_tests, self.jobs)
 
     def __get_result(self, returncode):
         """translate result from returncode. """
@@ -270,7 +257,7 @@ class TestScheduler(object):
     def schedule_jobs(self):
         """scheduler. """
         if self.num_of_tests <= 0:
-            return True
+            return
 
         num_of_workers = self.__get_workers_num()
         console.info('spawn %d worker(s) to run tests' % num_of_workers)
@@ -298,4 +285,3 @@ class TestScheduler(object):
             self._wait_worker_threads([last_t])
 
         self.print_summary()
-        return True
