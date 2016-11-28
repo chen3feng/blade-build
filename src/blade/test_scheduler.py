@@ -92,13 +92,12 @@ class WorkerThread(threading.Thread):
             if self.job_handler:
                 job_queue = self.job_queue
                 while not job_queue.empty():
-                    self.job_start_time = time.time()
                     try:
-                        self.job_handler(job_queue.get_nowait(),
-                                         self.redirect,
-                                         self)
+                        job = job_queue.get_nowait()
                     except Queue.Empty:
-                        pass
+                        continue
+                    self.job_start_time = time.time()
+                    self.job_handler(job, self.redirect, self)
                     try:
                         self.job_lock.acquire()
                         self.cleanup_job()
