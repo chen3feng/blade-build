@@ -93,9 +93,12 @@ class WorkerThread(threading.Thread):
                 job_queue = self.job_queue
                 while not job_queue.empty():
                     self.job_start_time = time.time()
-                    console.info('Worker %s is about to get a job from queue.' % self.thread_id)
-                    self.job_handler(job_queue.get(), self.redirect, self)
-                    console.info('Worker %s has finished processing a job.' % self.thread_id)
+                    try:
+                        self.job_handler(job_queue.get(block = False),
+                                         self.redirect,
+                                         self)
+                    except Queue.Empty:
+                        console.warning('Job queue is empty.')
                     try:
                         self.job_lock.acquire()
                         self.cleanup_job()
@@ -104,9 +107,7 @@ class WorkerThread(threading.Thread):
             else:
                 self.__process()
         except:
-            (ErrorType, ErrorValue, ErrorTB) = sys.exc_info()
-            print sys.exc_info()
-            traceback.print_exc(ErrorTB)
+            traceback.print_exc()
 
 
 class TestScheduler(object):
