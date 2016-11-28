@@ -92,10 +92,12 @@ class WorkerThread(threading.Thread):
             if self.job_handler:
                 job_queue = self.job_queue
                 while not job_queue.empty():
+                    try:
+                        job = job_queue.get_nowait()
+                    except Queue.Empty:
+                        continue
                     self.job_start_time = time.time()
-                    console.info('Worker %s is about to get a job from queue.' % self.thread_id)
-                    self.job_handler(job_queue.get(), self.redirect, self)
-                    console.info('Worker %s has finished processing a job.' % self.thread_id)
+                    self.job_handler(job, self.redirect, self)
                     try:
                         self.job_lock.acquire()
                         self.cleanup_job()
@@ -104,9 +106,7 @@ class WorkerThread(threading.Thread):
             else:
                 self.__process()
         except:
-            (ErrorType, ErrorValue, ErrorTB) = sys.exc_info()
-            print sys.exc_info()
-            traceback.print_exc(ErrorTB)
+            traceback.print_exc()
 
 
 class TestScheduler(object):

@@ -353,8 +353,8 @@ class TestRunner(binary_runner.BinaryRunner):
         if failed_targets:
             console.error('%d tests failed:' % len(failed_targets))
             for target in failed_targets:
-                print '%s, exit code: %s' % (
-                      target.fullname, target.data['test_exit_code'])
+                print >>sys.stderr, '%s, exit code: %s' % (
+                        target.fullname, target.data['test_exit_code'])
                 test_file_name = os.path.abspath(self._executable(target))
                 # Do not skip failed test by default
                 if test_file_name in self.test_stamp['md5']:
