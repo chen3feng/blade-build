@@ -94,11 +94,11 @@ class WorkerThread(threading.Thread):
                 while not job_queue.empty():
                     self.job_start_time = time.time()
                     try:
-                        self.job_handler(job_queue.get(block = False),
+                        self.job_handler(job_queue.get_nowait(),
                                          self.redirect,
                                          self)
                     except Queue.Empty:
-                        console.warning('Job queue is empty.')
+                        pass
                     try:
                         self.job_lock.acquire()
                         self.cleanup_job()
