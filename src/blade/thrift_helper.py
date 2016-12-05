@@ -20,8 +20,12 @@ import console
 
 
 class ThriftHelper(object):
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, dir, src):
+        self.dir = dir
+        self.src = src
+        self.path = os.path.join(dir, src)
+
+        path = self.path
         if not os.path.isfile(path):
             console.error_exit('%s is not a valid file.' % path)
 
@@ -81,13 +85,15 @@ class ThriftHelper(object):
             console.error_exit('%s is an empty thrift file.' % self.path)
 
     def get_generated_cpp_files(self):
-        files = ['%s_constants.cpp' % self.thrift_name,
-                 '%s_constants.h' % self.thrift_name,
-                 '%s_types.cpp' % self.thrift_name,
-                 '%s_types.h' % self.thrift_name]
+        thrift_name = self.src[:-7]
+        files = ['%s_constants.cpp' % thrift_name,
+                 '%s_constants.h' % thrift_name,
+                 '%s_types.cpp' % thrift_name,
+                 '%s_types.h' % thrift_name]
+        dir = os.path.dirname(thrift_name)
         for service in self.services:
-            files.append('%s.cpp' % service)
-            files.append('%s.h' % service)
+            files.append(os.path.join(dir, '%s.cpp' % service))
+            files.append(os.path.join(dir, '%s.h' % service))
 
         return files
 
