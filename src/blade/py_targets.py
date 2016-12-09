@@ -23,7 +23,7 @@ from blade_util import var_to_list
 from target import Target
 
 
-class PythonEggTarget(Target):
+class PythonEgg(Target):
     """A python egg target subclass.
 
     This class is derived from SconsTarget and generates python egg package.
@@ -103,12 +103,12 @@ def py_egg(name,
            prebuilt=False,
            **kwargs):
     """python egg. """
-    target = PythonEggTarget(name,
-                             srcs,
-                             deps,
-                             prebuilt,
-                             blade.blade,
-                             kwargs)
+    target = PythonEgg(name,
+                       srcs,
+                       deps,
+                       prebuilt,
+                       blade.blade,
+                       kwargs)
     blade.blade.register_target(target)
 
 
@@ -125,6 +125,7 @@ class PythonTarget(Target):
                  srcs,
                  deps,
                  base,
+                 visibility,
                  kwargs):
         """Init method. """
         srcs = var_to_list(srcs)
@@ -135,7 +136,7 @@ class PythonTarget(Target):
                         type,
                         srcs,
                         deps,
-                        None,
+                        visibility,
                         blade.blade,
                         kwargs)
 
@@ -156,7 +157,7 @@ class PythonTarget(Target):
             env_name, self.data.get('python_base', '')))
 
 
-class PythonLibraryTarget(PythonTarget):
+class PythonLibrary(PythonTarget):
     """A python library target subclass.
 
     This class is derived from SconsTarget and generates python library package.
@@ -167,6 +168,7 @@ class PythonLibraryTarget(PythonTarget):
                  srcs,
                  deps,
                  base,
+                 visibility,
                  kwargs):
         """Init method. """
         PythonTarget.__init__(self,
@@ -175,6 +177,7 @@ class PythonLibraryTarget(PythonTarget):
                               srcs,
                               deps,
                               base,
+                              visibility,
                               kwargs)
 
     def scons_rules(self):
@@ -212,20 +215,22 @@ def py_library(name,
                srcs=[],
                deps=[],
                base=None,
+               visibility=None,
                **kwargs):
     """python library. """
-    target = PythonLibraryTarget(name,
-                                 srcs,
-                                 deps,
-                                 base,
-                                 kwargs)
+    target = PythonLibrary(name,
+                           srcs,
+                           deps,
+                           base,
+                           visibility,
+                           kwargs)
     blade.blade.register_target(target)
 
 
 build_rules.register_function(py_library)
 
 
-class PythonBinaryTarget(PythonTarget):
+class PythonBinary(PythonTarget):
     """A python binary target subclass.
 
     This class is derived from SconsTarget and generates python binary package.
@@ -248,6 +253,7 @@ class PythonBinaryTarget(PythonTarget):
                               srcs,
                               deps,
                               base,
+                              None,
                               kwargs)
 
         self.data['run_in_shell'] = True
@@ -303,19 +309,19 @@ def py_binary(name,
               base=None,
               **kwargs):
     """python binary. """
-    target = PythonBinaryTarget(name,
-                                srcs,
-                                deps,
-                                main,
-                                base,
-                                kwargs)
+    target = PythonBinary(name,
+                          srcs,
+                          deps,
+                          main,
+                          base,
+                          kwargs)
     blade.blade.register_target(target)
 
 
 build_rules.register_function(py_binary)
 
 
-class PythonTestTarget(PythonBinaryTarget):
+class PythonTest(PythonBinary):
     """A python test target subclass.
 
     This class is derived from SconsTarget and generates python test.
@@ -330,13 +336,13 @@ class PythonTestTarget(PythonBinaryTarget):
                  testdata,
                  kwargs):
         """Init method. """
-        PythonBinaryTarget.__init__(self,
-                                    name,
-                                    srcs,
-                                    deps,
-                                    main,
-                                    base,
-                                    kwargs)
+        PythonBinary.__init__(self,
+                              name,
+                              srcs,
+                              deps,
+                              main,
+                              base,
+                              kwargs)
         self.type = 'py_test'
         self.data['testdata'] = testdata
 
@@ -349,13 +355,13 @@ def py_test(name,
             testdata=[],
             **kwargs):
     """python test. """
-    target = PythonTestTarget(name,
-                              srcs,
-                              deps,
-                              main,
-                              base,
-                              testdata,
-                              kwargs)
+    target = PythonTest(name,
+                        srcs,
+                        deps,
+                        main,
+                        base,
+                        testdata,
+                        kwargs)
     blade.blade.register_target(target)
 
 

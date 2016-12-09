@@ -175,6 +175,9 @@ def _compile_python(src, build_dir):
         pyc = src + 'c'
     else:
         pyc = os.path.join(build_dir, src) + 'c'
+    dir = os.path.dirname(pyc)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
     py_compile.compile(src, pyc)
     return pyc
 
