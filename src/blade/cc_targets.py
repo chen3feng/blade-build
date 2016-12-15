@@ -211,9 +211,9 @@ class CcTarget(Target):
         soname = None
         output = subprocess.check_output('objdump -p %s' % so, shell=True)
         for line in output.splitlines():
-            if 'SONAME' in line:
-                line = line.strip()
-                soname = line[line.rfind(' ') + 1:]
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == 'SONAME':
+                soname = parts[1]
                 break
         return soname
 
