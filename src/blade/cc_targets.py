@@ -209,19 +209,12 @@ class CcTarget(Target):
     def _prebuilt_cc_library_dynamic_soname(self, so):
         """Get the soname of prebuilt shared library. """
         soname = None
-        p = subprocess.Popen('objdump -p %s' % so,
-                             env=os.environ,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             shell=True,
-                             universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if p.returncode == 0:
-            for line in stdout.splitlines():
-                if 'SONAME' in line:
-                    line = line.strip()
-                    soname = line[line.rfind(' ') + 1:]
-                    break
+        output = subprocess.check_output('objdump -p %s' % so, shell=True)
+        for line in output.splitlines():
+            if 'SONAME' in line:
+                line = line.strip()
+                soname = line[line.rfind(' ') + 1:]
+                break
         return soname
 
     def _setup_cc_flags(self):
