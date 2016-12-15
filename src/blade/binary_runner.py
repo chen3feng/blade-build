@@ -90,17 +90,18 @@ class BinaryRunner(object):
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
-        shutil.rmtree(self._runfiles_dir(target), ignore_errors=True)
-        os.mkdir(self._runfiles_dir(target))
-        # add build profile symlink
+        runfiles_dir = self._runfiles_dir(target)
+        shutil.rmtree(runfiles_dir, ignore_errors=True)
+        os.mkdir(runfiles_dir)
+        # Build profile symlink
         profile_link_name = os.path.basename(self.build_dir)
         os.symlink(os.path.abspath(self.build_dir),
-                   os.path.join(self._runfiles_dir(target), profile_link_name))
+                   os.path.join(runfiles_dir, profile_link_name))
 
-        # add pre build library symlink
+        # Prebuilt library symlink
         for prebuilt_file in self._get_prebuilt_files(target):
             src = os.path.abspath(prebuilt_file[0])
-            dst = os.path.join(self._runfiles_dir(target), prebuilt_file[1])
+            dst = os.path.join(runfiles_dir, prebuilt_file[1])
             if os.path.lexists(dst):
                 console.warning('trying to make duplicate prebuilt symlink:\n'
                                 '%s -> %s\n'
@@ -113,8 +114,7 @@ class BinaryRunner(object):
 
         self._prepare_test_data(target)
         run_env = dict(os.environ)
-        environ_add_path(run_env, 'LD_LIBRARY_PATH',
-                         self._runfiles_dir(target))
+        environ_add_path(run_env, 'LD_LIBRARY_PATH', runfiles_dir)
         config = configparse.blade_config.get_config('cc_binary_config')
         run_lib_paths = config['run_lib_paths']
         if run_lib_paths:

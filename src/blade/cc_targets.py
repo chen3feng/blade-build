@@ -13,6 +13,7 @@
 
 
 import os
+import subprocess
 import Queue
 
 import blade
@@ -187,16 +188,15 @@ class CcTarget(Target):
         libs = (a_src_path, so_src_path) # Ordered by priority
         if prefer_dynamic:
             libs = (so_src_path, a_src_path)
-        src_lib = ''
+        src = ''
         for lib in libs:
             if os.path.exists(lib):
-                src_lib = lib
+                src = lib
                 break
-        if not src_lib:
-            console.warning('//%s:%s: Can not find ethier %s or %s' %
-                    ((self.path, self.name) + libs))
-            src_lib = libs[0]
-        return src_lib
+        if not src:
+            console.error_exit('%s: Can not find ethier %s or %s' % (
+                               self.fullname, libs[0], libs[1]))
+        return src
 
     def _prebuilt_cc_library_make_src_filename(self, dynamic=False):
         options = self.blade.get_options()
@@ -205,6 +205,24 @@ class CcTarget(Target):
             suffix = 'so'
         return os.path.join(self.path, 'lib%s_%s' % (options.m, options.profile),
                              'lib%s.%s' % (self.name, suffix))
+
+    def _prebuilt_cc_library_dynamic_soname(self, so):
+        """Get the soname of prebuilt shared library. """
+        soname = None
+        p = subprocess.Popen('objdump -p %s' % so,
+                             env=os.environ,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=True,
+                             universal_newlines=True)
+        stdout, stderr = p.communicate()
+        if p.returncode == 0:
+            for line in stdout.splitlines():
+                if 'SONAME' in line:
+                    line = line.strip()
+                    soname = line[line.rfind(' ') + 1:]
+                    break
+        return soname
 
     def _setup_cc_flags(self):
         """_setup_cc_flags. """
@@ -411,48 +429,42 @@ class CcTarget(Target):
         if not self._prebuilt_cc_library_is_depended():
             return
 
-        var_name = self._var_name()
-        static_target_path = ''
-        dynamic_target_path = ''
-
         # Paths for static linking, may be a dynamic library!
         static_src_path = self._prebuilt_cc_library_src_path()
         static_target_path = self._prebuilt_cc_library_target_path()
-        self._write_rule(
-                'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                         static_target_path, static_src_path))
-        self._write_rule('%s = top_env.File("%s")' % (
-            var_name, static_target_path))
+        var_name = self._var_name()
+        self._write_rule('%s = top_env.Command("%s", "%s", '
+                         'Copy("$TARGET", "$SOURCE"))' % (
+                         var_name, static_target_path, static_src_path))
         self.data['static_cc_library_var'] = var_name
 
+        dynamic_src_path, dynamic_target_path = '', ''
         if self._need_dynamic_library():
             dynamic_target_path = self._prebuilt_cc_library_target_path(
                     prefer_dynamic=True)
             dynamic_src_path = self._prebuilt_cc_library_src_path(
                     prefer_dynamic=True)
+            # Avoid copy twice if has only one kind of library
             if dynamic_target_path != static_target_path:
-                # Avoid copy twice if has only one kind of library
-                self._write_rule(
-                    'Command("%s", "%s", Copy("$TARGET", "$SOURCE"))' % (
-                     dynamic_target_path,
-                     dynamic_src_path))
-            var_name = self._var_name('dynamic')
-            self._write_rule('%s = top_env.File("%s")' % (
-                    var_name,
-                    dynamic_target_path))
+                var_name = self._var_name('dynamic')
+                self._write_rule('%s = top_env.Command("%s", "%s", '
+                                 'Copy("$TARGET", "$SOURCE"))' % (
+                                 var_name, dynamic_target_path, dynamic_src_path))
             self.data['dynamic_cc_library_var'] = var_name
 
         # Make a symbol link if either lib is a so
-        so_path = ''
+        self.file_and_link = None
+        so_src, so_target = '', ''
         if static_target_path.endswith('.so'):
-            so_path = static_target_path
+            so_src = static_src_path
+            so_target = static_target_path
         elif dynamic_target_path.endswith('.so'):
-            so_path = dynamic_target_path
-        if so_path:
-            prebuilt_symlink = os.path.basename(os.path.realpath(so_path))
-            self.file_and_link = (so_path, prebuilt_symlink)
-        else:
-            self.file_and_link = None
+            so_src = dynamic_src_path
+            so_target = dynamic_target_path
+        if so_src:
+            soname = self._prebuilt_cc_library_dynamic_soname(so_src)
+            if soname:
+                self.file_and_link = (so_target, soname)
 
     def _static_cc_library(self):
         """_cc_library.
