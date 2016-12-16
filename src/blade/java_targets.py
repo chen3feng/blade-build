@@ -351,7 +351,10 @@ class JavaTargetMixIn(object):
         results = set()
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
-            if os.path.isfile(full_path):
+            if not os.path.exists(full_path):
+                console.error_exit('%s: Resource %s does not exist.' % (
+                                   self.fullname, full_path))
+            elif os.path.isfile(full_path):
                 results.add((full_path, jar_path))
             else:
                 for dir, subdirs, files in os.walk(full_path):
