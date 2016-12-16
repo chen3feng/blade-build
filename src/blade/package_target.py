@@ -116,7 +116,10 @@ class PackageTarget(Target):
     def _add_package_source(self, src, dst):
         """Add regular file or directory. """
         src, dst = self._get_source_path(src, dst)
-        if os.path.isfile(src):
+        if not os.path.exists(src):
+            console.error_exit('%s: Package source %s does not exist.' % (
+                               self.fullname, src))
+        elif os.path.isfile(src):
             self.data['sources'].append((src, dst))
         else:
             for dir, subdirs, files in os.walk(src):
