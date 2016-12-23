@@ -1178,7 +1178,8 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
                 LINKCOMSTR = link_program_message,
                 JAVACCOMSTR = compile_source_message,
                 JARCOMSTR = jar_message,
-                LEXCOMSTR = compile_source_message)
+                LEXCOMSTR = compile_source_message,
+                YACCCOMSTR = compile_source_message)
 
 
 proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
@@ -1469,13 +1470,8 @@ def setup_go_builders(top_env, go_cmd, go_home):
     top_env.Append(BUILDERS = {"GoTest" : go_test_builder})
 
 
-def setup_yacc_builders(top_env):
-    compile_yacc_message = console.erasable('%sYacc %s$SOURCE%s to $TARGET%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
-    yacc_bld = SCons.Builder.Builder(action = MakeAction(
-        'bison $YACCFLAGS -d -o $TARGET $SOURCE',
-        compile_yacc_message))
-    top_env.Append(BUILDERS = {"Yacc" : yacc_bld})
+def setup_lex_yacc_builders(top_env):
+    top_env.Replace(LEXCOM = "$LEX $LEXFLAGS -o $TARGET $SOURCES")
 
 
 def setup_resource_builders(top_env):
@@ -1540,7 +1536,7 @@ def setup_shell_builders(top_env):
 
 
 def setup_other_builders(top_env):
-    setup_yacc_builders(top_env)
+    setup_lex_yacc_builders(top_env)
     setup_resource_builders(top_env)
     setup_python_builders(top_env)
     setup_package_builders(top_env)
