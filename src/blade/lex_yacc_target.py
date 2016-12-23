@@ -29,6 +29,7 @@ class LexYaccLibrary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 allow_undefined,
                  recursive,
                  prefix,
                  blade,
@@ -59,9 +60,7 @@ class LexYaccLibrary(CcTarget):
 
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix
-        # Hardcode allow_undefined to resolve undefined reference
-        # error when building dynamic library
-        self.data['allow_undefined'] = True
+        self.data['allow_undefined'] = allow_undefined
 
     def _setup_lex_yacc_flags(self):
         """Set up lex/yacc flags according to the options. """
@@ -130,6 +129,7 @@ def lex_yacc_library(name,
                      warning='yes',
                      defs=[],
                      incs=[],
+                     allow_undefined=False,
                      recursive=False,
                      prefix=None,
                      **kwargs):
@@ -140,6 +140,7 @@ def lex_yacc_library(name,
                             warning,
                             defs,
                             incs,
+                            allow_undefined,
                             recursive,
                             prefix,
                             blade.blade,
