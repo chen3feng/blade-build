@@ -61,6 +61,7 @@ class LexYaccLibrary(CcTarget):
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix
         self.data['allow_undefined'] = allow_undefined
+        self.data['link_all_symbols'] = True
 
     def _setup_lex_yacc_flags(self):
         """Set up lex/yacc flags according to the options. """
