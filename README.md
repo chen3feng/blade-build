@@ -103,7 +103,7 @@ $ blade test -m32 -pdebug common...
 * 现阶段 Blade 生成 [SCons](http://www.scons.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 SCons。
 * [Python](http://www.python.org) 是一种简单易用而又强大的语言，我们喜欢python。
 * 为了支持python 2.6及更低版本，我们把python 2.7中的argparse.py放入了源码包。
-* Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，又增强了 Blade，这些库包括 [glog](http://code.google.com/p/google-glog/), [protobuf](http://code.google.com/p/protobuf/),[gtest](http://code.google.com/p/googletest/), [gproftools](http://code.google.com/p/gperftools/)。
+* Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，又增强了 Blade，这些库包括 [glog](http://code.google.com/p/google-glog/), [protobuf](http://code.google.com/p/protobuf/),[gtest](http://code.google.com/p/googletest/), [gperftools](http://code.google.com/p/gperftools/)。
 
 更多文档请参考Blade wiki。
 
@@ -156,7 +156,7 @@ Credit
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
 * To support python 2.6, we put argparse.py from python 2.7 into code base.
 * Some libraries open sourced by Google, such as
-[protobuf](http://code.google.com/p/protobuf/), [gtest](http://code.google.com/p/googletest/), [gproftools](http://code.google.com/p/gperftools/) are handy and powerful, we integrate these libraries into Blade, make them easier to use, and also enhance Blade's ability.
+[protobuf](http://code.google.com/p/protobuf/), [gtest](http://code.google.com/p/googletest/), [gperftools](http://code.google.com/p/gperftools/) are handy and powerful, we integrate these libraries into Blade, make them easier to use, and also enhance Blade's ability.
 
 Read our wiki to get more documents. Only Chinese version is ready now, English version is coming soon, sorry for inconvenience.
 
