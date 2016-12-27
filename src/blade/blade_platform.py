@@ -36,11 +36,9 @@ class SconsPlatform(object):
         """Get the gcc version. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' --version')
+        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpversion')
         if returncode == 0:
-            version_line = stdout.splitlines(True)[0]
-            version = version_line.split()[2]
-            return version
+            return stdout.strip()
         return ''
 
     @staticmethod
