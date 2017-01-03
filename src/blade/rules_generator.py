@@ -289,12 +289,19 @@ import scons_helper
                         cc_config['cxxflags'],
                         ld_env_str, linkflags))
 
-        arflags = cc_config['arflags']
+        cc_library_config = configparse.blade_config.get_config('cc_library_config')
+        # By default blade use 'ar rcs' and skip ranlib
+        # to generate index for static library
+        arflags = cc_library_config['arflags']
         if arflags:
             self._add_rule('top_env.Replace(ARFLAGS="%s")' % ''.join(arflags))
-        ranlibflags = cc_config['ranlibflags']
+        else:
+            self._add_rule('top_env.Replace(ARFLAGS="rcs")')
+        ranlibflags = cc_library_config['ranlibflags']
         if ranlibflags:
             self._add_rule('top_env.Replace(RANLIBFLAGS="%s")' % ''.join(ranlibflags))
+        else:
+            self._add_rule('top_env.Replace(RANLIBCOM="", RANLIBCOMSTR="")')
 
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
