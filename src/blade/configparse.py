@@ -134,11 +134,6 @@ class BladeConfig(object):
                 'cppflags': [],
                 'cflags': [],
                 'cxxflags': [],
-                # Options passed to ar/ranlib to control how
-                # the archive is created, such as, let ar operate
-                # in deterministic mode discarding timestamps
-                'arflags': [],
-                'ranlibflags': [],
                 'linkflags': [],
                 'c_warnings': [],
                 'cxx_warnings': [],
@@ -150,7 +145,12 @@ class BladeConfig(object):
                 'securecc' : None,
             },
             'cc_library_config': {
-                'generate_dynamic' : None
+                'generate_dynamic' : None,
+                # Options passed to ar/ranlib to control how
+                # the archive is created, such as, let ar operate
+                # in deterministic mode discarding timestamps
+                'arflags': [],
+                'ranlibflags': [],
             }
         }
 
