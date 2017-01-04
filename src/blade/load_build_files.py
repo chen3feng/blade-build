@@ -230,6 +230,24 @@ def _find_depender(dkey, blade):
     return None
 
 
+def _is_load_excluded(d):
+    """Whether exclude the directory when loading BUILD.
+
+        1. Exclude build directory and directories starting with
+           '.', e.g. .svn.
+        2. TODO(wentingli): Exclude directories matching patterns
+           configured globally
+    """
+    if d.startswith('.'):
+        return True
+    for build_path in ('build32_debug', 'build32_release',
+                       'build64_debug', 'build64_release'):
+        if d.startswith(build_path):
+            return True
+
+    return False
+
+
 def load_targets(target_ids, working_dir, blade_root_dir, blade):
     """load_targets.
 
@@ -272,12 +290,10 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
                 source_dir = './'
             source_dirs.append((source_dir, WARN_IF_FAIL))
             for root, dirs, files in os.walk(source_dir):
-                # Skip over build directory and subdirs starting with '.', e.g. .svn.
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                dirs[:] = [d for d in dirs if not d.startswith('.') and
-                           not d.startswith(blade_build_path)]
+                dirs[:] = [d for d in dirs if not _is_load_excluded(d)]
                 for d in dirs:
                     source_dirs.append((os.path.join(root, d), IGNORE_IF_FAIL))
         else:
