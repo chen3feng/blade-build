@@ -257,7 +257,6 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
 
     """
     target_database = blade.get_target_database()
-    blade_build_path = blade.get_build_path()
 
     # targets specified in command line
     cited_targets = set()
