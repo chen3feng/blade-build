@@ -65,7 +65,7 @@ class MavenCache(object):
 
         # Download the snapshot artifact daily
         self.__build_time = time.time()
-        self.__snapshot_artifact_update_interval = 86400
+        self.__one_day_interval = 86400
 
     def _generate_jar_path(self, id):
         """Generate jar path within local repository. """
@@ -87,6 +87,10 @@ class MavenCache(object):
             console.error_exit('Invalid id %s: Id should be group:artifact:version, '
                                'such as jaxen:jaxen:1.1.6' % id)
 
+    def _is_log_expired(self, log):
+        """Check if the modification time of log file is expired relative to build time. """
+        return self.__build_time - os.path.getmtime(log) > self.__one_day_interval
+
     def _download_jar(self, id, classifier):
         group, artifact, version = id.split(':')
         pom = artifact + '-' + version + '.pom'
@@ -102,9 +106,7 @@ class MavenCache(object):
             os.path.isfile(os.path.join(target_path, pom))):
             if not version.endswith('-SNAPSHOT'):
                 return True
-            if (os.path.isfile(target_log) and
-               (self.__build_time - os.path.getmtime(target_log) <
-                self.__snapshot_artifact_update_interval)):
+            if os.path.isfile(target_log) and not self._is_log_expired(target_log):
                 return True
 
         if classifier:
@@ -141,10 +143,13 @@ class MavenCache(object):
         if os.path.isfile(os.path.join(target_path, classpath)):
             if not version.endswith('-SNAPSHOT'):
                 return True
-            if (os.path.isfile(log) and
-               (self.__build_time - os.path.getmtime(log) <
-                self.__snapshot_artifact_update_interval)):
+            if os.path.isfile(log) and not self._is_log_expired(log):
                 return True
+        else:
+            # Although classpath.txt does not exist, do not resolve
+            # dependencies if we just tried earlier
+            if os.path.isfile(log) and not self._is_log_expired(log):
+                return False
 
         if classifier:
             id = '%s:%s' % (id, classifier)
