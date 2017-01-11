@@ -30,6 +30,16 @@ def is_valid_id(id):
     return False
 
 
+class MavenArtifact(object):
+    """
+    MavenArtifact represents a jar artifact and its transitive dependencies
+    separated by colon in maven cache.
+    """
+    def __init__(self, path):
+        self.path = path
+        self.deps = None
+
+
 class MavenCache(object):
     """MavenCache. Manages maven jar files. """
 
@@ -48,10 +58,7 @@ class MavenCache(object):
         self.__log_dir = log_dir
         #   key: (id, classifier)
         #     id: jar id in the format group:artifact:version
-        #   value: tuple
-        #     tuple[0]: jar path
-        #     tuple[1]: jar dependencies paths separated by colon,
-        #               including transitive dependencies
+        #   value: an instance of MavenArtifact
         self.__jar_database = {}
 
         java_config = configparse.blade_config.get_config('java_config')
@@ -145,11 +152,6 @@ class MavenCache(object):
                 return True
             if os.path.isfile(log) and not self._is_log_expired(log):
                 return True
-        else:
-            # Although classpath.txt does not exist, do not resolve
-            # dependencies if we just tried earlier
-            if os.path.isfile(log) and not self._is_log_expired(log):
-                return False
 
         if classifier:
             id = '%s:%s' % (id, classifier)
@@ -182,36 +184,21 @@ class MavenCache(object):
             return False
 
         group, artifact, version = id.split(':')
-        target_path = self._generate_jar_path(id)
+        path = self._generate_jar_path(id)
         jar = artifact + '-' + version + '.jar'
-        classpath = os.path.join(target_path, 'classpath.txt')
         if classifier:
             jar = artifact + '-' + version + '-' + classifier + '.jar'
-            classpath = os.path.join(target_path, 'classpath-%s.txt' % classifier)
-
-        if not self._download_dependency(id, classifier):
-            # Ignore dependency download error
-            self.__jar_database[(id, classifier)] = (os.path.join(target_path, jar), '')
-        else:
-            with open(classpath) as f:
-                # Read the first line
-                self.__jar_database[(id, classifier)] = (os.path.join(target_path, jar),
-                                                         f.readline())
-
+        self.__jar_database[(id, classifier)] = MavenArtifact(os.path.join(path, jar))
         return True
 
-    def _get_path_from_database(self, id, classifier, jar):
-        """get_path_from_database. """
+    def _get_artifact_from_database(self, id, classifier):
+        """get_artifact_from_database. """
         self._check_config()
         self._check_id(id)
         if (id, classifier) not in self.__jar_database:
             if not self._download_artifact(id, classifier):
-                console.warning('Download %s failed' % id)
-                return '';
-        if jar:
-            return self.__jar_database[(id, classifier)][0]
-        else:
-            return self.__jar_database[(id, classifier)][1]
+                console.error_exit('Download %s failed' % id)
+        return self.__jar_database[(id, classifier)]
 
     def get_jar_path(self, id, classifier):
         """get_jar_path
@@ -221,7 +208,8 @@ class MavenCache(object):
         Download jar files and its transitive dependencies if needed.
 
         """
-        return self._get_path_from_database(id, classifier, True)
+        artifact = self._get_artifact_from_database(id, classifier)
+        return artifact.path
 
     def get_jar_deps_path(self, id, classifier):
         """get_jar_deps_path
@@ -230,5 +218,17 @@ class MavenCache(object):
         This string can be used in java -cp later.
 
         """
-        return self._get_path_from_database(id, classifier, False)
-
+        artifact = self._get_artifact_from_database(id, classifier)
+        if artifact.deps is None:
+            if not self._download_dependency(id, classifier):
+                # Ignore dependency download error
+                artifact.deps = ''
+            else:
+                path = self._generate_jar_path(id)
+                classpath = os.path.join(path, 'classpath.txt')
+                if classifier:
+                    classpath = os.path.join(path, 'classpath-%s.txt' % classifier)
+                with open(classpath) as f:
+                    # Read the first line
+                    artifact.deps = f.readline()
+        return artifact.deps
