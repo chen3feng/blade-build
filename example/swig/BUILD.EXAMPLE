@@ -1,0 +1,10 @@
+cc_library(
+    name = 'example_cpp',
+    srcs = 'example.cpp',
+)
+
+swig_library(
+    name = 'example',
+    srcs = 'example.i',
+    deps = ':example_cpp'
+)

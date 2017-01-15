@@ -1,16 +1,5 @@
-" This is the Vim syntax file for Blaze.
+" This is the Vim syntax file for Blade.
 " Author: Chen Feng <phongchen@tencent.com>
-" Usage:
-"
-" 1. cp blade.vim ~/.vim/syntax/
-" 2. Add the following to ~/.vimrc:
-"
-" augroup filetype
-"   au! BufRead,BufNewFile BUILD setfiletype blade
-" augroup end
-"
-" Or just create a new file called ~/.vim/ftdetect/blade.vim with the
-" previous lines on it.
 
 if version < 600
     syntax clear
@@ -34,10 +23,11 @@ syn keyword bladeTarget enable_if gen_rule lex_yacc_library proto_library java_j
 syn keyword bladeTarget resource_library swig_library
 
 " Sorted by alphabet order
-syn keyword bladeArg always_run cmd defs deprecated deps dynamic_link export_incs
+syn keyword bladeArg always_run binary_jar cmd defs deprecated deps dynamic_link export_incs
 syn keyword bladeArg exclusive export_dynamic extra_cppflags extra_linkflags
-syn keyword bladeArg heap_check heap_check_debug incs link_all_symbols
-syn keyword bladeArg name optimize outs prebuilt prefix srcs suffix testdata warning
+syn keyword bladeArg heap_check heap_check_debug incs link_all_symbols main_class
+syn keyword bladeArg name optimize outs prebuilt prefix resources srcs suffix
+syn keyword bladeArg testdata warning
 
 if version >= 508 || !exists("did_blade_syn_inits")
     if version < 508
@@ -53,4 +43,3 @@ if version >= 508 || !exists("did_blade_syn_inits")
 endif
 
 let b:current_syntax = "blade"
-

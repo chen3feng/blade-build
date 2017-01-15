@@ -12,11 +12,11 @@
 """
 import os
 import sys
-import traceback
 
 import console
 from blade_util import var_to_list
 from cc_targets import HEAP_CHECK_VALUES
+from proto_library_target import ProtocPlugin
 
 
 # Global config object
@@ -39,6 +39,7 @@ class BladeConfig(object):
             'global_config' : {
                 'build_path_template': 'build${m}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
+                'test_timeout': None,
             },
 
             'cc_test_config': {
@@ -66,10 +67,37 @@ class BladeConfig(object):
             },
 
             'java_config': {
+                'version': '1.6',
                 'source_version': '',
-                'target_version': ''
+                'target_version': '',
+                'maven': 'mvn',
+                'maven_central': '',
+                'warnings':['-Werror', '-Xlint:all'],
+                'source_encoding': None,
+                'java_home':''
             },
 
+            'java_binary_config': {
+                'one_jar_boot_jar' : '',
+            },
+            'java_test_config': {
+                'junit_libs' : [],
+                'jacoco_home' : '',
+                'coverage_reporter' : '',
+            },
+            'scala_config': {
+                'scala_home' : '',
+                'target_platform' : '',
+                'warnings' : '',
+                'source_encoding' : None,
+            },
+            'scala_test_config': {
+                'scalatest_libs' : '',
+            },
+            'go_config' : {
+                'go' : '',
+                'go_home' : '',  # GOPATH
+            },
             'thrift_config': {
                 'thrift': 'thrift',
                 'thrift_libs': [],
@@ -85,11 +113,20 @@ class BladeConfig(object):
 
             'proto_library_config': {
                 'protoc': 'thirdparty/protobuf/bin/protoc',
+                'protoc_java': '',
                 'protobuf_libs': [],
                 'protobuf_path': '',
                 'protobuf_incs': [],
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
+                'protobuf_java_libs' : [],
+                'protoc_go_plugin': '',
+                # All the generated go source files will be placed
+                # into $GOPATH/src/protobuf_go_path
+                'protobuf_go_path': '',
+            },
+
+            'protoc_plugin_config' : {
             },
 
             'cc_config': {
@@ -105,6 +142,15 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
+                'securecc' : None,
+            },
+            'cc_library_config': {
+                'generate_dynamic' : None,
+                # Options passed to ar/ranlib to control how
+                # the archive is created, such as, let ar operate
+                # in deterministic mode discarding timestamps
+                'arflags': [],
+                'ranlibflags': [],
             }
         }
 
@@ -159,8 +205,6 @@ class BladeConfig(object):
             if k in config:
                 if isinstance(config[k], list):
                     user_config[k] = var_to_list(user_config[k])
-                else:
-                    user_config[k] = user_config[k]
             else:
                 console.warning('%s: %s: unknown config item name: %s' %
                         (self.current_file_name, section_name, k))
@@ -187,7 +231,14 @@ def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
     blade_config.update_config('cc_binary_config', append, kwargs)
 
+
+def cc_library_config(append=None, **kwargs):
+    """cc_library_config section. """
+    blade_config.update_config('cc_library_config', append, kwargs)
+
+
 __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+
 
 def global_config(append=None, **kwargs):
     """global_config section. """
@@ -213,6 +264,31 @@ def java_config(append=None, **kwargs):
     blade_config.update_config('java_config', append, kwargs)
 
 
+def java_binary_config(append=None, **kwargs):
+    """java_test_config. """
+    blade_config.update_config('java_binary_config', append, kwargs)
+
+
+def java_test_config(append=None, **kwargs):
+    """java_test_config. """
+    blade_config.update_config('java_test_config', append, kwargs)
+
+
+def scala_config(append=None, **kwargs):
+    """scala_config. """
+    blade_config.update_config('scala_config', append, kwargs)
+
+
+def scala_test_config(append=None, **kwargs):
+    """scala_test_config. """
+    blade_config.update_config('scala_test_config', append, kwargs)
+
+
+def go_config(append=None, **kwargs):
+    """go_config. """
+    blade_config.update_config('go_config', append, kwargs)
+
+
 def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
@@ -227,6 +303,14 @@ def proto_library_config(append=None, **kwargs):
             kwargs['protobuf_incs'] = [path]
 
     blade_config.update_config('proto_library_config', append, kwargs)
+
+
+def protoc_plugin(**kwargs):
+    """protoc_plugin. """
+    if 'name' not in kwargs:
+        console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
+    config = blade_config.get_config('protoc_plugin_config')
+    config[kwargs['name']] = ProtocPlugin(**kwargs)
 
 
 def thrift_library_config(append=None, **kwargs):

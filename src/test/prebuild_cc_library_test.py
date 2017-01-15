@@ -32,8 +32,8 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         cc_library_lower = (self.target_path, 'lowercase')
         cc_library_upper = (self.target_path, 'uppercase')
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(cc_library_upper in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(cc_library_upper, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -48,16 +48,16 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
             if 'libuppercase.so -m64' in line:
                 upper_depends_libs = line
 
-        self.assertTrue('test_prebuild_cc_library/liblowercase.so' in copy_lower_line)
-        self.assertTrue('lib64_release/liblowercase.so' in copy_lower_line)
+        self.assertIn('test_prebuild_cc_library/liblowercase.so', copy_lower_line)
+        self.assertIn('lib64_release/liblowercase.so', copy_lower_line)
 
-        self.assertTrue('-Wall -Wextra' in com_upper_line)
-        self.assertTrue('-Wframe-larger-than=69632' in com_upper_line)
-        self.assertTrue('-Werror=overloaded-virtual' in com_upper_line)
+        self.assertIn('-Wall -Wextra', com_upper_line)
+        self.assertIn('-Wframe-larger-than=69632', com_upper_line)
+        self.assertIn('-Werror=overloaded-virtual', com_upper_line)
 
         self.assertTrue(upper_depends_libs)
-        self.assertTrue('libuppercase.so -m64' in upper_depends_libs)
-        self.assertTrue('liblowercase.so' in upper_depends_libs)
+        self.assertIn('libuppercase.so -m64', upper_depends_libs)
+        self.assertIn('liblowercase.so', upper_depends_libs)
 
 
 if __name__ == '__main__':

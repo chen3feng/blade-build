@@ -133,20 +133,6 @@ class CmdArguments(object):
         self._check_plat_and_profile_options()
         self._check_color_options()
 
-        if self.options.cache_dir is None:
-            self.options.cache_dir = os.environ.get('BLADE_CACHE_DIR')
-        if self.options.cache_dir:
-            self.options.cache_dir = os.path.expanduser(self.options.cache_dir)
-
-        if self.options.cache_size is None:
-            self.options.cache_size = os.environ.get('BLADE_CACHE_SIZE')
-        if self.options.cache_size == 'unlimited':
-            self.options.cache_size = -1
-        if self.options.cache_size is None:
-            self.options.cache_size = 2 * 1024 * 1024 * 1024
-        else:
-            self.options.cache_size = int(self.options.cache_size) * 1024 * 1024 * 1024
-
     def _check_build_command(self):
         """check build options. """
         self._check_build_options()
@@ -201,6 +187,11 @@ class CmdArguments(object):
             help='Generate dynamic libraries.')
 
         parser.add_argument(
+            '--generate-package', dest='generate_package',
+            action='store_true', default=False,
+            help='Generate packages for package target.')
+
+        parser.add_argument(
             '--generate-java', dest='generate_java',
             action='store_true', default=False,
             help='Generate java files for proto_library, thrift_library and '
@@ -211,12 +202,27 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Generate php files for proto_library and swig_library.')
 
+        parser.add_argument(
+            '--generate-python', dest='generate_python',
+            action='store_true', default=False,
+            help='Generate python files for proto_library and thrift_library.')
+
+        parser.add_argument(
+            '--generate-go', dest='generate_go',
+            action='store_true', default=False,
+            help='Generate go files for proto_library.')
+
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
             '--generate-scons-only', dest='scons_only',
             action='store_true', default=False,
             help='Generate scons script for debug purpose.')
+
+        """Add extra scons options arguments. """
+        parser.add_argument(
+            '--scons-options', dest='scons_options', type=str,
+            help='Specifies extra scons options, for debugg purpose.')
 
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,
@@ -261,9 +267,15 @@ class CmdArguments(object):
             help='Add build options to support GNU gprof.')
 
         parser.add_argument(
-            '--gcov', dest='gcov',
+            '--gcov', dest='coverage',
             action='store_true', default=False,
-            help='Add build options to support GNU gcov to do coverage test.')
+            help='Add build options to support GNU gcov to do coverage test. '
+                 '--gcov is deprecated, please use --coverage.')
+
+        parser.add_argument(
+            '--coverage', dest='coverage',
+            action='store_true', default=False,
+            help='Add build options to support coverage test.')
 
     def _add_query_arguments(self, parser):
         """Add query arguments for parser. """
@@ -276,15 +288,20 @@ class CmdArguments(object):
         parser.add_argument(
             '--depended', dest='depended',
             action='store_true', default=False,
-            help='Show all targets that depened on the target being queried.')
+            help='Show all targets that depend on the target being queried.')
         parser.add_argument(
             '--output-to-dot', dest='output_to_dot', type=str,
             help='The name of file to output query results as dot(graphviz) '
                  'format.')
+        parser.add_argument(
+            '--output-tree', dest='output_tree',
+            action='store_true', default=False,
+            help='Show the dependency tree of the specified target.')
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """
         self.__add_plat_profile_arguments(parser)
+        self.__add_build_actions_arguments(parser)
         self.__add_generate_arguments(parser)
         self.__add_color_arguments(parser)
 
@@ -307,6 +324,11 @@ class CmdArguments(object):
             '--show-details', action='store_true',
             dest='show_details', default=False,
             help='Shows the test result in detail and provides a file.')
+
+        parser.add_argument(
+            '--no-build', action='store_true',
+            dest='no_build', default=False,
+            help='Run tests directly without build.')
 
     def _add_run_arguments(self, parser):
         """Add run command arguments. """

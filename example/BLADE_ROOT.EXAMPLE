@@ -5,8 +5,8 @@ cc_test_config(
     heap_check='strict',
     gperftools_libs=['#tcmalloc'],
     gperftools_debug_libs=['#tcmalloc_debug'],
-    gtest_libs=['#gtest'],
-    gtest_main_libs=['#gtest_main']
+    gtest_libs=['//thirdparty/gtest:gtest'],
+    gtest_main_libs=['//thirdparty/gtest:gtest_main']
 )
 
 """
@@ -24,9 +24,18 @@ link_config(
     enable_dccc=False
 )
 
+cc_library_config(
+    generate_dynamic=True
+)
+
 proto_library_config(
     protoc='protoc',
-    protobuf_libs=['#protobuf', '#glog', '#gflags', '#pthread'],
+    protobuf_libs=[
+        '#protobuf',
+        '//thirdparty/glog:glog',
+        '//thirdparty/gflags:gflags',
+        '#pthread'],
+    protobuf_java_libs = ['//java:protobuf-java'],
     protobuf_path='thirdparty',
     protobuf_incs = [],
     protobuf_php_path='thirdparty/Protobuf-PHP/library',
@@ -45,6 +54,10 @@ thrift_library_config(
 cc_config(
     extra_incs=[],
     cppflags = '-DHAVE_CONFIG_H'
+)
+
+java_test_config(
+    junit_libs = ['/usr/share/java/junit.jar'],
 )
 
 """

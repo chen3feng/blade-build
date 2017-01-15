@@ -5,6 +5,7 @@
 #         Feng Chen <phongchen@tencent.com>
 #         Yi Wang <yiwang@tencent.com>
 #         Chong Peng <michaelpeng@tencent.com>
+#         Wenting Li <wentingli@tencent.com>
 # Date:   October 20, 2011
 
 
@@ -16,12 +17,20 @@
 
 
 import os
+import re
+import py_compile
 import shutil
 import signal
+import socket
+import stat
 import string
 import subprocess
 import sys
 import tempfile
+import time
+import tarfile
+import zipfile
+import glob
 
 import SCons
 import SCons.Action
@@ -32,16 +41,25 @@ import SCons.Scanner.Prog
 import blade_util
 import console
 
+from console import colors
 
 # option_verbose to indicate print verbose or not
 option_verbose = False
+
+
+# blade path
+blade_path = os.path.dirname(__file__)
 
 
 # linking tmp dir
 linking_tmp_dir = ''
 
 
-def generate_python_binary(target, source, env):
+# build time stamp
+build_time = time.time()
+
+
+def generate_python_egg(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):
         console.warning('setup.py not existed to generate target %s, '
@@ -147,9 +165,99 @@ setup(
     if p.returncode:
         console.info(std_out)
         console.info(std_err)
-        console.error_exit('failed to generate python binary in %s' % target_dir)
+        console.error_exit('failed to generate python egg in %s' % target_dir)
         return p.returncode
     return 0
+
+
+def _compile_python(src, build_dir):
+    if src.startswith(build_dir):
+        pyc = src + 'c'
+    else:
+        pyc = os.path.join(build_dir, src) + 'c'
+    dir = os.path.dirname(pyc)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    py_compile.compile(src, pyc)
+    return pyc
+
+
+def generate_python_library(target, source, env):
+    target_file = open(str(target[0]), 'w')
+    data = dict()
+    data['base_dir'] = env.get('BASE_DIR', '')
+    build_dir = env['BUILD_DIR']
+    srcs = []
+    for s in source:
+        src = str(s)
+        pyc = _compile_python(src, build_dir)
+        digest = blade_util.md5sum_file(src)
+        srcs.append((src, pyc, digest))
+    data['srcs'] = srcs
+    target_file.write(str(data))
+    target_file.close()
+    return None
+
+
+def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
+    dir = os.path.dirname(arcname)
+    if os.path.basename(arcname) == '__init__.py':
+        dirs_with_init_py.add(dir)
+    while dir:
+        dirs.add(dir)
+        dir = os.path.dirname(dir)
+
+
+def generate_python_binary(target, source, env):
+    """The action to generate python executable file. """
+    target_name = str(target[0])
+    base_dir, build_dir = env.get('BASE_DIR', ''), env['BUILD_DIR']
+    target_file = zipfile.ZipFile(target_name, 'w', zipfile.ZIP_DEFLATED)
+    dirs = set()
+    dirs_with_init_py = set()
+    for s in source:
+        src = str(s)
+        if src.endswith('.pylib'):
+            libfile = open(src)
+            data = eval(libfile.read())
+            libfile.close()
+            pylib_base_dir = data['base_dir']
+            for libsrc, pyc, digest in data['srcs']:
+                arcname = os.path.relpath(libsrc, pylib_base_dir)
+                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+                target_file.write(libsrc, arcname)
+                target_file.write(pyc, arcname + 'c')
+        else:
+            pyc = _compile_python(src, build_dir)
+            arcname = os.path.relpath(src, base_dir)
+            _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+            target_file.write(src, arcname)
+            target_file.write(pyc, arcname + 'c')
+
+    # Insert __init__.py into each dir if missing
+    dirs_missing_init_py = dirs - dirs_with_init_py
+    for dir in sorted(dirs_missing_init_py):
+        target_file.writestr(os.path.join(dir, '__init__.py'), '')
+    target_file.writestr('__init__.py', '')
+    target_file.close()
+
+    target_file = open(target_name, 'rb')
+    zip_content = target_file.read()
+    target_file.close()
+
+    # Insert bootstrap before zip, it is also a valid zip file.
+    # unzip will seek actually start until meet the zip magic number.
+    entry = env['ENTRY']
+    bootstrap = (
+        '#!/bin/sh\n'
+        '\n'
+        'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % entry
+    target_file = open(target_name, 'wb')
+    target_file.write(bootstrap)
+    target_file.write(zip_content)
+    target_file.close()
+    os.chmod(target_name, 0775)
+    return None
 
 
 def generate_resource_index(target, source, env):
@@ -202,9 +310,11 @@ struct BladeResourceEntry {
     print >>h, '\n#endif // %s' % guard_name
     c.close()
     h.close()
+    return None
 
 
 def generate_resource_file(target, source, env):
+    """Generate resource source file in resource_library"""
     src_path = str(source[0])
     new_src_path = str(target[0])
     cmd = ('xxd -i %s | sed -e "s/^unsigned char /const char RESOURCE_/g" '
@@ -217,13 +327,565 @@ def generate_resource_file(target, source, env):
             stderr=subprocess.PIPE,
             shell=True,
             universal_newlines=True)
-    std_out, std_err = p.communicate()
-    if p.returncode or std_err:
+    stdout, stderr = p.communicate()
+    if p.returncode or stderr:
         error = 'failed to generate resource file'
-        if std_err:
-            error = error + ': ' + std_err
+        if stderr:
+            error = error + ': ' + stderr
         console.error_exit(error)
     return p.returncode
+
+
+def process_java_sources(target, source, env):
+    """Copy source file into .sources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
+def process_java_resources(target, source, env):
+    """Copy resource file into .resources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
+def _generate_java_jar(target, sources, resources, env):
+    """
+    Compile the java sources and generate a jar containing the classes and resources.
+    """
+    classes_dir = target.replace('.jar', '.classes')
+    resources_dir = target.replace('.jar', '.resources')
+    if not os.path.exists(classes_dir):
+        os.makedirs(classes_dir)
+
+    java, javac, jar, options = env['JAVA'], env['JAVAC'], env['JAR'], env['JAVACFLAGS']
+    classpath = ':'.join(env['JAVACLASSPATH'])
+    if not classpath:
+        classpath = blade_util.get_cwd()
+
+    if sources:
+        cmd = '%s %s -d %s -classpath %s %s' % (
+                javac, options, classes_dir, classpath, ' '.join(sources))
+        if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
+            return 1
+
+    cmd = ['%s cf %s' % (jar, target)]
+    global build_time
+    for dir, subdirs, files in os.walk(classes_dir):
+        for f in files:
+            f = os.path.join(dir, f)
+            if f.endswith('.class') and os.path.getmtime(f) >= build_time:
+                cmd.append("-C %s '%s'" % (classes_dir,
+                        os.path.relpath(f, classes_dir)))
+
+    if os.path.exists(resources_dir):
+        for resource in resources:
+            cmd.append("-C '%s' '%s'" % (resources_dir, 
+                    os.path.relpath(resource, resources_dir)))
+
+    cmd = ' '.join(cmd)
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+
+
+def generate_java_jar(target, source, env):
+    target = str(target[0])
+    sources = []
+    index = 0
+    for src in source:
+        if str(src).endswith('.java'):
+            sources.append(str(src))
+            index += 1
+        else:
+            break
+
+    resources = [str(src) for src in source[index:]]
+
+    return _generate_java_jar(target, sources, resources, env)
+
+
+_one_jar_boot_path = None
+
+
+def _generate_one_jar(target,
+                      main_class,
+                      main_jar,
+                      deps_jar,
+                      one_jar_boot_path):
+    target_dir = os.path.dirname(target)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    target_one_jar = zipfile.ZipFile(target, 'w')
+    jar_path_set = set()
+    # Copy files from one-jar-boot.jar to the target jar
+    zip_file = zipfile.ZipFile(one_jar_boot_path, 'r')
+    name_list = zip_file.namelist()
+    for name in name_list:
+        if not name.lower().endswith('manifest.mf'): # Exclude manifest
+            target_one_jar.writestr(name, zip_file.read(name))
+            jar_path_set.add(name)
+    zip_file.close()
+
+    # Main jar and dependencies
+    target_one_jar.write(main_jar, os.path.join('main',
+                                                os.path.basename(main_jar)))
+    for dep in deps_jar:
+        dep_name = os.path.basename(dep)
+        target_one_jar.write(dep, os.path.join('lib', dep_name))
+
+    # Copy resources to the root of target onejar
+    for jar in [main_jar] + deps_jar:
+        jar = zipfile.ZipFile(jar, 'r')
+        jar_name_list = jar.namelist()
+        for name in jar_name_list:
+            if name.endswith('.class') or name.upper().startswith('META-INF'):
+                continue
+            if name not in jar_path_set:
+                jar_path_set.add(name)
+                target_one_jar.writestr(name, jar.read(name))
+        jar.close()
+
+    # Manifest
+    # Note that the manifest file must end with a new line or carriage return
+    target_one_jar.writestr(os.path.join('META-INF', 'MANIFEST.MF'),
+                            '''Manifest-Version: 1.0
+Main-Class: com.simontuffs.onejar.Boot
+One-Jar-Main-Class: %s
+
+''' % main_class)
+
+    target_one_jar.close()
+
+    return None
+
+
+def generate_one_jar(target, source, env):
+    if len(source) < 2:
+        console.error_exit('Failed to generate java binary from %s: '
+                           'Source should at least contain main class '
+                           'and main jar' % ','.join(str(s) for s in source))
+    main_class = str(source[0])
+    main_jar = str(source[1])
+    deps_jar = []
+    for dep in source[2:]:
+        deps_jar.append(str(dep))
+
+    target = str(target[0])
+    # print target, main_class, main_jar, deps_jar, _one_jar_boot_path
+    return _generate_one_jar(target, main_class, main_jar, deps_jar,
+                             _one_jar_boot_path)
+
+
+def _is_signature_file(name):
+    parts = name.upper().split('/')
+    if len(parts) == 2:
+        for suffix in ('.SF', '.DSA', '.RSA'):
+            if parts[1].endswith(suffix):
+                return True
+        if parts[1].startswith('SIG-'):
+            return True
+    return False
+
+
+_JAR_MANIFEST = 'META-INF/MANIFEST.MF'
+_FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
+                                'META-INF/LICENSE', 'META-INF/README',
+                                'META-INF/NOTICE', 'META-INF/INDEX.LIST'])
+
+
+def _is_fat_jar_excluded(name):
+    name = name.upper()
+    for exclusion in _FATJAR_EXCLUSIONS:
+        if name.startswith(exclusion):
+            return True
+
+    return name == _JAR_MANIFEST or _is_signature_file(name)
+
+
+def _generate_fat_jar(target, deps_jar, env):
+    """Generate a fat jar containing the contents of all the jar dependencies. """
+    target_dir = os.path.dirname(target)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    target_fat_jar = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
+    # Record paths written in the fat jar to avoid duplicate writing
+    zip_path_dict = {}
+    zip_path_conflicts = 0
+
+    for dep_jar in deps_jar:
+        jar = zipfile.ZipFile(dep_jar, 'r')
+        name_list = jar.namelist()
+        for name in name_list:
+            if name.endswith('/') or not _is_fat_jar_excluded(name):
+                if name not in zip_path_dict:
+                    target_fat_jar.writestr(name, jar.read(name))
+                    zip_path_dict[name] = os.path.basename(dep_jar)
+                else:
+                    if not name.endswith('/'):  # Not a directory
+                        zip_path_conflicts += 1
+                        console.log('%s: duplicate path %s found in {%s, %s}' % (
+                                target, name, zip_path_dict[name],
+                                os.path.basename(dep_jar)))
+
+        jar.close()
+
+    if zip_path_conflicts:
+        console.warning('%s: Found %d conflicts when packaging. '
+                        'See %s for details.' % (
+                        target, zip_path_conflicts, console.get_log_file()))
+    # TODO(wentingli): Create manifest from dependency jars later if needed
+    contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
+    main_class = env.Dictionary().get('JAVAMAINCLASS')
+    if main_class:
+        contents += 'Main-Class: %s\n' % main_class
+    contents += '\n'
+    target_fat_jar.writestr(_JAR_MANIFEST, contents)
+    target_fat_jar.close()
+
+    return None
+
+
+def generate_fat_jar(target, source, env):
+    target = str(target[0])
+    dep_jars = [str(dep) for dep in source]
+
+    # Create a new process for fatjar packaging to avoid GIL
+    global blade_path
+    cmd = 'PYTHONPATH=%s:$PYTHONPATH python -m fatjar %s %s' % (
+        blade_path, target, ' '.join(dep_jars))
+    p = subprocess.Popen(cmd,
+                         env=os.environ,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True,
+                         universal_newlines=True)
+    stdout, stderr = p.communicate()
+    if stdout:
+        console.warning('%s See %s for details.' % (
+            stdout.rstrip(), console.get_log_file()))
+    if stderr:
+        console.log(stderr)
+    return p.returncode
+
+
+def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
+    """generate a wrapper shell script to run jar"""
+    onejar_name = os.path.basename(onejar_path)
+    full_path = os.path.abspath(onejar_path)
+    target_file = open(target_name, 'w')
+    target_file.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+jar=`dirname "$0"`/"%s"
+if [ ! -f "$jar" ]; then
+  jar="%s"
+fi
+
+exec java %s -jar "$jar" %s $@
+""" % (onejar_name, full_path, jvm_flags, run_args))
+    os.chmod(target_name, 0755)
+    target_file.close()
+
+    return None
+
+
+def generate_java_binary(target, source, env):
+    """build function to generate wrapper shell script for java binary"""
+    target_name = str(target[0])
+    onejar_path = str(source[0])
+    return _generate_java_binary(target_name, onejar_path, '', '')
+
+
+def _get_all_test_class_names_in_jar(jar):
+    """Returns a list of test class names in the jar file. """
+    test_class_names = []
+    zip_file = zipfile.ZipFile(jar, 'r')
+    name_list = zip_file.namelist()
+    for name in name_list:
+        basename = os.path.basename(name)
+        # Exclude inner class and Test.class
+        if (basename.endswith('Test.class') and
+            len(basename) > len('Test.class') and
+            not '$' in basename):
+            class_name = name.replace('/', '.')[:-6] # Remove .class suffix
+            test_class_names.append(class_name)
+    zip_file.close()
+    return test_class_names
+
+
+def _generate_java_test_coverage_flag(env):
+    """Returns java test coverage flags based on the environment passed in. """
+    env_dict = env.Dictionary()
+    jacoco_agent = env_dict.get('JACOCOAGENT')
+    if jacoco_agent:
+        jacoco_agent = os.path.abspath(jacoco_agent)
+        target_under_test_package = env_dict.get('JAVATARGETUNDERTESTPKG')
+        if target_under_test_package:
+            options = []
+            options.append('includes=%s' % ':'.join(
+                [p + '.*' for p in target_under_test_package if p]))
+            options.append('output=file')
+            return '-javaagent:%s=%s' % (jacoco_agent, ','.join(options))
+
+    return ''
+
+
+def _generate_java_test(target, main_class, jars, jvm_flags, run_args, env):
+    target_file = open(target, 'w')
+    target_file.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+if [ -n "$BLADE_COVERAGE" ]
+then
+  coverage_options="%s"
+fi
+
+exec java $coverage_options -classpath %s %s %s %s $@
+""" % (_generate_java_test_coverage_flag(env), ':'.join(jars),
+       jvm_flags, main_class, run_args))
+    os.chmod(target, 0755)
+    target_file.close()
+
+    return None
+
+
+def generate_java_test(target, source, env):
+    """build function to generate wrapper shell script for java test"""
+    target_name = str(target[0])
+    main_class = str(source[0])
+    test_jar = str(source[1])
+    jars = []
+    for jar in source[1:]:
+        jars.append(os.path.abspath(str(jar)))
+    test_class_names = _get_all_test_class_names_in_jar(test_jar)
+
+    return _generate_java_test(target_name, main_class, jars, '',
+                               ' '.join(test_class_names), env)
+
+
+def _generate_scala_jar(target, sources, resources, env):
+    """
+    Compile scala sources and generate a jar containing
+    the classes and resources.
+    """
+    scalac = env['SCALAC']
+    java = env['JAVA']
+    jar = env['JAR']
+    options = ' '.join(env['SCALACFLAGS'])
+    classpath = ':'.join(env['JAVACLASSPATH'])
+    if not classpath:
+        classpath = blade_util.get_cwd()
+
+    cmd = 'JAVACMD=%s %s -d %s -classpath %s %s %s' % (java, scalac, target,
+            classpath, options, ' '.join(sources))
+    if echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None):
+        return 1
+
+    if resources:
+        resources_dir = target.replace('.jar', '.resources')
+        if os.path.exists(resources_dir):
+            cmd = ['%s uf %s' % (jar, target)]
+            for resource in resources:
+                cmd.append("-C '%s' '%s'" % (resources_dir,
+                    os.path.relpath(resource, resources_dir)))
+
+            return echospawn(args=cmd, env=os.environ, sh=None, cmd=None, escape=None)
+
+    return None
+
+
+def generate_scala_jar(target, source, env):
+    target = str(target[0])
+    sources = []
+    index = 0
+    for src in source:
+        if str(src).endswith('.scala'):
+            sources.append(str(src))
+            index += 1
+        else:
+            break
+
+    resources = [str(src) for src in source[index:]]
+
+    return _generate_scala_jar(target, sources, resources, env)
+
+
+def _generate_scala_test(target, jars, test_class_names, env):
+    scala, java = env['SCALA'], env['JAVA']
+    scala, java = os.path.abspath(scala), os.path.abspath(java)
+    run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
+    script = open(target, 'w')
+    script.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+JAVACMD=%s exec %s -classpath %s %s $@
+
+""" % (java, scala, ':'.join(jars), run_args))
+    script.close()
+    os.chmod(target, 0755)
+
+    return None
+
+
+def generate_scala_test(target, source, env):
+    """Generate wrapper shell script for scala test. """
+    target = str(target[0])
+    test_jar = str(source[0])
+    jars = [os.path.abspath(str(jar)) for jar in source]
+    test_class_names = _get_all_test_class_names_in_jar(test_jar)
+
+    return _generate_scala_test(target, jars, test_class_names, env)
+
+
+def process_package_source(target, source, env):
+    """Copy source file into .sources dir. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
+def _get_tar_mode_from_suffix(suffix):
+    return {
+        'tar' : 'w',
+        'tar.gz' : 'w:gz',
+        'tgz' : 'w:gz',
+        'tar.bz2' : 'w:bz2',
+        'tbz' : 'w:bz2',
+    }[suffix]
+
+
+def _archive_package_sources(package, sources, sources_dir):
+    """Archive sources into the package and return a list of source info. """
+    manifest = []
+    for s in sources:
+        f = str(s)
+        if f.startswith(sources_dir):
+            path = os.path.relpath(f, sources_dir)
+        else:
+            path = os.path.basename(f)
+        package(f, path)
+        manifest.append('%s %s' % (s.get_csig(), path))
+
+    return manifest
+
+
+_PACKAGE_MANIFEST = 'MANIFEST.TXT'
+
+
+def _generate_tar_package(target, sources, sources_dir, suffix):
+    """Generate a tar ball containing all of the source files. """
+    mode = _get_tar_mode_from_suffix(suffix)
+    tar = tarfile.open(target, mode)
+    manifest = _archive_package_sources(tar.add, sources, sources_dir)
+    manifest_path = '%s.MANIFEST' % target
+    m = open(manifest_path, 'w')
+    print >>m, '\n'.join(manifest) + '\n'
+    m.close()
+    tar.add(manifest_path, _PACKAGE_MANIFEST)
+    tar.close()
+    return None
+
+
+def _generate_zip_package(target, sources, sources_dir):
+    """Generate a zip archive containing all of the source files. """
+    zip = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
+    manifest = _archive_package_sources(zip.write, sources, sources_dir)
+    zip.writestr(_PACKAGE_MANIFEST, '\n'.join(manifest) + '\n')
+    zip.close()
+    return None
+
+
+def generate_package(target, source, env):
+    """Generate a package containing all of the source files. """
+    target = str(target[0])
+    sources_dir = target + '.sources'
+    suffix = env['PACKAGESUFFIX']
+    if suffix == 'zip':
+        return _generate_zip_package(target, source, sources_dir)
+    else:
+        return _generate_tar_package(target, source, sources_dir, suffix)
+
+
+def generate_shell_test_data(target, source, env):
+    """Generate test data used by shell script for subsequent execution. """
+    target = str(target[0])
+    testdata = open(target, 'w')
+    for i in range(0, len(source), 2):
+        print >>testdata, os.path.abspath(str(source[i])), source[i + 1]
+    testdata.close()
+    return None
+
+
+def generate_shell_test(target, source, env):
+    """Generate a shell wrapper to run shell scripts in source one by one. """
+    target = str(target[0])
+    script = open(target, 'w')
+    print >>script, '#!/bin/sh'
+    print >>script, '# Auto generated wrapper shell script by blade\n'
+    print >>script, 'set -e\n'
+    for s in source:
+        print >>script, '. %s' % os.path.abspath(str(s))
+    print >>script
+    script.close()
+    os.chmod(target, 0755)
+    return None
+
+
+def generate_proto_go_source(target, source, env):
+    """Generate go source file by invoking protobuf compiler. """
+    source = source[0]
+    global proto_import_re
+    import_protos = proto_import_re.findall(source.get_text_contents())
+    parameters = 'import_prefix=%s/' % env['PROTOBUFGOPATH']
+    if import_protos:
+        proto_mappings = []
+        for proto in import_protos:
+            dir = os.path.dirname(proto)
+            name = os.path.basename(proto)
+            proto_mappings.append('M%s=%s' % (
+                                  proto, os.path.join(dir, name.replace('.', '_'))))
+        parameters += ',%s' % ','.join(proto_mappings)
+
+    cmd = '%s --proto_path=. --plugin=protoc-gen-go=%s -I. %s -I=%s --go_out=%s:%s %s' % (
+           env['PROTOC'], env['PROTOCGOPLUGIN'], env['PROTOBUFINCS'],
+           os.path.dirname(str(source)), parameters, env['BUILDDIR'], source)
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+
+
+def copy_proto_go_source(target, source, env):
+    """Copy go source file generated by protobuf into go standard directory. """
+    shutil.copy2(str(source[0]), str(target[0]))
+    return None
+
+
+def _generate_go_package(target, source, env):
+    go, go_home = env['GOCMD'], env['GOHOME']
+    cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+
+
+def generate_go_library(target, source, env):
+    """
+    Generate go package object. Note that the sources should be
+    in the same directory and the go tool compiles them as a whole
+    by designating the package path.
+    """
+    return _generate_go_package(target, source, env)
+
+
+def generate_go_binary(target, source, env):
+    """Generate go command executable. """
+    return _generate_go_package(target, source, env)
+
+
+def generate_go_test(target, source, env):
+    """Generate go test binary. """
+    go, go_home = env['GOCMD'], env['GOHOME']
+    cmd = 'GOPATH=%s %s test -c -o %s %s' % (
+          go_home, go, target[0], env['GOPACKAGE'])
+    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
 def MakeAction(cmd, cmdstr):
@@ -243,26 +905,34 @@ _WARNINGS = [': warning:', ': note: ', '] Warning: ']
 
 def error_colorize(message):
     colored_message = []
-    for t in message.splitlines(True):
+    for line in message.splitlines(True): # keepends
         color = 'cyan'
 
         # For clang column indicator, such as '^~~~~~'
-        if t.strip().startswith('^'):
+        if line.strip().startswith('^'):
             color = 'green'
         else:
             for w in _WARNINGS:
-                if w in t:
+                if w in line:
                     color = 'yellow'
                     break
             for w in _ERRORS:
-                if w in t:
+                if w in line:
                     color = 'red'
                     break
 
         colored_message.append(console.colors(color))
-        colored_message.append(t)
+        colored_message.append(line)
         colored_message.append(console.colors('end'))
     return console.inerasable(''.join(colored_message))
+
+
+def _echo(stdout, stderr):
+    """Echo messages to stdout and stderr. """
+    if stdout:
+        sys.stdout.write(stdout)
+    if stderr:
+        sys.stderr.write(stderr)
 
 
 def echospawn(sh, escape, cmd, args, env):
@@ -272,27 +942,29 @@ def echospawn(sh, escape, cmd, args, env):
         asciienv[key] = str(value)
 
     cmdline = ' '.join(args)
-    p = subprocess.Popen(
-        cmdline,
-        env=asciienv,
-        stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        shell=True,
-        universal_newlines=True)
-    (stdout, stderr) = p.communicate()
+    console.debug(cmdline)
+    p = subprocess.Popen(cmdline,
+                         env=asciienv,
+                         stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         shell=True,
+                         universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    global option_verbose
+    if not option_verbose:
+        if stdout:
+            stdout = error_colorize(stdout)
+        if stderr:
+            stderr = error_colorize(stderr)
 
     if p.returncode:
         if p.returncode != -signal.SIGINT:
             # Error
-            sys.stdout.write(error_colorize(stdout))
-            sys.stderr.write(error_colorize(stderr))
+            _echo(stdout, stderr)
     else:
-        if stderr:
-            # Only warnings
-            sys.stdout.write(error_colorize(stdout))
-            sys.stderr.write(error_colorize(stderr))
-        else:
-            sys.stdout.write(stdout)
+        # Only warnings
+        _echo(stdout, stderr)
 
     return p.returncode
 
@@ -365,9 +1037,9 @@ def fast_link_prog_action(target, source, env):
     return _fast_link_helper(target, source, env, link_com)
 
 
-def create_fast_link_prog_builder(env):
+def setup_fast_link_prog_builder(top_env):
     """
-       This is the function to create blade fast link
+       This is the function to setup blade fast link
        program builder. It will overwrite the program
        builder of top level env if user specifies an
        option to apply fast link method that they want
@@ -383,12 +1055,12 @@ def create_fast_link_prog_builder(env):
                                     src_suffix='$OBJSUFFIX',
                                     src_builder='Object',
                                     target_scanner=SCons.Scanner.Prog.ProgramScanner())
-    env['BUILDERS']['Program'] = program
+    top_env['BUILDERS']['Program'] = program
 
 
-def create_fast_link_sharelib_builder(env):
+def setup_fast_link_sharelib_builder(top_env):
     """
-       This is the function to create blade fast link
+       This is the function to setup blade fast link
        sharelib builder. It will overwrite the sharelib
        builder of top level env if user specifies an
        option to apply fast link method that they want
@@ -407,10 +1079,10 @@ def create_fast_link_sharelib_builder(env):
                                       target_scanner=SCons.Scanner.Prog.ProgramScanner(),
                                       src_suffix='$SHOBJSUFFIX',
                                       src_builder='SharedObject')
-    env['BUILDERS']['SharedLibrary'] = sharedlib
+    top_env['BUILDERS']['SharedLibrary'] = sharedlib
 
 
-def create_fast_link_builders(env):
+def setup_fast_link_builders(top_env):
     """Creates fast link builders - Program and  SharedLibrary. """
     # Check requirement
     acquire_temp_place = "df | grep tmpfs | awk '{print $5, $6}'"
@@ -421,7 +1093,7 @@ def create_fast_link_builders(env):
                         stderr=subprocess.PIPE,
                         shell=True,
                         universal_newlines=True)
-    std_out, std_err = p.communicate()
+    stdout, stderr = p.communicate()
 
     # Do not try to overwrite builder with error
     if p.returncode:
@@ -429,13 +1101,13 @@ def create_fast_link_builders(env):
         return
 
     # No tmpfs to do fastlink, will not overwrite the builder
-    if not std_out:
+    if not stdout:
         console.warning('you have link on tmp enabled, but there is no tmpfs to make it.')
         return
 
     # Use the first one
     global linking_tmp_dir
-    usage, linking_tmp_dir = tuple(std_out.splitlines(False)[0].split())
+    usage, linking_tmp_dir = tuple(stdout.splitlines(False)[0].split())
 
     # Do not try to do that if there is no memory space left
     usage = int(usage.replace('%', ''))
@@ -447,5 +1119,533 @@ def create_fast_link_builders(env):
 
     console.info('building in link on tmpfs mode')
 
-    create_fast_link_sharelib_builder(env)
-    create_fast_link_prog_builder(env)
+    setup_fast_link_sharelib_builder(top_env)
+    setup_fast_link_prog_builder(top_env)
+
+
+def make_top_env(build_dir):
+    """Make the top level scons envrionment object"""
+    os.environ['LC_ALL'] = 'C'
+    top_env = SCons.Environment.Environment(ENV=os.environ)
+    top_env.EnsureSConsVersion(2, 0)
+    # Optimization options, see http://www.scons.org/wiki/GoFastButton
+    top_env.Decider('MD5-timestamp')
+    top_env.SetOption('implicit_cache', 1)
+    top_env.SetOption('max_drift', 1)
+    top_env.VariantDir(build_dir, '.', duplicate=0)
+    return top_env
+
+
+def get_compile_source_message():
+    return console.erasable('%sCompiling %s$SOURCE%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+
+def get_link_program_message():
+    return console.inerasable('%sLinking Program %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
+
+def setup_compliation_verbose(top_env, color_enabled, verbose):
+    """Generates color and verbose message. """
+    console.color_enabled = color_enabled
+    top_env["SPAWN"] = echospawn
+
+    compile_source_message = get_compile_source_message()
+    link_program_message = get_link_program_message()
+    assembling_source_message = console.erasable('%sAssembling %s$SOURCE%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    link_library_message = console.inerasable('%sCreating Static Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    ranlib_library_message = console.inerasable('%sRanlib Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    link_shared_library_message = console.inerasable('%sLinking Shared Library %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    jar_message = console.inerasable('%sCreating Jar %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
+    if not verbose:
+        top_env.Append(
+                CXXCOMSTR = compile_source_message,
+                CCCOMSTR = compile_source_message,
+                ASCOMSTR = assembling_source_message,
+                ASPPCOMSTR = assembling_source_message,
+                SHCCCOMSTR = compile_source_message,
+                SHCXXCOMSTR = compile_source_message,
+                ARCOMSTR = link_library_message,
+                RANLIBCOMSTR = ranlib_library_message,
+                SHLINKCOMSTR = link_shared_library_message,
+                LINKCOMSTR = link_program_message,
+                JAVACCOMSTR = compile_source_message,
+                JARCOMSTR = jar_message,
+                LEXCOMSTR = compile_source_message,
+                YACCCOMSTR = compile_source_message)
+
+
+proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
+proto_import_public_re = re.compile(r'^import\s+public\s+"(\S+)"\s*;\s*$', re.M)
+
+
+def proto_scan_func(node, env, path, arg):
+    contents = node.get_text_contents()
+    protos = proto_import_re.findall(contents)
+    protos += proto_import_public_re.findall(contents)
+    if not protos:
+        return []
+
+    def _find_proto(proto, path):
+        for dir in path:
+            f = os.path.join(str(dir), proto)
+            if os.path.exists(f):
+                return f
+        return ''
+
+    results = []
+    for proto in protos:
+        f = _find_proto(proto, path)
+        if f:
+            results.append(f)
+            public_protos = proto_import_public_re.findall(open(f).read())
+            for public_proto in public_protos:
+                public_proto = _find_proto(public_proto, path)
+                if public_proto:
+                    results.append(public_proto)
+
+    return env.File(results)
+
+
+def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
+                         protobuf_path, protobuf_incs_str,
+                         protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
+    compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_proto_go_message = console.erasable('%sCompiling %s$SOURCE%s to go source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    copy_proto_go_source_message = console.erasable('%sCopying %s$SOURCE%s to go directory%s' %
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    generate_proto_descriptor_message = console.inerasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+
+    proto_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $PROTOCCPPPLUGINFLAGS $SOURCE" % (
+            protoc_bin, protobuf_incs_str, build_dir),
+        compile_proto_cc_message))
+    top_env.Append(BUILDERS = {"Proto" : proto_bld})
+
+    proto_java_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
+            protoc_java_bin, protobuf_path, build_dir),
+        compile_proto_java_message))
+    top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
+
+    proto_php_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. --plugin=protoc-gen-php=%s -I. %s -I%s -I=`dirname $SOURCE` --php_out=%s/`dirname $SOURCE` $SOURCE" % (
+            protoc_bin, protoc_php_plugin, protobuf_incs_str, protobuf_php_path, build_dir),
+        compile_proto_php_message))
+    top_env.Append(BUILDERS = {"ProtoPhp" : proto_php_bld})
+
+    proto_python_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --python_out=%s $PROTOCPYTHONPLUGINFLAGS $SOURCE" % (
+            protoc_bin, protobuf_incs_str, build_dir),
+        compile_proto_python_message))
+    top_env.Append(BUILDERS = {"ProtoPython" : proto_python_bld})
+
+    proto_go_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_proto_go_source, compile_proto_go_message),
+        PROTOC = protoc_bin, PROTOCGOPLUGIN = protoc_go_plugin,
+        PROTOBUFINCS = protobuf_incs_str, BUILDDIR = build_dir)
+    top_env.Append(BUILDERS = {"ProtoGo" : proto_go_bld})
+
+    proto_go_source_bld = SCons.Builder.Builder(
+        action = MakeAction(copy_proto_go_source, copy_proto_go_source_message))
+    top_env.Append(BUILDERS = {"ProtoGoSource" : proto_go_source_bld})
+
+    proto_descriptor_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --proto_path=. -I. %s -I=`dirname $SOURCE` '
+        '--descriptor_set_out=$TARGET --include_imports --include_source_info '
+        '$SOURCES' % (protoc_bin, protobuf_incs_str),
+        generate_proto_descriptor_message))
+    top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
+
+    top_env.Replace(PROTOCCPPPLUGINFLAGS = "",
+                    PROTOCJAVAPLUGINFLAGS = "",
+                    PROTOCPYTHONPLUGINFLAGS = "")
+
+    top_env.Append(PROTOPATH = ['.', protobuf_path])
+    proto_scanner = top_env.Scanner(name = 'ProtoScanner',
+                                    function = proto_scan_func,
+                                    argument = None,
+                                    skeys = ['.proto'],
+                                    path_function = SCons.Scanner.FindPathDirs('PROTOPATH'))
+    top_env.Append(SCANNERS = proto_scanner)
+
+
+def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
+    compile_thrift_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_thrift_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_thrift_python_message = console.erasable( '%sCompiling %s$SOURCE%s to python source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    thrift_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen cpp:include_prefix,pure_enums -I . %s -I `dirname $SOURCE`'
+        ' -out %s/`dirname $SOURCE` $SOURCE' % (
+            thrift_bin, thrift_incs_str, build_dir),
+        compile_thrift_cc_message))
+    top_env.Append(BUILDERS = {"Thrift" : thrift_bld})
+
+    thrift_java_bld = SCons.Builder.Builder(action = MakeAction(
+    "%s --gen java -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` $SOURCE" % (
+        thrift_bin, thrift_incs_str, build_dir),
+    compile_thrift_java_message))
+    top_env.Append(BUILDERS = {"ThriftJava" : thrift_java_bld})
+
+    thrift_python_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s --gen py -I . %s -I `dirname $SOURCE` -out %s/`dirname $SOURCE` $SOURCE" % (
+            thrift_bin, thrift_incs_str, build_dir),
+        compile_thrift_python_message))
+    top_env.Append(BUILDERS = {"ThriftPython" : thrift_python_bld})
+
+
+def setup_fbthrift_builders(top_env, build_dir, fbthrift1_bin, fbthrift2_bin, fbthrift_incs_str):
+    compile_fbthrift_cpp_message = console.erasable('%sCompiling %s$SOURCE%s to cpp source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_fbthrift_cpp2_message = console.erasable('%sCompiling %s$SOURCE%s to cpp2 source%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    fbthrift1_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen cpp:templates,cob_style,include_prefix,enum_strict -I . %s -I `dirname $SOURCE`'
+        ' -o %s/`dirname $SOURCE` $SOURCE' % (
+            fbthrift1_bin, fbthrift_incs_str, build_dir),
+        compile_fbthrift_cpp_message))
+    top_env.Append(BUILDERS = {"FBThrift1" : fbthrift1_bld})
+
+    fbthrift2_bld = SCons.Builder.Builder(action = MakeAction(
+        '%s --gen=cpp2:cob_style,include_prefix,future -I . %s -I `dirname $SOURCE` '
+        '-o %s/`dirname $SOURCE` $SOURCE' % (
+            fbthrift2_bin, fbthrift_incs_str, build_dir),
+        compile_fbthrift_cpp2_message))
+    top_env.Append(BUILDERS = {"FBThrift2" : fbthrift2_bld})
+
+
+def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
+    nvcc_object_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s -ccbin g++ %s $NVCCFLAGS -o $TARGET -c $SOURCE" % (nvcc_str, cuda_incs_str),
+        get_compile_source_message()))
+    top_env.Append(BUILDERS = {"NvccObject" : nvcc_object_bld})
+
+    nvcc_binary_bld = SCons.Builder.Builder(action = MakeAction(
+        "%s %s $NVCCFLAGS -o $TARGET" % (nvcc_str, cuda_incs_str),
+        get_link_program_message()))
+    top_env.Append(NVCC=nvcc_str)
+    top_env.Append(BUILDERS = {"NvccBinary" : nvcc_binary_bld})
+
+def setup_java_builders(top_env, java_home, one_jar_boot_path):
+    if java_home:
+        top_env.Replace(JAVA=os.path.join(java_home, 'bin/java'))
+        top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))
+        top_env.Replace(JAR=os.path.join(java_home, 'bin/jar'))
+
+
+    blade_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        'jar cf $TARGET -C `dirname $SOURCE` .',
+        '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"BladeJar" : blade_jar_bld})
+
+    # Scons has many bugs with generated sources file,
+    # such as can't obtain class file path correctly.
+    # so just build all sources to jar directly
+    generated_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        'rm -fr ${TARGET}.classes && mkdir -p ${TARGET}.classes && '
+        '$JAVAC $JAVACFLAGS $_JAVABOOTCLASSPATH $_JAVACLASSPATH -d ${TARGET}.classes $SOURCES && '
+        '$JAR $JARFLAGS ${TARGET} -C ${TARGET}.classes . && '
+        'rm -fr ${TARGET}.classes',
+        '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"GeneratedJavaJar" : generated_jar_bld})
+
+
+    # Scons Java builder has bugs on detecting generated .class files
+    # produced by javac: anonymous inner classes are missing in the results
+    # of Java builder no matter which JAVAVERSION(1.5, 1.6) is specified
+    # See: http://scons.tigris.org/issues/show_bug.cgi?id=1594
+    #      http://scons.tigris.org/issues/show_bug.cgi?id=2742
+    blade_java_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_java_jar, '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"BladeJavaJar" : blade_java_jar_bld})
+
+
+    resource_message = console.erasable('%sProcess Jar Resource %s$SOURCES%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    java_resource_bld = SCons.Builder.Builder(
+        action = MakeAction(process_java_resources, resource_message))
+    top_env.Append(BUILDERS = {"JavaResource" : java_resource_bld})
+
+    source_message = console.erasable('%sProcess Java Source %s$SOURCES%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    java_source_bld = SCons.Builder.Builder(
+        action = MakeAction(process_java_sources, source_message))
+    top_env.Append(BUILDERS = {"JavaSource" : java_source_bld})
+
+    global _one_jar_boot_path
+    _one_jar_boot_path = one_jar_boot_path
+
+    one_java_message = console.erasable('%sGenerating One Jar %s$TARGET%s%s' % ( \
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    one_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_one_jar,
+        one_java_message))
+    top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
+
+    fat_java_message = console.inerasable('%sCreating Fat Jar %s$TARGET%s%s' % ( \
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
+        fat_java_message))
+    top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})
+
+    java_binary_message = console.inerasable('%sGenerating Java Binary %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    java_binary_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_java_binary, java_binary_message))
+    top_env.Append(BUILDERS = {"JavaBinary" : java_binary_bld})
+
+    java_test_message = console.inerasable('%sGenerating Java Test %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    java_test_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_java_test, java_test_message))
+    top_env.Append(BUILDERS = {"JavaTest" : java_test_bld})
+
+
+def setup_scala_builders(top_env, scala_home):
+    if scala_home:
+        top_env.Replace(SCALAC=os.path.join(scala_home, 'bin/scalac'))
+        top_env.Replace(SCALA=os.path.join(scala_home, 'bin/scala'))
+
+    scala_jar_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_scala_jar, '$JARCOMSTR'))
+    top_env.Append(BUILDERS = {"ScalaJar" : scala_jar_bld})
+
+    scala_test_message = console.inerasable('%sGenerating Scala Test %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    scala_test_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_scala_test, scala_test_message))
+    top_env.Append(BUILDERS = {"ScalaTest" : scala_test_bld})
+
+
+def setup_go_builders(top_env, go_cmd, go_home):
+    if go_cmd:
+        top_env.Replace(GOCMD=go_cmd)
+    if go_home:
+        top_env.Replace(GOHOME=go_home)
+
+    go_library_message = console.inerasable('%sGenerating Go Package %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_library_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_library, go_library_message))
+    top_env.Append(BUILDERS = {"GoLibrary" : go_library_builder})
+
+    go_binary_message = console.inerasable('%sGenerating Go Executable %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_binary_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_binary, go_binary_message))
+    top_env.Append(BUILDERS = {"GoBinary" : go_binary_builder})
+
+    go_test_message = console.inerasable('%sGenerating Go Test %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    go_test_builder = SCons.Builder.Builder(action = MakeAction(
+        generate_go_test, go_test_message))
+    top_env.Append(BUILDERS = {"GoTest" : go_test_builder})
+
+
+def setup_lex_yacc_builders(top_env):
+    top_env.Replace(LEXCOM = "$LEX $LEXFLAGS -o $TARGET $SOURCES")
+
+
+def setup_resource_builders(top_env):
+    compile_resource_index_message = console.erasable('%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    compile_resource_message = console.erasable('%sCompiling %s$SOURCE%s as resource file%s' % \
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    resource_index_bld = SCons.Builder.Builder(action = MakeAction(generate_resource_index,
+        compile_resource_index_message))
+    resource_file_bld = SCons.Builder.Builder(action = MakeAction(generate_resource_file,
+        compile_resource_message))
+    top_env.Append(BUILDERS = {"ResourceIndex" : resource_index_bld})
+    top_env.Append(BUILDERS = {"ResourceFile" : resource_file_bld})
+
+
+def setup_python_builders(top_env):
+    compile_python_egg_message = console.inerasable('%sGenerating Python Egg %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    compile_python_library_message = console.inerasable('%sGenerating Python Library %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    compile_python_binary_message = console.inerasable('%sGenerating Python Binary %s$TARGET%s%s' % \
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+
+    python_egg_bld = SCons.Builder.Builder(action = MakeAction(generate_python_egg,
+        compile_python_egg_message))
+    python_library_bld = SCons.Builder.Builder(action = MakeAction(generate_python_library,
+        compile_python_library_message))
+    python_binary_bld = SCons.Builder.Builder(action = MakeAction(generate_python_binary,
+        compile_python_binary_message))
+    top_env.Append(BUILDERS = {"PythonEgg" : python_egg_bld})
+    top_env.Append(BUILDERS = {"PythonLibrary" : python_library_bld})
+    top_env.Append(BUILDERS = {"PythonBinary" : python_binary_bld})
+
+
+def setup_package_builders(top_env):
+    source_message = console.erasable('%sProcess Package Source %s$SOURCES%s%s' % (
+        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    source_bld = SCons.Builder.Builder(
+        action = MakeAction(process_package_source, source_message))
+    top_env.Append(BUILDERS = {"PackageSource" : source_bld})
+
+    package_message = console.inerasable('%sCreating Package %s$TARGET%s%s' % (
+        colors('green'), colors('purple'), colors('green'), colors('end')))
+    package_bld = SCons.Builder.Builder(
+        action = MakeAction(generate_package, package_message))
+    top_env.Append(BUILDERS = {"Package" : package_bld})
+
+
+def setup_shell_builders(top_env):
+    shell_test_data_message = console.erasable('%sGenerating Shell Test Data %s$TARGET%s%s' %
+        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+    shell_test_data_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_shell_test_data, shell_test_data_message))
+    top_env.Append(BUILDERS = {"ShellTestData" : shell_test_data_bld})
+
+    shell_test_message = console.inerasable('%sGenerating Shell Test %s$TARGET%s%s' %
+        (colors('green'), colors('purple'), colors('green'), colors('end')))
+    shell_test_bld = SCons.Builder.Builder(action = MakeAction(
+        generate_shell_test, shell_test_message))
+    top_env.Append(BUILDERS = {"ShellTest" : shell_test_bld})
+
+
+def setup_other_builders(top_env):
+    setup_lex_yacc_builders(top_env)
+    setup_resource_builders(top_env)
+    setup_python_builders(top_env)
+    setup_package_builders(top_env)
+    setup_shell_builders(top_env)
+
+
+def setup_swig_builders(top_env, build_dir):
+    compile_swig_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_swig_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    compile_swig_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
+            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+
+    # Python
+    swig_py_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -python -threads $SWIGPYTHONFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_python_message))
+    top_env.Append(BUILDERS={"SwigPython" : swig_py_bld})
+
+    # Java
+    swig_java_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -java $SWIGJAVAFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_java_message))
+    top_env.Append(BUILDERS={'SwigJava' : swig_java_bld})
+
+    swig_php_bld = SCons.Builder.Builder(action=MakeAction(
+        'swig -php $SWIGPHPFLAGS -c++ -I%s -o $TARGET $SOURCE' % (build_dir),
+        compile_swig_php_message))
+    top_env.Append(BUILDERS={"SwigPhp" : swig_php_bld})
+
+
+def _exec_get_version_info(cmd, cwd):
+    lc_all_env = os.environ
+    lc_all_env['LC_ALL'] = 'POSIX'
+    p = subprocess.Popen(cmd,
+                         env=lc_all_env,
+                         cwd=cwd,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True)
+    stdout, stderr = p.communicate()
+    if p.returncode:
+        return None
+    else:
+        return stdout.replace('\n', '\\n"\n"')
+
+
+def _get_version_info(blade_root_dir, svn_roots):
+    """Gets svn root dir info. """
+    svn_info_map = {}
+    if os.path.exists("%s/.git" % blade_root_dir):
+        cmd = "git log -n 1"
+        dirname = os.path.dirname(blade_root_dir)
+        version_info = _exec_get_version_info(cmd, None)
+        if version_info:
+            svn_info_map[dirname] = version_info
+        return svn_info_map
+
+    for root_dir in svn_roots:
+        root_dir_realpath = os.path.realpath(root_dir)
+        svn_working_dir = os.path.dirname(root_dir_realpath)
+        svn_dir = os.path.basename(root_dir_realpath)
+
+        cmd = 'svn info %s' % svn_dir
+        version_info = _exec_get_version_info(cmd, svn_working_dir)
+        if not version_info:
+            cmd = 'git ls-remote --get-url && git branch | grep "*" && git log -n 1'
+            version_info = _exec_get_version_info(cmd, root_dir_realpath)
+            if not version_info:
+                console.warning('Failed to get version control info in %s' % root_dir)
+
+        if version_info:
+            svn_info_map[root_dir] = version_info
+
+    return svn_info_map
+
+def generate_version_file(top_env, blade_root_dir, build_dir,
+                          profile, gcc_version, svn_roots):
+    """Generate version information files. """
+    svn_info_map = _get_version_info(blade_root_dir, svn_roots)
+    svn_info_len = len(svn_info_map)
+
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+    filename = os.path.join(build_dir, 'version.cpp')
+    version_cpp = open(filename, 'w')
+
+    print >>version_cpp, '/* This file was generated by blade */'
+    print >>version_cpp, 'extern "C" {'
+    print >>version_cpp, 'namespace binary_version {'
+    print >>version_cpp, 'extern const int kSvnInfoCount = %d;' % svn_info_len
+    print >>version_cpp, 'extern const char* const kSvnInfo[%d] = {%s};' % (
+            svn_info_len, ', '.join(['"%s"' % v for v in svn_info_map.values()]))
+    print >>version_cpp, 'extern const char kBuildType[] = "%s";' % profile
+    print >>version_cpp, 'extern const char kBuildTime[] = "%s";' % time.asctime()
+    print >>version_cpp, 'extern const char kBuilderName[] = "%s";' % os.getenv('USER')
+    print >>version_cpp, (
+            'extern const char kHostName[] = "%s";' % socket.gethostname())
+    compiler = 'GCC %s' % gcc_version
+    print >>version_cpp, 'extern const char kCompiler[] = "%s";' % compiler
+    print >>version_cpp, '}}'
+
+    version_cpp.close()
+
+    env_version = top_env.Clone()
+    env_version.Replace(SHCXXCOMSTR=console.erasable(
+        '%sUpdating version information%s' % (
+            colors('cyan'), colors('end'))))
+    return env_version.SharedObject(filename)

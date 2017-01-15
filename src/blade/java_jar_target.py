@@ -51,6 +51,7 @@ class JavaJarTarget(Target):
                         'java_jar',
                         srcs,
                         deps,
+                        None,
                         blade,
                         kwargs)
 
@@ -187,8 +188,7 @@ class JavaJarTarget(Target):
             self.cmd_var_list.append(cmd_var_id)
 
         new_target_idx = 0
-        classes_var = '%s_classes' % (
-                self._generate_variable_name(self.path, self.name))
+        classes_var = '%s_classes' % (self._var_name())
 
         java_config = configparse.blade_config.get_config('java_config')
         source_version = java_config['source_version']
@@ -294,9 +294,7 @@ class JavaJarTarget(Target):
 
             rel_path = relative_path(class_path, target_base_dir)
             class_path_name = rel_path.replace('/', '_')
-            jar_var = '%s_%s_jar' % (
-                self._generate_variable_name(self.path, self.name),
-                    class_path_name)
+            jar_var = '%s_%s_jar' % (self._var_name(), class_path_name)
             jar_target = '%s.jar' % self._target_file_path()
             jar_target_object = '%s.jar' % jar_target
             cmd_remove_var = 'cmd_remove_%s' % jar_var

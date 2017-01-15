@@ -584,9 +584,9 @@ Blade还支持以下环境变量：
 
 * TOOLCHAIN_DIR，默认为空
 * CPP，默认为cpp
-* CXX，默认为c++
+* CXX，默认为g++
 * CC，默认为gcc
-* LD，默认为c++
+* LD，默认为g++
 
 TOOLCHAIN_DIR和CPP等组合起来，构成调用工具的完整路径，例如：
 
@@ -596,7 +596,7 @@ TOOLCHAIN_DIR=/usr/bin blade
 ```
 使用clang
 ```bash
-CPP='clang -E' CC=clang CXX=clang++ ld=clang++ blade
+CPP='clang -E' CC=clang CXX=clang++ LD=clang++ blade
 ```
 
 如同所有的环境变量设置规则，放在命令行前的环境变量，只对这一次调用起作用，如果要后续起作用，用 export，要持久生效，放入 ~/.profile 中。

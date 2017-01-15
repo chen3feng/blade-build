@@ -1,7 +1,6 @@
 #include "common/common.h"
 #include <gtest/gtest.h>
 
-TEST(Common, Test)
-{
-    Common();
+int main() {
+    return 0;
 }

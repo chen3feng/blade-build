@@ -15,6 +15,7 @@
 
 import fcntl
 import os
+import re
 import string
 import subprocess
 
@@ -27,17 +28,28 @@ except ImportError:
     import md5
 
 
+location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
+
+
 def md5sum_str(user_str):
     """md5sum of basestring. """
-    m = md5.md5()
     if not isinstance(user_str, basestring):
-        console.error_exit('not a valid basestring type to caculate md5')
+        console.error_exit('Not a valid basestring type to calculate md5.')
+    m = md5.md5()
     m.update(user_str)
     return m.hexdigest()
 
 
+def md5sum_file(file_name):
+    """Calculate md5sum of the file. """
+    f = open(file_name)
+    digest = md5sum_str(f.read())
+    f.close()
+    return digest
+
+
 def md5sum(obj):
-    """caculate md5sum and returns it. """
+    """Calculate md5sum and returns it. """
     return md5sum_str(obj)
 
 
@@ -66,6 +78,14 @@ def var_to_list(var):
     if not var:
         return []
     return [var]
+
+
+def stable_unique(seq):
+    """unique a seq and keep its original order"""
+    # See http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+    seen = set()
+    seen_add = seen.add
+    return [x for x in seq if not (x in seen or seen_add(x))]
 
 
 def relative_path(a_path, reference_path):
@@ -113,10 +133,10 @@ def get_cwd():
 
 
 def environ_add_path(env, key, path):
-    """Add path to PATH link environments, sucn as PATH, LD_LIBRARY_PATH, etc"""
+    """Add path to PATH link environments, such as PATH, LD_LIBRARY_PATH, etc"""
     old = env.get(key)
     if old:
-        env[key] = old + ':' + path
+        env[key] = path + ':' + old
     else:
         env[key] = path
 

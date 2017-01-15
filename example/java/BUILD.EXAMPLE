@@ -1,0 +1,30 @@
+java_library(
+    name = 'protobuf-java',
+    prebuilt = True,
+    binary_jar = 'protobuf-java-2.4.1.jar',
+)
+
+java_library(
+    name = 'foo',
+    srcs = 'foo/src/main/java',
+    deps = '//proto:contact_proto',
+)
+
+java_binary(
+    name = 'bar',
+    srcs = 'bar/src/main/java',
+    deps = ':foo',
+    main_class = 'org.blade.foo.Bar',
+)
+
+java_test(
+    name = 'foo_test',
+    srcs = 'foo/src/test/java',
+    deps = ':foo'
+)
+
+java_test(
+    name = 'bar_test',
+    srcs = 'bar/src/test/java',
+    deps = ':bar'
+)

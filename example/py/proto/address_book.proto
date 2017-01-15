@@ -1,0 +1,8 @@
+package tutorial;
+option java_outer_classname = "AddressBookProto";
+
+import "py/proto/person.proto";
+
+message AddressBook {
+  repeated Person person = 1;
+}

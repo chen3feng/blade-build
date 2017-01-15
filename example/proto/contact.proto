@@ -1,3 +1,8 @@
+package blade.examples;
+
+option java_package = "com.qq.blade.examples";
+option java_outer_classname = "ContactProto";
+
 message Person {
     required string name = 1;
     required int32 id = 2;

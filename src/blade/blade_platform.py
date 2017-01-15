@@ -6,7 +6,7 @@
 
 
 """
- This is the blade_platform module which dues with the environment
+ This is the blade_platform module which deals with the environment
  variable.
 
 """
@@ -16,6 +16,7 @@ import os
 import subprocess
 
 import configparse
+import console
 from blade_util import var_to_list
 
 
@@ -23,42 +24,29 @@ class SconsPlatform(object):
     """The scons platform class that it handles and gets the platform info. """
     def __init__(self):
         """Init. """
-        self.gcc_version = self._get_gcc_version('gcc')
+        self.gcc_version = self._get_gcc_version()
         self.python_inc = self._get_python_include()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
-        self.nvcc_version = self._get_nvcc_version('nvcc')
+        self.nvcc_version = self._get_nvcc_version()
         self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
-    def _get_gcc_version(compiler):
+    def _get_gcc_version():
         """Get the gcc version. """
-        p = subprocess.Popen(
-            compiler + ' --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
-            version_line = stdout.splitlines(True)[0]
-            version = version_line.split()[2]
-            return version
+        gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
+                           os.environ.get('CC', 'gcc'))
+        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpversion')
+        if returncode == 0:
+            return stdout.strip()
         return ''
 
     @staticmethod
-    def _get_nvcc_version(compiler):
+    def _get_nvcc_version():
         """Get the nvcc version. """
-        p = subprocess.Popen(
-            compiler + ' --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
+        nvcc = os.environ.get('NVCC', 'nvcc')
+        returncode, stdout, stderr = SconsPlatform._execute(nvcc + ' --version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[5]
             return version
@@ -67,15 +55,8 @@ class SconsPlatform(object):
     @staticmethod
     def _get_python_include():
         """Get the python include dir. """
-        p = subprocess.Popen(
-            'python-config --includes',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('python-config --includes')
+        if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             header = include_line.split()[0][2:]
             return header
@@ -83,15 +64,8 @@ class SconsPlatform(object):
 
     @staticmethod
     def _get_php_include():
-        p = subprocess.Popen(
-            'php-config --includes',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('php-config --includes')
+        if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
             header_list = ["'%s'" % s[2:] for s in headers]
@@ -106,15 +80,9 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        p = subprocess.Popen(
-            'java -version',
-            env=os.environ,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute(
+                'java -version', redirect_stderr_to_stdout = True)
+        if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
             version = version.replace('"', '')
@@ -131,15 +99,8 @@ class SconsPlatform(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        p = subprocess.Popen(
-            'nvcc --version',
-            env=os.environ,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            shell=True,
-            universal_newlines=True)
-        (stdout, stderr) = p.communicate()
-        if p.returncode == 0:
+        returncode, stdout, stderr = SconsPlatform._execute('nvcc --version')
+        if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[4]
             version = version.replace(',', '')
@@ -148,6 +109,20 @@ class SconsPlatform(object):
                 include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
                 return include_list
         return []
+
+    @staticmethod
+    def _execute(cmd, redirect_stderr_to_stdout = False):
+        redirect_stderr = subprocess.PIPE
+        if redirect_stderr_to_stdout:
+            redirect_stderr = subprocess.STDOUT
+        p = subprocess.Popen(cmd,
+                             env=os.environ,
+                             stderr=redirect_stderr,
+                             stdout=subprocess.PIPE,
+                             shell=True,
+                             universal_newlines=True)
+        stdout, stderr = p.communicate()
+        return p.returncode, stdout, stderr
 
     def get_gcc_version(self):
         """Returns gcc version. """
@@ -180,48 +155,52 @@ class CcFlagsManager(object):
     This class manages the compile warning flags.
 
     """
-    def __init__(self, options):
+    def __init__(self, options, build_dir, gcc_version):
+        self.cc = ''
         self.options = options
-        self.cpp_str = ''
+        self.build_dir = build_dir
+        self.gcc_version = gcc_version
 
-    def _filter_out_invalid_flags(self, flag_list, language=''):
-        """filter the unsupported compliation flags. """
-        flag_list_var = var_to_list(flag_list)
-        xlanguage = ''
-        if language:
-            xlanguage = '-x' + language
+    def _filter_out_invalid_flags(self, flag_list, language='c'):
+        """Filter the unsupported compilation flags. """
+        supported_flags, unsupported_flags = [], []
+        obj = os.path.join(self.build_dir, 'test.o')
+        for flag in var_to_list(flag_list):
+            cmd = ('echo "int main() { return 0; }" | '
+                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
+                   self.cc, obj, language, flag, obj))
+            if subprocess.call(cmd, shell=True) == 0:
+                supported_flags.append(flag)
+            else:
+                unsupported_flags.append(flag)
+        if unsupported_flags:
+            console.warning('Unsupported C/C++ flags: %s' %
+                            ', '.join(unsupported_flags))
+        return supported_flags
 
-        ret_flag_list = []
-        for flag in flag_list_var:
-            cmd_str = 'echo "" | %s %s %s >/dev/null 2>&1' % (
-                      self.cpp_str, xlanguage, flag)
-            if subprocess.call(cmd_str, shell=True) == 0:
-                ret_flag_list.append(flag)
-        return ret_flag_list
-
-    def set_cpp_str(self, cpp_str):
-        """set up the cpp_str. """
-        self.cpp_str = cpp_str
+    def set_cc(self, cc):
+        """set up the compiler. """
+        self.cc = cc
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
         flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
         linkflags = ['-m%s' % self.options.m]
 
-        # Debigging information setting
+        # Debugging information setting
         if self.options.no_debug_info:
-            flags_except_warning += ['-g0']
+            flags_except_warning.append('-g0')
         else:
             if self.options.profile == 'debug':
-                flags_except_warning += ['-ggdb3']
+                flags_except_warning.append('-ggdb3')
             elif self.options.profile == 'release':
-                flags_except_warning += ['-g']
+                flags_except_warning.append('-g')
 
         # Option debugging flags
         if self.options.profile == 'debug':
-            flags_except_warning += ['-fstack-protector']
+            flags_except_warning.append('-fstack-protector')
         elif self.options.profile == 'release':
-            flags_except_warning += ['-DNDEBUG']
+            flags_except_warning.append('-DNDEBUG')
 
         flags_except_warning += [
                 '-D_FILE_OFFSET_BITS=64',
@@ -234,8 +213,8 @@ class CcFlagsManager(object):
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
-        if getattr(self.options, 'gcov', False):
-            if SconsPlatform().gcc_version > '4.1':
+        if getattr(self.options, 'coverage', False):
+            if self.gcc_version > '4.1':
                 flags_except_warning.append('--coverage')
                 linkflags.append('--coverage')
             else:

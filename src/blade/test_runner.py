@@ -16,6 +16,7 @@
 
 import os
 import sys
+import subprocess
 import time
 
 import binary_runner
@@ -75,24 +76,26 @@ class TestRunner(binary_runner.BinaryRunner):
         self.valid_inctest_time_interval = 86400
         self.tests_run_map = {}
         self.run_all_reason = ''
-        self.title_str = '=' * 13
+        self.title = '=' * 13
         self.skipped_tests = []
+        self.coverage = getattr(options, 'coverage', False)
         if not self.options.fulltest:
             if os.path.exists(self.inctest_md5_file):
                 try:
-                    self.last_test_stamp = eval(open(self.inctest_md5_file).read())
+                    f = open(self.inctest_md5_file)
+                    self.last_test_stamp = eval(f.read())
+                    f.close()
                 except (IOError, SyntaxError):
                     console.warning('error loading incremental test history, will run full test')
                     self.run_all_reason = 'NO_HISTORY'
 
         self.test_stamp['testarg'] = md5sum(str(self.options.args))
         env_keys = os.environ.keys()
-        env_keys = list(set(env_keys).difference(env_ignore_set))
-        env_keys.sort()
-        last_test_stamp = {}
+        env_keys = set(env_keys).difference(env_ignore_set)
+        last_test_env = {}
         for env_key in env_keys:
-            last_test_stamp[env_key] = os.environ[env_key]
-        self.test_stamp['env'] = last_test_stamp
+            last_test_env[env_key] = os.environ[env_key]
+        self.test_stamp['env'] = last_test_env
         self.test_stamp['inctest_time'] = time.time()
 
         if not self.options.fulltest:
@@ -120,7 +123,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
             if interval >= self.valid_inctest_time_interval or interval < 0:
                 self.run_all_reason = 'STALE'
-                console.info('all tests will run due to all passed tests are invalid now')
+                console.info('all tests will run due to all passed tests are expired now')
         else:
             self.run_all_reason = 'FULLTEST'
 
@@ -132,7 +135,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target.data['dynamic_link']:
+        if target.data.get('dynamic_link'):
             target_key = (target.path, target.name)
             for dep in self.target_database[target_key].expanded_deps:
                 dep_target = self.target_database[dep]
@@ -181,7 +184,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_inctest_run_list(self):
         """Get incremental test run list. """
         for target in self.targets.values():
-            if target.type != 'cc_test':
+            if not target.type.endswith('_test'):
                 continue
             target_key = (target.path, target.name)
             test_file_name = os.path.abspath(self._executable(target))
@@ -228,8 +231,64 @@ class TestRunner(binary_runner.BinaryRunner):
         old_keys = set(self.last_test_stamp['md5'].keys())
         new_keys = set(self.test_stamp['md5'].keys())
         diff_keys = old_keys.difference(new_keys)
-        for key in list(diff_keys):
+        for key in diff_keys:
             self.test_stamp['md5'][key] = self.last_test_stamp['md5'][key]
+
+    def _get_java_coverage_data(self):
+        """
+        Return a list of tuples(source directory, class directory, execution data)
+        for each java_test.
+            source directory: source directory of java_library target under test
+            class directory: class directory of java_library target under test
+            execution data: jacoco.exec collected by jacoco agent during testing
+        """
+        coverage_data = []
+        for key in self.tests_run_map:
+            target = self.targets[key]
+            if target.type != 'java_test':
+                continue
+            execution_data = os.path.join(self._runfiles_dir(target), 'jacoco.exec')
+            if not os.path.isfile(execution_data):
+                continue
+            target_under_test = target.data.get('target_under_test')
+            if not target_under_test:
+                continue
+            target_under_test = self.target_database[target_under_test]
+            source_dir = target_under_test._get_sources_dir()
+            class_dir = target_under_test._get_classes_dir()
+            coverage_data.append((source_dir, class_dir, execution_data))
+
+        return coverage_data
+
+    def _generate_java_coverage_report(self):
+        config = configparse.blade_config.get_config('java_test_config')
+        jacoco_home = config['jacoco_home']
+        coverage_reporter = config['coverage_reporter']
+        if not jacoco_home or not coverage_reporter:
+            console.warning('Missing jacoco home or coverage report generator '
+                            'in global configuration. '
+                            'Abort java coverage report generation.')
+            return
+        jacoco_libs = os.path.join(jacoco_home, 'lib', 'jacocoant.jar')
+        report_dir = os.path.join(self.build_dir, 'java', 'coverage_report')
+        if not os.path.exists(report_dir):
+            os.makedirs(report_dir)
+
+        coverage_data = self._get_java_coverage_data()
+        if coverage_data:
+            cmd = ['java -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
+                coverage_reporter, jacoco_libs)]
+            cmd.append(report_dir)
+            for data in coverage_data:
+                cmd.append(','.join(data))
+            cmd = ' '.join(cmd)
+            console.info('Generating java coverage report')
+            console.info(cmd)
+            if subprocess.call(cmd, shell=True):
+                console.warning('Failed to generate java coverage report')
+
+    def _generate_coverage_report(self):
+        self._generate_java_coverage_report()
 
     def _check_inctest_md5sum_file(self):
         """check the md5sum file size, remove it when it is too large.
@@ -254,58 +313,70 @@ class TestRunner(binary_runner.BinaryRunner):
         print >> f, str(self.tests_run_map)
         f.close()
 
-    def _show_tests_detail(self):
-        """show the tests detail after scheduling them. """
-        sort_buf = []
-        for key in self.tests_run_map:
-            costtime = self.tests_run_map.get(key, {}).get('costtime', 0)
-            sort_buf.append((key, costtime))
-        sort_buf.sort(key=lambda x: x[1])
+    def _show_skipped_tests_detail(self):
+        """Show tests skipped. """
+        self.skipped_tests.sort()
+        for key in self.skipped_tests:
+            console.info('%s:%s skipped' % (key[0], key[1]), prefix = False)
 
-        if self.tests_run_map:
-            console.info('%s Testing detail %s' % (self.title_str, self.title_str))
-        for key, costtime in sort_buf:
-            reason = self.tests_run_map.get(key, {}).get('reason', 'UNKNOWN')
-            result = self.tests_run_map.get(key, {}).get('result',
-                                                         'INTERRUPTED')
-            if 'SIG' in result:
-                result = 'with %s' % result
+    def _show_tests_detail(self):
+        """Show the tests detail after scheduling them. """
+        tests = []
+        for key, v in self.tests_run_map.iteritems():
+            tests.append((key,
+                          v.get('costtime', 0),
+                          v.get('reason', 'UNKNOWN'),
+                          v.get('result', 'INTERRUPTED')))
+        tests.sort(key=lambda x: x[1])
+
+        console.info('{0} Testing Detail {0}'.format(self.title))
+        self._show_skipped_tests_detail()
+        for key, costtime, reason, result in tests:
             console.info('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
                          key[0], key[1], reason, result, costtime), prefix=False)
 
-    def _finish_tests(self):
-        """finish some work before return from runner. """
-        self._write_test_history()
-        if self.options.show_details:
-            self._write_tests_detail_map()
-            if not self.run_all_reason:
-                self._show_skipped_tests_detail()
-                self._show_skipped_tests_summary()
-            self._show_tests_detail()
-        elif not self.run_all_reason:
-            self._show_skipped_tests_summary()
-
-    def _show_skipped_tests_detail(self):
-        """show tests skipped. """
-        if not self.skipped_tests:
-            return
-        self.skipped_tests.sort()
-        console.info('skipped tests')
-        for target_key in self.skipped_tests:
-            print '%s:%s' % (target_key[0], target_key[1])
-
     def _show_skipped_tests_summary(self):
         """show tests skipped summary. """
-        console.info('%d tests skipped when doing incremental test' % len(self.skipped_tests))
-        console.info('to run all tests, please specify --full-test argument')
+        if self.skipped_tests:
+            console.info('%d tests skipped when doing incremental test.' %
+                         len(self.skipped_tests))
+            console.info('Specify --full-test to run all tests.')
+
+    def _show_tests_summary(self, scheduler):
+        """Show tests summary. """
+        run_tests = scheduler.num_of_run_tests
+        console.info('{0} Testing Summary {0}'.format(self.title))
+        self._show_skipped_tests_summary()
+
+        console.info('Run %d tests' % run_tests)
+        failed_targets = scheduler.failed_targets
+        if failed_targets:
+            console.error('%d tests failed:' % len(failed_targets))
+            for target in failed_targets:
+                print >>sys.stderr, '%s, exit code: %s' % (
+                        target.fullname, target.data['test_exit_code'])
+                test_file_name = os.path.abspath(self._executable(target))
+                # Do not skip failed test by default
+                if test_file_name in self.test_stamp['md5']:
+                    self.test_stamp['md5'][test_file_name] = (0, 0)
+            console.info('%d tests passed.' % (run_tests - len(failed_targets)))
+        else:
+            console.info('All tests passed!')
+
+    def _show_tests_result(self, scheduler):
+        """Show test detail and summary according to the options. """
+        if self.options.show_details:
+            self._write_tests_detail_map()
+            self._show_tests_detail()
+        self._show_tests_summary(scheduler)
+        self._write_test_history()
 
     def run(self):
-        """Run all the cc_test target programs. """
-        failed_targets = []
+        """Run all the test target programs. """
         self._generate_inctest_run_list()
         tests_run_list = []
         for target in self.targets.values():
-            if target.type != 'cc_test':
+            if not target.type.endswith('_test'):
                 continue
             if (not self.run_all_reason) and target not in self.inctest_run_list:
                 if not target.data.get('always_run'):
@@ -314,9 +385,6 @@ class TestRunner(binary_runner.BinaryRunner):
             test_env = self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
-
-            sys.stdout.flush()  # make sure output before scons if redirected
-
             if console.color_enabled:
                 test_env['GTEST_COLOR'] = 'yes'
             else:
@@ -327,36 +395,23 @@ class TestRunner(binary_runner.BinaryRunner):
             pprof_path = config['pprof_path']
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
-            tests_run_list.append((target,
-                                   self._runfiles_dir(target),
-                                   test_env,
-                                   cmd))
-        concurrent_jobs = 0
+            if self.coverage:
+                test_env['BLADE_COVERAGE'] = 'true'
+            tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
+
+        sys.stdout.flush()
         concurrent_jobs = self.options.test_jobs
         scheduler = TestScheduler(tests_run_list,
                                   concurrent_jobs,
                                   self.tests_run_map)
         scheduler.schedule_jobs()
 
-        self._clean_env()
-        console.info('%s Testing Summary %s' % (self.title_str, self.title_str))
-        console.info('Run %d test targets' % scheduler.num_of_run_tests)
+        if self.coverage:
+            self._generate_coverage_report()
 
-        failed_targets = scheduler.failed_targets
-        if failed_targets:
-            console.error('%d tests failed:' % len(failed_targets))
-            for target in failed_targets:
-                print '%s:%s, exit code: %s' % (
-                    target.path, target.name, target.data['test_exit_code'])
-                test_file_name = os.path.abspath(self._executable(target))
-                # Do not skip failed test by default
-                if test_file_name in self.test_stamp['md5']:
-                    self.test_stamp['md5'][test_file_name] = (0, 0)
-            console.info('%d tests passed' % (
-                scheduler.num_of_run_tests - len(failed_targets)))
-            self._finish_tests()
+        self._clean_env()
+        self._show_tests_result(scheduler)
+        if scheduler.failed_targets:
             return 1
         else:
-            console.info('All tests passed!')
-            self._finish_tests()
             return 0

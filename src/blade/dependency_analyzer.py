@@ -37,15 +37,17 @@ def analyze_deps(related_targets):
     Input: related targets after loading targets from BUILD files.
            {(target_path, target_name) : (target_data), ...}
 
-    Output:the targets that are expanded and the keys sorted
-           [all the targets keys] - sorted
-           {(target_path, target_name) : (target_data with deps expanded), ...}
+    Output:
+        1. the targets that are expanded
+            {(target_path, target_name) : (target_data with deps expanded), ...}
+        2. the keys sorted
+            [all the targets keys] - sorted
+        3. the targets successors dict which is the transpose of #1
+            {(target_path, target_name) : [the depended target keys]}
 
     """
     _expand_deps(related_targets)
-    keys_list_sorted = _topological_sort(related_targets)
-
-    return keys_list_sorted
+    return _topological_sort(related_targets)
 
 
 def _expand_deps(targets):
@@ -61,6 +63,7 @@ def _expand_deps(targets):
         target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
         # Handle the special case: dependencies of a dynamic_cc_binary
         # must be built as dynamic libraries.
+        # TODO(phongchen): Refactor with abstract method expand_deps
         if target.data.get('dynamic_link'):
             for dep in target.expanded_deps:
                 targets[dep].data['build_dynamic'] = True
@@ -68,12 +71,38 @@ def _expand_deps(targets):
             for dep in target.expanded_deps:
                 if targets[dep].type == 'proto_library':
                     targets[dep].data['generate_php'] = True
-        elif target.type == 'py_binary':
+        elif target.type == 'py_binary' or target.type == 'py_library' or target.type == 'py_egg':
             for dep in target.expanded_deps:
                 targets[dep].data['generate_python'] = True
-        elif target.type == 'java_jar':
+        elif target.type.startswith('java_'):
             for dep in target.expanded_deps:
                 targets[dep].data['generate_java'] = True
+        elif target.type.startswith('scala_'):
+            for dep in target.expanded_deps:
+                targets[dep].data['generate_scala'] = True
+        elif target.type.startswith('go_'):
+            for dep in target.expanded_deps:
+                targets[dep].data['generate_go'] = True
+
+
+def _check_dep_visibility(target, dep, targets):
+    """Check whether target is able to depend on dep. """
+    if dep not in targets:
+        console.error_exit('Target %s:%s depends on %s:%s, '
+                           'but it is missing, exit...' % (
+                           target_id[0], target_id[1], dep[0], dep[1]))
+    # Targets are visible inside the same BUILD file by default
+    if target[0] == dep[0]:
+        return
+
+    d = targets[dep]
+    visibility = getattr(d, 'visibility', 'PUBLIC')
+    if visibility == 'PUBLIC':
+        return
+    if target not in visibility:
+        console.error_exit('%s:%s is not allowed to depend on %s '
+                           'because of visibility.' % (
+                           target[0], target[1], d.fullname))
 
 
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
@@ -101,15 +130,10 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
                 err_msg += '//%s:%s --> ' % (t[0], t[1])
             console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
                        d[0], d[1], err_msg))
+        _check_dep_visibility(target_id, d, targets)
         new_deps_piece = [d]
-        if d not in targets:
-            console.error_exit('Target %s:%s depends on %s:%s, '
-                               'but it is missing, exit...' % (
-                                   target_id[0], target_id[1],
-                                   d[0], d[1]))
         new_deps_piece += _find_all_deps(d, targets, deps_map_cache, root_targets)
-        # Append new_deps_piece to new_deps_list, be aware of
-        # de-duplication:
+        # Append new_deps_piece to new_deps_list, be aware of de-duplication
         for nd in new_deps_piece:
             if nd in new_deps_list:
                 new_deps_list.remove(nd)
@@ -128,6 +152,8 @@ def _topological_sort(pairlist):
     for second, target in pairlist.items():
         if second not in numpreds:
             numpreds[second] = 0
+        if second not in successors:
+            successors[second] = []
         deps = target.expanded_deps
         for first in deps:
             # make sure every elt is a key in numpreds
@@ -158,4 +184,4 @@ def _topological_sort(pairlist):
                 if numpreds[y] == 0:
                     answer.append(y)
 
-    return answer
+    return answer, successors

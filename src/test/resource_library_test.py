@@ -29,8 +29,8 @@ class TestResourceLibrary(blade_test.TargetTest):
         resource_library = (self.target_path, 'static_resource')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(resource_library in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(resource_library, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -65,11 +65,11 @@ class TestResourceLibrary(blade_test.TargetTest):
         self.assertNoWarningCxxFlags(com_forms_line)
         self.assertNoWarningCxxFlags(com_poppy_line)
 
-        self.assertTrue('forms_js_c.o' in static_so_line)
-        self.assertTrue('poppy_html_c.o' in static_so_line)
+        self.assertIn('forms_js_c.o', static_so_line)
+        self.assertIn('poppy_html_c.o', static_so_line)
 
         self.assertDynamicLinkFlags(lower_depends_libs)
-        self.assertTrue('libstatic_resource.so' in lower_depends_libs)
+        self.assertIn('libstatic_resource.so', lower_depends_libs)
 
 
 if __name__ == '__main__':
