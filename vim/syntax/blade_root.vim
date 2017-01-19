@@ -89,6 +89,8 @@ syn keyword bladeArg extra_incs
 syn keyword bladeArg cppflags
 syn keyword bladeArg cflags
 syn keyword bladeArg cxxflags
+syn keyword bladeArg arflags
+syn keyword bladeArg ranlibflags
 syn keyword bladeArg linkflags
 syn keyword bladeArg c_warnings
 syn keyword bladeArg cxx_warnings
@@ -97,9 +99,13 @@ syn keyword bladeArg cpplint
 syn keyword bladeArg optimize
 syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
-syn keyword bladeArg hipcc
+syn keyword bladeArg securecc
 syn keyword bladeTarget cc_library_config
 syn keyword bladeArg generate_dynamic
+syn keyword bladeTarget protoc_plugin
+syn keyword bladeArg name
+syn keyword bladeArg path
+syn keyword bladeArg code_generation
 
 
 if version >= 508 || !exists("did_blade_roor_syn_inits")
