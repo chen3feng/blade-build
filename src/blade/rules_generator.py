@@ -277,6 +277,7 @@ import scons_helper
             extra_incs_str = '""'
 
         (cppflags_except_warning, linkflags) = self.ccflags_manager.get_flags_except_warning()
+        linkflags += cc_config['linkflags']
 
         self._add_rule('top_env.Replace(%s, '
                        'CPPPATH=[%s, "%s", "%s"], '
@@ -305,7 +306,9 @@ import scons_helper
 
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
-        self._add_rule("top_env.Replace(ASPPFLAGS='')")
+        options = self.options
+        self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
+        self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
 
         self._setup_cache()
 

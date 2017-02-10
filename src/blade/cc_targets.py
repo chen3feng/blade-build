@@ -233,11 +233,6 @@ class CcTarget(Target):
 
     def _setup_link_flags(self):
         """linkflags. """
-        cc_config = configparse.blade_config.get_config('cc_config')
-        linkflags = cc_config['linkflags']
-        if linkflags:
-            self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), linkflags))
-
         extra_linkflags = self.data.get('extra_linkflags')
         if extra_linkflags:
             self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), extra_linkflags))
@@ -551,7 +546,6 @@ class CcTarget(Target):
         env_name = self._env_name()
 
         self._setup_cc_flags()
-        self._setup_as_flags()
 
         objs = []
         for src in self.srcs:
