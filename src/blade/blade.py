@@ -378,8 +378,10 @@ class Blade(object):
                 and k not in self.__direct_targets):
                 continue
             scons_object.scons_rules()
-            rules_buf.append('\n')
-            rules_buf += scons_object.get_rules()
+            rules = scons_object.get_rules()
+            if rules:
+                rules_buf.append('\n')
+                rules_buf += rules
         return rules_buf
 
     def get_scons_platform(self):
