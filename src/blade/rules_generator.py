@@ -44,8 +44,6 @@ class SconsFileHeaderGenerator(object):
         self.cuda_inc = cuda_inc
         self.build_environment = build_environment
         self.ccflags_manager = CcFlagsManager(options, build_dir, gcc_version)
-        self.env_list = ['env_with_error', 'env_no_warning']
-
         self.svn_roots = svn_roots
 
         self.blade_config = configparse.blade_config
@@ -112,7 +110,7 @@ import scons_helper
         # Add java_home/bin into PATH to make scons
         # construction variables of java work as expected
         # See http://scons.org/faq.html#SCons_Questions
-        java_config = configparse.blade_config.get_config('java_config')
+        java_config = self.blade_config.get_config('java_config')
         java_home = java_config['java_home']
         if java_home:
             self._add_rule('blade_util.environ_add_path(os.environ, "PATH", '
@@ -129,7 +127,7 @@ import scons_helper
 
     def _generate_fast_link_builders(self):
         """Generates fast link builders if it is specified in blade bash. """
-        link_config = configparse.blade_config.get_config('link_config')
+        link_config = self.blade_config.get_config('link_config')
         enable_dccc = link_config['enable_dccc']
         if link_config['link_on_tmp']:
             if (not enable_dccc) or (
@@ -138,7 +136,7 @@ import scons_helper
 
     def _generate_proto_builders(self):
         self._add_rule('time_value = Value("%s")' % time.asctime())
-        proto_config = configparse.blade_config.get_config('proto_library_config')
+        proto_config = self.blade_config.get_config('proto_library_config')
         protoc_bin = proto_config['protoc']
         protoc_java_bin = protoc_bin
         if proto_config['protoc_java']:
@@ -158,7 +156,7 @@ import scons_helper
 
     def _generate_thrift_builders(self):
         # Generate thrift library builders.
-        thrift_config = configparse.blade_config.get_config('thrift_config')
+        thrift_config = self.blade_config.get_config('thrift_config')
         thrift_incs_str = _incs_list_to_string(thrift_config['thrift_incs'])
         thrift_bin = thrift_config['thrift']
         if thrift_bin.startswith('//'):
@@ -169,7 +167,7 @@ import scons_helper
                     self.build_dir, thrift_bin, thrift_incs_str))
 
     def _generate_fbthrift_builders(self):
-        fbthrift_config = configparse.blade_config.get_config('fbthrift_config')
+        fbthrift_config = self.blade_config.get_config('fbthrift_config')
         fbthrift1_bin = fbthrift_config['fbthrift1']
         fbthrift2_bin = fbthrift_config['fbthrift2']
         fbthrift_incs_str = _incs_list_to_string(fbthrift_config['fbthrift_incs'])
@@ -187,17 +185,17 @@ import scons_helper
         self._add_rule('scons_helper.setup_swig_builders(top_env, "%s")' % self.build_dir)
 
     def _generate_java_builders(self):
-        config = configparse.blade_config.get_config('java_config')
-        bin_config = configparse.blade_config.get_config('java_binary_config')
+        config = self.blade_config.get_config('java_config')
+        bin_config = self.blade_config.get_config('java_binary_config')
         self._add_rule('scons_helper.setup_java_builders(top_env, "%s", "%s")' % (
             config['java_home'], bin_config['one_jar_boot_jar']))
 
     def _generate_scala_builders(self):
-        config = configparse.blade_config.get_config('scala_config')
+        config = self.blade_config.get_config('scala_config')
         self._add_rule('scons_helper.setup_scala_builders(top_env, "%s")' % config['scala_home'])
 
     def _generate_go_builders(self):
-        config = configparse.blade_config.get_config('go_config')
+        config = self.blade_config.get_config('go_config')
         self._add_rule('scons_helper.setup_go_builders(top_env, "%s", "%s")' %
                        (config['go'], config['go_home']))
 
@@ -266,7 +264,7 @@ import scons_helper
                         building_var=ld,
                         condition=build_with_dccc)
 
-        cc_config = configparse.blade_config.get_config('cc_config')
+        cc_config = self.blade_config.get_config('cc_config')
         cc_env_str = ('CC="%s", CXX="%s", SECURECXX="%s %s"' % (
                       cc_str, cxx_str, cc_config['securecc'], cxx))
         ld_env_str = 'LINK="%s"' % ld_str
@@ -290,7 +288,7 @@ import scons_helper
                         cc_config['cxxflags'],
                         ld_env_str, linkflags))
 
-        cc_library_config = configparse.blade_config.get_config('cc_library_config')
+        cc_library_config = self.blade_config.get_config('cc_library_config')
         # By default blade use 'ar rcs' and skip ranlib
         # to generate index for static library
         arflags = cc_library_config['arflags']
@@ -318,26 +316,43 @@ import scons_helper
         for rule in self.build_environment.get_rules():
             self._add_rule(rule)
 
-        self._setup_warnings()
+        self._setup_envs()
 
-    def _setup_warnings(self):
-        for env in self.env_list:
+    def _setup_envs(self):
+        env_with_error, env_no_warning = 'env_with_error', 'env_no_warning'
+        for env in [env_with_error, env_no_warning]:
             self._add_rule('%s = top_env.Clone()' % env)
 
-        (warnings, cxx_warnings, c_warnings) = self.ccflags_manager.get_warning_flags()
+        warnings, cxx_warnings, c_warnings = self.ccflags_manager.get_warning_flags()
         self._add_rule('%s.Append(CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s)' % (
-            self.env_list[0],
-            warnings, c_warnings, cxx_warnings))
+                       env_with_error, warnings, c_warnings, cxx_warnings))
+        self._setup_env_java()
+
+    def _setup_env_java(self):
+        env_java = 'env_java'
+        self._add_rule('%s = top_env.Clone()' % env_java)
+        java_config = self.blade_config.get_config('java_config')
+        version = java_config['version']
+        source_version = java_config.get('source_version', version)
+        target_version = java_config.get('target_version', version)
+        # JAVAVERSION must be set because scons need it to deduce class names
+        # from java source, and the default value '1.5' is too low.
+        java_version = version or '1.6'
+        self._add_rule('%s.Replace(JAVAVERSION="%s")' % (env_java, java_version))
+        if source_version:
+            self._add_rule('%s.Append(JAVACFLAGS="-source %s")' % (
+                           env_java, source_version))
+        if target_version:
+            self._add_rule('%s.Append(JAVACFLAGS="-target %s")' % (
+                           env_java, target_version))
+        java_test_config = self.blade_config.get_config('java_test_config')
+        jacoco_home = java_test_config['jacoco_home']
+        if jacoco_home:
+            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
+            self._add_rule('%s.Replace(JACOCOAGENT="%s")' % (env_java, jacoco_agent))
 
     def _setup_cache(self):
         self.build_environment.setup_build_cache(self.options)
-
-    def generate_extra_flags(self):
-        config = configparse.blade_config.get_config('java_test_config')
-        jacoco_home = config['jacoco_home']
-        if jacoco_home:
-            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
-            self._add_rule('top_env.Replace(JACOCOAGENT="%s")' % jacoco_agent)
 
     def generate(self, blade_path):
         """Generates all rules. """
@@ -346,7 +361,6 @@ import scons_helper
         self.generate_compliation_verbose()
         self.generate_builders()
         self.generate_compliation_flags()
-        self.generate_extra_flags()
         self.generate_version_file()
         return self.rules_buf
 
