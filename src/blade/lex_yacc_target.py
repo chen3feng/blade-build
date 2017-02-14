@@ -83,12 +83,10 @@ class LexYaccLibrary(CcTarget):
         source = self._source_file_path(src)
         target = self._target_file_path(src)
         if src.endswith('.l') or src.endswith('.y'):
-            target = target[:-2]
-            rule = 'target = "%s", source = "%s"' % (target, source)
+            rule = 'target = "%s" + top_env["CFILESUFFIX"], source = "%s"' % (target, source)
             self._write_rule('%s = %s.CFile(%s)' % (var_name, env_name, rule))
         elif src.endswith('.ll') or src.endswith('.yy'):
-            target = target[:-3]
-            rule = 'target = "%s", source = "%s"' % (target, source)
+            rule = 'target = "%s" + top_env["CXXFILESUFFIX"], source = "%s"' % (target, source)
             self._write_rule('%s = %s.CXXFile(%s)' % (var_name, env_name, rule))
         else:
             console.error_exit('%s: Unknown source %s' % (self.fullname, src))
