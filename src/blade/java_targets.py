@@ -452,8 +452,9 @@ class JavaTargetMixIn(object):
     def _generate_java_depends(self, var_name, dep_jar_vars, dep_jars,
                                resources_var, resources_path_var):
         env_name = self._env_name()
-        self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ','.join(dep_jar_vars)))
+        if dep_jar_vars:
+            self._write_rule('%s.Depends(%s, [%s])' % (
+                    env_name, var_name, ','.join(dep_jar_vars)))
         if dep_jars:
             self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
                     env_name, var_name, env_name, sorted(dep_jars)))
