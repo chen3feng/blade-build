@@ -88,7 +88,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.error_exit('//%s:%s: unrecognized options %s' % (
+            console.warning('//%s:%s: unrecognized options %s' % (
                 self.path, self.name, kwargs))
 
     def _allow_duplicate_source(self):
