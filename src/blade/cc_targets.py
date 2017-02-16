@@ -81,20 +81,16 @@ class CcTarget(Target):
         self._check_incorrect_no_warning()
 
     def _check_deprecated_deps(self):
-        """check that whether it depends upon a deprecated library. """
-        for dep in self.deps:
-            target = self.target_database.get(dep, {})
-            if target.data.get('deprecated'):
-                replaced_targets = target.deps
-                replaced_target = ''
-                if replaced_targets:
-                    replaced_target = replaced_targets[0]
-                console.warning('//%s:%s : '
-                                '//%s:%s has been deprecated, '
-                                'please depends on //%s:%s' % (
-                                    self.path, self.name,
-                                    target.path, target.name,
-                                    replaced_target[0], replaced_target[1]))
+        """Check whether it depends upon a deprecated library. """
+        for key in self.deps:
+            dep = self.target_database.get(key)
+            if dep and dep.data.get('deprecated'):
+                replaced_deps = dep.deps
+                if replaced_deps:
+                    console.warning('%s: //%s has been deprecated, '
+                                    'please depends on //%s:%s' % (
+                                    self.fullname, dep.fullname,
+                                    replaced_deps[0][0], replaced_deps[0][1]))
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -647,11 +643,11 @@ class CcLibrary(CcTarget):
         It outputs the scons rules according to user options.
 
         """
-        self._prepare_to_generate_rule()
-
         if self.type == 'prebuilt_cc_library':
+            self._check_deprecated_deps()
             self._prebuilt_cc_library()
         elif self.srcs:
+            self._prepare_to_generate_rule()
             self._cc_objects_rules()
             self._cc_library()
 

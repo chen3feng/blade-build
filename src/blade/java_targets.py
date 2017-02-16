@@ -452,8 +452,9 @@ class JavaTargetMixIn(object):
     def _generate_java_depends(self, var_name, dep_jar_vars, dep_jars,
                                resources_var, resources_path_var):
         env_name = self._env_name()
-        self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ','.join(dep_jar_vars)))
+        if dep_jar_vars:
+            self._write_rule('%s.Depends(%s, [%s])' % (
+                    env_name, var_name, ','.join(dep_jar_vars)))
         if dep_jars:
             self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
                     env_name, var_name, env_name, sorted(dep_jars)))
@@ -614,11 +615,13 @@ class JavaTarget(Target, JavaTargetMixIn):
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
 
+    def _clone_env(self):
+        self._write_rule('%s = env_java.Clone()' % self._env_name())
+
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
         self._check_deprecated_deps()
         self._clone_env()
-        self._generate_java_versions()
         self._generate_java_source_encoding()
         warnings = self.data.get('warnings')
         if warnings is None:
@@ -675,15 +678,13 @@ class JavaLibrary(JavaTarget):
             self.data['binary_jar'] = self._source_file_path(binary_jar)
 
     def _generate_prebuilt_jar(self):
-        env_name = self._env_name()
         var_name = self._var_name('jar')
-        self._write_rule('%s = %s.File(["%s"])' % (
-                         var_name, env_name, self.data['binary_jar']))
+        self._write_rule('%s = top_env.File(["%s"])' % (
+                         var_name, self.data['binary_jar']))
         return var_name
 
     def scons_rules(self):
         if self.type == 'prebuilt_java_library':
-            self._clone_env()
             jar_var = self._generate_prebuilt_jar()
         else:
             self._prepare_to_generate_rule()
