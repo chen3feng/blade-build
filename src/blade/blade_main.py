@@ -77,6 +77,7 @@ import traceback
 from string import Template
 
 import blade
+import build_attributes
 import console
 import configparse
 
@@ -290,6 +291,9 @@ def _main(blade_path):
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
         print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
+
+    # Init global build target attributes
+    build_attributes.attributes = build_attributes.TargetAttributes(options)
 
     # Init global configuration manager
     configparse.blade_config = BladeConfig(blade_root_dir)

@@ -126,7 +126,7 @@ class CcTarget(Target):
     def _check_defs(self):
         """_check_defs.
 
-        It will warn if user defines cpp keyword in defs list.
+        It will warn if user defines c++ keyword in defs list.
 
         """
         defs_list = self.data.get('defs', [])
@@ -1072,6 +1072,7 @@ class CcTest(CcBinary):
 
         """
         cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        console.info('%s: dynamic link %s' % (name, cc_test_config['dynamic_link']))
         if dynamic_link is None:
             dynamic_link = cc_test_config['dynamic_link']
 

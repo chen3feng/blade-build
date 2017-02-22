@@ -22,6 +22,7 @@ import traceback
 import build_rules
 import blade
 import console
+import build_attributes
 from blade_util import relative_path
 from blade_util import var_to_list
 from pathlib import Path
@@ -47,46 +48,19 @@ import thrift_library
 import fbthrift_library
 
 
-class TargetAttributes(object):
-    """Build target attributes
-    """
-    def __init__(self, options):
-        self._options = options
-
-    @property
-    def bits(self):
-        return int(self._options.m)
-
-    @property
-    def arch(self):
-        if self._options.m == '32':
-            return 'i386'
-        else:
-            return 'x86_64'
-
-    def is_debug(self):
-        return self._options.profile == 'debug'
-
-
-build_target = None
-
-
 def _find_dir_depender(dir, blade):
-    """_find_dir_depender to find which target depends on the dir.
-
-    """
+    """Find which target depends on the dir. """
     target_database = blade.get_target_database()
     for key in target_database:
-        for dkey in target_database[key].expanded_deps:
+        target = target_database[key]
+        for dkey in target.expanded_deps:
             if dkey[0] == dir:
-                return '//%s:%s' % (target_database[key].path,
-                                    target_database[key].name)
+                return '//%s' % target.fullname
     return None
 
 
 def _report_not_exist(source_dir, path, blade):
-    """ Report dir or BUILD file does not exist
-    """
+    """Report dir or BUILD file does not exist. """
     depender = _find_dir_depender(source_dir, blade)
     if depender:
         console.error_exit('//%s not found, required by %s, exit...' % (path, depender))
@@ -179,13 +153,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
     caller and used to avoid duplicated execution of BUILD files.
 
     """
-
-    # Initialize the build_target at first time, to be used for BUILD file
-    # loaded by execfile
-    global build_target
-    if build_target is None:
-        build_target = TargetAttributes(blade.get_options())
-        build_rules.register_variable('build_target', build_target)
+    build_rules.register_variable('build_target', build_attributes.attributes)
 
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
@@ -219,14 +187,12 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
 
 
 def _find_depender(dkey, blade):
-    """_find_depender to find which target depends on the target with dkey.
-
-    """
+    """Find which target depends on the target with dkey. """
     target_database = blade.get_target_database()
     for key in target_database:
-        if dkey in target_database[key].expanded_deps:
-            return '//%s:%s' % (target_database[key].path,
-                                target_database[key].name)
+        target = target_database[key]
+        if dkey in target.expanded_deps:
+            return '//%s' % target.fullname
     return None
 
 
