@@ -126,7 +126,7 @@ class CcTarget(Target):
     def _check_defs(self):
         """_check_defs.
 
-        It will warn if user defines cpp keyword in defs list.
+        It will warn if user defines c++ keyword in defs list.
 
         """
         defs_list = self.data.get('defs', [])

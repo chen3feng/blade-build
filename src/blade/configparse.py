@@ -14,6 +14,7 @@ import os
 import sys
 
 import console
+import build_attributes
 from blade_util import var_to_list
 from cc_targets import HEAP_CHECK_VALUES
 from proto_library_target import ProtocPlugin
@@ -154,17 +155,22 @@ class BladeConfig(object):
             }
         }
 
+    _globals = None
+
     def _try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
-                execfile(filename)
+                execfile(filename, BladeConfig._globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s, exit...' % filename)
 
     def parse(self):
         """load the configuration file and parse. """
+        if BladeConfig._globals is None:
+            BladeConfig._globals = globals()
+            BladeConfig._globals['build_target'] = build_attributes.attributes
         self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
         self._try_parse_file(os.path.expanduser('~/.bladerc'))
         self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
