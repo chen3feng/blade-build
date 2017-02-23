@@ -292,7 +292,7 @@ def _main(blade_path):
         # the building, DO NOT change the pattern of this message.
         print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
 
-    # Init global build target attributes
+    # Init global build attributes
     build_attributes.attributes = build_attributes.TargetAttributes(options)
 
     # Init global configuration manager

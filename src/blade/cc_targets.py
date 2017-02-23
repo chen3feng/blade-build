@@ -1072,7 +1072,6 @@ class CcTest(CcBinary):
 
         """
         cc_test_config = configparse.blade_config.get_config('cc_test_config')
-        console.info('%s: dynamic link %s' % (name, cc_test_config['dynamic_link']))
         if dynamic_link is None:
             dynamic_link = cc_test_config['dynamic_link']
 
