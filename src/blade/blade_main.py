@@ -57,7 +57,7 @@
 
  For example, the following command line
 
-    blade base mapreduce_lite/... parallel_svm:perf_test
+    blade build base mapreduce_lite/... parallel_svm:perf_test
 
  builds all targets in base/BUILD, all targets in all BUILDs under
  directory mapreduce_lite, and the target perf_test defined in
