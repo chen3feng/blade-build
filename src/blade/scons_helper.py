@@ -375,7 +375,7 @@ def _check_java_jar_classes(sources, classes_dir):
                     return
             j += 1
 
-        time.sleep(1)
+        time.sleep(0.5)
         retry += 1
     console.debug('Classes: %s Generated classes: %s' % (classes, generated_classes))
     console.error_exit('Missing class files in %s' % classes_dir)
