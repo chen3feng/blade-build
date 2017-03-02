@@ -348,14 +348,48 @@ def process_java_resources(target, source, env):
     return None
 
 
+def _check_java_jar_classes(sources, classes_dir):
+    """Check if all the classes are generated into classes_dir completely. """
+    sources = sorted([os.path.basename(s) for s in sources])
+    sources = [s for s in sources if s[0].isupper()]
+    classes = ['%s.class' % s[:-5] for s in sources]
+    generated_classes = []
+    paths = set()
+    retry = 0
+    while retry < 3:
+        for dir, subdirs, files in os.walk(classes_dir):
+            for f in files:
+                if f.endswith('.class'):
+                    f = os.path.relpath(os.path.join(dir, f), classes_dir)
+                    if f not in paths:
+                        paths.add(f)
+                        name = os.path.basename(f)
+                        if '$' not in name:
+                            generated_classes.append(name)
+        generated_classes.sort()
+        i, j = 0, 0
+        while j != len(generated_classes):
+            if classes[i] == generated_classes[j]:
+                i += 1
+                if i == len(classes):
+                    return
+            j += 1
+
+        time.sleep(0.5)
+        retry += 1
+    console.debug('Classes: %s Generated classes: %s' % (classes, generated_classes))
+    console.error_exit('Missing class files in %s' % classes_dir)
+
+
 def _generate_java_jar(target, sources, resources, env):
     """
     Compile the java sources and generate a jar containing the classes and resources.
     """
     classes_dir = target.replace('.jar', '.classes')
     resources_dir = target.replace('.jar', '.resources')
-    if not os.path.exists(classes_dir):
-        os.makedirs(classes_dir)
+    if os.path.exists(classes_dir):
+        shutil.rmtree(classes_dir)
+    os.makedirs(classes_dir)
 
     java, javac, jar, options = env['JAVA'], env['JAVAC'], env['JAR'], env['JAVACFLAGS']
     classpath = ':'.join(env['JAVACLASSPATH'])
@@ -369,13 +403,9 @@ def _generate_java_jar(target, sources, resources, env):
             return 1
 
     cmd = ['%s cf %s' % (jar, target)]
-    global build_time
-    for dir, subdirs, files in os.walk(classes_dir):
-        for f in files:
-            f = os.path.join(dir, f)
-            if f.endswith('.class') and os.path.getmtime(f) >= build_time:
-                cmd.append("-C %s '%s'" % (classes_dir,
-                        os.path.relpath(f, classes_dir)))
+    if sources:
+        _check_java_jar_classes(sources, classes_dir)
+        cmd.append('-C %s .' % classes_dir)
 
     if os.path.exists(resources_dir):
         for resource in resources:
