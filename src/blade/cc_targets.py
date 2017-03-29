@@ -24,6 +24,11 @@ from blade_util import var_to_list, stable_unique
 from target import Target
 
 
+if "check_output" not in dir( subprocess ):
+    from blade_util import check_output
+    subprocess.check_output = check_output
+
+
 class CcTarget(Target):
     """A scons cc target subclass.
 
