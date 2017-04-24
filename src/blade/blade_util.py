@@ -132,6 +132,29 @@ def get_cwd():
     return p.communicate()[0].strip()
 
 
+if "check_output" not in dir( subprocess ):
+    def check_output(*popenargs, **kwargs):
+        r"""Run command with arguments and return its output as a byte string.
+
+        Backported from Python 2.7 as it's implemented as pure python on stdlib.
+
+        >>> check_output(["ls", "-l", "/dev/null"])
+        'crw-rw-rw- 1 root root 1, 3 Oct 18  2007 /dev/null\n'
+
+        """
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            error = subprocess.CalledProcessError(retcode, cmd)
+            error.output = output
+            raise error
+        return output
+
+
 def environ_add_path(env, key, path):
     """Add path to PATH link environments, such as PATH, LD_LIBRARY_PATH, etc"""
     old = env.get(key)
