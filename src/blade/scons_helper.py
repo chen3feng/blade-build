@@ -353,6 +353,9 @@ def _check_java_jar_classes(sources, classes_dir):
     sources = sorted([os.path.basename(s) for s in sources])
     sources = [s for s in sources if s[0].isupper()]
     classes = ['%s.class' % s[:-5] for s in sources]
+    if not classes:
+        return
+
     generated_classes = []
     paths = set()
     retry = 0
