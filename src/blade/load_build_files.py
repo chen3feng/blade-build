@@ -198,6 +198,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
 
     old_current_source_path = blade.get_current_source_path()
     blade.set_current_source_path(source_dir)
+    blade_root_file = os.path.join(blade.get_root_dir(), 'BLADE_ROOT')
     build_file = os.path.join(source_dir, 'BUILD')
     if os.path.exists(build_file) and not os.path.isdir(build_file):
         try:
@@ -205,6 +206,7 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
             # which can be loaded and executed by execfile().
             global __current_globles
             __current_globles = build_rules.get_all()
+            execfile(blade_root_file, __current_globles, None)
             execfile(build_file, __current_globles, None)
         except SystemExit:
             console.error_exit('%s: fatal error, exit...' % build_file)
