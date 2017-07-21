@@ -40,6 +40,7 @@ import SCons.Scanner.Prog
 
 import blade_util
 import console
+import scm_info
 
 from console import colors
 
@@ -1640,6 +1641,10 @@ def generate_version_file(top_env, blade_root_dir, build_dir,
             'extern const char kHostName[] = "%s";' % socket.gethostname())
     compiler = 'GCC %s' % gcc_version
     print >>version_cpp, 'extern const char kCompiler[] = "%s";' % compiler
+
+    print >>version_cpp, 'extern const char URL[] = "%s";' % scm_info.git_url()
+    print >>version_cpp, 'extern const char revision[] = "%s";' %  scm_info.git_revision()
+    print >>version_cpp, 'extern const char branch[] = "%s";' % scm_info.git_branch()
     print >>version_cpp, '}}'
 
     version_cpp.close()
