@@ -179,8 +179,7 @@ class CcTarget(Target):
         Otherwise return the existing one.
 
         """
-        a_src_path = self._prebuilt_cc_library_pathname(dynamic=False)
-        so_src_path = self._prebuilt_cc_library_pathname(dynamic=True)
+        a_src_path, so_src_path = self._prebuilt_cc_library_pathname()
         libs = (a_src_path, so_src_path) # Ordered by priority
         if prefer_dynamic:
             libs = (so_src_path, a_src_path)
@@ -195,13 +194,16 @@ class CcTarget(Target):
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
-    def _prebuilt_cc_library_pathname(self, dynamic=False):
+    def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        suffix = 'a'
-        if dynamic:
-            suffix = 'so'
-        return os.path.join(self.path, 'lib%s_%s' % (options.m, options.profile),
-                            'lib%s.%s' % (self.name, suffix))
+        m, machine, profile = options.m, options.machine, options.profile
+        prebuilt_dir = os.path.join(self.path,
+                                    'lib%s_%s_%s' % (m, machine, profile))
+        if not os.path.isdir(prebuilt_dir):
+            prebuilt_dir = os.path.join(self.path, 'lib%s_%s' % (m, profile))
+
+        return [os.path.join(prebuilt_dir, 'lib%s.%s' % (self.name, s))
+                for s in ['a', 'so']]
 
     def _prebuilt_cc_library_dynamic_soname(self, so):
         """Get the soname of prebuilt shared library. """

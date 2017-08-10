@@ -95,15 +95,16 @@ class CmdArguments(object):
             self.options.profile != 'release'):
             console.error_exit('--profile must be "debug" or "release".')
 
+        self.options.machine = platform.machine()
         if self.options.m is None:
             self.options.m = self._arch_bits()
         else:
-            if not (self.options.m == '32' or self.options.m == '64'):
+            if self.options.m != '32' and self.options.m != '64':
                 console.error_exit("--m must be '32' or '64'")
 
-            # TODO(phongchen): cross compile checking
-            if self.options.m == '64' and platform.machine() != 'x86_64':
-                console.error_exit('Sorry, 64-bit environment is required for '
+            if (self.options.m == '64' and
+                self.options.machine not in ('x86_64', 'ppc64', 'ppc64le')):
+                console.error_exit('64-bit environment is required for '
                                    'building 64-bit targets.')
 
     def _check_color_options(self):
@@ -179,6 +180,7 @@ class CmdArguments(object):
                             help=('Do not produce debugging information, this '
                                   'make less disk space cost but hard to debug, '
                                   'default is false.'))
+
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
         parser.add_argument(
@@ -386,11 +388,12 @@ class CmdArguments(object):
         return arg_parser.parse_known_args()
 
     def _arch_bits(self):
-        """Platform arch."""
-        if 'x86_64' == platform.machine():
-            return '64'
+        """Platform architecture bits. """
+        bits, linkage = platform.architecture()
+        if 'bit' in bits:
+            return bits[:bits.find('bit')]
         else:
-            return '32'
+            return bits
 
     def get_command(self):
         """Return blade command. """
