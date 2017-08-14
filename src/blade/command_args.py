@@ -95,17 +95,31 @@ class CmdArguments(object):
             self.options.profile != 'release'):
             console.error_exit('--profile must be "debug" or "release".')
 
-        self.options.machine = platform.machine()
-        if self.options.m is None:
+        m = self.options.m
+        machine = platform.machine()
+        if m is None:
             self.options.m = self._arch_bits()
+            self.options.machine = machine
         else:
-            if self.options.m != '32' and self.options.m != '64':
+            if m == '32':
+                if machine in ('i386', 'x86'):
+                    self.options.machine = 'i386'
+                elif machine in ('ppc', 'powerpc'):
+                    self.options.machine = 'ppc'
+                else:
+                    self.options.machine = 'unknown'
+                    console.warning('Unknown machine type: %s' % machine)
+            elif m == '64':
+                if machine in ('x86_64', 'amd64'):
+                    self.options.machine = 'x86_64'
+                elif machine in ('ppc64', 'ppc64le', 'powerpc64', 'powerpc64le'):
+                    self.options.machine = 'ppc64'
+                else:
+                    console.error_exit('64-bit environment is required for '
+                                       'building 64-bit targets. '
+                                       'Machine type: %s' % machine)
+            else:
                 console.error_exit("--m must be '32' or '64'")
-
-            if (self.options.m == '64' and
-                self.options.machine not in ('x86_64', 'ppc64', 'ppc64le')):
-                console.error_exit('64-bit environment is required for '
-                                   'building 64-bit targets.')
 
     def _check_color_options(self):
         """check color options. """
