@@ -26,7 +26,7 @@ class TargetAttributes(object):
 
     @property
     def arch(self):
-        return self.options.machine
+        return self.options.arch
 
     def is_debug(self):
         return self.options.profile == 'debug'

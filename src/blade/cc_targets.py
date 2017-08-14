@@ -199,17 +199,17 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        m, machine, profile = options.m, options.machine, options.profile
+        m, arch, profile = options.m, options.arch, options.profile
         if CcTarget._default_prebuilt_libpath is None:
             config = configparse.blade_config.get_config('cc_library_config')
             pattern = config['prebuilt_libpath_pattern']
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                    bits=m, arch=machine, profile=profile)
+                    bits=m, arch=arch, profile=profile)
 
         pattern = self.data.get('prebuilt_libpath_pattern')
         if pattern:
             libpath = Template(pattern).substitute(bits=m,
-                                                   arch=machine,
+                                                   arch=arch,
                                                    profile=profile)
         else:
             libpath = CcTarget._default_prebuilt_libpath

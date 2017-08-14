@@ -96,30 +96,34 @@ class CmdArguments(object):
             console.error_exit('--profile must be "debug" or "release".')
 
         m = self.options.m
-        machine = platform.machine()
+        arch = platform.machine()
         if m is None:
             self.options.m = self._arch_bits()
-            self.options.machine = machine
+            self.options.arch = arch
         else:
-            if m == '32':
-                if machine in ('i386', 'x86'):
-                    self.options.machine = 'i386'
-                elif machine in ('ppc', 'powerpc'):
-                    self.options.machine = 'ppc'
-                else:
-                    self.options.machine = 'unknown'
-                    console.warning('Unknown machine type: %s' % machine)
-            elif m == '64':
-                if machine in ('x86_64', 'amd64'):
-                    self.options.machine = 'x86_64'
-                elif machine in ('ppc64', 'ppc64le', 'powerpc64', 'powerpc64le'):
-                    self.options.machine = 'ppc64'
-                else:
-                    console.error_exit('64-bit environment is required for '
-                                       'building 64-bit targets. '
-                                       'Machine type: %s' % machine)
-            else:
-                console.error_exit("--m must be '32' or '64'")
+            self.options.arch = None
+            architecture_aliases = {
+                'i386' : ['x86'],
+                'x86_64' : ['amd64'],
+                'ppc' : ['powerpc'],
+                'ppc64' : ['powerpc64'],
+                'ppc64le' : ['powerpc64le'],
+            }
+            architecture_bits = {
+                'i386' : ['32'],
+                'x86_64' : ['32', '64'],
+                'ppc' : ['32'],
+                'ppc64' : ['32', '64'],
+                'ppc64le' : ['32', '64'],
+            }
+            for k, v in architecture_aliases.iteritems():
+                if arch == k or arch in v:
+                    self.options.arch = k
+            if self.options.arch is None:
+                console.error_exit('Unknown architecture: %s' % arch)
+            if m not in architecture_bits[self.options.arch]:
+                console.error_exit('-m %s is not supported in architecture %s' %
+                                   (m, arch))
 
     def _check_color_options(self):
         """check color options. """
