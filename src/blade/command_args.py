@@ -18,6 +18,7 @@ import shlex
 from argparse import ArgumentParser
 
 import console
+from blade_platform import BuildArchitecture
 from blade_platform import SconsPlatform
 
 
@@ -97,50 +98,13 @@ class CmdArguments(object):
             console.error_exit('--profile must be "debug" or "release".')
 
         compiler_arch = self._compiler_target_arch()
-        generic_arch = None
-        architecture_aliases = {
-            'i386' : ['x86'],
-            'x86_64' : ['amd64'],
-            'ppc' : ['powerpc'],
-            'ppc64' : ['powerpc64'],
-            'ppc64le' : ['powerpc64le'],
-        }
-        for k, v in architecture_aliases.iteritems():
-            if compiler_arch == k or compiler_arch in v:
-                generic_arch = k
-                break
-        if generic_arch is None:
-            console.error_exit('Unknown architecture: %s' % compiler_arch)
-
+        arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
         m = self.options.m
         if m is None:
-            self.options.arch = generic_arch
-            self.options.m = {
-                'i386' : '32',
-                'x86_64' : '64',
-                'ppc' : '32',
-                'ppc64' : '64',
-                'ppc64le' : '64',
-            }[generic_arch]
+            self.options.arch = arch
+            self.options.m = BuildArchitecture.get_architecture_bits(arch)
         else:            
-            architecture_bits_mapping = {
-                '32' : {
-                    'i386' : 'i386',
-                    'x86_64' : 'i386',
-                    'ppc' : 'ppc',
-                    'ppc64' : 'ppc',
-                    'ppc64le' : 'ppc',  # ppc or ppcle?
-                },
-                '64' : {
-                    'x86_64' : 'x86_64',
-                    'ppc64' : 'ppc64',
-                    'ppc64le' : 'ppc64le',
-                },
-            }
-            if m not in architecture_bits_mapping:
-                console.error_exit('-m %s is not supported in architecture %s'
-                                   % (m, compiler_arch))
-            self.options.arch = architecture_bits_mapping[m][generic_arch]
+            self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
 
     def _check_color_options(self):
         """check color options. """
@@ -424,7 +388,7 @@ class CmdArguments(object):
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture. """
-        arch = SconsPlatform._get_gcc_target_arch()
+        arch = SconsPlatform._get_cc_target_arch()
         pos = arch.find('-')
         if pos == -1:
             console.error_exit('Unknown target architecture %s from gcc.'

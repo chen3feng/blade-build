@@ -20,6 +20,78 @@ import console
 from blade_util import var_to_list
 
 
+class BuildArchitecture(object):
+    """
+    The BuildArchitecture class manages architecture/bits configuration
+    across various platforms/compilers combined with the input from
+    command line.
+    """
+    _build_architecture = {
+        'i386' : {
+            'alias' : ['x86'],
+            'bits' : '32',
+        },
+        'x86_64' : {
+            'alias' : ['amd64'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'i386',
+            }
+        },
+        'ppc' : {
+            'alias' : ['powerpc'],
+            'bits' : '32',
+        },
+        'ppc64' : {
+            'alias' : ['powerpc64'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'ppc',
+            }
+        },
+        'ppc64le' : {
+            'alias' : ['powerpc64le'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'ppcle',
+            }
+        },
+    }
+
+    @staticmethod
+    def get_canonical_architecture(arch):
+        """Get the canonical architecture from the specified arch. """
+        canonical_arch = None
+        for k, v in BuildArchitecture._build_architecture.iteritems():
+            if arch == k or arch in v['alias']:
+                canonical_arch = k
+                break
+        if canonical_arch is None:
+            console.error_exit('Unknown architecture: %s' % arch)
+        return canonical_arch
+
+    @staticmethod
+    def get_architecture_bits(arch):
+        """Get the architecture bits. """
+        arch = BuildArchitecture.get_canonical_architecture(arch)
+        return BuildArchitecture._build_architecture[arch]['bits']
+
+    @staticmethod
+    def get_model_architecture(arch, bits):
+        """
+        Get the model architecture from the specified arch and bits,
+        such as, if arch is x86_64 and bits is '32', then the resulting
+        model architecture is i386 which effectively means building
+        32 bit target in a 64 bit environment.
+        """
+        canonical_arch = BuildArchitecture.get_canonical_architecture(arch)
+        models = BuildArchitecture._build_architecture[canonical_arch].get('models')
+        if not models:
+            console.error_exit('bits %s is not supported by the architecture %s'
+                               % (bits, arch))
+        return models[bits]
+
+
 class SconsPlatform(object):
     """The scons platform class that it handles and gets the platform info. """
     def __init__(self):
@@ -42,8 +114,8 @@ class SconsPlatform(object):
         return ''
 
     @staticmethod
-    def _get_gcc_target_arch():
-        """Get the gcc target architecture. """
+    def _get_cc_target_arch():
+        """Get the cc target architecture. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
         returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpmachine')
