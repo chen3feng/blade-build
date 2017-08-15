@@ -15,9 +15,10 @@
 import os
 import platform
 import shlex
+from argparse import ArgumentParser
 
 import console
-from argparse import ArgumentParser
+from blade_platform import SconsPlatform
 
 
 class CmdArguments(object):
@@ -95,35 +96,51 @@ class CmdArguments(object):
             self.options.profile != 'release'):
             console.error_exit('--profile must be "debug" or "release".')
 
+        compiler_arch = self._compiler_target_arch()
+        generic_arch = None
+        architecture_aliases = {
+            'i386' : ['x86'],
+            'x86_64' : ['amd64'],
+            'ppc' : ['powerpc'],
+            'ppc64' : ['powerpc64'],
+            'ppc64le' : ['powerpc64le'],
+        }
+        for k, v in architecture_aliases.iteritems():
+            if compiler_arch == k or compiler_arch in v:
+                generic_arch = k
+                break
+        if generic_arch is None:
+            console.error_exit('Unknown architecture: %s' % compiler_arch)
+
         m = self.options.m
-        arch = platform.machine()
         if m is None:
-            self.options.m = self._arch_bits()
-            self.options.arch = arch
-        else:
-            self.options.arch = None
-            architecture_aliases = {
-                'i386' : ['x86'],
-                'x86_64' : ['amd64'],
-                'ppc' : ['powerpc'],
-                'ppc64' : ['powerpc64'],
-                'ppc64le' : ['powerpc64le'],
+            self.options.arch = generic_arch
+            self.options.m = {
+                'i386' : '32',
+                'x86_64' : '64',
+                'ppc' : '32',
+                'ppc64' : '64',
+                'ppc64le' : '64',
+            }[generic_arch]
+        else:            
+            architecture_bits_mapping = {
+                '32' : {
+                    'i386' : 'i386',
+                    'x86_64' : 'i386',
+                    'ppc' : 'ppc',
+                    'ppc64' : 'ppc',
+                    'ppc64le' : 'ppc',  # ppc or ppcle?
+                },
+                '64' : {
+                    'x86_64' : 'x86_64',
+                    'ppc64' : 'ppc64',
+                    'ppc64le' : 'ppc64le',
+                },
             }
-            architecture_bits = {
-                'i386' : ['32'],
-                'x86_64' : ['32', '64'],
-                'ppc' : ['32'],
-                'ppc64' : ['32', '64'],
-                'ppc64le' : ['32', '64'],
-            }
-            for k, v in architecture_aliases.iteritems():
-                if arch == k or arch in v:
-                    self.options.arch = k
-            if self.options.arch is None:
-                console.error_exit('Unknown architecture: %s' % arch)
-            if m not in architecture_bits[self.options.arch]:
-                console.error_exit('-m %s is not supported in architecture %s' %
-                                   (m, arch))
+            if m not in architecture_bits_mapping:
+                console.error_exit('-m %s is not supported in architecture %s'
+                                   % (m, compiler_arch))
+            self.options.arch = architecture_bits_mapping[m][generic_arch]
 
     def _check_color_options(self):
         """check color options. """
@@ -405,13 +422,14 @@ class CmdArguments(object):
 
         return arg_parser.parse_known_args()
 
-    def _arch_bits(self):
-        """Platform architecture bits. """
-        bits, linkage = platform.architecture()
-        if 'bit' in bits:
-            return bits[:bits.find('bit')]
-        else:
-            return bits
+    def _compiler_target_arch(self):
+        """Compiler(gcc) target architecture. """
+        arch = SconsPlatform._get_gcc_target_arch()
+        pos = arch.find('-')
+        if pos == -1:
+            console.error_exit('Unknown target architecture %s from gcc.'
+                               % arch)
+        return arch[:pos]
 
     def get_command(self):
         """Return blade command. """

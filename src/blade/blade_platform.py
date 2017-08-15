@@ -42,6 +42,16 @@ class SconsPlatform(object):
         return ''
 
     @staticmethod
+    def _get_gcc_target_arch():
+        """Get the gcc target architecture. """
+        gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
+                           os.environ.get('CC', 'gcc'))
+        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpmachine')
+        if returncode == 0:
+            return stdout.strip()
+        return ''
+
+    @staticmethod
     def _get_nvcc_version():
         """Get the nvcc version. """
         nvcc = os.environ.get('NVCC', 'nvcc')
