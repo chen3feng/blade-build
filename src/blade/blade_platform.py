@@ -66,15 +66,15 @@ class BuildArchitecture(object):
             if arch == k or arch in v['alias']:
                 canonical_arch = k
                 break
-        if canonical_arch is None:
-            console.error_exit('Unknown architecture: %s' % arch)
         return canonical_arch
 
     @staticmethod
     def get_architecture_bits(arch):
         """Get the architecture bits. """
         arch = BuildArchitecture.get_canonical_architecture(arch)
-        return BuildArchitecture._build_architecture[arch]['bits']
+        if arch:
+            return BuildArchitecture._build_architecture[arch]['bits']
+        return None
 
     @staticmethod
     def get_model_architecture(arch, bits):
@@ -84,12 +84,14 @@ class BuildArchitecture(object):
         model architecture is i386 which effectively means building
         32 bit target in a 64 bit environment.
         """
-        canonical_arch = BuildArchitecture.get_canonical_architecture(arch)
-        models = BuildArchitecture._build_architecture[canonical_arch].get('models')
-        if not models:
-            console.error_exit('bits %s is not supported by the architecture %s'
-                               % (bits, arch))
-        return models[bits]
+        arch = BuildArchitecture.get_canonical_architecture(arch)
+        if arch:
+            if bits == BuildArchitecture._build_architecture[arch]['bits']:
+                return arch
+            models = BuildArchitecture._build_architecture[arch].get('models')
+            if models and bits in models:
+                return models[bits]
+        return None
 
 
 class SconsPlatform(object):

@@ -99,12 +99,19 @@ class CmdArguments(object):
 
         compiler_arch = self._compiler_target_arch()
         arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
+        if arch is None:
+            console.error_exit('Unknown architecture: %s' % compiler_arch)
+
         m = self.options.m
         if m is None:
             self.options.arch = arch
             self.options.m = BuildArchitecture.get_architecture_bits(arch)
+            assert self.options.m
         else:            
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
+            if self.options.arch is None:
+                console.error_exit('-m %s is not supported by the architecture %s'
+                                   % (m, compiler_arch))
 
     def _check_color_options(self):
         """check color options. """
