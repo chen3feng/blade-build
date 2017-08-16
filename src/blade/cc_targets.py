@@ -14,6 +14,7 @@
 
 import os
 import subprocess
+from string import Template
 import Queue
 
 import blade
@@ -179,8 +180,7 @@ class CcTarget(Target):
         Otherwise return the existing one.
 
         """
-        a_src_path = self._prebuilt_cc_library_pathname(dynamic=False)
-        so_src_path = self._prebuilt_cc_library_pathname(dynamic=True)
+        a_src_path, so_src_path = self._prebuilt_cc_library_pathname()
         libs = (a_src_path, so_src_path) # Ordered by priority
         if prefer_dynamic:
             libs = (so_src_path, a_src_path)
@@ -195,13 +195,26 @@ class CcTarget(Target):
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
-    def _prebuilt_cc_library_pathname(self, dynamic=False):
+    _default_prebuilt_libpath = None
+
+    def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        suffix = 'a'
-        if dynamic:
-            suffix = 'so'
-        return os.path.join(self.path, 'lib%s_%s' % (options.m, options.profile),
-                            'lib%s.%s' % (self.name, suffix))
+        m, arch, profile = options.m, options.arch, options.profile
+        if CcTarget._default_prebuilt_libpath is None:
+            config = configparse.blade_config.get_config('cc_library_config')
+            pattern = config['prebuilt_libpath_pattern']
+            CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
+                    bits=m, arch=arch, profile=profile)
+
+        pattern = self.data.get('prebuilt_libpath_pattern')
+        if pattern:
+            libpath = Template(pattern).substitute(bits=m,
+                                                   arch=arch,
+                                                   profile=profile)
+        else:
+            libpath = CcTarget._default_prebuilt_libpath
+        return [os.path.join(self.path, libpath, 'lib%s.%s' % (self.name, s))
+                for s in ['a', 'so']]
 
     def _prebuilt_cc_library_dynamic_soname(self, so):
         """Get the soname of prebuilt shared library. """
@@ -599,6 +612,7 @@ class CcLibrary(CcTarget):
                  optimize,
                  always_optimize,
                  prebuilt,
+                 prebuilt_libpath_pattern,
                  link_all_symbols,
                  deprecated,
                  extra_cppflags,
@@ -630,6 +644,8 @@ class CcLibrary(CcTarget):
         if prebuilt:
             self.type = 'prebuilt_cc_library'
             self.srcs = []
+            if prebuilt_libpath_pattern:
+                self.data['prebuilt_libpath_pattern'] = prebuilt_libpath_pattern
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
@@ -669,6 +685,7 @@ def cc_library(name,
                always_optimize=False,
                pre_build=False,
                prebuilt=False,
+               prebuilt_libpath_pattern=None,
                link_all_symbols=False,
                deprecated=False,
                extra_cppflags=[],
@@ -688,6 +705,7 @@ def cc_library(name,
                        optimize,
                        always_optimize,
                        prebuilt or pre_build,
+                       prebuilt_libpath_pattern,
                        link_all_symbols,
                        deprecated,
                        extra_cppflags,

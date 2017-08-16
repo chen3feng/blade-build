@@ -146,6 +146,7 @@ class BladeConfig(object):
                 'securecc' : None,
             },
             'cc_library_config': {
+                'prebuilt_libpath_pattern' : 'lib${bits}_${profile}',
                 'generate_dynamic' : None,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate

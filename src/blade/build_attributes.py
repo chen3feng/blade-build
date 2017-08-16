@@ -26,10 +26,7 @@ class TargetAttributes(object):
 
     @property
     def arch(self):
-        if self.options.m == '32':
-            return 'i386'
-        else:
-            return 'x86_64'
+        return self.options.arch
 
     def is_debug(self):
         return self.options.profile == 'debug'

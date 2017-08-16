@@ -15,9 +15,11 @@
 import os
 import platform
 import shlex
+from argparse import ArgumentParser
 
 import console
-from argparse import ArgumentParser
+from blade_platform import BuildArchitecture
+from blade_platform import SconsPlatform
 
 
 class CmdArguments(object):
@@ -95,16 +97,21 @@ class CmdArguments(object):
             self.options.profile != 'release'):
             console.error_exit('--profile must be "debug" or "release".')
 
-        if self.options.m is None:
-            self.options.m = self._arch_bits()
-        else:
-            if not (self.options.m == '32' or self.options.m == '64'):
-                console.error_exit("--m must be '32' or '64'")
+        compiler_arch = self._compiler_target_arch()
+        arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
+        if arch is None:
+            console.error_exit('Unknown architecture: %s' % compiler_arch)
 
-            # TODO(phongchen): cross compile checking
-            if self.options.m == '64' and platform.machine() != 'x86_64':
-                console.error_exit('Sorry, 64-bit environment is required for '
-                                   'building 64-bit targets.')
+        m = self.options.m
+        if m is None:
+            self.options.arch = arch
+            self.options.m = BuildArchitecture.get_architecture_bits(arch)
+            assert self.options.m
+        else:            
+            self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
+            if self.options.arch is None:
+                console.error_exit('-m %s is not supported by the architecture %s'
+                                   % (m, compiler_arch))
 
     def _check_color_options(self):
         """check color options. """
@@ -179,6 +186,7 @@ class CmdArguments(object):
                             help=('Do not produce debugging information, this '
                                   'make less disk space cost but hard to debug, '
                                   'default is false.'))
+
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
         parser.add_argument(
@@ -385,12 +393,14 @@ class CmdArguments(object):
 
         return arg_parser.parse_known_args()
 
-    def _arch_bits(self):
-        """Platform arch."""
-        if 'x86_64' == platform.machine():
-            return '64'
-        else:
-            return '32'
+    def _compiler_target_arch(self):
+        """Compiler(gcc) target architecture. """
+        arch = SconsPlatform._get_cc_target_arch()
+        pos = arch.find('-')
+        if pos == -1:
+            console.error_exit('Unknown target architecture %s from gcc.'
+                               % arch)
+        return arch[:pos]
 
     def get_command(self):
         """Return blade command. """
