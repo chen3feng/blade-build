@@ -160,9 +160,8 @@ class CcTarget(Target):
             illegal_path_list += [s for s in srcs if not keyword in s]
 
         if illegal_path_list:
-            console.warning("//%s:%s : warning='no' is only allowed "
-                            "for code in thirdparty." % (
-                                self.key[0], self.key[1]))
+            console.warning("//%s: warning='no' should only be used "
+                            "for code in thirdparty." % self.fullname)
 
     def _objs_name(self):
         """_objs_name.
@@ -412,10 +411,10 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_is_depended(self):
         build_targets = self.blade.get_build_targets()
-        for key in build_targets:
-            target = build_targets[key]
-            if (self.key in target.expanded_deps and
-                target.type != 'prebuilt_cc_library'):
+        depended_targets = self.blade.get_depended_target_database()
+        for key in depended_targets[self.key]:
+            t = build_targets[key]
+            if t.type != 'prebuilt_cc_library':
                 return True
         return False
 

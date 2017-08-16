@@ -54,6 +54,7 @@ class Target(object):
         self.deps = []
         self.expanded_deps = []
         self.visibility = 'PUBLIC'
+        self.env_name = None
         self.data = {}
         config = configparse.blade_config.get_config('global_config')
         self.data['test_timeout'] = config['test_timeout']
@@ -83,13 +84,13 @@ class Target(object):
 
     def _check_name(self):
         if '/' in self.name:
-            console.error_exit('//%s:%s: Invalid target name, should not contain dir part.' % (
-                self.path, self.name))
+            console.error_exit('//%s: Invalid target name, should not contain dir part.'
+                               % self.fullname)
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.error_exit('//%s:%s: unrecognized options %s' % (
-                self.path, self.name, kwargs))
+            console.error_exit('//%s: unrecognized options %s' % (
+                               self.fullname, kwargs))
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets. """
@@ -218,8 +219,7 @@ class Target(object):
         elif dep.startswith('//'):
             # Depend on library in remote directory
             if not ':' in dep:
-                raise Exception, 'Wrong format in %s:%s' % (
-                        self.path, self.name)
+                raise Exception, 'Wrong format in %s' % self.fullname
             (path, lib) = dep[2:].rsplit(':', 1)
             dkey = (os.path.normpath(path), lib)
         elif dep.startswith('#'):
@@ -230,8 +230,7 @@ class Target(object):
         else:
             # Depend on library in relative subdirectory
             if not ':' in dep:
-                raise Exception, 'Wrong format in %s:%s' % (
-                        self.path, self.name)
+                raise Exception, 'Wrong format in %s' % self.fullname
             (path, lib) = dep.rsplit(':', 1)
             if '..' in path:
                 raise Exception, "Don't use '..' in path"
@@ -405,7 +404,10 @@ class Target(object):
         Concatenating target path, target name to be environment var and returns.
 
         """
-        return 'env_%s' % self._generate_variable_name(self.path, self.name)
+        if self.env_name is None:
+            self.env_name = 'env_%s' % self._generate_variable_name(self.path,
+                                                                    self.name)
+        return self.env_name
 
     def _var_name(self, suffix=''):
         """_var_name.

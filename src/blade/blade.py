@@ -326,6 +326,10 @@ class Blade(object):
         """Get all the targets to be build. """
         return self.__build_targets
 
+    def get_depended_target_database(self):
+        """Get depended target database that query dependent targets directly. """
+        return self.__depended_targets
+
     def get_options(self):
         """Get the global command options. """
         return self.__options
