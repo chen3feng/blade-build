@@ -306,6 +306,10 @@ class Blade(object):
         """Return the blade root path. """
         return self.__root_dir
 
+    def get_command(self):
+        """Get the blade command. """
+        return self.__command
+
     def set_current_source_path(self, current_source_path):
         """Set the current source path. """
         self.__current_source_path = current_source_path

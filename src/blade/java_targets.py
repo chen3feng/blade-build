@@ -544,8 +544,9 @@ class JavaTargetMixIn(object):
         self._generate_regular_resources(resources, resources_var_name,
                                          resources_path_var_name)
         self._generate_location_resources(locations, resources_var_name)
-        self._write_rule('%s.Clean(%s, "%s")' % (
-            env_name, resources_var_name, resources_dir))
+        if self.blade.get_command() == 'clean':
+            self._write_rule('%s.Clean(%s, "%s")' % (
+                             env_name, resources_var_name, resources_dir))
         return resources_var_name, resources_path_var_name
 
     def _generate_generated_java_jar(self, var_name, srcs):
@@ -562,7 +563,9 @@ class JavaTargetMixIn(object):
         # BladeJavaJar builder puts the generated classes
         # into .class directory during jar building
         classes_dir = self._get_classes_dir()
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
+        if self.blade.get_command() == 'clean':
+            self._write_rule('%s.Clean(%s, "%s")' % (
+                             env_name, var_name, classes_dir))
         return var_name
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):

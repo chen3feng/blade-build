@@ -82,6 +82,7 @@ class CcTarget(Target):
         self.data['optimize'] = opt
         self.data['extra_cppflags'] = extra_cppflags
         self.data['extra_linkflags'] = extra_linkflags
+        self.data['objs_name'] = None
 
         self._check_defs()
         self._check_incorrect_no_warning()
@@ -108,9 +109,9 @@ class CcTarget(Target):
         env_name = self._env_name()
         warning = self.data.get('warning', '')
         if warning == 'yes':
-            self._write_rule('%s = env_with_error.Clone()' % env_name)
+            self._write_rule('%s = env_cc_warning.Clone()' % env_name)
         else:
-            self._write_rule('%s = env_no_warning.Clone()' % env_name)
+            self._write_rule('%s = env_cc.Clone()' % env_name)
 
     __cxx_keyword_list = frozenset([
         'and', 'and_eq', 'alignas', 'alignof', 'asm', 'auto',
@@ -164,12 +165,16 @@ class CcTarget(Target):
                             "for code in thirdparty." % self.fullname)
 
     def _objs_name(self):
-        """_objs_name.
+        """Concatenating path and name to be objs var. """
+        name = self.data['objs_name']
+        if name is None:
+            name = 'objs_%s' % self._generate_variable_name(self.path, self.name)
+            self.data['objs_name'] = name
+        return name
 
-        Concatenating target path, target name to be objs var and returns.
-
-        """
-        return 'objs_%s' % self._generate_variable_name(self.path, self.name)
+    def _set_objs_name(self, name):
+        """Set objs var name to the input name. """
+        self.data['objs_name'] = name
 
     def _prebuilt_cc_library_path(self, prefer_dynamic=False):
         """
@@ -547,24 +552,18 @@ class CcTarget(Target):
         Generate the cc objects rules for the srcs in srcs list.
 
         """
-        target_types = ['cc_library',
-                        'cc_binary',
-                        'cc_test',
-                        'cc_plugin']
-
-        if not self.type in target_types:
+        if self.type not in ('cc_library', 'cc_binary', 'cc_test', 'cc_plugin'):
             console.error_exit('logic error, type %s err in object rule' % self.type)
 
-        objs_name = self._objs_name()
         env_name = self._env_name()
+        objs_dir = self._target_file_path() + '.objs'
 
         self._setup_cc_flags()
 
         objs = []
         for src in self.srcs:
-            obj = '%s_%s_object' % (self._var_name_of(src),
-                                    self._regular_variable_name(self.name))
-            target_path = self._target_file_path() + '.objs/%s' % src
+            obj = 'obj_%s' % self._var_name_of(src)
+            target_path = os.path.join(objs_dir, src)
             source_path = self._target_file_path(src)  # Also find generated files
             rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
                          (target_path, source_path))
@@ -574,12 +573,17 @@ class CcTarget(Target):
             if self.data.get('secure'):
                 self._securecc_object_rules(obj, source_path)
             objs.append(obj)
-        self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
+
+        if len(objs) == 1:
+            self._set_objs_name(objs[0])
+            objs_name = objs[0]
+        else:
+            objs_name = self._objs_name()
+            self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
         self._generate_generated_header_files_depends(objs_name)
 
-        if objs:
-            objs_dirname = self._target_file_path() + '.objs'
-            self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dirname))
+        if objs and self.blade.get_command() == 'clean':
+            self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dir))
 
     def _securecc_object_rules(self, obj, src):
         """Touch the source file if needed and generate specific object rules for securecc. """
