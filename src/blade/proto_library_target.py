@@ -391,14 +391,14 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._setup_cc_flags()
 
         sources = []
-        obj_names = []
+        objs = []
         for src in self.srcs:
             (proto_src, proto_hdr) = self._proto_gen_files(src)
 
             self._write_rule('%s.Proto(["%s", "%s"], "%s")' % (
                     env_name, proto_src, proto_hdr, os.path.join(self.path, src)))
-            obj_name = "%s_object" % self._var_name_of(src)
-            obj_names.append(obj_name)
+            obj_name = "obj_%s" % self._var_name_of(src)
+            objs.append(obj_name)
             self._write_rule(
                 '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
                 'source="%s")' % (obj_name,
@@ -407,14 +407,17 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                                   proto_src))
             sources.append(proto_src)
 
-        # *.o depends on *pb.cc
-        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
-        self._write_rule('%s.Depends(%s, %s)' % (
-                         env_name, self._objs_name(), sources))
+        if len(objs) == 1:
+            self._set_objs_name(objs[0])
+            objs_name = objs[0]
+        else:
+            objs_name = self._objs_name()
+            self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
+        # *.o depends on *.pb.cc
+        self._write_rule('%s.Depends(%s, %s)' % (env_name, objs_name, sources))
         # pb.cc depends on other proto_library
         self._generate_generated_header_files_depends(sources)
-
         self._cc_library()
 
 

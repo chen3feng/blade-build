@@ -319,14 +319,17 @@ import scons_helper
         self._setup_envs()
 
     def _setup_envs(self):
-        env_with_error, env_no_warning = 'env_with_error', 'env_no_warning'
-        for env in [env_with_error, env_no_warning]:
+        self._setup_env_cc()
+        self._setup_env_java()
+
+    def _setup_env_cc(self):
+        env_cc_warning, env_cc = 'env_cc_warning', 'env_cc'
+        for env in [env_cc_warning, env_cc]:
             self._add_rule('%s = top_env.Clone()' % env)
 
         warnings, cxx_warnings, c_warnings = self.ccflags_manager.get_warning_flags()
         self._add_rule('%s.Append(CPPFLAGS=%s, CFLAGS=%s, CXXFLAGS=%s)' % (
-                       env_with_error, warnings, c_warnings, cxx_warnings))
-        self._setup_env_java()
+                       env_cc_warning, warnings, c_warnings, cxx_warnings))
 
     def _setup_env_java(self):
         env_java = 'env_java'
