@@ -51,6 +51,10 @@ option_verbose = False
 blade_path = os.path.dirname(__file__)
 
 
+# build error log during scons execution
+blade_error_log = None
+
+
 # linking tmp dir
 linking_tmp_dir = ''
 
@@ -966,6 +970,8 @@ def _echo(stdout, stderr):
         sys.stdout.write(stdout)
     if stderr:
         sys.stderr.write(stderr)
+        if blade_error_log:
+            blade_error_log.write(stderr)
 
 
 def echospawn(sh, escape, cmd, args, env):
