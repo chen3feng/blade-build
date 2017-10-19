@@ -26,7 +26,7 @@ syn keyword bladeTarget resource_library swig_library
 syn keyword bladeArg always_run binary_jar cmd defs deprecated deps dynamic_link export_incs
 syn keyword bladeArg exclusive export_dynamic extra_cppflags extra_linkflags
 syn keyword bladeArg heap_check heap_check_debug incs link_all_symbols main_class
-syn keyword bladeArg name optimize outs prebuilt prefix resources srcs suffix
+syn keyword bladeArg name optimize outs prebuilt prefix resources secure srcs suffix
 syn keyword bladeArg testdata warning
 
 if version >= 508 || !exists("did_blade_syn_inits")
