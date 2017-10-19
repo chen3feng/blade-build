@@ -63,6 +63,14 @@ linking_tmp_dir = ''
 build_time = time.time()
 
 
+def set_blade_error_log(path):
+    if blade_error_log:
+        console.warning('blade error log was already set to %s' %
+                        blade_error_log.name)
+    else:
+        blade_error_log = open(path, 'w')
+
+
 def generate_python_egg(target, source, env):
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):

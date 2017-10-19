@@ -106,7 +106,7 @@ import scons_helper
     os.mkdir('%s')""") % (self.build_dir, self.build_dir))
         self._add_rule('console.set_log_file("%s")' % os.path.join(
                 self.build_dir, 'blade_scons.log'))
-        self._add_rule('scons_helper.blade_error_log = open("%s", "w")' %
+        self._add_rule('scons_helper.set_blade_error_log("%s")' %
                        os.path.join(self.build_dir, 'blade_scons.log.error'))
 
         # Add java_home/bin into PATH to make scons
