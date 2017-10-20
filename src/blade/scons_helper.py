@@ -51,12 +51,24 @@ option_verbose = False
 blade_path = os.path.dirname(__file__)
 
 
+# build error log during scons execution
+blade_error_log = None
+
+
 # linking tmp dir
 linking_tmp_dir = ''
 
 
 # build time stamp
 build_time = time.time()
+
+
+def set_blade_error_log(path):
+    if blade_error_log:
+        console.warning('blade error log was already set to %s' %
+                        blade_error_log.name)
+    else:
+        blade_error_log = open(path, 'w')
 
 
 def generate_python_egg(target, source, env):
@@ -966,6 +978,8 @@ def _echo(stdout, stderr):
         sys.stdout.write(stdout)
     if stderr:
         sys.stderr.write(stderr)
+        if blade_error_log:
+            blade_error_log.write(stderr)
 
 
 def echospawn(sh, escape, cmd, args, env):
