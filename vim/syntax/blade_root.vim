@@ -84,6 +84,10 @@ syn keyword bladeArg protoc_php_plugin
 syn keyword bladeArg protobuf_java_libs
 syn keyword bladeArg protoc_go_plugin
 syn keyword bladeArg protobuf_go_path
+syn keyword bladeTarget protoc_plugin
+syn keyword bladeArg name
+syn keyword bladeArg path
+syn keyword bladeArg code_generation
 syn keyword bladeTarget cc_config
 syn keyword bladeArg extra_incs
 syn keyword bladeArg cppflags
@@ -94,6 +98,7 @@ syn keyword bladeArg c_warnings
 syn keyword bladeArg cxx_warnings
 syn keyword bladeArg warnings
 syn keyword bladeArg cpplint
+syn keyword bladeArg securecc
 syn keyword bladeArg optimize
 syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
