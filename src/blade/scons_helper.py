@@ -64,6 +64,7 @@ build_time = time.time()
 
 
 def set_blade_error_log(path):
+    global blade_error_log
     if blade_error_log:
         console.warning('blade error log was already set to %s' %
                         blade_error_log.name)
