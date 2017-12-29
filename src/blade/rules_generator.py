@@ -31,6 +31,10 @@ def _incs_list_to_string(incs):
     return ' '.join(['-I ' + path for path in incs])
 
 
+def protoc_import_path_option(incs):
+    return ' '.join(['-I=%s' % inc for inc in incs])
+
+
 class SconsFileHeaderGenerator(object):
     """SconsFileHeaderGenerator class"""
     def __init__(self, options, build_dir, gcc_version,
@@ -144,16 +148,21 @@ import scons_helper
         if proto_config['protoc_java']:
             protoc_java_bin = proto_config['protoc_java']
         protobuf_path = proto_config['protobuf_path']
-
-        protobuf_incs_str = _incs_list_to_string(proto_config['protobuf_incs'])
+        protobuf_incs_str = protoc_import_path_option(proto_config['protobuf_incs'])
+        protobuf_java_incs = protobuf_incs_str
+        if proto_config['protobuf_java_incs']:
+            protobuf_java_incs = protoc_import_path_option(proto_config['protobuf_java_incs'])
         protobuf_php_path = proto_config['protobuf_php_path']
         protoc_php_plugin = proto_config['protoc_php_plugin']
         protoc_go_plugin = proto_config['protoc_go_plugin']
         self._add_rule('scons_helper.setup_proto_builders(top_env, "%s", protoc_bin="%s", '
-                       'protoc_java_bin="%s", protobuf_path="%s", protobuf_incs_str="%s", '
+                       'protoc_java_bin="%s", protobuf_path="%s", '
+                       'protobuf_incs_str="%s", protobuf_java_incs="%s", '
                        'protobuf_php_path="%s", protoc_php_plugin="%s", '
                        'protoc_go_plugin="%s")' % (
-            self.build_dir, protoc_bin, protoc_java_bin, protobuf_path, protobuf_incs_str,
+            self.build_dir, protoc_bin,
+            protoc_java_bin, protobuf_path,
+            protobuf_incs_str, protobuf_java_incs,
             protobuf_php_path, protoc_php_plugin, protoc_go_plugin))
 
     def _generate_thrift_builders(self):

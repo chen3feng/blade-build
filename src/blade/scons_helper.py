@@ -1263,7 +1263,7 @@ def proto_scan_func(node, env, path, arg):
 
 
 def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
-                         protobuf_path, protobuf_incs_str,
+                         protobuf_path, protobuf_incs_str, protobuf_java_incs,
                          protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
@@ -1293,8 +1293,8 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(BUILDERS = {"Proto" : proto_bld})
 
     proto_java_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
-            protoc_java_bin, protobuf_path, build_dir),
+        "%s --proto_path=. %s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
+            protoc_java_bin, protobuf_java_incs, build_dir),
         compile_proto_java_message))
     top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
 
