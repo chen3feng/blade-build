@@ -64,6 +64,26 @@ class JavaTargetMixIn(object):
             if dkey not in self.expanded_deps:
                 self.expanded_deps.append(dkey)
 
+    def _expand_deps_java_generation(self):
+        q = Queue.Queue()
+        for k in self.deps:
+            q.put(k)
+
+        keys = set()
+        while not q.empty():
+            k = q.get()
+            if k not in keys:
+                keys.add(k)
+                dep = self.target_database[k]
+                if dep.type in ('cc_library', 'cc_binary',
+                                'cc_test', 'cc_plugin'):
+                    continue
+                else:
+                    if not dep.data.get('generate_java', False):
+                        dep.data['generate_java'] = True
+                        for dkey in dep.deps:
+                            q.put(dkey)
+
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
         for dkey in self.deps:
@@ -633,6 +653,9 @@ class JavaTarget(Target, JavaTargetMixIn):
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))
+
+    def _expand_deps_generation(self):
+        self._expand_deps_java_generation()
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()

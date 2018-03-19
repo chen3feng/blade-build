@@ -156,6 +156,11 @@ class PythonTarget(Target):
         self._write_rule('%s.Replace(BASE_DIR="%s")' % (
             env_name, self.data.get('python_base', '')))
 
+    def _expand_deps_generation(self):
+        build_targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            d = build_targets[dep]
+            d.data['generate_python'] = True
 
 class PythonLibrary(PythonTarget):
     """A python library target subclass.

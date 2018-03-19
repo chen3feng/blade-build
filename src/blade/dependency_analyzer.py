@@ -61,28 +61,7 @@ def _expand_deps(targets):
     for target_id in targets:
         target = targets[target_id]
         target.expanded_deps = _find_all_deps(target_id, targets, deps_map_cache)
-        # Handle the special case: dependencies of a dynamic_cc_binary
-        # must be built as dynamic libraries.
-        # TODO(phongchen): Refactor with abstract method expand_deps
-        if target.data.get('dynamic_link'):
-            for dep in target.expanded_deps:
-                targets[dep].data['build_dynamic'] = True
-        elif target.type == 'swig_library':
-            for dep in target.expanded_deps:
-                if targets[dep].type == 'proto_library':
-                    targets[dep].data['generate_php'] = True
-        elif target.type == 'py_binary' or target.type == 'py_library' or target.type == 'py_egg':
-            for dep in target.expanded_deps:
-                targets[dep].data['generate_python'] = True
-        elif target.type.startswith('java_'):
-            for dep in target.expanded_deps:
-                targets[dep].data['generate_java'] = True
-        elif target.type.startswith('scala_'):
-            for dep in target.expanded_deps:
-                targets[dep].data['generate_scala'] = True
-        elif target.type.startswith('go_'):
-            for dep in target.expanded_deps:
-                targets[dep].data['generate_go'] = True
+        target._expand_deps_generation()
 
 
 def _check_dep_visibility(target, dep, targets):

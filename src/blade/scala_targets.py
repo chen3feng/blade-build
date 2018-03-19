@@ -90,6 +90,9 @@ class ScalaTarget(Target, JavaTargetMixIn):
         self._generate_scala_source_encoding()
         self._generate_scala_warnings()
 
+    def _expand_deps_generation(self):
+        self._expand_deps_java_generation()
+
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
 
