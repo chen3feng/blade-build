@@ -333,6 +333,14 @@ class Target(object):
         """
         pass
 
+    def _expand_deps_generation(self):
+        """Expand the generation process and generated rules of dependencies.
+
+        Such as, given a proto_library target, it should generate Java rules
+        in addition to C++ rules once it's depended by a java_library target.
+        """
+        pass
+
     def _get_java_pack_deps(self):
         """_get_java_pack_deps
         

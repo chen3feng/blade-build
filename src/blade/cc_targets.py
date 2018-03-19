@@ -780,6 +780,11 @@ class CcBinary(CcTarget):
     def _allow_duplicate_source(self):
         return True
 
+    def _expand_deps_generation(self):
+        build_targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            build_targets[dep].data['build_dynamic'] = True
+
     def _get_rpath_links(self):
         """Get rpath_links from dependencies"""
         dynamic_link = self.data['dynamic_link']
