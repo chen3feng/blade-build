@@ -781,9 +781,10 @@ class CcBinary(CcTarget):
         return True
 
     def _expand_deps_generation(self):
-        build_targets = self.blade.get_build_targets()
-        for dep in self.expanded_deps:
-            build_targets[dep].data['build_dynamic'] = True
+        if self.data.get('dynamic_link'):
+            build_targets = self.blade.get_build_targets()
+            for dep in self.expanded_deps:
+                build_targets[dep].data['build_dynamic'] = True
 
     def _get_rpath_links(self):
         """Get rpath_links from dependencies"""
