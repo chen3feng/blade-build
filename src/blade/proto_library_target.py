@@ -420,6 +420,27 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._generate_generated_header_files_depends(sources)
         self._cc_library()
 
+    def _proto_gen_file_names(self, source):
+        name = source[:-6]
+        return ['%s.pb.h' % name, '%s.pb.cc' % name]
+
+    def ninja_rules(self):
+        """Generate ninja rules for proto files. """
+        self._check_deprecated_deps()
+        self._check_proto_deps()
+        if not self.srcs:
+            return
+
+        cpp_sources = []
+        for src in self.srcs:
+            source, header = self._proto_gen_files(src)
+            self.ninja_build([source, header], 'proto',
+                             inputs=self._source_file_path(src))
+            names = self._proto_gen_file_names(src)
+            cpp_sources.append(names[1])
+        self._cc_objects_ninja(cpp_sources, True)
+        self._cc_library_ninja()
+
 
 def proto_library(name,
                   srcs=[],
