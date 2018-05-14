@@ -81,7 +81,6 @@ class CuTarget(CcTarget):
         nvcc_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
-
         if (self.blade.get_options().profile == 'release' or
             self.data.get('always_optimize')):
             nvcc_flags += self._get_optimize_flags()
@@ -108,10 +107,8 @@ class CuTarget(CcTarget):
         incs_string = " -I".join(incs_list)
         flags_string = " ".join(flags_from_option)
         objs = []
-        sources = []
         for src in self.srcs:
-            obj = '%s_%s_object' % (var_name,
-                                    self._regular_variable_name(src))
+            obj = 'obj_%s' % self._var_name_of(src)
             target_path = os.path.join(
                     self.build_path, self.path, '%s.objs' % self.name, src)
             self._write_rule(
@@ -122,14 +119,8 @@ class CuTarget(CcTarget):
                                         flags_string,
                                         target_path,
                                         self._target_file_path(src)))
-            self._write_rule('%s.Depends(%s, "%s")' % (
-                             env_name,
-                             obj,
-                             self._target_file_path(src)))
-            sources.append(self._target_file_path(src))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(objs)))
-        return sources
 
 
 class CuLibrary(CuTarget):
@@ -149,10 +140,9 @@ class CuLibrary(CuTarget):
                  extra_linkflags,
                  blade,
                  kwargs):
-        type = 'cu_library'
         CuTarget.__init__(self,
                           name,
-                          type,
+                          'cu_library',
                           srcs,
                           deps,
                           warning,

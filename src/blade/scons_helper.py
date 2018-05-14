@@ -64,6 +64,7 @@ build_time = time.time()
 
 
 def set_blade_error_log(path):
+    global blade_error_log
     if blade_error_log:
         console.warning('blade error log was already set to %s' %
                         blade_error_log.name)
@@ -195,19 +196,17 @@ def _compile_python(src, build_dir):
 
 
 def generate_python_library(target, source, env):
-    target_file = open(str(target[0]), 'w')
     data = dict()
     data['base_dir'] = env.get('BASE_DIR', '')
-    build_dir = env['BUILD_DIR']
     srcs = []
     for s in source:
         src = str(s)
-        pyc = _compile_python(src, build_dir)
         digest = blade_util.md5sum_file(src)
-        srcs.append((src, pyc, digest))
+        srcs.append((src, digest))
     data['srcs'] = srcs
-    target_file.write(str(data))
-    target_file.close()
+    f = open(str(target[0]), 'w')
+    f.write(str(data))
+    f.close()
     return None
 
 
@@ -234,17 +233,14 @@ def generate_python_binary(target, source, env):
             data = eval(libfile.read())
             libfile.close()
             pylib_base_dir = data['base_dir']
-            for libsrc, pyc, digest in data['srcs']:
+            for libsrc, digest in data['srcs']:
                 arcname = os.path.relpath(libsrc, pylib_base_dir)
                 _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
                 target_file.write(libsrc, arcname)
-                target_file.write(pyc, arcname + 'c')
         else:
-            pyc = _compile_python(src, build_dir)
             arcname = os.path.relpath(src, base_dir)
             _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
             target_file.write(src, arcname)
-            target_file.write(pyc, arcname + 'c')
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py
@@ -1262,7 +1258,7 @@ def proto_scan_func(node, env, path, arg):
 
 
 def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
-                         protobuf_path, protobuf_incs_str,
+                         protobuf_path, protobuf_incs_str, protobuf_java_incs,
                          protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
@@ -1292,8 +1288,8 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(BUILDERS = {"Proto" : proto_bld})
 
     proto_java_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. --proto_path=%s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
-            protoc_java_bin, protobuf_path, build_dir),
+        "%s --proto_path=. %s --java_out=%s/`dirname $SOURCE` $PROTOCJAVAPLUGINFLAGS $SOURCE" % (
+            protoc_java_bin, protobuf_java_incs, build_dir),
         compile_proto_java_message))
     top_env.Append(BUILDERS = {"ProtoJava" : proto_java_bld})
 

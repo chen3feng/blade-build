@@ -60,6 +60,13 @@ class SwigLibrary(CcTarget):
         self.php_inc_list = scons_platform.get_php_include()
         self.options = self.blade.get_options()
 
+    def _expand_deps_generation(self):
+        build_targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            d = build_targets[dep]
+            if d.type == 'proto_library':
+                d.data['generate_php'] = True
+
     def _pyswig_gen_python_file(self, path, src):
         """Generate swig python file for python. """
         swig_name = src[:-2]
