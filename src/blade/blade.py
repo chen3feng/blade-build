@@ -145,9 +145,9 @@ class Blade(object):
         """Generate the constructing rules. """
         console.info('generating build rules...')
         generator = self.get_build_rules_generator()
-        rules_buf = generator.generate_build_script()
+        rules = generator.generate_build_script()
         console.info('generating done.')
-        return rules_buf
+        return rules
 
     def generate(self):
         """Generate the build script. """

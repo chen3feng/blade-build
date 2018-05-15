@@ -352,6 +352,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                                  env_name, language.upper(),
                                  p.protoc_plugin_flag(self.build_path)))
 
+    def protoc_plugin_flags(self):
+        config = configparse.blade_config.get_config('protoc_plugin_config')
+        flags = {}
+        for plugin in self.data['protoc_plugins']:
+            p = config[plugin]
+            for language in p.code_generation:
+                flags[language] = p.protoc_plugin_flag(self.build_path)
+        return flags
+
     def scons_rules(self):
         """scons_rules.
 
@@ -420,9 +429,48 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._generate_generated_header_files_depends(sources)
         self._cc_library()
 
+    def ninja_proto_descriptor_rules(self):
+        sources = [self._source_file_path(s) for s in self.srcs]
+        target = self._proto_gen_descriptor_file(self.name)
+        self.ninja_build(target, 'protodescriptors', inputs=sources)
+
+    def ninja_protoc_plugin_vars(self, flags, language):
+        if language in flags:
+            key = 'protoc%spluginflags' % language
+            value = flags[language]
+            return { key: value }
+        return None
+
+    def ninja_proto_java_rules(self, plugin_flags):
+        vars = self.ninja_protoc_plugin_vars(plugin_flags, 'java')
+        for src in self.srcs:
+            input = self._source_file_path(src)
+            package_dir, java_name = self._proto_java_gen_file(src)
+            output = self._target_file_path(os.path.join(os.path.dirname(src),
+                                                         package_dir, java_name))
+            self.ninja_build(output, 'protojava', inputs=input, variables=vars)
+
+    def ninja_proto_python_rules(self, plugin_flags):
+        # vars = self.ninja_protoc_plugin_vars(plugin_flags, 'python')
+        pass
+
+    def ninja_proto_rules(self, options, plugin_flags):
+        """Generate ninja rules for other languages if needed. """
+        if (getattr(options, 'generate_java', False) or
+            self.data.get('generate_java') or
+            self.data.get('generate_scala')):
+            self.ninja_proto_java_rules(plugin_flags)
+
+        if (getattr(options, 'generate_python', False) or
+            self.data.get('generate_python')):
+            self.ninja_proto_python_rules(plugin_flags)
+
+        if self.data['generate_descriptors']:
+            self.ninja_proto_descriptor_rules()
+
     def _proto_gen_file_names(self, source):
-        name = source[:-6]
-        return ['%s.pb.h' % name, '%s.pb.cc' % name]
+        base = source[:-6]
+        return ['%s.pb.h' % base, '%s.pb.cc' % base]
 
     def ninja_rules(self):
         """Generate ninja rules for proto files. """
@@ -431,15 +479,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if not self.srcs:
             return
 
+        plugin_flags = self.protoc_plugin_flags()
+        vars = self.ninja_protoc_plugin_vars(plugin_flags, 'cpp')
         cpp_sources = []
         for src in self.srcs:
             source, header = self._proto_gen_files(src)
             self.ninja_build([source, header], 'proto',
-                             inputs=self._source_file_path(src))
+                             inputs=self._source_file_path(src),
+                             variables=vars)
             names = self._proto_gen_file_names(src)
             cpp_sources.append(names[1])
         self._cc_objects_ninja(cpp_sources, True)
         self._cc_library_ninja()
+        self.ninja_proto_rules(self.blade.get_options(), plugin_flags)
 
 
 def proto_library(name,

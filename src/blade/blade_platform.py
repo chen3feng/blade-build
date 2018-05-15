@@ -95,7 +95,7 @@ class BuildArchitecture(object):
 
 
 class BuildPlatform(object):
-    """The build platform class that it handles and gets the platform info. """
+    """The build platform class which handles and gets the platform info. """
     def __init__(self):
         """Init. """
         self.gcc_version = self._get_gcc_version()

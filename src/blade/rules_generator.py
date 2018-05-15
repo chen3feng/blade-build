@@ -428,12 +428,12 @@ builddir = %s
 ''' % self.build_dir)
 
     def generate_common_rules(self):
-        self.generate_rule(name = 'stamp',
-                           command = 'touch ${out}',
-                           description = 'STAMP ${out}')
-        self.generate_rule(name = 'copy',
-                           command = 'cp -f ${in} ${out}',
-                           description = 'COPY ${in} ${out}')
+        self.generate_rule(name='stamp',
+                           command='touch ${out}',
+                           description='STAMP ${out}')
+        self.generate_rule(name='copy',
+                           command='cp -f ${in} ${out}',
+                           description='COPY ${in} ${out}')
 
     def generate_cc_warning_vars(self):
         warnings, cxx_warnings, cc_warnings = self.ccflags_manager.get_warning_flags()
@@ -459,40 +459,40 @@ cxx_warnings = %s
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
         self.generate_cc_warning_vars()
-        self.generate_rule(name = 'cc',
-                command = '%s -o ${out} -MMD -MF ${out}.d '
-                          '-c -fPIC %s ${cppflags} %s ${cc_warnings} '
-                          '%s ${includes} ${in}' % (
-                          cc, ' '.join(cppflags), ' '.join(cflags), includes),
-                description = 'CC ${out}',
-                depfile = '${out}.d',
-                deps = 'gcc')
-        self.generate_rule(name = 'cxx',
-                command = '%s -o ${out} -MMD -MF ${out}.d '
-                          '-c -fPIC %s ${cppflags} %s ${cxx_warnings} '
-                          '%s ${includes} ${in}' % (
-                          cxx, ' '.join(cppflags), ' '.join(cxxflags), includes),
-                description = 'CXX ${out}',
-                depfile = '${out}.d',
-                deps = 'gcc')
+        self.generate_rule(name='cc',
+                command='%s -o ${out} -MMD -MF ${out}.d '
+                        '-c -fPIC ${cc_warnings} %s ${cppflags} %s '
+                        '%s ${includes} ${in}' % (
+                        cc, ' '.join(cppflags), ' '.join(cflags), includes),
+                description='CC ${out}',
+                depfile='${out}.d',
+                deps='gcc')
+        self.generate_rule(name='cxx',
+                command='%s -o ${out} -MMD -MF ${out}.d '
+                        '-c -fPIC ${cxx_warnings} %s ${cppflags} %s '
+                        '%s ${includes} ${in}' % (
+                        cxx, ' '.join(cppflags), ' '.join(cxxflags), includes),
+                description='CXX ${out}',
+                depfile='${out}.d',
+                deps='gcc')
         securecc = '%s %s' % (cc_config['securecc'], cxx)
-        self.generate_rule(name = 'securecc',
-                command = '%s -o ${out} -c -fPIC'
-                          '%s ${cppflags} %s ${cxx_warnings} %s ${includes} ${in}' % (
-                          securecc, ' '.join(cppflags), ' '.join(cxxflags), includes),
-                description = 'CC ${out}')
+        self.generate_rule(name='securecc',
+                command='%s -o ${out} -c -fPIC'
+                        '%s ${cppflags} %s ${cxx_warnings} %s ${includes} ${in}' % (
+                        securecc, ' '.join(cppflags), ' '.join(cxxflags), includes),
+                description='CC ${out}')
 
-        self.generate_rule(name = 'ar',
-                           command = 'ar rcs $out $in',
-                           description = 'AR ${out}')
-        self.generate_rule(name = 'link',
-                           command = '%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (
-                                     ld, ' '.join(ldflags)),
-                           description = 'LINK ${out}')
-        self.generate_rule(name = 'solink',
-                           command = '%s -o ${out} -shared %s ${ldflags} ${in} ${extra_ldflags}' % (
-                                     ld, ' '.join(ldflags)),
-                           description = 'SHAREDLINK ${out}')
+        self.generate_rule(name='ar',
+                           command='ar rcs $out $in',
+                           description='AR ${out}')
+        self.generate_rule(name='link',
+                           command='%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (
+                                   ld, ' '.join(ldflags)),
+                           description='LINK ${out}')
+        self.generate_rule(name='solink',
+                           command='%s -o ${out} -shared %s ${ldflags} ${in} ${extra_ldflags}' % (
+                                   ld, ' '.join(ldflags)),
+                           description='SHAREDLINK ${out}')
 
     def generate_proto_rules(self):
         config = self.blade_config.get_config('proto_library_config')
@@ -500,26 +500,52 @@ cxx_warnings = %s
         protoc_java = protoc
         if config['protoc_java']:
             protoc_java = config['protoc_java']
-        protobuf_path = config['protobuf_path']
-        protobuf_incs = _incs_list_to_string(config['protobuf_incs'])
-        self.generate_rule(name = 'proto',
-                           command = '%s --proto_path=. -I. %s -I=`dirname ${in}` '
-                                     '--cpp_out=%s ${in}' % (
-                                     protoc, protobuf_incs, self.build_dir),
-                           description = 'PROTOC ${in}')
+        protobuf_incs = protoc_import_path_option(config['protobuf_incs'])
+        protobuf_java_incs = protobuf_incs
+        if config['protobuf_java_incs']:
+            protobuf_java_incs = protoc_import_path_option(config['protobuf_java_incs'])
+        self._add_rule('''
+protoccpppluginflags =
+protocjavapluginflags =
+protocpythonpluginflags =
+''')
+        self.generate_rule(name='proto',
+                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                   '--cpp_out=%s ${protoccpppluginflags} ${in}' % (
+                                   protoc, protobuf_incs, self.build_dir),
+                           description='PROTOC ${in}')
+        self.generate_rule(name='protojava',
+                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                   '--java_out=%s ${protocjavapluginflags} ${in}' % (
+                                   protoc_java, protobuf_java_incs, self.build_dir),
+                           description='PROTOCJAVA ${in}')
+        self.generate_rule(name='protopython',
+                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                   '--python_out=%s ${protocpythonpluginflags} ${in}' % (
+                                   protoc, protobuf_incs, self.build_dir),
+                           description='PROTOCPYTHON ${in}')
+        self.generate_rule(name='protodescriptors',
+                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                   '--descriptor_set_out=${out} --include_imports '
+                                   '--include_source_info ${in}' % (
+                                   protoc, protobuf_incs),
+                           description='PROTODESCRIPTORS ${in}')
 
     def generate_resource_rules(self, blade_path):
+        self.generate_rule(name='resource_index',
+                           command=self.generate_toolchain_command(
+                               blade_path, 'resource_index', 'TARGET_NAME=${name} SOURCE_PATH=${path}'),
+                           description='RESOURCE INDEX ${out}')
+        self.generate_rule(name='resource',
+                           command='xxd -i ${in} | '
+                                   'sed -e "s/^unsigned char /const char RESOURCE_/g" '
+                                   '-e "s/^unsigned int /const unsigned int RESOURCE_/g" > ${out}',
+                           description='RESOURCE ${in}')
+
+    def generate_toolchain_command(self, blade_path, builder, prefix):
         python_path = 'PYTHONPATH=%s:$$PYTHONPATH' % blade_path
-        self.generate_rule(name = 'resource_index',
-                           command = '%s TARGET_NAME=${name} SOURCE_PATH=${path} '
-                                     'python -m toolchain resource_index '
-                                     '${out} ${in}' % python_path,
-                           description = 'RESOURCE INDEX ${out}')
-        self.generate_rule(name = 'resource',
-                           command = 'xxd -i ${in} | '
-                                     'sed -e "s/^unsigned char /const char RESOURCE_/g" '
-                                     '-e "s/^unsigned int /const unsigned int RESOURCE_/g" > ${out}',
-                           description = 'RESOURCE ${in}')
+        return '%s %s python -m toolchain %s ${out} ${in}' % (
+               python_path, prefix, builder)
 
     def generate(self, blade_path):
         """Generate ninja rules. """

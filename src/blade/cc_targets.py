@@ -764,17 +764,17 @@ class CcTarget(Target):
                 if os.path.exists(path):
                     inputs = path
                 else:
-                	inputs = self._target_file_path(src)
+                    inputs = self._target_file_path(src)
             self.ninja_build(obj, rule, inputs=inputs,
                              implicit_deps=implicit_deps,
                              variables=vars)
             objs.append(obj)
 
-        self._add_target_file('objs', objs)
+        self.data['objs'] = objs
 
     def _static_cc_library_ninja(self):
         output = self._target_file_path('lib%s.a' % self.name)
-        objs = self._get_target_file('objs')
+        objs = self.data.get('objs', [])
         self.ninja_build(output, 'ar', inputs=objs)
         self._add_default_target_file('a', output)
 
@@ -795,7 +795,7 @@ class CcTarget(Target):
     def _cc_link_ninja(self, output, rule, deps,
                        ldflags=None, extra_ldflags=None,
                        implicit_deps=None):
-        objs = self._get_target_file('objs')
+        objs = self.data.get('objs', [])
         vars = {}
         if ldflags:
             vars['ldflags'] = ' '.join(ldflags)
