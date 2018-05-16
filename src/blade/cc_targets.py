@@ -620,25 +620,33 @@ class CcTarget(Target):
             open(src, 'w').close()
 
     def _prebuilt_cc_library_ninja_rules(self):
-        """Prebuilt cc library ninja rules. """
+        """Prebuilt cc library ninja rules. 
+
+        There are 3 cases for prebuilt library as below:
+
+            1. Only static library(.a) exists
+            2. Only dynamic library(.so) exists
+            3. Both static and dynamic libraries exist
+        """
         static_src_path, static_target_path = self._prebuilt_cc_library_path()
         if static_src_path.endswith('.a'):
-            self._add_default_target_file('a', static_src_path)
+            path = static_src_path
         else:
             self.ninja_build(static_target_path, 'copy',
                              inputs=static_src_path)
-            self._add_default_target_file('a', static_target_path)
+            path = static_target_path
+        self._add_default_target_file('a', path)
 
         dynamic_src_path, dynamic_target_path = '', ''
         if self._need_dynamic_library():
             dynamic_src_path, dynamic_target_path = self._prebuilt_cc_library_path(True)
             if dynamic_target_path != static_target_path:
-                if dynamic_src_path.endswith('.a'):
-                    self._add_target_file('so', dynamic_src_path)
-                else:
-                    self.ninja_build(dynamic_target_path, 'copy',
-                                     inputs=dynamic_src_path)
-                    self._add_target_file('so', dynamic_target_path)
+                assert static_src_path.endswith('.a')
+                assert dynamic_src_path.endswith('.so')
+                self.ninja_build(dynamic_target_path, 'copy',
+                                 inputs=dynamic_src_path)
+                path = dynamic_target_path
+            self._add_target_file('so', path)
 
         return (static_src_path, static_target_path,
                 dynamic_src_path, dynamic_target_path)

@@ -373,7 +373,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         env_name = self._env_name()
         options = self.blade.get_options()
-        direct_targets = self.blade.get_direct_targets()
 
         self._protoc_plugin_rules()
 
