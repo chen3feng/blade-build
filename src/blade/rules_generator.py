@@ -455,32 +455,32 @@ cxx_warnings = %s
         cppflags = cc_config['cppflags'] + cppflags
         ldflags = cc_config['linkflags'] + ldflags
         includes = cc_config['extra_incs']
-        includes = ['.', self.build_dir] + includes
+        includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
         self.generate_cc_warning_vars()
         self.generate_rule(name='cc',
                 command='%s -o ${out} -MMD -MF ${out}.d '
-                        '-c -fPIC ${cc_warnings} %s ${cppflags} %s '
+                        '-c -fPIC %s %s ${cc_warnings} ${cppflags} '
                         '%s ${includes} ${in}' % (
-                        cc, ' '.join(cppflags), ' '.join(cflags), includes),
+                        cc, ' '.join(cflags), ' '.join(cppflags), includes),
                 description='CC ${out}',
                 depfile='${out}.d',
                 deps='gcc')
         self.generate_rule(name='cxx',
                 command='%s -o ${out} -MMD -MF ${out}.d '
-                        '-c -fPIC ${cxx_warnings} %s ${cppflags} %s '
+                        '-c -fPIC %s %s ${cxx_warnings} ${cppflags} '
                         '%s ${includes} ${in}' % (
-                        cxx, ' '.join(cppflags), ' '.join(cxxflags), includes),
+                        cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
                 description='CXX ${out}',
                 depfile='${out}.d',
                 deps='gcc')
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self.generate_rule(name='securecc',
-                command='%s -o ${out} -c -fPIC'
-                        '%s ${cppflags} %s ${cxx_warnings} %s ${includes} ${in}' % (
-                        securecc, ' '.join(cppflags), ' '.join(cxxflags), includes),
-                description='CC ${out}')
+                command='%s -o ${out} -c -fPIC '
+                        '%s %s ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
+                        securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                description='SECURECC ${out}')
 
         self.generate_rule(name='ar',
                            command='ar rcs $out $in',
