@@ -199,7 +199,18 @@ def _check_code_style(opened_files):
     return 0
 
 
-def _build(options):
+def _build(cmd):
+    p = subprocess.Popen(cmd, shell=True)
+    try:
+        p.wait()
+        if p.returncode:
+            console.error('building failure')
+        return p.returncode
+    except:  # KeyboardInterrupt
+        return 1
+
+
+def _scons_build(options):
     if options.scons_only:
         return 0
 
@@ -210,24 +221,24 @@ def _build(options):
     if options.scons_options:
         scons_options += ' '
         scons_options += options.scons_options
+    return _build('scons %s' % scons_options)
 
-    p = subprocess.Popen('scons %s' % scons_options, shell=True)
-    try:
-        p.wait()
-        if p.returncode:
-            console.error('building failure')
-            return p.returncode
-    except:  # KeyboardInterrupt
-        return 1
-    return 0
+
+def _ninja_build(options):
+    if options.ninja_only:
+        return 0
+    return _build('ninja')
 
 
 def build(options):
-    return _build(options)
+    if options.ninja_build:
+        return _ninja_build(options)
+    else:
+        return _scons_build(options)
 
 
 def run(options):
-    ret = _build(options)
+    ret = build(options)
     if ret:
         return ret
     return blade.blade.run(run_target)
@@ -235,7 +246,7 @@ def run(options):
 
 def test(options):
     if not options.no_build:
-        ret = _build(options)
+        ret = build(options)
         if ret:
             return ret
     return blade.blade.test()
@@ -314,15 +325,15 @@ def _main(blade_path):
     console.set_log_file(log_file)
 
     lock_file_fd = None
-    locked_scons = False
+    building_locked = False
     try:
         lock_file_fd = open('.Building.lock', 'w')
         old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
 
-        (locked_scons,
+        (building_locked,
          ret_code) = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if not locked_scons:
+        if not building_locked:
             if ret_code == errno.EAGAIN:
                 console.error_exit(
                         'There is already an active building in current source '
@@ -357,11 +368,15 @@ def _main(blade_path):
                  }[command](options)
         return action
     finally:
-        if (not getattr(options, 'scons_only', False) or
-                command == 'clean' or command == 'query'):
+        if (not (getattr(options, 'scons_only', False) or
+                 getattr(options, 'ninja_only', False))
+            or command == 'clean' or command == 'query'):
             try:
-                if locked_scons:
-                    os.remove(os.path.join(blade_root_dir, 'SConstruct'))
+                if building_locked:
+                    for script in ('SConstruct', 'build.ninja'):
+                        script = os.path.join(blade_root_dir, script)
+                        if os.path.exists(script):
+                            os.remove(script)
                     unlock_file(lock_file_fd.fileno())
                 if lock_file_fd:
                     lock_file_fd.close()

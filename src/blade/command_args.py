@@ -19,7 +19,7 @@ from argparse import ArgumentParser
 
 import console
 from blade_platform import BuildArchitecture
-from blade_platform import SconsPlatform
+from blade_platform import BuildPlatform
 
 
 class CmdArguments(object):
@@ -223,9 +223,21 @@ class CmdArguments(object):
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
+            '--scons-build', dest='scons_build',
+            action='store_true', default=False,
+            help='Generate scons script and build with scons.')
+        parser.add_argument(
+            '--ninja-build', dest='ninja_build',
+            action='store_true', default=False,
+            help='Generate ninja script and build with ninja.')
+        parser.add_argument(
             '--generate-scons-only', dest='scons_only',
             action='store_true', default=False,
             help='Generate scons script for debug purpose.')
+        parser.add_argument(
+            '--generate-ninja-only', dest='ninja_only',
+            action='store_true', default=False,
+            help='Generate ninja script for debug purpose.')
 
         """Add extra scons options arguments. """
         parser.add_argument(
@@ -395,7 +407,7 @@ class CmdArguments(object):
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture. """
-        arch = SconsPlatform._get_cc_target_arch()
+        arch = BuildPlatform._get_cc_target_arch()
         pos = arch.find('-')
         if pos == -1:
             console.error_exit('Unknown target architecture %s from gcc.'

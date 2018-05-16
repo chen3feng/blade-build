@@ -538,6 +538,72 @@ class Target(object):
         """
         return self.data['targets'].values()
 
+    def _add_target_file(self, label, path):
+        """
+
+        Parameters
+        -----------
+        label: label of the target file as key in the dictionary
+        path: the path of target file as value in the dictionary
+
+        Description
+        -----------
+        Keep track of the output files built by the target itself.
+        Set the default target if needed.
+
+        """
+        self.data['targets'][label] = path
+        if not self.data['default_target']:
+            self.data['default_target'] = path
+
+    def _add_default_target_file(self, label, path):
+        """
+
+        Parameters
+        -----------
+        label: label of the target file as key in the dictionary
+        path: the path of target file as value in the dictionary
+
+        Description
+        -----------
+        Keep track of the default target file which could be referenced
+        later without specifying label
+
+        """
+        self.data['default_target'] = path
+        self._add_target_file(label, path)
+
+    def _get_target_file(self, label = ''):
+        """
+
+        Parameters
+        -----------
+        label: label of the file built by the target
+
+        Returns
+        -----------
+        The target file path or list of file paths
+
+        Description
+        -----------
+        Return the target file path corresponding to the specified label,
+        return empty if label doesn't exist in the dictionary
+
+        """
+        if label:
+            return self.data['targets'].get(label, '')
+        return self.data['default_target']
+
+    def _get_target_files(self):
+        """
+
+        Returns
+        -----------
+        All the target files built by the target itself
+
+        """
+        return self.data['targets'].values()
+
     def __generate_header_files(self):
         for dkey in self.deps:
             dep = self.target_database[dkey]
@@ -572,6 +638,37 @@ class Target(object):
 
         """
         console.error_exit('%s: should be subclassing' % self.type)
+
+    def ninja_rules(self):
+        """Generate ninja rules for specific target. """
+        raise NotImplementedError(self.fullname)
+
+    def ninja_build(self, outputs, rule, inputs=None,
+                    implicit_deps=None, order_only_deps=None,
+                    variables=None, implicit_outputs=None):
+        """Generate a ninja build statement with specified parameters. """
+        outs = var_to_list(outputs)
+        if implicit_outputs:
+            outs.append('|')
+            outs += implicit_outputs
+        ins = []
+        if inputs:
+            ins = var_to_list(inputs)
+        if implicit_deps:
+            ins.append('|')
+            ins += implicit_deps
+        if order_only_deps:
+            ins.append('||')
+            ins += order_only_deps
+        self._write_rule('build %s: %s %s' % (' '.join(outs), rule, ' '.join(ins)))
+
+        if variables:
+            assert isinstance(variables, dict)
+            for name, v in variables.iteritems():
+                if v:
+                    self._write_rule('  %s = %s' % (name, v))
+                else:
+                    self._write_rule('  %s =' % name)
 
     def get_rules(self):
         """get_rules.

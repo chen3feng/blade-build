@@ -94,8 +94,8 @@ class BuildArchitecture(object):
         return None
 
 
-class SconsPlatform(object):
-    """The scons platform class that it handles and gets the platform info. """
+class BuildPlatform(object):
+    """The build platform class which handles and gets the platform info. """
     def __init__(self):
         """Init. """
         self.gcc_version = self._get_gcc_version()
@@ -110,7 +110,7 @@ class SconsPlatform(object):
         """Get the gcc version. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpversion')
+        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpversion')
         if returncode == 0:
             return stdout.strip()
         return ''
@@ -120,7 +120,7 @@ class SconsPlatform(object):
         """Get the cc target architecture. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpmachine')
+        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpmachine')
         if returncode == 0:
             return stdout.strip()
         return ''
@@ -129,7 +129,7 @@ class SconsPlatform(object):
     def _get_nvcc_version():
         """Get the nvcc version. """
         nvcc = os.environ.get('NVCC', 'nvcc')
-        returncode, stdout, stderr = SconsPlatform._execute(nvcc + ' --version')
+        returncode, stdout, stderr = BuildPlatform._execute(nvcc + ' --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[5]
@@ -139,7 +139,7 @@ class SconsPlatform(object):
     @staticmethod
     def _get_python_include():
         """Get the python include dir. """
-        returncode, stdout, stderr = SconsPlatform._execute('python-config --includes')
+        returncode, stdout, stderr = BuildPlatform._execute('python-config --includes')
         if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             header = include_line.split()[0][2:]
@@ -148,7 +148,7 @@ class SconsPlatform(object):
 
     @staticmethod
     def _get_php_include():
-        returncode, stdout, stderr = SconsPlatform._execute('php-config --includes')
+        returncode, stdout, stderr = BuildPlatform._execute('php-config --includes')
         if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
@@ -164,7 +164,7 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute(
+        returncode, stdout, stderr = BuildPlatform._execute(
                 'java -version', redirect_stderr_to_stdout = True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
@@ -183,7 +183,7 @@ class SconsPlatform(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute('nvcc --version')
+        returncode, stdout, stderr = BuildPlatform._execute('nvcc --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[4]

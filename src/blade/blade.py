@@ -20,9 +20,10 @@ import console
 from blade_util import relative_path, cpu_count
 from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
-from blade_platform import SconsPlatform
+from blade_platform import BuildPlatform
 from build_environment import BuildEnvironment
 from rules_generator import SconsRulesGenerator
+from rules_generator import NinjaRulesGenerator
 from binary_runner import BinaryRunner
 from test_runner import TestRunner
 
@@ -84,7 +85,7 @@ class Blade(object):
         # Inidcating that whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
-        self.__scons_platform = SconsPlatform()
+        self.__build_platform = BuildPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
 
         self.svn_root_dirs = []
@@ -134,14 +135,19 @@ class Blade(object):
         console.info('analyzing done.')
         return self.__build_targets  # For test
 
+    def get_build_rules_generator(self):
+        if self.__options.ninja_build:
+            return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
+        else:
+            return SconsRulesGenerator('SConstruct', self.__blade_path, self)
+
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('generating build rules...')
-        build_rules_generator = SconsRulesGenerator('SConstruct',
-                                                    self.__blade_path, self)
-        rules_buf = build_rules_generator.generate_scons_script()
+        generator = self.get_build_rules_generator()
+        rules = generator.generate_build_script()
         console.info('generating done.')
-        return rules_buf
+        return rules
 
     def generate(self):
         """Generate the build script. """
@@ -343,7 +349,7 @@ class Blade(object):
         return self.__targets_expanded
 
     def register_target(self, target):
-        """Register scons targets into the scons targets map.
+        """Register a target into blade target database.
 
         It is used to do quick looking.
 
@@ -371,13 +377,15 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
+        scons_build = getattr(self.__options, 'scons_build', False)
+        ninja_build = getattr(self.__options, 'ninja_build', False)
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
                 continue
-            scons_object = self.__target_database.get(k, None)
-            if not scons_object:
-                console.warning('not registered scons object, key %s' % str(k))
+            blade_object = self.__target_database.get(k, None)
+            if not blade_object:
+                console.warning('not registered blade object, key %s' % str(k))
                 continue
             if (skip_test and target.type.endswith('_test')
                 and k not in self.__direct_targets):
@@ -385,8 +393,12 @@ class Blade(object):
             if (skip_package and target.type == 'package'
                 and k not in self.__direct_targets):
                 continue
-            scons_object.scons_rules()
-            rules = scons_object.get_rules()
+
+            if ninja_build:
+                blade_object.ninja_rules()
+            else:
+                blade_object.scons_rules()
+            rules = blade_object.get_rules()
             if rules:
                 rules_buf.append('\n')
                 rules_buf += rules
@@ -394,7 +406,7 @@ class Blade(object):
 
     def get_scons_platform(self):
         """Return handle of the platform class. """
-        return self.__scons_platform
+        return self.__build_platform
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.

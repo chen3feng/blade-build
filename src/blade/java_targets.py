@@ -38,7 +38,7 @@ class MavenJar(Target):
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
 
-    def scons_rules(self):
+    def blade_rules(self):
         maven_cache = maven.MavenCache.instance(blade.blade.get_build_path())
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
@@ -49,6 +49,12 @@ class MavenJar(Target):
                     self.data['id'], self.data['classifier'])
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
+
+    def scons_rules(self):
+        return self.blade_rules()
+
+    def ninja_rules(self):
+        return self.blade_rules()
 
 
 class JavaTargetMixIn(object):

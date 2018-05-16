@@ -147,6 +147,54 @@ class GenRuleTarget(Target):
                                                      var_name,
                                                      dep_var_name))
 
+    def ninja_command(self):
+        cmd = self.data['cmd']
+        cmd = cmd.replace('$SRCS', '${in}')
+        cmd = cmd.replace('$OUTS', '${out}')
+        cmd = cmd.replace('$FIRST_SRC', '${SOURCE}')
+        cmd = cmd.replace('$FIRST_OUT', '${TARGET}')
+        cmd = cmd.replace('$BUILD_DIR', self.build_path)
+        locations = self.data['locations']
+        if locations:
+            targets = self.blade.get_build_targets()
+            locations_paths = []
+            for key, label in locations:
+                path = targets[key]._get_target_file(label)
+                if not path:
+                    console.error_exit('%s: Invalid location reference %s %s' %
+                                       (self.fullname, ':'.join(key), label))
+                locations_paths.append(path)
+            cmd = cmd % tuple(locations_paths)
+        return cmd
+
+    def implicit_dependencies(self):
+        targets = self.blade.get_build_targets()
+        implicit_deps = []
+        for dep in self.expanded_deps:
+            implicit_deps += targets[dep]._get_target_files()
+        return implicit_deps
+
+    def ninja_rules(self):
+        rule = '%s__rule__' % self._regular_variable_name(
+                              self._source_file_path(self.name))
+        cmd = self.ninja_command()
+        self._write_rule('''rule %s
+  command = %s && ls ${out} > /dev/null
+  description = COMMAND //%s
+''' % (rule, cmd, self.fullname))
+        outputs = [self._target_file_path(o) for o in self.data['outs']]
+        inputs = [self._source_file_path(s) for s in self.srcs]
+        vars = {}
+        if '${SOURCE}' in cmd:
+            vars['SOURCE'] = inputs[0]
+        if '${TARGET}' in cmd:
+            vars['TARGET'] = outputs[0]
+        self.ninja_build(outputs, rule, inputs=inputs,
+                         implicit_deps=self.implicit_dependencies(),
+                         variables=vars)
+        for i, out in enumerate(outputs):
+            self._add_target_file(str(i), out)
+
 
 def gen_rule(name,
              srcs=[],
