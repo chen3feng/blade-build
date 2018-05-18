@@ -284,13 +284,13 @@ class JavaTargetMixIn(object):
                 maven_jar_dict[key] = (version, set([dep_jar]))
 
         dep_jars -= conflicted_jars
-        return sorted(list(dep_jars))
+        return sorted(dep_jars)
 
     def _get_compile_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.deps)
         exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
         dep_jars += self.__get_maven_transitive_deps(self.deps)
-        dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
+        dep_jar_vars = sorted(set(dep_jar_vars + exported_dep_jar_vars))
         dep_jars = self._detect_maven_conflicted_deps('compile',
             dep_jars + exported_dep_jars)
         return dep_jar_vars, dep_jars
@@ -298,7 +298,7 @@ class JavaTargetMixIn(object):
     def _get_test_deps(self):
         dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
         dep_jars += self.__get_maven_transitive_deps(self.expanded_deps)
-        dep_jar_vars = sorted(list(set(dep_jar_vars)))
+        dep_jar_vars = sorted(set(dep_jar_vars))
         dep_jars = self._process_pack_exclusions(dep_jars)
         dep_jars = self._detect_maven_conflicted_deps('test', dep_jars)
         return dep_jar_vars, dep_jars
@@ -322,7 +322,7 @@ class JavaTargetMixIn(object):
         dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
         dep_jars = self._process_pack_exclusions(dep_jars)
 
-        return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
+        return sorted(dep_jar_vars), sorted(dep_jars)
 
     def _get_java_package_name(self):
         """
@@ -337,7 +337,7 @@ class JavaTargetMixIn(object):
             package = self._get_source_package_name(self._source_file_path(src))
             if package:
                 packages.add(package)
-        return sorted(list(packages))
+        return sorted(packages)
 
     def _get_source_package_name(self, file_name):
         """Get the java package name from source file if it is specified. """
