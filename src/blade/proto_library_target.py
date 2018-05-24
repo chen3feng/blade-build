@@ -431,7 +431,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
-        self.ninja_build(output, 'protodescriptors', inputs=inputs)
+        self.ninja_build(output, 'protodescriptors', inputs=inputs,
+                         variables={ 'first' : inputs[0] })
 
     def ninja_protoc_plugin_vars(self, flags, language):
         if language in flags:

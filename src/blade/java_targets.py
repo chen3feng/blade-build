@@ -189,7 +189,7 @@ class JavaTargetMixIn(object):
     def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
         """Extract jar file built by the target with the specified dkey.
 
-        dep_jars: a list of jars built by blade target. Each item is
+        dep_jars: a list of jars built by blade targets. Each item is
                   either a scons var or a file path depending on the build system.
         maven_jars: a list of jars managed by maven repository.
         """
@@ -616,7 +616,7 @@ class JavaTargetMixIn(object):
             ','.join(jar_vars), dep_jars))
         return var_name
 
-    def _ninja_generate_resources(self):
+    def ninja_generate_resources(self):
         resources = self.data['resources']
         locations = self.data['location_resources']
         if not resources and not locations:
@@ -638,7 +638,8 @@ class JavaTargetMixIn(object):
                 dst = os.path.basename(path)
             inputs.append(path)
             outputs.append(os.path.join(resources_dir, dst))
-        self.ninja_build(outputs, 'javaresource', inputs=inputs)
+        if inputs:
+            self.ninja_build(outputs, 'javaresource', inputs=inputs)
         return outputs
 
     def ninja_generate_fat_jar(self):
@@ -664,7 +665,7 @@ class JavaTargetMixIn(object):
                 vars['scalacflags'] = ' '.join(scalacflags)
         else:
             rule = 'javac'
-            vars = {'classes_dir' : self._target_file_path() + '.classes'}
+            vars = {'classes_dir' : self._get_classes_dir()}
             if javacflags:
                 vars['javacflags'] = ' '.join(javacflags)
         dep_jars, maven_jars = self._get_compile_deps()
@@ -783,7 +784,7 @@ class JavaTarget(Target, JavaTargetMixIn):
     def ninja_generate_jar(self):
         self._generate_sources(True)
         srcs = [self._source_file_path(s) for s in self.srcs]
-        resources = self._ninja_generate_resources()
+        resources = self.ninja_generate_resources()
         jar = self._target_file_path() + '.jar'
         if srcs and resources:
             classes_jar = self._target_file_path() + '__classes__.jar'

@@ -30,7 +30,6 @@ import os
 import sys
 import subprocess
 import shutil
-import time
 import zipfile
 
 import blade_util

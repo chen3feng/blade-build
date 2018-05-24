@@ -121,15 +121,16 @@ class ScalaTarget(Target, JavaTargetMixIn):
         if target_platform:
             flags.append('-target:%s' % target_platform)
         warnings = self.data.get('warnings')
-        if not warnings:
-            warnings = config['warnings']
         if warnings:
             flags.append(warnings)
+        global_warnings = config['warnings']
+        if global_warnings:
+            flags.append(global_warnings)
         return flags
 
     def ninja_generate_jar(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
-        resources = self._ninja_generate_resources()
+        resources = self.ninja_generate_resources()
         jar = self._target_file_path() + '.jar'
         if srcs and resources:
             classes_jar = self._target_file_path() + '__classes__.jar'

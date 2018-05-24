@@ -526,7 +526,7 @@ protocpythonpluginflags =
                                    protoc, protobuf_incs, self.build_dir),
                            description='PROTOCPYTHON ${in}')
         self.generate_rule(name='protodescriptors',
-                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                           command='%s --proto_path=. %s -I=`dirname ${first}` '
                                    '--descriptor_set_out=${out} --include_imports '
                                    '--include_source_info ${in}' % (
                                    protoc, protobuf_incs),
