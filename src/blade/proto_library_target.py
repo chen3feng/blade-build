@@ -441,6 +441,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         return None
 
     def ninja_proto_java_rules(self, plugin_flags):
+        java_sources = []
         vars = self.ninja_protoc_plugin_vars(plugin_flags, 'java')
         for src in self.srcs:
             input = self._source_file_path(src)
@@ -448,6 +449,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             output = self._target_file_path(os.path.join(os.path.dirname(src),
                                                          package_dir, java_name))
             self.ninja_build(output, 'protojava', inputs=input, variables=vars)
+            java_sources.append(output)
+
+        self.ninja_build_jar(inputs=java_sources,
+                             source_encoding=self.data.get('source_encoding'))
 
     def ninja_proto_python_rules(self, plugin_flags):
         # vars = self.ninja_protoc_plugin_vars(plugin_flags, 'python')

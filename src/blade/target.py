@@ -346,14 +346,18 @@ class Target(object):
         
         Returns
         -----------
-        A tuple of (scons vars, jars)
+        A tuple of (target jars, maven jars)
         
         Description
         -----------
         Return java package dependencies excluding provided dependencies
-        scons vars represent targets to be built later
-        jars represent prebuilt jars or maven artifacts within local repository
-        
+
+        target jars represent either a scons var or a path to jar archive
+        depending on the underlying build system in use. Each jar is built
+        by java_library(prebuilt)/scala_library/proto_library.
+
+        maven jars represent maven artifacts within local repository built
+        by maven_jar(...).
         """
         return [], []
 

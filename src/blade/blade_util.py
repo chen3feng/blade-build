@@ -15,8 +15,10 @@
 
 import fcntl
 import os
+import sys
 import re
 import string
+import signal
 import subprocess
 
 import console
@@ -153,6 +155,36 @@ if "check_output" not in dir( subprocess ):
             error.output = output
             raise error
         return output
+
+
+def _echo(stdout, stderr):
+    """Echo messages to stdout and stderr. """
+    if stdout:
+        sys.stdout.write(stdout)
+    if stderr:
+        sys.stderr.write(stderr)
+
+
+def shell(cmd, env=None):
+    if isinstance(cmd, list):
+        cmdline = ' '.join(cmd)
+    else:
+        cmdline = cmd
+    p = subprocess.Popen(cmdline,
+                         env=env,
+                         stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         shell=True)
+    stdout, stderr = p.communicate()
+    if p.returncode:
+        if p.returncode != -signal.SIGINT:
+            # Error
+            _echo(stdout, stderr)
+    else:
+        # Warnings
+        _echo(stdout, stderr)
+
+    return p.returncode
 
 
 def environ_add_path(env, key, path):

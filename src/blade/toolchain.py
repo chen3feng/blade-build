@@ -28,8 +28,14 @@ The toolchain function is defined as follows:
 
 import os
 import sys
+import subprocess
+import shutil
+import time
+import zipfile
 
 import blade_util
+import console
+import fatjar
 
 
 def generate_resource_index(targets, sources, name, path):
@@ -92,8 +98,209 @@ def generate_resource_index_entry(args):
     return generate_resource_index(targets, sources, name, path)
 
 
+def generate_java_jar_entry(args):
+    jar, target = args[0], args[1]
+    resources_dir = target.replace('.jar', '.resources')
+    arg = args[2]
+    if arg.endswith('__classes__.jar'):
+        classes_jar = arg
+        resources = args[3:]
+    else:
+        classes_jar = ''
+        resources = args[2:]
+
+    def archive_resources(resources_dir, resources, new=True):
+        if new:
+            option = 'cf'
+        else:
+            option = 'uf'
+        cmd = ['%s %s %s' % (jar, option, target)]
+        for resource in resources:
+            cmd.append("-C '%s' '%s'" % (resources_dir, 
+                                         os.path.relpath(resource, resources_dir)))
+        return blade_util.shell(cmd)
+
+    if classes_jar:
+        shutil.copy2(classes_jar, target)
+        if resources:
+            return archive_resources(resources_dir, resources, False)
+    else:
+        return archive_resources(resources_dir, resources, True)
+
+
+def generate_java_resource_entry(args):
+    assert len(args) % 2 == 0
+    middle = len(args) / 2
+    targets = args[:middle]
+    sources = args[middle:]
+    for i in range(middle):
+        shutil.copy(sources[i], targets[i])
+
+
+def _get_all_test_class_names_in_jar(jar):
+    """Returns a list of test class names in the jar file. """
+    test_class_names = []
+    zip_file = zipfile.ZipFile(jar, 'r')
+    name_list = zip_file.namelist()
+    for name in name_list:
+        basename = os.path.basename(name)
+        # Exclude inner class and Test.class
+        if (basename.endswith('Test.class') and
+            len(basename) > len('Test.class') and
+            not '$' in basename):
+            class_name = name.replace('/', '.')[:-6] # Remove .class suffix
+            test_class_names.append(class_name)
+    zip_file.close()
+    return test_class_names
+
+
+def _generate_java_test_coverage_flag(targetundertestpkg):
+    jacoco_agent = os.environ.get('JACOCOAGENT')
+    if targetundertestpkg and jacoco_agent:
+        jacoco_agent = os.path.abspath(jacoco_agent)
+        packages = targetundertestpkg.split(':')
+        options = [
+            'includes=%s' % ':'.join([p + '.*' for p in packages if p]),
+            'output=file',
+        ]
+        return '-javaagent:%s=%s' % (jacoco_agent, ','.join(options))
+    return ''
+
+
+def _generate_java_test(script, main_class, jars, args, targetundertestpkg):
+    f = open(script, 'w')
+    f.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+if [ -n "$BLADE_COVERAGE" ]
+then
+  coverage_options="%s"
+fi
+
+exec java $coverage_options -classpath %s %s %s $@
+""" % (_generate_java_test_coverage_flag(targetundertestpkg), ':'.join(jars), main_class, args))
+    f.close()
+    os.chmod(script, 0755)
+
+
+def generate_java_test_entry(args):
+    main_class, targetundertestpkg, script, jar = args[:4]
+    if targetundertestpkg == '__targetundertestpkg__':
+        targetundertestpkg = ''
+    jars = args[3:]
+    test_class_names = _get_all_test_class_names_in_jar(jar)
+    return _generate_java_test(script, main_class, jars, ' '.join(test_class_names),
+                               targetundertestpkg)
+
+
+def generate_fat_jar_entry(args):
+    jar = args[0]
+    console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
+    fatjar.console_logging = True
+    fatjar.generate_fat_jar(jar, args[1:])
+
+
+def generate_one_jar(onejar,
+                     main_class,
+                     main_jar,
+                     jars,
+                     bootjar):
+    path = onejar
+    onejar = zipfile.ZipFile(path, 'w')
+    jar_path_set = set()
+    # Copy files from one-jar-boot.jar to the target jar
+    zip_file = zipfile.ZipFile(bootjar, 'r')
+    name_list = zip_file.namelist()
+    for name in name_list:
+        if not name.lower().endswith('manifest.mf'): # Exclude manifest
+            onejar.writestr(name, zip_file.read(name))
+            jar_path_set.add(name)
+    zip_file.close()
+
+    # Main jar and dependencies
+    onejar.write(main_jar, os.path.join('main',
+                                        os.path.basename(main_jar)))
+    for dep in jars:
+        dep_name = os.path.basename(dep)
+        onejar.write(dep, os.path.join('lib', dep_name))
+
+    # Copy resources to the root of target onejar
+    for jar in [main_jar] + jars:
+        jar = zipfile.ZipFile(jar, 'r')
+        jar_name_list = jar.namelist()
+        for name in jar_name_list:
+            if name.endswith('.class') or name.upper().startswith('META-INF'):
+                continue
+            if name not in jar_path_set:
+                jar_path_set.add(name)
+                onejar.writestr(name, jar.read(name))
+        jar.close()
+
+    # Manifest
+    # Note that the manifest file must end with a new line or carriage return
+    onejar.writestr(os.path.join('META-INF', 'MANIFEST.MF'),
+                                 '''Manifest-Version: 1.0
+Main-Class: com.simontuffs.onejar.Boot
+One-Jar-Main-Class: %s
+
+''' % main_class)
+    onejar.close()
+
+
+def generate_one_jar_entry(args):
+    bootjar, main_class, onejar, main_jar = args[:4]
+    jars = args[4:]
+    generate_one_jar(onejar, main_class, main_jar, jars, bootjar)
+
+
+def generate_java_binary_entry(args):
+    script, onejar = args
+    basename = os.path.basename(onejar)
+    fullpath = os.path.abspath(onejar)
+    f = open(script, 'w')
+    f.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+jar=`dirname "$0"`/"%s"
+if [ ! -f "$jar" ]; then
+  jar="%s"
+fi
+
+exec java -jar "$jar" $@
+""" % (basename, fullpath))
+    f.close()
+    os.chmod(script, 0755)
+
+
+def generate_scala_test_entry(args):
+    java, scala, script, jar = args[:4]
+    jars = args[3:]
+    test_class_names = _get_all_test_class_names_in_jar(jar)
+    scala, java = os.path.abspath(scala), os.path.abspath(java)
+    run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
+    f = open(script, 'w')
+    f.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+JAVACMD=%s exec %s -classpath %s %s $@
+
+""" % (java, scala, ':'.join(jars), run_args))
+    f.close()
+    os.chmod(script, 0755)
+
+
 toolchains = {
     'resource_index' : generate_resource_index_entry,
+    'java_jar' : generate_java_jar_entry,
+    'java_resource' : generate_java_resource_entry,
+    'java_test' : generate_java_test_entry,
+    'java_fatjar' : generate_fat_jar_entry,
+    'java_onejar' : generate_one_jar_entry,
+    'java_binary' : generate_java_binary_entry,
+    'scala_test' : generate_scala_test_entry,
 }
 
 
