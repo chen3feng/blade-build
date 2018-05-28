@@ -14,7 +14,9 @@ into a single fatjar file.
 import os
 import sys
 import zipfile
+import console
 
+console_logging = False
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -72,8 +74,12 @@ def generate_fat_jar(target, jars):
 
     if zip_path_conflicts:
         log = '%s: Found %d conflicts when packaging.' % (target, zip_path_conflicts)
-        print >>sys.stdout, log
-        print >>sys.stderr, '\n'.join(zip_path_logs)
+        if console_logging:
+            console.warning(log)
+            console.debug('\n'.join(zip_path_logs))
+        else:
+            print >>sys.stdout, log
+            print >>sys.stderr, '\n'.join(zip_path_logs)
 
     # TODO(wentingli): Create manifest from dependency jars later if needed
     contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'

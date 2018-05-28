@@ -392,11 +392,12 @@ import scons_helper
 
 
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
-    def __init__(self, options, build_dir, gcc_version,
+    def __init__(self, options, build_dir, blade_path, gcc_version,
                  python_inc, cuda_inc, build_environment, svn_roots):
         ScriptHeaderGenerator.__init__(
                 self, options, build_dir, gcc_version,
                 python_inc, cuda_inc, build_environment, svn_roots)
+        self.blade_path = blade_path
 
     def generate_rule(self, name, command, description=None,
                       depfile=None, generator=False, pool=None,
@@ -515,8 +516,8 @@ protocpythonpluginflags =
                                    protoc, protobuf_incs, self.build_dir),
                            description='PROTOC ${in}')
         self.generate_rule(name='protojava',
-                           command='%s --proto_path=. %s -I=`dirname ${in}` '
-                                   '--java_out=%s ${protocjavapluginflags} ${in}' % (
+                           command='%s --proto_path=. %s --java_out=%s/`dirname ${in}` '
+                                   '${protocjavapluginflags} ${in}' % (
                                    protoc_java, protobuf_java_incs, self.build_dir),
                            description='PROTOCJAVA ${in}')
         self.generate_rule(name='protopython',
@@ -525,16 +526,16 @@ protocpythonpluginflags =
                                    protoc, protobuf_incs, self.build_dir),
                            description='PROTOCPYTHON ${in}')
         self.generate_rule(name='protodescriptors',
-                           command='%s --proto_path=. %s -I=`dirname ${in}` '
+                           command='%s --proto_path=. %s -I=`dirname ${first}` '
                                    '--descriptor_set_out=${out} --include_imports '
                                    '--include_source_info ${in}' % (
                                    protoc, protobuf_incs),
                            description='PROTODESCRIPTORS ${in}')
 
-    def generate_resource_rules(self, blade_path):
+    def generate_resource_rules(self):
         self.generate_rule(name='resource_index',
                            command=self.generate_toolchain_command(
-                               blade_path, 'resource_index', 'TARGET_NAME=${name} SOURCE_PATH=${path}'),
+                               'resource_index', 'TARGET_NAME=${name} SOURCE_PATH=${path}'),
                            description='RESOURCE INDEX ${out}')
         self.generate_rule(name='resource',
                            command='xxd -i ${in} | '
@@ -542,18 +543,131 @@ protocpythonpluginflags =
                                    '-e "s/^unsigned int /const unsigned int RESOURCE_/g" > ${out}',
                            description='RESOURCE ${in}')
 
-    def generate_toolchain_command(self, blade_path, builder, prefix):
-        python_path = 'PYTHONPATH=%s:$$PYTHONPATH' % blade_path
-        return '%s %s python -m toolchain %s ${out} ${in}' % (
-               python_path, prefix, builder)
+    def generate_javac_rules(self, java_config):
+        java_home = java_config['java_home']
+        javac = os.path.join(java_home, 'bin', 'javac')
+        jar = os.path.join(java_home, 'bin', 'jar')
+        cmd = [javac]
+        version = java_config['version']
+        source_version = java_config.get('source_version', version)
+        target_version = java_config.get('target_version', version)
+        if source_version:
+            cmd.append('-source %s' % source_version)
+        if target_version:
+            cmd.append('-target %s' % target_version)
+        cmd += [
+            '-encoding ${source_encoding}',
+            '-d ${classes_dir}',
+            '-classpath ${classpath}',
+            '${javacflags}',
+            '${in}',
+        ]
+        self._add_rule('''
+source_encoding = UTF-8
+classpath = .
+javacflags =
+''')
+        self.generate_rule(name='javac',
+                           command='rm -fr ${classes_dir} && mkdir -p ${classes_dir} && '
+                                   '%s && sleep 0.5 && '
+                                   '%s cf ${out} -C ${classes_dir} .' % (
+                                   ' '.join(cmd), jar),
+                           description='JAVAC ${in}')
 
-    def generate(self, blade_path):
+    def generate_java_resource_rules(self):
+        self.generate_rule(name='javaresource',
+                           command=self.generate_toolchain_command('java_resource'),
+                           description='JAVA RESOURCE ${in}')
+
+    def generate_java_test_rules(self):
+        java_test_config = self.blade_config.get_config('java_test_config')
+        jacoco_home = java_test_config['jacoco_home']
+        if jacoco_home:
+            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
+            prefix = 'JACOCOAGENT=%s' % jacoco_agent
+        else:
+            prefix = ''
+        self._add_rule('javatargetundertestpkg = __targetundertestpkg__')
+        args = '${mainclass} ${javatargetundertestpkg} ${out} ${in}'
+        self.generate_rule(name='javatest',
+                           command=self.generate_toolchain_command('java_test',
+                                                                   prefix=prefix,
+                                                                   suffix=args),
+                           description='JAVA TEST ${out}')
+
+    def generate_java_binary_rules(self):
+        config = self.blade_config.get_config('java_binary_config')
+        bootjar = config['one_jar_boot_jar']
+        args = '%s ${mainclass} ${out} ${in}' % bootjar
+        self.generate_rule(name='onejar',
+                           command=self.generate_toolchain_command('java_onejar', suffix=args),
+                           description='ONE JAR ${out}')
+        self.generate_rule(name='javabinary',
+                           command=self.generate_toolchain_command('java_binary'),
+                           description='JAVA BIN ${out}')
+
+    def generate_scala_rules(self, java_home):
+        scala_config = self.blade_config.get_config('scala_config')
+        scala_home = scala_config['scala_home']
+        scala = os.path.join(scala_home, 'bin', 'scala')
+        scalac = os.path.join(scala_home, 'bin', 'scalac')
+        java = os.path.join(java_home, 'bin', 'java')
+        self._add_rule('''
+scalacflags = -nowarn
+''')
+        cmd = [
+            'JAVACMD=%s' % java,
+            scalac,
+            '-encoding UTF8',
+            '-d ${out}',
+            '-classpath ${classpath}',
+            '${scalacflags}',
+            '${in}'
+        ]
+        self.generate_rule(name='scalac',
+                           command=' '.join(cmd),
+                           description='SCALAC ${out}')
+        args = '%s %s ${out} ${in}' % (java, scala)
+        self.generate_rule(name='scalatest',
+                           command=self.generate_toolchain_command('scala_test', suffix=args),
+                           description='SCALA TEST ${out}')
+
+    def generate_java_scala_rules(self):
+        java_config = self.blade_config.get_config('java_config')
+        self.generate_javac_rules(java_config)
+        self.generate_java_resource_rules()
+        java_home = java_config['java_home']
+        jar = os.path.join(java_home, 'bin', 'jar')
+        args = '%s ${out} ${in}' % jar
+        self.generate_rule(name='javajar',
+                           command=self.generate_toolchain_command('java_jar', suffix=args),
+                           description='JAVA JAR ${out}')
+        self.generate_java_test_rules()
+        self.generate_rule(name='fatjar',
+                           command=self.generate_toolchain_command('java_fatjar'),
+                           description='FAT JAR ${out}')
+        self.generate_java_binary_rules()
+        self.generate_scala_rules(java_home)
+
+    def generate_toolchain_command(self, builder, prefix='', suffix=''):
+        cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
+        if prefix:
+            cmd.append(prefix)
+        cmd.append('python -m toolchain %s' % builder)
+        if suffix:
+            cmd.append(suffix)
+        else:
+            cmd.append('${out} ${in}')
+        return ' '.join(cmd)
+
+    def generate(self):
         """Generate ninja rules. """
         self.generate_top_level_vars()
         self.generate_common_rules()
         self.generate_cc_rules()
         self.generate_proto_rules()
-        self.generate_resource_rules(blade_path)
+        self.generate_resource_rules()
+        self.generate_java_scala_rules()
         return self.rules_buf
 
 
@@ -625,12 +739,13 @@ class NinjaRulesGenerator(RulesGenerator):
         ninja_script_header_generator = NinjaScriptHeaderGenerator(
                 options,
                 self.build_dir,
+                self.blade_path,
                 gcc_version,
                 python_inc,
                 cuda_inc,
                 self.blade.build_environment,
                 self.blade.svn_root_dirs)
-        rules = ninja_script_header_generator.generate(self.blade_path)
+        rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()
         return rules
 
