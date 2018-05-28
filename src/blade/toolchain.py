@@ -37,6 +37,17 @@ import console
 import fatjar
 
 
+def generate_securecc_object_entry(args):
+    obj, phony_obj = args
+    if not os.path.exists(obj):
+        shutil.copy(phony_obj, obj)
+    else:
+        digest = blade_util.md5sum_file(obj)
+        phony_digest = blade_util.md5sum_file(phony_obj)
+        if digest != phony_digest:
+            shutil.copy(phony_obj, obj)
+
+
 def generate_resource_index(targets, sources, name, path):
     header, source = targets
     h, c = open(header, 'w'), open(source, 'w')
@@ -196,6 +207,7 @@ def generate_java_test_entry(args):
 def generate_fat_jar_entry(args):
     jar = args[0]
     console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
+    console.color_enabled = True
     fatjar.console_logging = True
     fatjar.generate_fat_jar(jar, args[1:])
 
@@ -292,6 +304,7 @@ JAVACMD=%s exec %s -classpath %s %s $@
 
 
 toolchains = {
+    'securecc_object' : generate_securecc_object_entry,
     'resource_index' : generate_resource_index_entry,
     'java_jar' : generate_java_jar_entry,
     'java_resource' : generate_java_resource_entry,

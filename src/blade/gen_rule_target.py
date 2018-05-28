@@ -151,8 +151,8 @@ class GenRuleTarget(Target):
         cmd = self.data['cmd']
         cmd = cmd.replace('$SRCS', '${in}')
         cmd = cmd.replace('$OUTS', '${out}')
-        cmd = cmd.replace('$FIRST_SRC', '${SOURCE}')
-        cmd = cmd.replace('$FIRST_OUT', '${TARGET}')
+        cmd = cmd.replace('$FIRST_SRC', '${_in_1}')
+        cmd = cmd.replace('$FIRST_OUT', '${_out_1}')
         cmd = cmd.replace('$BUILD_DIR', self.build_path)
         locations = self.data['locations']
         if locations:
@@ -185,10 +185,10 @@ class GenRuleTarget(Target):
         outputs = [self._target_file_path(o) for o in self.data['outs']]
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = {}
-        if '${SOURCE}' in cmd:
-            vars['SOURCE'] = inputs[0]
-        if '${TARGET}' in cmd:
-            vars['TARGET'] = outputs[0]
+        if '${_in_1}' in cmd:
+            vars['_in_1'] = inputs[0]
+        if '${_out_1}' in cmd:
+            vars['_out_1'] = outputs[0]
         self.ninja_build(outputs, rule, inputs=inputs,
                          implicit_deps=self.implicit_dependencies(),
                          variables=vars)

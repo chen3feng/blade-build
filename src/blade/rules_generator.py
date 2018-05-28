@@ -406,7 +406,8 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self._add_rule('rule %s' % name)
         self._add_rule('  command = %s' % command)
         if description:
-            self._add_rule('  description = %s' % description)
+            self._add_rule('  description = %s%s%s' % (
+                           console.colors('gray'), description, console.colors('end')))
         if depfile:
             self._add_rule('  depfile = %s' % depfile)
         if generator:
@@ -477,11 +478,18 @@ cxx_warnings = %s
                 depfile='${out}.d',
                 deps='gcc')
         securecc = '%s %s' % (cc_config['securecc'], cxx)
-        self.generate_rule(name='securecc',
+        self._add_rule('''
+build __securecc_phony__ : phony
+''')
+        self.generate_rule(name='securecccompile',
                 command='%s -o ${out} -c -fPIC '
                         '%s %s ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
                         securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
                 description='SECURECC ${out}')
+        self.generate_rule(name='securecc',
+                command=self.generate_toolchain_command('securecc_object'),
+                description='SECURECC ${out}',
+                restat=True)
 
         self.generate_rule(name='ar',
                            command='ar rcs $out $in',
