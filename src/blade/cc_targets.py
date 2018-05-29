@@ -609,10 +609,11 @@ class CcTarget(Target):
         if objs and self.blade.get_command() == 'clean':
             self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dir))
 
-    def _securecc_object_rules(self, obj, src):
+    def _securecc_object_rules(self, obj, src, scons=True):
         """Touch the source file if needed and generate specific object rules for securecc. """
-        env_name = self._env_name()
-        self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
+        if scons:
+            env_name = self._env_name()
+            self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
         if not os.path.exists(src):
             dir = os.path.dirname(src)
             if not os.path.isdir(dir):
@@ -747,6 +748,21 @@ class CcTarget(Target):
         self.ninja_build(stamp, 'stamp', inputs=inputs)
         return stamp
 
+    def _securecc_object_ninja(self, obj, src, implicit_deps, vars):
+        assert obj.endswith('.o')
+        pos = obj.rfind('.', 0, -2)
+        assert pos != -1
+        secure_obj = '%s__securecc__.cc.o' % obj[:pos]
+        if os.path.exists(src):
+            path = self._source_file_path(src)
+        else:
+            path = self._target_file_path(src)
+            self._securecc_object_rules('', path, False)
+        self.ninja_build(secure_obj, 'securecccompile', inputs=path,
+                         implicit_deps=implicit_deps,
+                         variables=vars)
+        self.ninja_build(obj, 'securecc', inputs=secure_obj)
+
     def _cc_objects_ninja(self, sources=None, generated=False):
         """Generate cc objects build rules in ninja. """
         vars = {}
@@ -755,6 +771,9 @@ class CcTarget(Target):
         stamp = self._cc_objects_generated_header_files_dependency()
         if stamp:
             implicit_deps.append(stamp)
+        secure = self.data.get('secure')
+        if secure:
+            implicit_deps.append('__securecc_phony__')
 
         objs_dir = self._target_file_path() + '.objs'
         objs = []
@@ -763,19 +782,22 @@ class CcTarget(Target):
         else:
             srcs = self.srcs
         for src in srcs:
-            rule = self._get_ninja_rule_from_suffix(src)
             obj = '%s.o' % os.path.join(objs_dir, src)
-            if generated:
-                inputs = self._target_file_path(src)
+            if secure:
+                self._securecc_object_ninja(obj, src, implicit_deps, vars)
             else:
-                path = self._source_file_path(src)
-                if os.path.exists(path):
-                    inputs = path
-                else:
+                rule = self._get_ninja_rule_from_suffix(src)
+                if generated:
                     inputs = self._target_file_path(src)
-            self.ninja_build(obj, rule, inputs=inputs,
-                             implicit_deps=implicit_deps,
-                             variables=vars)
+                else:
+                    path = self._source_file_path(src)
+                    if os.path.exists(path):
+                        inputs = path
+                    else:
+                        inputs = self._target_file_path(src)
+                self.ninja_build(obj, rule, inputs=inputs,
+                                 implicit_deps=implicit_deps,
+                                 variables=vars)
             objs.append(obj)
 
         self.data['objs'] = objs
