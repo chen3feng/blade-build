@@ -101,10 +101,9 @@ extern const unsigned {0}_len;
 
 
 def generate_resource_index_entry(args):
-    targets = args[0], args[1]
-    sources = args[2:]
-    name = os.environ['TARGET_NAME']
-    path = os.environ['SOURCE_PATH']
+    name, path = args[0], args[1]
+    targets = args[2], args[3]
+    sources = args[4:]
     return generate_resource_index(targets, sources, name, path)
 
 
@@ -303,6 +302,37 @@ JAVACMD=%s exec %s -classpath %s %s $@
     os.chmod(script, 0755)
 
 
+def generate_shell_test_entry(args):
+    wrapper = args[0]
+    scripts = args[1:]
+    f = open(wrapper, 'w')
+    f.write(
+"""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+set -e
+
+%s
+
+""" % '\n'.join(['. %s' % os.path.abspath(s) for s in scripts])
+)
+    f.close()
+    os.chmod(wrapper, 0755)
+
+
+def generate_shell_testdata_entry(args):
+    path = args[0]
+    testdata = args[1:]
+    assert len(testdata) % 2 == 0
+    middle = len(testdata) / 2
+    sources = testdata[:middle]
+    destinations = testdata[middle:]
+    f = open(path, 'w')
+    for i in range(middle):
+        f.write('%s %s\n' % (os.path.abspath(sources[i]), destinations[i]))
+    f.close()
+
+
 toolchains = {
     'securecc_object' : generate_securecc_object_entry,
     'resource_index' : generate_resource_index_entry,
@@ -313,6 +343,8 @@ toolchains = {
     'java_onejar' : generate_one_jar_entry,
     'java_binary' : generate_java_binary_entry,
     'scala_test' : generate_scala_test_entry,
+    'shell_test' : generate_shell_test_entry,
+    'shell_testdata' : generate_shell_testdata_entry,
 }
 
 

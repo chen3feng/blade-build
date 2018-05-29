@@ -906,6 +906,7 @@ class JavaBinary(JavaTarget):
         onejar = self.ninja_generate_one_jar(dep_jars, maven_jars)
         output = self._target_file_path()
         self.ninja_build(output, 'javabinary', inputs=onejar)
+        self._add_default_target_file('bin', output)
 
 
 class JavaFatLibrary(JavaTarget):
