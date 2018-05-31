@@ -407,7 +407,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self._add_rule('  command = %s' % command)
         if description:
             self._add_rule('  description = %s%s%s' % (
-                           console.colors('gray'), description, console.colors('end')))
+                           console.colors('purple'), description, console.colors('end')))
         if depfile:
             self._add_rule('  depfile = %s' % depfile)
         if generator:
@@ -541,9 +541,9 @@ protocpythonpluginflags =
                            description='PROTODESCRIPTORS ${in}')
 
     def generate_resource_rules(self):
+        args = '${name} ${path} ${out} ${in}'
         self.generate_rule(name='resource_index',
-                           command=self.generate_toolchain_command(
-                               'resource_index', 'TARGET_NAME=${name} SOURCE_PATH=${path}'),
+                           command=self.generate_toolchain_command('resource_index', suffix=args),
                            description='RESOURCE INDEX ${out}')
         self.generate_rule(name='resource',
                            command='xxd -i ${in} | '
@@ -657,6 +657,29 @@ scalacflags = -nowarn
         self.generate_java_binary_rules()
         self.generate_scala_rules(java_home)
 
+    def generate_thrift_rules(self):
+        thrift_config = self.blade_config.get_config('thrift_config')
+        incs = _incs_list_to_string(thrift_config['thrift_incs'])
+        thrift = thrift_config['thrift']
+        if thrift.startswith('//'):
+            thrift = thrift.replace('//', self.build_dir + '/')
+            thrift = thrift.replace(':', '/')
+        self.generate_rule(name='thrift',
+                           command='%s --gen cpp:include_prefix,pure_enums '
+                                   '-I . %s -I `dirname ${in}` '
+                                   '-out %s/`dirname ${in}` ${in}' % (
+                                   thrift, incs, self.build_dir),
+                           description='THRIFT ${in}')
+
+    def generate_shell_rules(self):
+        self.generate_rule(name='shelltest',
+                           command=self.generate_toolchain_command('shell_test'),
+                           description='SHELL TEST ${out}')
+        args = '${out} ${in} ${testdata}'
+        self.generate_rule(name='shelltestdata',
+                           command=self.generate_toolchain_command('shell_testdata', suffix=args),
+                           description='SHELL TEST DATA ${out}')
+
     def generate_toolchain_command(self, builder, prefix='', suffix=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
@@ -676,6 +699,8 @@ scalacflags = -nowarn
         self.generate_proto_rules()
         self.generate_resource_rules()
         self.generate_java_scala_rules()
+        self.generate_thrift_rules()
+        self.generate_shell_rules()
         return self.rules_buf
 
 

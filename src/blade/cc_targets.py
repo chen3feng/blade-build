@@ -763,7 +763,7 @@ class CcTarget(Target):
                          variables=vars)
         self.ninja_build(obj, 'securecc', inputs=secure_obj)
 
-    def _cc_objects_ninja(self, sources=None, generated=False):
+    def _cc_objects_ninja(self, sources=None, generated=False, generated_headers=None):
         """Generate cc objects build rules in ninja. """
         vars = {}
         self._setup_ninja_cc_vars(vars)
@@ -789,6 +789,8 @@ class CcTarget(Target):
                 rule = self._get_ninja_rule_from_suffix(src)
                 if generated:
                     inputs = self._target_file_path(src)
+                    if generated_headers and len(generated_headers) > 1:
+                        implicit_deps += generated_headers
                 else:
                     path = self._source_file_path(src)
                     if os.path.exists(path):

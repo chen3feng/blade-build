@@ -486,15 +486,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         plugin_flags = self.protoc_plugin_flags()
         vars = self.ninja_protoc_plugin_vars(plugin_flags, 'cpp')
-        cpp_sources = []
+        cpp_sources, cpp_headers = [], []
         for src in self.srcs:
             source, header = self._proto_gen_files(src)
             self.ninja_build([source, header], 'proto',
                              inputs=self._source_file_path(src),
                              variables=vars)
+            cpp_headers.append(header)
             names = self._proto_gen_file_names(src)
             cpp_sources.append(names[1])
-        self._cc_objects_ninja(cpp_sources, True)
+        self._cc_objects_ninja(cpp_sources, True, generated_headers=cpp_headers)
         self._cc_library_ninja()
         self.ninja_proto_rules(self.blade.get_options(), plugin_flags)
 
