@@ -333,6 +333,73 @@ def generate_shell_testdata_entry(args):
     f.close()
 
 
+def generate_python_library_entry(args):
+    basedir, pylib = args[0], args[1]
+    if basedir == '__pythonbasedir__':
+        basedir = ''
+    sources = []
+    for py in args[2:]:
+        digest = blade_util.md5sum_file(py)
+        sources.append((py, digest))
+    f = open(pylib, 'w')
+    f.write(str({
+        'base_dir' : basedir,
+        'srcs' : sources
+    }))
+    f.close()
+
+
+def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
+    dir = os.path.dirname(arcname)
+    if os.path.basename(arcname) == '__init__.py':
+        dirs_with_init_py.add(dir)
+    while dir:
+        dirs.add(dir)
+        dir = os.path.dirname(dir)
+
+
+def generate_python_binary_entry(args):
+    basedir, mainentry, path = args[:3]
+    if basedir == '__pythonbasedir__':
+        basedir = ''
+    pybin = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+    dirs, dirs_with_init_py = set(), set()
+    for arg in args[3:]:
+        if arg.endswith('.pylib'):
+            pylib = open(arg)
+            data = eval(pylib.read())
+            pylib.close()
+            pylib_base_dir = data['base_dir']
+            for libsrc, digest in data['srcs']:
+                arcname = os.path.relpath(libsrc, pylib_base_dir)
+                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+                pybin.write(libsrc, arcname)
+        else:
+            arcname = os.path.relpath(arg, basedir)
+            _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+            pybin.write(arg, arcname)
+
+    # Insert __init__.py into each dir if missing
+    dirs_missing_init_py = dirs - dirs_with_init_py
+    for dir in sorted(dirs_missing_init_py):
+        pybin.writestr(os.path.join(dir, '__init__.py'), '')
+    pybin.writestr('__init__.py', '')
+    pybin.close()
+
+    f = open(path, 'rb')
+    zip_content = f.read()
+    f.close()
+    # Insert bootstrap before zip, it is also a valid zip file.
+    # unzip will seek actually start until meet the zip magic number.
+    bootstrap = ('#!/bin/sh\n\n'
+                 'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % mainentry
+    f = open(path, 'wb')
+    f.write(bootstrap)
+    f.write(zip_content)
+    f.close()
+    os.chmod(path, 0755)
+
+
 toolchains = {
     'securecc_object' : generate_securecc_object_entry,
     'resource_index' : generate_resource_index_entry,
@@ -345,6 +412,8 @@ toolchains = {
     'scala_test' : generate_scala_test_entry,
     'shell_test' : generate_shell_test_entry,
     'shell_testdata' : generate_shell_testdata_entry,
+    'python_library' : generate_python_library_entry,
+    'python_binary' : generate_python_binary_entry,
 }
 
 

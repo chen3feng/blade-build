@@ -179,9 +179,9 @@ class GenRuleTarget(Target):
                               self._source_file_path(self.name))
         cmd = self.ninja_command()
         self._write_rule('''rule %s
-  command = %s && ls ${out} > /dev/null
+  command = %s && cd %s && ls ${out} > /dev/null
   description = COMMAND //%s
-''' % (rule, cmd, self.fullname))
+''' % (rule, cmd, self.blade.get_root_dir(), self.fullname))
         outputs = [self._target_file_path(o) for o in self.data['outs']]
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = {}

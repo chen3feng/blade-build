@@ -788,16 +788,16 @@ class CcTarget(Target):
             else:
                 rule = self._get_ninja_rule_from_suffix(src)
                 if generated:
-                    inputs = self._target_file_path(src)
+                    input = self._target_file_path(src)
                     if generated_headers and len(generated_headers) > 1:
                         implicit_deps += generated_headers
                 else:
                     path = self._source_file_path(src)
                     if os.path.exists(path):
-                        inputs = path
+                        input = path
                     else:
-                        inputs = self._target_file_path(src)
-                self.ninja_build(obj, rule, inputs=inputs,
+                        input = self._target_file_path(src)
+                self.ninja_build(obj, rule, inputs=input,
                                  implicit_deps=implicit_deps,
                                  variables=vars)
             objs.append(obj)

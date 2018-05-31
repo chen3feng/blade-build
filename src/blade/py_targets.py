@@ -162,6 +162,14 @@ class PythonTarget(Target):
             d = build_targets[dep]
             d.data['generate_python'] = True
 
+    def ninja_vars(self):
+        vars = {}
+        basedir = self.data.get('python_base')
+        if basedir:
+            vars['pythonbasedir'] = basedir
+        return vars
+
+
 class PythonLibrary(PythonTarget):
     """A python library target subclass.
 
@@ -214,6 +222,15 @@ class PythonLibrary(PythonTarget):
             for dep_var in dep_var_list:
                 self._write_rule('%s.Depends(%s, %s)' % (
                                  env_name, var_name, dep_var))
+
+    def ninja_rules(self):
+        if not self.srcs:
+            return
+        output = self._target_file_path() + '.pylib'
+        inputs = [self._source_file_path(s) for s in self.srcs]
+        vars = self.ninja_vars()
+        self.ninja_build(output, 'pythonlibrary', inputs=inputs, variables=vars)
+        self._add_target_file('pylib', output)
 
 
 def py_library(name,
@@ -305,6 +322,21 @@ class PythonBinary(PythonTarget):
                          env_name,
                          self._target_file_path(),
                          sources, ','.join(dep_var_list)))
+
+    def ninja_rules(self):
+        output = self._target_file_path()
+        inputs = [self._source_file_path(s) for s in self.srcs]
+        targets = self.blade.get_build_targets()
+        for key in self.expanded_deps:
+            dep = targets[key]
+            pylib = dep._get_target_file('pylib')
+            if pylib:
+                inputs.append(pylib)
+            # TODO(wentingli): Add other dependencies if needed
+        vars = self.ninja_vars()
+        vars['mainentry'] = self._get_entry()
+        self.ninja_build(output, 'pythonbinary', inputs=inputs, variables=vars)
+        self._add_default_target_file('bin', output)
 
 
 def py_binary(name,
