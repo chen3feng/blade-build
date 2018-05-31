@@ -42,6 +42,7 @@ _colors['purple'] = '\033[1;35m'
 _colors['cyan']   = '\033[1;36m'
 _colors['white']  = '\033[1;37m'
 _colors['gray']   = '\033[1;38m'
+_colors['dimpurple'] = '\033[2;35m'
 _colors['end']    = '\033[0m'
 
 # cursor movement

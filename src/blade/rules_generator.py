@@ -407,7 +407,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self._add_rule('  command = %s' % command)
         if description:
             self._add_rule('  description = %s%s%s' % (
-                           console.colors('purple'), description, console.colors('end')))
+                           console.colors('dimpurple'), description, console.colors('end')))
         if depfile:
             self._add_rule('  depfile = %s' % depfile)
         if generator:
@@ -466,7 +466,7 @@ cxx_warnings = %s
                         '-c -fPIC %s %s ${cc_warnings} ${cppflags} '
                         '%s ${includes} ${in}' % (
                         cc, ' '.join(cflags), ' '.join(cppflags), includes),
-                description='CC ${out}',
+                description='CC ${in}',
                 depfile='${out}.d',
                 deps='gcc')
         self.generate_rule(name='cxx',
@@ -474,7 +474,7 @@ cxx_warnings = %s
                         '-c -fPIC %s %s ${cxx_warnings} ${cppflags} '
                         '%s ${includes} ${in}' % (
                         cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
-                description='CXX ${out}',
+                description='CXX ${in}',
                 depfile='${out}.d',
                 deps='gcc')
         securecc = '%s %s' % (cc_config['securecc'], cxx)
@@ -485,10 +485,10 @@ build __securecc_phony__ : phony
                 command='%s -o ${out} -c -fPIC '
                         '%s %s ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
                         securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
-                description='SECURECC ${out}')
+                description='SECURECC ${in}')
         self.generate_rule(name='securecc',
                 command=self.generate_toolchain_command('securecc_object'),
-                description='SECURECC ${out}',
+                description='SECURECC ${in}',
                 restat=True)
 
         self.generate_rule(name='ar',
@@ -671,6 +671,19 @@ scalacflags = -nowarn
                                    thrift, incs, self.build_dir),
                            description='THRIFT ${in}')
 
+    def generate_python_rules(self):
+        self._add_rule('''
+pythonbasedir = __pythonbasedir__
+''')
+        args = '${pythonbasedir} ${out} ${in}'
+        self.generate_rule(name='pythonlibrary',
+                           command=self.generate_toolchain_command('python_library', suffix=args),
+                           description='PYTHON LIBRARY ${out}')
+        args = '${pythonbasedir} ${mainentry} ${out} ${in}'
+        self.generate_rule(name='pythonbinary',
+                           command=self.generate_toolchain_command('python_binary', suffix=args),
+                           description='PYTHON BINARY ${out}')
+
     def generate_shell_rules(self):
         self.generate_rule(name='shelltest',
                            command=self.generate_toolchain_command('shell_test'),
@@ -679,6 +692,14 @@ scalacflags = -nowarn
         self.generate_rule(name='shelltestdata',
                            command=self.generate_toolchain_command('shell_testdata', suffix=args),
                            description='SHELL TEST DATA ${out}')
+
+    def generate_lex_yacc_rules(self):
+        self.generate_rule(name='lex',
+                           command='flex ${lexflags} -o ${out} ${in}',
+                           description='LEX ${in}')
+        self.generate_rule(name='yacc',
+                           command='bison ${yaccflags} -o ${out} ${in}',
+                           description='YACC ${in}')
 
     def generate_toolchain_command(self, builder, prefix='', suffix=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
@@ -700,7 +721,9 @@ scalacflags = -nowarn
         self.generate_resource_rules()
         self.generate_java_scala_rules()
         self.generate_thrift_rules()
+        self.generate_python_rules()
         self.generate_shell_rules()
+        self.generate_lex_yacc_rules()
         return self.rules_buf
 
 

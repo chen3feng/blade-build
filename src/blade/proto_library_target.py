@@ -457,7 +457,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def ninja_proto_python_rules(self, plugin_flags):
         # vars = self.ninja_protoc_plugin_vars(plugin_flags, 'python')
-        pass
+        generated_pys = []
+        for proto in self.srcs:
+            input = self._source_file_path(proto)
+            output = self._proto_gen_python_file(proto)
+            self.ninja_build(output, 'protopython', inputs=input)
+            generated_pys.append(output)
+        pylib = self._target_file_path() + '.pylib'
+        self.ninja_build(pylib, 'pythonlibrary', inputs=generated_pys,
+                         variables={ 'pythonbasedir' : self.build_path })
+        self._add_target_file('pylib', pylib)
 
     def ninja_proto_rules(self, options, plugin_flags):
         """Generate ninja rules for other languages if needed. """

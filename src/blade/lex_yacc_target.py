@@ -73,6 +73,9 @@ class LexYaccLibrary(CcTarget):
         if prefix:
             lex_flags.append('-P %s' % prefix)
             yacc_flags.append('-p %s' % prefix)
+        return lex_flags, yacc_flags
+
+    def _generate_lex_yacc_flags(self, lex_flags, yacc_flags):
         env_name = self._env_name()
         self._write_rule('%s.Replace(LEXFLAGS=%s)' % (env_name, lex_flags))
         self._write_rule('%s.Replace(YACCFLAGS=%s)' % (env_name, yacc_flags))
@@ -99,7 +102,8 @@ class LexYaccLibrary(CcTarget):
         """
         self._prepare_to_generate_rule()
         env_name = self._env_name()
-        self._setup_lex_yacc_flags()
+        lex_flags, yacc_flags = self._setup_lex_yacc_flags()
+        self._generate_lex_yacc_flags(lex_flags, yacc_flags)
 
         lex_var_name = self._var_name('lex')
         self._generate_cc_source(lex_var_name, self.srcs[0])
@@ -120,6 +124,41 @@ class LexYaccLibrary(CcTarget):
         obj_names.append(obj_name)
         self._write_rule('%s = [%s]' % (self._objs_name(), ', '.join(obj_names)))
         self._cc_library()
+
+    def ninja_cc_source(self, source):
+        if source.endswith('.l') or source.endswith('.y'):
+            return source + '.c'
+        elif source.endswith('.ll') or source.endswith('.yy'):
+            return source + '.cc'
+        else:
+            console.error_exit('%s: Unknown source %s' % (self.fullname, source))
+
+    def ninja_lex_yacc_vars(self):
+        lex_vars, yacc_vars = {}, {}
+        lex_flags, yacc_flags = self._setup_lex_yacc_flags()
+        if lex_flags:
+            lex_vars = { 'lexflags' : ' '.join(lex_flags) }
+        if yacc_flags:
+            yacc_vars = { 'yaccflags' : ' '.join(yacc_flags) }
+        return lex_vars, yacc_vars
+
+    def ninja_lex_yacc_rules(self, source, rule, implicit_deps=None, vars=None):
+        cc = self.ninja_cc_source(source)
+        output = self._target_file_path(cc)
+        input = self._source_file_path(source)
+        self.ninja_build(output, rule, inputs=input,
+                         implicit_deps=implicit_deps, variables=vars)
+        return cc, output
+
+    def ninja_rules(self):
+        lex, yacc = self.srcs
+        lex_vars, yacc_vars = self.ninja_lex_yacc_vars()
+        yacc_cc, yacc_cc_path = self.ninja_lex_yacc_rules(yacc, 'yacc', vars=yacc_vars)
+        lex_cc, lex_cc_path = self.ninja_lex_yacc_rules(lex, 'lex',
+                                                        implicit_deps=[yacc_cc_path],
+                                                        vars=lex_vars)
+        self._cc_objects_ninja([lex_cc, yacc_cc], True)
+        self._cc_library_ninja()
 
 
 def lex_yacc_library(name,
