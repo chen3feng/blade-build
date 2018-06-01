@@ -17,6 +17,7 @@
 
 import os
 import time
+import subprocess
 
 import configparse
 import console
@@ -701,6 +702,36 @@ pythonbasedir = __pythonbasedir__
                            command='bison ${yaccflags} -o ${out} ${in}',
                            description='YACC ${in}')
 
+    def generate_version_rules(self):
+        p = subprocess.Popen('svn info', shell=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        revision = url = 'unknown'
+        if p.returncode == 0:
+            for line in stdout.splitlines():
+                if line.startswith('URL: '):
+                    url = line.strip().split()[-1]
+                if line.startswith('Revision: '):
+                    revision = line.strip().split()[-1]
+                    break
+        args = '${out} ${revision} ${url} ${profile} "${compiler}"'
+        self.generate_rule(name='scm',
+                           command=self.generate_toolchain_command('scm', suffix=args),
+                           description='SCM ${out}')
+        scm = os.path.join(self.build_dir, 'scm.cc')
+        self._add_rule('''
+build %s: scm
+  revision = %s
+  url = %s
+  profile = %s
+  compiler = %s
+''' % (scm, revision, url, self.options.profile, 'GCC ' + self.gcc_version))
+        self._add_rule('''
+build %s: cxx %s
+  cppflags = -w -O2
+  cxx_warnings =
+''' % (scm + '.o', scm))
+
     def generate_toolchain_command(self, builder, prefix='', suffix=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
@@ -724,6 +755,7 @@ pythonbasedir = __pythonbasedir__
         self.generate_python_rules()
         self.generate_shell_rules()
         self.generate_lex_yacc_rules()
+        self.generate_version_rules()
         return self.rules_buf
 
 
