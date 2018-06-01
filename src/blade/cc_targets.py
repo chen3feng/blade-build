@@ -826,7 +826,7 @@ class CcTarget(Target):
 
     def _cc_link_ninja(self, output, rule, deps,
                        ldflags=None, extra_ldflags=None,
-                       implicit_deps=None):
+                       implicit_deps=None, order_only_deps=None):
         objs = self.data.get('objs', [])
         vars = {}
         if ldflags:
@@ -836,6 +836,7 @@ class CcTarget(Target):
         self.ninja_build(output, rule,
                          inputs=objs + deps,
                          implicit_deps=implicit_deps,
+                         order_only_deps=order_only_deps,
                          variables=vars)
 
 
@@ -1160,11 +1161,17 @@ class CcBinary(CcTarget):
                 ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
                 implicit_deps = link_all_symbols_libs
 
-        extra_ldflags = ['-l%s' % lib for lib in sys_libs]
+        extra_ldflags, order_only_deps = [], []
+        if self.data['embed_version']:
+            scm = os.path.join(self.build_path, 'scm.cc.o')
+            extra_ldflags.append(scm)
+            order_only_deps.append(scm)
+        extra_ldflags += ['-l%s' % lib for lib in sys_libs]
         output = self._target_file_path()
         self._cc_link_ninja(output, 'link', deps=usr_libs,
                             ldflags=ldflags, extra_ldflags=extra_ldflags,
-                            implicit_deps=implicit_deps)
+                            implicit_deps=implicit_deps,
+                            order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
 
     def ninja_rules(self):
