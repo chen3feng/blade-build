@@ -15,6 +15,7 @@
 
 """
 
+from collections import deque
 
 import console
 
@@ -84,6 +85,17 @@ def _check_dep_visibility(target, dep, targets):
                            target[0], target[1], d.fullname))
 
 
+def _unique_deps(new_deps_list):
+   # Append new_deps_piece to new_deps_list, be aware of de-duplication
+   result = []
+   deps = set()
+   for dep in reversed(new_deps_list):
+       if dep not in deps:
+           result.append(dep)
+           deps.add(dep)
+   return list(reversed(result))
+
+
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
     """_find_all_deps.
 
@@ -110,14 +122,10 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
             console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
                        d[0], d[1], err_msg))
         _check_dep_visibility(target_id, d, targets)
-        new_deps_piece = [d]
-        new_deps_piece += _find_all_deps(d, targets, deps_map_cache, root_targets)
-        # Append new_deps_piece to new_deps_list, be aware of de-duplication
-        for nd in new_deps_piece:
-            if nd in new_deps_list:
-                new_deps_list.remove(nd)
-            new_deps_list.append(nd)
+        new_deps_list.append(d)
+        new_deps_list += _find_all_deps(d, targets, deps_map_cache, root_targets)
 
+    new_deps_list = _unique_deps(new_deps_list)
     deps_map_cache[target_id] = new_deps_list
     root_targets.remove(target_id)
 
@@ -149,18 +157,19 @@ def _topological_sort(pairlist):
                 successors[first] = [second]
 
     # suck up everything without a predecessor
-    answer = filter(lambda x, numpreds=numpreds: numpreds[x] == 0,
-                    numpreds.keys())
+    q = deque([key for key, num in numpreds.items() if num == 0])
 
-    # for everything in answer, knock down the pred count on
-    # its successors; note that answer grows *in* the loop
-    for x in answer:
-        assert numpreds[x] == 0
+    # for everything in queue, knock down the pred count on
+    # its successors
+    answer = []
+    while q:
+        x = q.popleft()
         del numpreds[x]
+        answer.append(x)
         if x in successors:
             for y in successors[x]:
-                numpreds[y] = numpreds[y] - 1
+                numpreds[y] -= 1
                 if numpreds[y] == 0:
-                    answer.append(y)
+                    q.append(y)
 
     return answer, successors

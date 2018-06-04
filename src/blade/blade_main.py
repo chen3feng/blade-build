@@ -173,12 +173,13 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
     return opened_files
 
 
-def _check_code_style(opened_files):
-    if not opened_files:
-        return 0
+def _check_code_style(targets, blade_root_dir, working_dir):
     cpplint = configparse.blade_config.configs['cc_config']['cpplint']
     if not cpplint:
         console.info('cpplint disabled')
+        return 0
+    opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
+    if not opened_files:
         return 0
     console.info('Begin to check code style for changed source code')
     p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(opened_files))), shell=True)
@@ -312,8 +313,7 @@ def _main(blade_path):
 
     # Check code style using cpplint.py
     if command == 'build' or command == 'test':
-        opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
-        _check_code_style(opened_files)
+        _check_code_style(targets, blade_root_dir, working_dir)
 
     # Init global blade manager.
     build_path_format = configparse.blade_config.configs['global_config']['build_path_template']

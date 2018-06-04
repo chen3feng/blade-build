@@ -77,8 +77,8 @@ class CcTarget(Target):
 
         self.data['warning'] = warning
         self.data['defs'] = defs
-        self.data['incs'] = incs
-        self.data['export_incs'] = export_incs
+        self.data['incs'] = self._incs_to_fullpath(incs)
+        self.data['export_incs'] = self._incs_to_fullpath(export_incs)
         self.data['optimize'] = opt
         self.data['extra_cppflags'] = extra_cppflags
         self.data['extra_linkflags'] = extra_linkflags
@@ -86,6 +86,9 @@ class CcTarget(Target):
 
         self._check_defs()
         self._check_incorrect_no_warning()
+
+    def _incs_to_fullpath(self, incs):
+        return [os.path.normpath(os.path.join(self.path, inc)) for inc in incs]
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
@@ -298,11 +301,7 @@ class CcTarget(Target):
         cpp_flags += self.data.get('extra_cppflags', [])
 
         # Incs
-        incs = self.data.get('incs', []) + self.data.get('export_incs', [])
-        incs = [os.path.normpath(os.path.join(self.path, inc)) for inc in incs]
-        incs += self._export_incs_list()
-        # Remove duplicate items in incs list and keep the order
-        incs = stable_unique(incs)
+        incs = self._get_incs_list()
 
         return (cpp_flags, incs)
 
@@ -316,24 +315,26 @@ class CcTarget(Target):
         as_flags = ['-g', '--' + options.m]
         aspp_flags = ['-Wa,--' + options.m]
         return as_flags, aspp_flags
-
     def _export_incs_list(self):
         """_export_incs_list.
-        TODO
         """
-        deps = self.expanded_deps
         inc_list = []
-        for lib in deps:
-            # system lib
-            if lib[0] == '#':
+        for dep in self.expanded_deps:
+            # system dep
+            if dep[0] == '#':
                 continue
 
-            target = self.target_database[lib]
-            for inc in target.data.get('export_incs', []):
-                path = os.path.normpath(os.path.join(target.path, inc))
-                inc_list.append(path)
-
+            target = self.target_database[dep]
+            inc_list += target.data.get('export_incs', [])
         return inc_list
+
+    def _get_incs_list(self):
+        ''' Get all incs includes export_incs of all depends'''
+        incs = self.data.get('incs', []) + self.data.get('export_incs', [])
+        incs += self._export_incs_list()
+        # Remove duplicate items in incs list and keep the order
+        incs = stable_unique(incs)
+        return incs
 
     def _static_deps_list(self):
         """_static_deps_list.
@@ -621,7 +622,7 @@ class CcTarget(Target):
             open(src, 'w').close()
 
     def _prebuilt_cc_library_ninja_rules(self):
-        """Prebuilt cc library ninja rules. 
+        """Prebuilt cc library ninja rules.
 
         There are 3 cases for prebuilt library as below:
 
