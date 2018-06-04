@@ -16,7 +16,7 @@ import blade
 import configparse
 
 import build_rules
-from blade_util import var_to_list, stable_unique
+from blade_util import var_to_list
 from cc_targets import CcTarget
 
 
