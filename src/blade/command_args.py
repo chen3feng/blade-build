@@ -107,7 +107,7 @@ class CmdArguments(object):
             self.options.arch = arch
             self.options.m = BuildArchitecture.get_architecture_bits(arch)
             assert self.options.m
-        else:            
+        else:
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
             if self.options.arch is None:
                 console.error_exit('-m %s is not supported by the architecture %s'
@@ -242,7 +242,7 @@ class CmdArguments(object):
         """Add extra scons options arguments. """
         parser.add_argument(
             '--scons-options', dest='scons_options', type=str,
-            help='Specifies extra scons options, for debugg purpose.')
+            help='Specifies extra scons options, for debug purpose.')
 
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,

@@ -86,17 +86,9 @@ class CuTarget(CcTarget):
             nvcc_flags += self._get_optimize_flags()
 
         # Incs
-        incs = self.data.get('incs', [])
-        new_incs_list = [os.path.join(self.path, inc) for inc in incs]
-        new_incs_list += self._export_incs_list()
-        # Remove duplicate items in incs list and keep the order
-        incs_list = []
-        for inc in new_incs_list:
-            new_inc = os.path.normpath(inc)
-            if new_inc not in incs_list:
-                incs_list.append(new_inc)
+        incs = self._get_incs_list()
 
-        return (nvcc_flags, incs_list)
+        return (nvcc_flags, incs)
 
 
     def _cu_objects_rules(self):
