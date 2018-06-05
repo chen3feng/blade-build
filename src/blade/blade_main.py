@@ -65,10 +65,12 @@
 """
 
 
+import cProfile
 import datetime
 import errno
 import fcntl
 import os
+import pstats
 import signal
 import subprocess
 import sys
@@ -90,11 +92,12 @@ from configparse import BladeConfig
 from load_build_files import find_blade_root_dir
 
 
-# Query targets
-query_targets = None
-
 # Run target
-run_target = None
+_TARGETS = None
+
+
+_BLADE_ROOT_DIR = None
+_WORKING_DIR = None
 
 
 def is_svn_client(blade_root_dir):
@@ -173,12 +176,12 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
     return opened_files
 
 
-def _check_code_style(targets, blade_root_dir, working_dir):
+def _check_code_style(targets):
     cpplint = configparse.blade_config.configs['cc_config']['cpplint']
     if not cpplint:
         console.info('cpplint disabled')
         return 0
-    opened_files = _get_opened_files(targets, blade_root_dir, working_dir)
+    opened_files = _get_opened_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     if not opened_files:
         return 0
     console.info('Begin to check code style for changed source code')
@@ -211,37 +214,59 @@ def _build(cmd):
         return 1
 
 
-def _scons_build(options):
-    if options.scons_only:
-        return 0
+def native_builder_options(options):
+    '''
+    Setup some options which are same in different native builders happenly
+    '''
+    native_options = []
+    native_options.append(' -j %s' % blade.blade.parallel_jobs_num())
+    if options.dry_run:
+        native_options.append('-n')
+    if options.native_builder_options:
+        native_options.append(options.native_builder_options)
+    return native_options
 
-    scons_options = '--duplicate=soft-copy --cache-show'
-    scons_options += ' -j %s' % blade.blade.parallel_jobs_num()
+
+def _scons_build(options):
+    scons_options = native_builder_options(options)
+    scons_options += ['--duplicate=soft-copy', '--cache-show']
     if options.keep_going:
-        scons_options += ' -k'
-    if options.scons_options:
-        scons_options += ' '
-        scons_options += options.scons_options
-    return _build('scons %s' % scons_options)
+        scons_options.append(' -k')
+    return _build('scons %s' % ' '.join(scons_options))
 
 
 def _ninja_build(options):
-    if options.ninja_only:
-        return 0
-    return _build('ninja')
+    ninja_options = native_builder_options(options)
+    if options.keep_going:
+        ninja_options.append('-k 0')
+    if options.verbose:
+        ninja_options.append('-v')
+    return _build('ninja %s ' % ' '.join(ninja_options))
 
 
 def build(options):
-    if options.ninja_build:
-        return _ninja_build(options)
-    else:
-        return _scons_build(options)
+    _check_code_style(_TARGETS)
+    try:
+        if options.native_builder == 'ninja':
+            return _ninja_build(options)
+        else:
+            return _scons_build(options)
+    finally:
+        console.info('building done.')
+        console.flush()
+        for script in ('SConstruct', 'build.ninja'):
+            script = os.path.join(_BLADE_ROOT_DIR, script)
+            try:
+                os.remove(script)
+            except OSError:
+                pass
 
 
 def run(options):
     ret = build(options)
     if ret:
         return ret
+    run_target = _TARGETS[0]
     return blade.blade.run(run_target)
 
 
@@ -267,53 +292,43 @@ def clean(options):
 
 
 def query(options):
+    if not targets:
+        query_targets = ['.']
+    else:
+        query_targets = _TARGETS
     return blade.blade.query(query_targets)
 
 
-def _main(blade_path):
-    """The main entry of blade. """
-
-    cmd_options = CmdArguments()
-
-    command = cmd_options.get_command()
-    targets = cmd_options.get_targets()
-
-    global query_targets
-    global run_target
-    if command == 'query':
-        if not targets:
-            query_targets = ['.']
+def lock_working_dir():
+    lock_file_fd = open('.Building.lock', 'w')
+    old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
+    fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
+    locked, ret_code = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    if not locked:
+        if ret_code == errno.EAGAIN:
+            console.error_exit(
+                    'There is already an active building in current source '
+                    'dir tree. Blade will exit...')
         else:
-            query_targets = list(targets)
-    if command == 'run':
-        run_target = targets[0]
+            console.error_exit('Lock exception, please try it later.')
+    return lock_file_fd
 
-    if not targets:
-        targets = ['.']
-    options = cmd_options.get_options()
 
-    # Set blade_root_dir to the directory which contains the
-    # file BLADE_ROOT, is upper than and is closest to the current
-    # directory.  Set working_dir to current directory.
-    working_dir = get_cwd()
-    blade_root_dir = find_blade_root_dir(working_dir)
-    os.chdir(blade_root_dir)
+def unlock_working_dir(lock_file_fd):
+    try:
+        unlock_file(lock_file_fd.fileno())
+        lock_file_fd.close()
+    except OSError:
+        pass
 
-    if blade_root_dir != working_dir:
-        # This message is required by vim quickfix mode if pwd is changed during
-        # the building, DO NOT change the pattern of this message.
-        print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
 
+def real_main(blade_path, command, options, targets, working_dir):
     # Init global build attributes
     build_attributes.attributes = build_attributes.TargetAttributes(options)
 
     # Init global configuration manager
-    configparse.blade_config = BladeConfig(blade_root_dir)
+    configparse.blade_config = BladeConfig(_BLADE_ROOT_DIR)
     configparse.blade_config.parse()
-
-    # Check code style using cpplint.py
-    if command == 'build' or command == 'test':
-        _check_code_style(targets, blade_root_dir, working_dir)
 
     # Init global blade manager.
     build_path_format = configparse.blade_config.configs['global_config']['build_path_template']
@@ -324,65 +339,82 @@ def _main(blade_path):
     log_file = os.path.join(current_building_path, 'blade.log')
     console.set_log_file(log_file)
 
-    lock_file_fd = None
-    building_locked = False
+    lock_file_fd = lock_working_dir()
     try:
-        lock_file_fd = open('.Building.lock', 'w')
-        old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
-        fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
-
-        (building_locked,
-         ret_code) = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if not building_locked:
-            if ret_code == errno.EAGAIN:
-                console.error_exit(
-                        'There is already an active building in current source '
-                        'dir tree. Blade will exit...')
-            else:
-                console.error_exit('Lock exception, please try it later.')
-
         if command == 'query' and getattr(options, 'depended', None):
             targets = ['...']
         blade.blade = Blade(targets,
                             blade_path,
                             working_dir,
                             current_building_path,
-                            blade_root_dir,
+                            _BLADE_ROOT_DIR,
                             options,
                             command)
 
         # Build the targets
+        blade.blade.load_targets()
+        if options.stop_after == 'load':
+            return 0
+        blade.blade.analyze_targets()
+        if options.stop_after == 'analyze':
+            return 0
         blade.blade.generate()
-
-        # Flush the printing
-        sys.stdout.flush()
-        sys.stderr.flush()
+        if options.stop_after == 'generate':
+            return 0
 
         # Switch case due to different sub command
-        action = {
+        exit_code = {
                  'build': build,
                  'run': run,
                  'test': test,
                  'clean': clean,
                  'query': query
                  }[command](options)
-        return action
+        return exit_code
     finally:
-        if (not (getattr(options, 'scons_only', False) or
-                 getattr(options, 'ninja_only', False))
-            or command == 'clean' or command == 'query'):
-            try:
-                if building_locked:
-                    for script in ('SConstruct', 'build.ninja'):
-                        script = os.path.join(blade_root_dir, script)
-                        if os.path.exists(script):
-                            os.remove(script)
-                    unlock_file(lock_file_fd.fileno())
-                if lock_file_fd:
-                    lock_file_fd.close()
-            except OSError:
-                pass
-    return 0
+        unlock_working_dir(lock_file_fd)
+        console.flush()
+
+
+def _main(blade_path):
+    """The main entry of blade. """
+
+    parsed_command_line = CmdArguments()
+
+    command = parsed_command_line.get_command()
+    options = parsed_command_line.get_options()
+    targets = parsed_command_line.get_targets()
+
+    # Set blade_root_dir to the directory which contains the
+    # file BLADE_ROOT, is upper than and is closest to the current
+    # directory.  Set working_dir to current directory.
+    working_dir = get_cwd()
+    blade_root_dir = find_blade_root_dir(working_dir)
+    global _BLADE_ROOT_DIR
+    global _WORKING_DIR
+    global _TARGETS
+    _BLADE_ROOT_DIR = blade_root_dir
+    _WORKING_DIR = working_dir
+    _TARGETS = list(targets)
+
+    if blade_root_dir != working_dir:
+        # This message is required by vim quickfix mode if pwd is changed during
+        # the building, DO NOT change the pattern of this message.
+        print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
+        os.chdir(blade_root_dir)
+
+    if options.profiling:
+        cProfile.runctx("real_main(blade_path, command, options, targets, working_dir)",
+                        globals(), locals(), "restats")
+        p = pstats.Stats("restats")
+        p.dump_stats('blade.pstats')
+        p.sort_stats('cumulative').print_stats(20)
+        p.sort_stats('time').print_stats(20)
+        console.info('Binary result file blade.pstats is also generated, '
+                     'you can use gprof2dot or vprof to convert it to graph')
+        console.info('gprof2dot.py -f pstats --color-nodes-by-selftime blade.pstats | dot -T pdf -o blade.pdf')
+    else:
+        real_main(blade_path, command, options, targets, working_dir)
 
 
 def main(blade_path):

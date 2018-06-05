@@ -482,7 +482,7 @@ class CcTarget(Target):
             return
 
         options = self.blade.get_options()
-        if options.ninja_build:
+        if options.native_builder == 'ninja':
             paths = self._prebuilt_cc_library_ninja_rules()
         else:
             paths = self._prebuilt_cc_library_scons_rules()

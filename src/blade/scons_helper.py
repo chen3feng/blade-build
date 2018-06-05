@@ -420,7 +420,7 @@ def _generate_java_jar(target, sources, resources, env):
 
     if os.path.exists(resources_dir):
         for resource in resources:
-            cmd.append("-C '%s' '%s'" % (resources_dir, 
+            cmd.append("-C '%s' '%s'" % (resources_dir,
                     os.path.relpath(resource, resources_dir)))
 
     cmd = ' '.join(cmd)
@@ -1185,7 +1185,7 @@ def get_compile_source_message():
 
 
 def get_link_program_message():
-    return console.inerasable('%sLinking Program %s$TARGET%s%s' % (
+    return console.erasable('%sLinking Program %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
 
@@ -1198,13 +1198,13 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
     link_program_message = get_link_program_message()
     assembling_source_message = console.erasable('%sAssembling %s$SOURCE%s%s' % (
         colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
-    link_library_message = console.inerasable('%sCreating Static Library %s$TARGET%s%s' % (
+    link_library_message = console.erasable('%sCreating Static Library %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
-    ranlib_library_message = console.inerasable('%sRanlib Library %s$TARGET%s%s' % (
+    ranlib_library_message = console.erasable('%sRanlib Library %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
-    link_shared_library_message = console.inerasable('%sLinking Shared Library %s$TARGET%s%s' % (
+    link_shared_library_message = console.erasable('%sLinking Shared Library %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
-    jar_message = console.inerasable('%sCreating Jar %s$TARGET%s%s' % (
+    jar_message = console.erasable('%sCreating Jar %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
     if not verbose:
@@ -1278,7 +1278,7 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     copy_proto_go_source_message = console.erasable('%sCopying %s$SOURCE%s to go directory%s' %
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
-    generate_proto_descriptor_message = console.inerasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
+    generate_proto_descriptor_message = console.erasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
     proto_bld = SCons.Builder.Builder(action = MakeAction(
@@ -1453,19 +1453,19 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
         one_java_message))
     top_env.Append(BUILDERS = {'OneJar' : one_jar_bld})
 
-    fat_java_message = console.inerasable('%sCreating Fat Jar %s$TARGET%s%s' % ( \
+    fat_java_message = console.erasable('%sCreating Fat Jar %s$TARGET%s%s' % ( \
         colors('green'), colors('purple'), colors('green'), colors('end')))
     fat_jar_bld = SCons.Builder.Builder(action = MakeAction(generate_fat_jar,
         fat_java_message))
     top_env.Append(BUILDERS = {'FatJar' : fat_jar_bld})
 
-    java_binary_message = console.inerasable('%sGenerating Java Binary %s$TARGET%s%s' % \
+    java_binary_message = console.erasable('%sGenerating Java Binary %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     java_binary_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_binary, java_binary_message))
     top_env.Append(BUILDERS = {"JavaBinary" : java_binary_bld})
 
-    java_test_message = console.inerasable('%sGenerating Java Test %s$TARGET%s%s' % \
+    java_test_message = console.erasable('%sGenerating Java Test %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     java_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_java_test, java_test_message))
@@ -1481,7 +1481,7 @@ def setup_scala_builders(top_env, scala_home):
         generate_scala_jar, '$JARCOMSTR'))
     top_env.Append(BUILDERS = {"ScalaJar" : scala_jar_bld})
 
-    scala_test_message = console.inerasable('%sGenerating Scala Test %s$TARGET%s%s' % \
+    scala_test_message = console.erasable('%sGenerating Scala Test %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     scala_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_scala_test, scala_test_message))
@@ -1494,19 +1494,19 @@ def setup_go_builders(top_env, go_cmd, go_home):
     if go_home:
         top_env.Replace(GOHOME=go_home)
 
-    go_library_message = console.inerasable('%sGenerating Go Package %s$TARGET%s%s' %
+    go_library_message = console.erasable('%sGenerating Go Package %s$TARGET%s%s' %
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     go_library_builder = SCons.Builder.Builder(action = MakeAction(
         generate_go_library, go_library_message))
     top_env.Append(BUILDERS = {"GoLibrary" : go_library_builder})
 
-    go_binary_message = console.inerasable('%sGenerating Go Executable %s$TARGET%s%s' %
+    go_binary_message = console.erasable('%sGenerating Go Executable %s$TARGET%s%s' %
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     go_binary_builder = SCons.Builder.Builder(action = MakeAction(
         generate_go_binary, go_binary_message))
     top_env.Append(BUILDERS = {"GoBinary" : go_binary_builder})
 
-    go_test_message = console.inerasable('%sGenerating Go Test %s$TARGET%s%s' %
+    go_test_message = console.erasable('%sGenerating Go Test %s$TARGET%s%s' %
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     go_test_builder = SCons.Builder.Builder(action = MakeAction(
         generate_go_test, go_test_message))
@@ -1532,11 +1532,11 @@ def setup_resource_builders(top_env):
 
 
 def setup_python_builders(top_env):
-    compile_python_egg_message = console.inerasable('%sGenerating Python Egg %s$TARGET%s%s' % \
+    compile_python_egg_message = console.erasable('%sGenerating Python Egg %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
-    compile_python_library_message = console.inerasable('%sGenerating Python Library %s$TARGET%s%s' % \
+    compile_python_library_message = console.erasable('%sGenerating Python Library %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
-    compile_python_binary_message = console.inerasable('%sGenerating Python Binary %s$TARGET%s%s' % \
+    compile_python_binary_message = console.erasable('%sGenerating Python Binary %s$TARGET%s%s' % \
         (colors('green'), colors('purple'), colors('green'), colors('end')))
 
     python_egg_bld = SCons.Builder.Builder(action = MakeAction(generate_python_egg,
@@ -1557,7 +1557,7 @@ def setup_package_builders(top_env):
         action = MakeAction(process_package_source, source_message))
     top_env.Append(BUILDERS = {"PackageSource" : source_bld})
 
-    package_message = console.inerasable('%sCreating Package %s$TARGET%s%s' % (
+    package_message = console.erasable('%sCreating Package %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
     package_bld = SCons.Builder.Builder(
         action = MakeAction(generate_package, package_message))
@@ -1571,7 +1571,7 @@ def setup_shell_builders(top_env):
         generate_shell_test_data, shell_test_data_message))
     top_env.Append(BUILDERS = {"ShellTestData" : shell_test_data_bld})
 
-    shell_test_message = console.inerasable('%sGenerating Shell Test %s$TARGET%s%s' %
+    shell_test_message = console.erasable('%sGenerating Shell Test %s$TARGET%s%s' %
         (colors('green'), colors('purple'), colors('green'), colors('end')))
     shell_test_bld = SCons.Builder.Builder(action = MakeAction(
         generate_shell_test, shell_test_message))
