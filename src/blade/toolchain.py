@@ -33,6 +33,7 @@ import shutil
 import socket
 import time
 import zipfile
+import tarfile
 
 import blade_util
 import console
@@ -62,6 +63,60 @@ namespace binary_version {
        socket.gethostname(),
        compiler))
     f.close()
+
+
+_PACKAGE_MANIFEST = 'MANIFEST.TXT'
+
+
+def archive_package_sources(package, sources, destinations):
+    manifest = []
+    for i, s in enumerate(sources):
+        package(s, destinations[i])
+        manifest.append('%s %s' % (blade_util.md5sum_file(s), destinations[i]))
+    return manifest
+
+
+def generate_zip_package(path, sources, destinations):
+    zip = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+    manifest = archive_package_sources(zip.write, sources, destinations)
+    zip.writestr(_PACKAGE_MANIFEST, '\n'.join(manifest) + '\n')
+    zip.close()
+
+
+def _get_tar_mode_from_suffix(suffix):
+    return {
+        'tar' : 'w',
+        'tar.gz' : 'w:gz',
+        'tgz' : 'w:gz',
+        'tar.bz2' : 'w:bz2',
+        'tbz' : 'w:bz2',
+    }[suffix]
+
+
+def generate_tar_package(path, sources, destinations, suffix):
+    mode = _get_tar_mode_from_suffix(suffix)
+    tar = tarfile.open(path, mode)
+    manifest = archive_package_sources(tar.add, sources, destinations)
+    manifest_path = '%s.MANIFEST' % path
+    m = open(manifest_path, 'w')
+    m.write('\n'.join(manifest) + '\n\n')
+    m.close()
+    tar.add(manifest_path, _PACKAGE_MANIFEST)
+    tar.close()
+
+
+def generate_package_entry(args):
+    path = args[0]
+    manifest = args[1:]
+    assert len(manifest) % 2 == 0
+    middle = len(manifest) / 2
+    sources = manifest[:middle]
+    destinations = manifest[middle:]
+    suffix = os.path.splitext(path)[1]
+    if suffix == 'zip':
+        generate_zip_package(path, sources, destinations)
+    else:
+        generate_tar_package(path, sources, destinations, suffix)
 
 
 def generate_securecc_object_entry(args):
@@ -429,6 +484,7 @@ def generate_python_binary_entry(args):
 
 toolchains = {
     'scm' : generate_scm_entry,
+    'package' : generate_package_entry,
     'securecc_object' : generate_securecc_object_entry,
     'resource_index' : generate_resource_index_entry,
     'java_jar' : generate_java_jar_entry,

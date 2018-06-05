@@ -187,6 +187,29 @@ class PackageTarget(Target):
                 env_name, var_name, env_name, sorted(set(locations))))
 
 
+    def ninja_rules(self):
+        inputs, entries = [], []
+        for src, dst in self.data['sources']:
+            inputs.append(src)
+            entries.append(dst)
+
+        targets = self.blade.get_build_targets()
+        for key, type, dst in self.data['locations']:
+            path = targets[key]._get_target_file(type)
+            if not path:
+                console.warning('%s: Location %s %s is missing. Ignored.' %
+                                (self.fullname, key, type))
+                continue
+            if not dst:
+                dst = os.path.basename(path)
+            inputs.append(path)
+            entries.append(dst)
+
+        output = self._target_file_path(self.data['out'])
+        self.ninja_build(output, 'package', inputs=inputs,
+                         variables={ 'entries' : ' '.join(entries) })
+
+
 def package(name,
             srcs,
             deps=[],

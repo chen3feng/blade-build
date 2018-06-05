@@ -702,6 +702,12 @@ pythonbasedir = __pythonbasedir__
                            command='bison ${yaccflags} -o ${out} ${in}',
                            description='YACC ${in}')
 
+    def generate_package_rules(self):
+        args = '${out} ${in} ${entries}'
+        self.generate_rule(name='package',
+                           command=self.generate_toolchain_command('package', suffix=args),
+                           description='PACKAGE ${out}')
+
     def generate_version_rules(self):
         p = subprocess.Popen('svn info', shell=True,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -755,6 +761,7 @@ build %s: cxx %s
         self.generate_python_rules()
         self.generate_shell_rules()
         self.generate_lex_yacc_rules()
+        self.generate_package_rules()
         self.generate_version_rules()
         return self.rules_buf
 
