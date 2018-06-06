@@ -178,10 +178,12 @@ class GenRuleTarget(Target):
         rule = '%s__rule__' % self._regular_variable_name(
                               self._source_file_path(self.name))
         cmd = self.ninja_command()
+        description = '%sCOMMAND //%s%s' % (
+                      console.colors('dimpurple'), self.fullname, console.colors('end'))
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
-  description = COMMAND //%s
-''' % (rule, cmd, self.blade.get_root_dir(), self.fullname))
+  description = %s
+''' % (rule, cmd, self.blade.get_root_dir(), description))
         outputs = [self._target_file_path(o) for o in self.data['outs']]
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = {}
