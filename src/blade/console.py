@@ -131,3 +131,11 @@ def log(msg):
     """Dump message into log file. """
     if _log:
         print >>_log, msg
+
+def flush():
+    '''FLush '''
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if _log:
+        _log.flush()
+
