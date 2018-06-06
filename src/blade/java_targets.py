@@ -936,7 +936,6 @@ class JavaTest(JavaBinary):
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, main_class, exclusions,
                  testdata, target_under_test, kwargs):
-        java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
