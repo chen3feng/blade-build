@@ -309,7 +309,7 @@ class Target(object):
         which means this target is visible globally within the code base.
         Note that targets inside the same BUILD file are always visible
         to each other.
-        
+
         """
         if visibility is None:
             return
@@ -343,11 +343,11 @@ class Target(object):
 
     def _get_java_pack_deps(self):
         """_get_java_pack_deps
-        
+
         Returns
         -----------
         A tuple of (target jars, maven jars)
-        
+
         Description
         -----------
         Return java package dependencies excluding provided dependencies

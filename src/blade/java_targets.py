@@ -195,7 +195,7 @@ class JavaTargetMixIn(object):
         """
         dep = self.target_database[dkey]
         options = self.blade.get_options()
-        if options.ninja_build:
+        if options.native_builder == 'ninja':
             jar = dep._get_target_file('jar')
         else:
             jar = dep._get_target_var('jar')

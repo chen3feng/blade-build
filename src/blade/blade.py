@@ -136,7 +136,7 @@ class Blade(object):
         return self.__build_targets  # For test
 
     def get_build_rules_generator(self):
-        if self.__options.ninja_build:
+        if self.__options.native_builder == 'ninja':
             return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
         else:
             return SconsRulesGenerator('SConstruct', self.__blade_path, self)
@@ -151,8 +151,6 @@ class Blade(object):
 
     def generate(self):
         """Generate the build script. """
-        self.load_targets()
-        self.analyze_targets()
         if self.__command != 'query':
             self.generate_build_rules()
 
@@ -377,8 +375,6 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
-        scons_build = getattr(self.__options, 'scons_build', False)
-        ninja_build = getattr(self.__options, 'ninja_build', False)
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
@@ -394,7 +390,7 @@ class Blade(object):
                 and k not in self.__direct_targets):
                 continue
 
-            if ninja_build:
+            if self.__options.native_builder == 'ninja':
                 blade_object.ninja_rules()
             else:
                 blade_object.scons_rules()
