@@ -84,12 +84,11 @@ import console
 import configparse
 
 from blade import Blade
-from blade_util import get_cwd
-from blade_util import lock_file
-from blade_util import unlock_file
+from blade_util import find_blade_root_dir, find_file_bottom_up
+from blade_util import get_cwd, relative_path
+from blade_util import lock_file, unlock_file
 from command_args import CmdArguments
 from configparse import BladeConfig
-from load_build_files import find_blade_root_dir
 
 
 # Run target
@@ -111,50 +110,64 @@ def is_svn_client(blade_root_dir):
 def is_git_client(blade_root_dir, target, working_dir):
     if target.endswith('...'):
         target = target[:-3]
-    if os.path.exists(os.path.join(blade_root_dir, '.git')):
-        return (True, blade_root_dir, target)
-    blade_root_dir = os.path.normpath(blade_root_dir)
-    root_dirs = blade_root_dir.split('/')
-    full_target = os.path.normpath(os.path.join(working_dir, target))
-    dirs = full_target.split('/')
-    index = len(root_dirs)
-    while index <= len(dirs):
-        # Find git repo root dir
-        top_dir = '/'.join(dirs[0:index])
-        # Get subdir under git repo root
-        sub_dir = '/'.join(dirs[index:])
-        index += 1
-        if (os.path.exists(os.path.join(top_dir, '.git'))):
-            return (True, top_dir, sub_dir)
-    return (False, None, None)
+    git_dir = find_file_bottom_up('.git')
+    if not git_dir:
+        return (False, None, None)
+
+    return (True, blade_root_dir, target)
 
 
-def _normalize_target_path(target):
+def extract_target_dir(target):
     if target.endswith('...'):
         target = target[:-3]
     index = target.find(':')
     if index != -1:
         target = target[index + 1:]
-    if target and not target.endswith('/'):
-        target = target + '/'
+    if target.endswith('/'):
+       target = target[:-1]
     return target
 
 
-def _get_opened_files(targets, blade_root_dir, working_dir):
+def _normalize_target(target, working_dir):
+    is_abs = False
+    if target.startswith('//'):
+        target = target[2:]
+    else:
+        target = os.path.join(working_dir, target)
+    if ':' in target:
+        dirname, name = target.rsplit(':', 1)
+    else:
+        if target.endswith('...'):
+            dirname = target[:-3]
+            name = '...'
+        else:
+            dirname = target
+            name = '*'
+    dirname = os.path.normpath(dirname)
+    return '%s:%s' % (dirname, name)
+
+
+def normalize_targets(targets, blade_root_dir, working_dir):
+    rel_working_dir = relative_path(working_dir, blade_root_dir)
+    if not targets:
+        targets = ['.']
+    return [_normalize_target(target, rel_working_dir) for target in targets]
+
+
+def _get_changed_files(targets, blade_root_dir, working_dir):
     check_dir = set()
-    opened_files = set()
+    changed_file = set()
     blade_root_dir = os.path.normpath(blade_root_dir)
 
     for target in targets:
-        target = _normalize_target_path(target)
+        target_dir = extract_target_dir(target)
         d = os.path.dirname(target)
         if d in check_dir:
             return
         check_dir.add(d)
         output = []
         if is_svn_client(blade_root_dir):
-            full_target = os.path.normpath(os.path.join(working_dir, d))
-            top_dir = full_target[len(blade_root_dir) + 1:]
+            top_dir = relative_path(working_dir, blade_root_dir)
             output = os.popen('svn st %s' % top_dir).read().split('\n')
         else:
             (is_git, git_root, git_subdir) = is_git_client(blade_root_dir, target, working_dir)
@@ -172,8 +185,8 @@ def _get_opened_files(targets, blade_root_dir, working_dir):
             f = seg[len(seg) - 1]
             if f.endswith('.h') or f.endswith('.hpp') or f.endswith('.cc') or f.endswith('.cpp'):
                 fullpath = os.path.join(os.getcwd(), f)
-                opened_files.add(fullpath)
-    return opened_files
+                changed_file.add(fullpath)
+    return changed_file
 
 
 def _check_code_style(targets):
@@ -181,14 +194,14 @@ def _check_code_style(targets):
     if not cpplint:
         console.info('cpplint disabled')
         return 0
-    opened_files = _get_opened_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
-    if not opened_files:
+    changed_files = _get_changed_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
+    if not changed_files:
         return 0
     console.info('Begin to check code style for changed source code')
-    p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(opened_files))), shell=True)
+    p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(changed_files))), shell=True)
     try:
         p.wait()
-        if p.returncode:
+        if p.returncode != 0:
             if p.returncode == 127:
                 msg = ("Can't execute '{0}' to check style, you can config the "
                        "'cpplint' option to be a valid cpplint path in the "
@@ -293,10 +306,7 @@ def clean(options):
 
 
 def query(options):
-    query_targets = _TARGETS
-    if not query_targets:
-        query_targets = ['.']
-    return blade.blade.query(query_targets)
+    return blade.blade.query(_TARGETS)
 
 
 def lock_workspace():
@@ -360,9 +370,10 @@ def setup_dirs(options):
         # the building, DO NOT change the pattern of this message.
         print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
         os.chdir(blade_root_dir)
+    working_dir = relative_path(working_dir, blade_root_dir)
     config = load_config(options, blade_root_dir)
     build_dir = setup_build_dir(options, config)
-    return working_dir, blade_root_dir, build_dir
+    return blade_root_dir, working_dir, build_dir
 
 
 def setup_log(build_dir):
@@ -380,8 +391,8 @@ def clear_build_script():
 
 
 def run_subcommand(command, options, targets, blade_path, build_dir):
-    if command == 'query' and getattr(options, 'depended', None):
-        targets = ['...']
+    if command == 'query' and options.depended:
+        targets = ['.:...']
     blade.blade = Blade(targets,
                         blade_path,
                         _WORKING_DIR,
@@ -421,14 +432,12 @@ def _main(blade_path):
     """The main entry of blade. """
 
     command, options, targets = parse_command_line()
-    print targets
-    global _TARGETS
-    _TARGETS = list(targets)
-
     global _BLADE_ROOT_DIR
     global _WORKING_DIR
-    _WORKING_DIR, _BLADE_ROOT_DIR, build_dir = setup_dirs(options)
-
+    _BLADE_ROOT_DIR, _WORKING_DIR, build_dir = setup_dirs(options)
+    global _TARGETS
+    targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
+    _TARGETS = targets
     setup_log(build_dir)
 
     lock_file_fd = lock_workspace()

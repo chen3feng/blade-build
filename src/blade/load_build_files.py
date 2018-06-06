@@ -23,7 +23,6 @@ import build_rules
 import blade
 import console
 import build_attributes
-from blade_util import relative_path
 from blade_util import var_to_list
 from pathlib import Path
 
@@ -214,7 +213,7 @@ def _is_load_excluded(d):
     return False
 
 
-def load_targets(target_ids, working_dir, blade_root_dir, blade):
+def load_targets(target_ids, blade_root_dir, blade):
     """load_targets.
 
     Parse and load targets, including those specified in command line
@@ -239,20 +238,11 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
     # record (<path>,<target>) in cited_targets; for the rest (with <path>
     # but without <target>), record <path> into paths.
     for target_id in target_ids:
-        if target_id.find(':') == -1:
-            source_dir, target_name = target_id, '*'
-        else:
-            source_dir, target_name = target_id.rsplit(':', 1)
+        source_dir, target_name = target_id.rsplit(':', 1)
 
-        source_dir = relative_path(os.path.join(working_dir, source_dir),
-                                    blade_root_dir)
-
-        if target_name != '*' and target_name != '':
+        if target_name != '*' and target_name != '...':
             cited_targets.add((source_dir, target_name))
-        elif source_dir.endswith('...'):
-            source_dir = source_dir[:-3]
-            if not source_dir:
-                source_dir = './'
+        elif target_name == '...':
             source_dirs.append((source_dir, WARN_IF_FAIL))
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the
@@ -311,26 +301,3 @@ def load_targets(target_ids, working_dir, blade_root_dir, blade):
 
     return direct_targets, all_command_targets, related_targets
 
-
-def find_blade_root_dir(working_dir):
-    """find_blade_root_dir to find the dir holds the BLADE_ROOT file.
-
-    The blade_root_dir is the directory which is the closest upper level
-    directory of the current working directory, and containing a file
-    named BLADE_ROOT.
-
-    """
-    blade_root_dir = working_dir
-    if blade_root_dir.endswith('/'):
-        blade_root_dir = blade_root_dir[:-1]
-    while blade_root_dir and blade_root_dir != '/':
-        if os.path.isfile(os.path.join(blade_root_dir, 'BLADE_ROOT')):
-            break
-        blade_root_dir = os.path.dirname(blade_root_dir)
-    if not blade_root_dir or blade_root_dir == '/':
-        console.error_exit(
-                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
-                "Blade need this file as a placeholder to locate the root source directory "
-                "(aka the directory where you #include start from).\n"
-                "You should create it manually at the first time.")
-    return blade_root_dir

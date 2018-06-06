@@ -109,19 +109,11 @@ class Blade(object):
     def load_targets(self):
         """Load the targets. """
         console.info('loading BUILDs...')
-        if self.__command == 'query' and getattr(self.__options,
-            'depended', False):
-            # For query depended command, always start from root with target ...
-            # that is scanning the whole tree
-            working_dir = self.__root_dir
-        else:
-            working_dir = self.__working_dir
         (self.__direct_targets,
          self.__all_command_targets,
          self.__build_targets) = load_targets(self.__command_targets,
-                                                  working_dir,
-                                                  self.__root_dir,
-                                                  self)
+                                              self.__root_dir,
+                                              self)
         console.info('loading done.')
         return self.__direct_targets, self.__all_command_targets  # For test
 
@@ -172,15 +164,13 @@ class Blade(object):
 
     def query(self, targets):
         """Query the targets. """
-        print_deps = getattr(self.__options, 'deps', False)
-        print_depended = getattr(self.__options, 'depended', False)
-        dot_file = getattr(self.__options, 'output_to_dot', '')
-        print_dep_tree = getattr(self.__options, 'output_tree', False)
+        print_deps = self.__options.deps
+        print_depended = self.__options.depended
+        dot_file = self.__options.output_to_dot
+        print_dep_tree = self.__options.output_tree
         result_map = self.query_helper(targets)
         if dot_file:
             print_mode = 0
-            if print_deps:
-                print_mode = 0
             if print_depended:
                 print_mode = 1
             dot_file = os.path.join(self.__working_dir, dot_file)
@@ -242,27 +232,20 @@ class Blade(object):
         """Query the targets helper method. """
         all_targets = self.__build_targets
         query_list = []
-        target_path = relative_path(self.__working_dir, self.__root_dir)
         t_path = ''
         for t in targets:
-            if t.find(':') != -1:
-                key = t.split(':')
-                if target_path == '.':
-                    t_path = key[0]
-                else:
-                    t_path = target_path + '/' + key[0]
-                t_path = os.path.normpath(t_path)
-                query_list.append((t_path, key[1]))
-            elif t.endswith('...'):
-                t_path = os.path.normpath(target_path + '/' + t[:-3])
+            t_path, name = t.split(':')
+            if name == '...':
                 for tkey in all_targets:
                     if tkey[0].startswith(t_path):
-                        query_list.append((tkey[0], tkey[1]))
-            else:
-                t_path = os.path.normpath(target_path + '/' + t)
+                        query_list.append(tkey)
+            elif name == '*':
                 for tkey in all_targets:
                     if tkey[0] == t_path:
-                        query_list.append((t_path, tkey[1]))
+                        query_list.append(tkey)
+            else:
+                query_list.append((t_path, name))
+
         result_map = {}
         for key in query_list:
             deps = all_targets[key].expanded_deps

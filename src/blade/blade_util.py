@@ -134,6 +134,41 @@ def get_cwd():
     return p.communicate()[0].strip()
 
 
+def find_file_bottom_up(filename, from_dir=None):
+    """Find the specified file from from_dir bottom up until found or failed.
+       Returns abspath if found, or empty if failed.
+    """
+    if from_dir is None:
+        from_dir = get_cwd()
+    finding_dir = os.path.abspath(from_dir)
+    while True:
+        path = os.path.join(finding_dir, filename)
+        if os.path.isfile(path):
+            return path
+        if finding_dir == '/':
+            break
+        finding_dir = os.path.dirname(finding_dir)
+    return ''
+
+
+def find_blade_root_dir(working_dir=None):
+    """find_blade_root_dir to find the dir holds the BLADE_ROOT file.
+
+    The blade_root_dir is the directory which is the closest upper level
+    directory of the current working directory, and containing a file
+    named BLADE_ROOT.
+
+    """
+    blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
+    if not blade_root:
+        console.error_exit(
+                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+                "Blade need this file as a placeholder to locate the root source directory "
+                "(aka the directory where you #include start from).\n"
+                "You should create it manually at the first time.")
+    return os.path.dirname(blade_root)
+
+
 if "check_output" not in dir( subprocess ):
     def check_output(*popenargs, **kwargs):
         r"""Run command with arguments and return its output as a byte string.
