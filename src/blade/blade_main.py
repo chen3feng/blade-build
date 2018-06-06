@@ -434,12 +434,10 @@ def _main(blade_path):
     lock_file_fd = lock_workspace()
     try:
         if options.profiling:
-            restats_file = os.path.join(build_dir, 'restats')
             pstats_file = os.path.join(build_dir, 'blade.pstats')
             cProfile.runctx("run_subcommand(command, options, targets, blade_path, build_dir)",
-                            globals(), locals(), restats_file)
-            p = pstats.Stats(restats_file)
-            p.dump_stats(pstats_file)
+                            globals(), locals(), pstats_file)
+            p = pstats.Stats(pstats_file)
             p.sort_stats('cumulative').print_stats(20)
             p.sort_stats('time').print_stats(20)
             console.info('Binary result file %s is also generated, '
