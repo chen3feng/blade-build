@@ -447,19 +447,24 @@ def _main(blade_path):
 
     lock_file_fd = lock_workspace()
     try:
-        if options.profiling:
-            pstats_file = os.path.join(build_dir, 'blade.pstats')
-            cProfile.runctx("run_subcommand(command, options, targets, blade_path, build_dir)",
-                            globals(), locals(), pstats_file)
-            p = pstats.Stats(pstats_file)
-            p.sort_stats('cumulative').print_stats(20)
-            p.sort_stats('time').print_stats(20)
-            console.info('Binary result file %s is also generated, '
-                         'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
-            console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
-                         ' | dot -T pdf -o blade.pdf' % pstats_file)
-        else:
-            run_subcommand(command, options, targets, blade_path, build_dir)
+        if not options.profiling:
+            return run_subcommand(command, options, targets, blade_path, build_dir)
+        pstats_file = os.path.join(build_dir, 'blade.pstats')
+        # NOTE: can't use an plain int variable to receive exit_code
+        # because in python int is an immutable object, assign to it in the runctx
+        # wll not modify the local exit_code.
+        # so we use a mutable object list to obtain the return value of run_subcommand
+        exit_code = [-1]
+        cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, build_dir)",
+                        globals(), locals(), pstats_file)
+        p = pstats.Stats(pstats_file)
+        p.sort_stats('cumulative').print_stats(20)
+        p.sort_stats('time').print_stats(20)
+        console.info('Binary result file %s is also generated, '
+                     'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
+        console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
+                     ' | dot -T pdf -o blade.pdf' % pstats_file)
+        return exit_code[0]
     finally:
         unlock_workspace(lock_file_fd)
 
