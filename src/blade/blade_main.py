@@ -100,6 +100,13 @@ _WORKING_DIR = None
 
 
 def _normalize_target(target, working_dir):
+    '''Normalize targets from command line into canonized form:
+        relative_dir_to_blade_root:name
+    dir: relative to blade_root_dir
+         remove prefix '//' and suffix '/'
+         use '.' for blade_root_dir
+    name: use '*' if no name specified
+    '''
     if target.startswith('//'):
         target = target[2:]
     else:
@@ -118,10 +125,9 @@ def _normalize_target(target, working_dir):
 
 
 def normalize_targets(targets, blade_root_dir, working_dir):
-    rel_working_dir = relative_path(working_dir, blade_root_dir)
     if not targets:
         targets = ['.']
-    return [_normalize_target(target, rel_working_dir) for target in targets]
+    return [_normalize_target(target, working_dir) for target in targets]
 
 
 # For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
