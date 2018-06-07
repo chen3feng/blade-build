@@ -232,7 +232,7 @@ def _run_native_builder(cmd):
 
 def native_builder_options(options):
     '''
-    Setup some options which are same in different native builders happenly
+    Setup some options which are same in different native builders
     '''
     build_options = []
     if options.dry_run:
@@ -433,6 +433,25 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     return returncode
 
 
+def run_subcommand_profile(command, options, targets, blade_path, build_dir):
+    pstats_file = os.path.join(build_dir, 'blade.pstats')
+    # NOTE: can't use an plain int variable to receive exit_code
+    # because in python int is an immutable object, assign to it in the runctx
+    # wll not modify the local exit_code.
+    # so we use a mutable object list to obtain the return value of run_subcommand
+    exit_code = [-1]
+    cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, build_dir)",
+                    globals(), locals(), pstats_file)
+    p = pstats.Stats(pstats_file)
+    p.sort_stats('cumulative').print_stats(20)
+    p.sort_stats('time').print_stats(20)
+    console.info('Binary result file %s is also generated, '
+                 'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
+    console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
+                 ' | dot -T pdf -o blade.pdf' % pstats_file)
+    return exit_code[0]
+
+
 def _main(blade_path):
     """The main entry of blade. """
 
@@ -448,18 +467,8 @@ def _main(blade_path):
     lock_file_fd = lock_workspace()
     try:
         if options.profiling:
-            pstats_file = os.path.join(build_dir, 'blade.pstats')
-            cProfile.runctx("run_subcommand(command, options, targets, blade_path, build_dir)",
-                            globals(), locals(), pstats_file)
-            p = pstats.Stats(pstats_file)
-            p.sort_stats('cumulative').print_stats(20)
-            p.sort_stats('time').print_stats(20)
-            console.info('Binary result file %s is also generated, '
-                         'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
-            console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
-                         ' | dot -T pdf -o blade.pdf' % pstats_file)
-        else:
-            run_subcommand(command, options, targets, blade_path, build_dir)
+            return run_subcommand_profile(command, options, targets, blade_path, build_dir)
+        return run_subcommand(command, options, targets, blade_path, build_dir)
     finally:
         unlock_workspace(lock_file_fd)
 
