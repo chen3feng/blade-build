@@ -136,7 +136,7 @@ def normalize_targets(targets, blade_root_dir, working_dir):
 def find_scm_root(target, scm):
     scm_dir = find_file_bottom_up('.' + scm, target)
     if not scm_dir:
-        ''
+        return ''
     return os.path.dirname(scm_dir)
 
 
@@ -183,10 +183,10 @@ def _get_changed_files(targets, blade_root_dir, working_dir):
                 status_cmd = 'git status --porcelain %s' % ' '.join(dirs)
                 output = os.popen(status_cmd).read().split('\n')
             for f in output:
-                seg = f.strip().split(' ')
-                if seg[0] != 'M' and seg[0] != 'A':
+                seg = f.strip().split()
+                if not seg or seg[0] != 'M' and seg[0] != 'A':
                     continue
-                f = seg[len(seg) - 1]
+                f = seg[-1]
                 fullpath = os.path.join(scm_root, f)
                 changed_files.add(fullpath)
         finally:
