@@ -99,37 +99,7 @@ _BLADE_ROOT_DIR = None
 _WORKING_DIR = None
 
 
-def is_svn_client(blade_root_dir):
-    # We suppose that BLADE_ROOT is under svn root dir now.
-    return os.path.exists(os.path.join(blade_root_dir, '.svn'))
-
-
-# For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
-# dir , add subdirs are github repos, here we need to fix out the git ROOT for
-# each build target
-def is_git_client(blade_root_dir, target, working_dir):
-    if target.endswith('...'):
-        target = target[:-3]
-    git_dir = find_file_bottom_up('.git')
-    if not git_dir:
-        return (False, None, None)
-
-    return (True, blade_root_dir, target)
-
-
-def extract_target_dir(target):
-    if target.endswith('...'):
-        target = target[:-3]
-    index = target.find(':')
-    if index != -1:
-        target = target[index + 1:]
-    if target.endswith('/'):
-       target = target[:-1]
-    return target
-
-
 def _normalize_target(target, working_dir):
-    is_abs = False
     if target.startswith('//'):
         target = target[2:]
     else:
@@ -154,39 +124,68 @@ def normalize_targets(targets, blade_root_dir, working_dir):
     return [_normalize_target(target, rel_working_dir) for target in targets]
 
 
-def _get_changed_files(targets, blade_root_dir, working_dir):
-    check_dir = set()
-    changed_file = set()
-    blade_root_dir = os.path.normpath(blade_root_dir)
+# For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
+# dir , add subdirs are github repos, here we need to fix out the git ROOT for
+# each build target
+def find_scm_root(target, scm):
+    scm_dir = find_file_bottom_up('.' + scm, target)
+    if not scm_dir:
+        ''
+    return os.path.dirname(scm_dir)
 
+
+def _target_in_dir(path, dirtotest):
+    '''Test whether path is in the dirtotest'''
+    if dirtotest == '.':
+        return True
+    return os.path.commonprefix([path, dirtotest]) == dirtotest
+
+
+def split_targets_into_scm_root(targets, working_dir):
+    '''Split all targets by scm root dirs'''
+    scm_root_dirs = {}  # scm_root_dir : (scm_type, target_dirs)
+    checked_dir = set()
+    scms = ('svn', 'git')
     for target in targets:
-        target_dir = extract_target_dir(target)
-        d = os.path.dirname(target)
-        if d in check_dir:
-            return
-        check_dir.add(d)
-        output = []
-        if is_svn_client(blade_root_dir):
-            top_dir = relative_path(working_dir, blade_root_dir)
-            output = os.popen('svn st %s' % top_dir).read().split('\n')
-        else:
-            (is_git, git_root, git_subdir) = is_git_client(blade_root_dir, target, working_dir)
-            if is_git:
-                os.chdir(git_root)
-                status_cmd = 'git status --porcelain %s' % (git_subdir)
+        target_dir = target.split(':')[0]
+        if target_dir in checked_dir:
+            continue
+        checked_dir.add(target_dir)
+        # Only check targets under working dir
+        if not _target_in_dir(target_dir, working_dir):
+            continue
+        for scm in scms:
+            scm_root = find_scm_root(target_dir, scm)
+            if scm_root:
+                rel_target_dir = relative_path(target_dir, scm_root)
+                if scm_root in scm_root_dirs:
+                    scm_root_dirs[scm_root][1].append(rel_target_dir)
+                else:
+                    scm_root_dirs[scm_root] = (scm, [rel_target_dir])
+    return scm_root_dirs
+
+
+def _get_changed_files(targets, blade_root_dir, working_dir):
+    scm_root_dirs = split_targets_into_scm_root(targets, working_dir)
+    changed_files = set()
+    for scm_root, (scm, dirs) in scm_root_dirs.iteritems():
+        try:
+            os.chdir(scm_root)
+            if scm == 'svn':
+                output = os.popen('svn st %s' % ' '.join(dirs)).read().split('\n')
+            elif scm == 'git':
+                status_cmd = 'git status --porcelain %s' % ' '.join(dirs)
                 output = os.popen(status_cmd).read().split('\n')
-                os.chdir(blade_root_dir)
-            else:
-                console.warning('unknown source client type, NOT svn OR git')
-        for f in output:
-            seg = f.strip().split(' ')
-            if seg[0] != 'M' and seg[0] != 'A':
-                continue
-            f = seg[len(seg) - 1]
-            if f.endswith('.h') or f.endswith('.hpp') or f.endswith('.cc') or f.endswith('.cpp'):
-                fullpath = os.path.join(os.getcwd(), f)
-                changed_file.add(fullpath)
-    return changed_file
+            for f in output:
+                seg = f.strip().split(' ')
+                if seg[0] != 'M' and seg[0] != 'A':
+                    continue
+                f = seg[len(seg) - 1]
+                fullpath = os.path.join(scm_root, f)
+                changed_files.add(fullpath)
+        finally:
+            os.chdir(blade_root_dir)
+    return changed_files
 
 
 def _check_code_style(targets):

@@ -134,16 +134,16 @@ def get_cwd():
     return p.communicate()[0].strip()
 
 
-def find_file_bottom_up(filename, from_dir=None):
-    """Find the specified file from from_dir bottom up until found or failed.
+def find_file_bottom_up(name, from_dir=None):
+    """Find the specified file/dir from from_dir bottom up until found or failed.
        Returns abspath if found, or empty if failed.
     """
     if from_dir is None:
         from_dir = get_cwd()
     finding_dir = os.path.abspath(from_dir)
     while True:
-        path = os.path.join(finding_dir, filename)
-        if os.path.isfile(path):
+        path = os.path.join(finding_dir, name)
+        if os.path.exists(path):
             return path
         if finding_dir == '/':
             break
