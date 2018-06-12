@@ -83,7 +83,6 @@ import build_attributes
 import console
 import configparse
 
-from blade import Blade
 from blade_util import find_blade_root_dir, find_file_bottom_up
 from blade_util import get_cwd, relative_path
 from blade_util import lock_file, unlock_file
@@ -100,33 +99,36 @@ _WORKING_DIR = None
 
 
 def _normalize_target(target, working_dir):
-    '''Normalize targets from command line into canonized form:
-        relative_dir_to_blade_root:name
-    dir: relative to blade_root_dir
-         remove prefix '//' and suffix '/'
-         use '.' for blade_root_dir
-    name: use '*' if no name specified
+    '''Normalize target from command line into canonical form.
+
+    Target canonical form: dir:name
+        dir: relative to blade_root_dir, use '.' for blade_root_dir
+        name: name  if target is dir:name
+              '*'   if target is dir
+              '...' if target is dir/...
     '''
     if target.startswith('//'):
         target = target[2:]
+    elif target.startswith('/'):
+        console.error_exit('Invalid target "%s" starting from root path.' % target)
     else:
-        target = os.path.join(working_dir, target)
+        if working_dir != '.':
+            target = os.path.join(working_dir, target)
+
     if ':' in target:
-        dirname, name = target.rsplit(':', 1)
+        path, name = target.rsplit(':', 1)
     else:
         if target.endswith('...'):
-            dirname = target[:-3]
+            path = target[:-3]
             name = '...'
         else:
-            dirname = target
+            path = target
             name = '*'
-    dirname = os.path.normpath(dirname)
-    return '%s:%s' % (dirname, name)
+    path = os.path.normpath(path)
+    return '%s:%s' % (path, name)
 
 
 def normalize_targets(targets, blade_root_dir, working_dir):
-    if not targets:
-        targets = ['.']
     return [_normalize_target(target, working_dir) for target in targets]
 
 
@@ -231,9 +233,7 @@ def _run_native_builder(cmd):
 
 
 def native_builder_options(options):
-    '''
-    Setup some options which are same in different native builders happenly
-    '''
+    '''Setup some options which are same in different native builders. '''
     build_options = []
     if options.dry_run:
         build_options.append('-n')
@@ -375,15 +375,21 @@ def setup_dirs(options):
         # the building, DO NOT change the pattern of this message.
         print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
         os.chdir(blade_root_dir)
-    working_dir = relative_path(working_dir, blade_root_dir)
+    working_dir = os.path.relpath(working_dir, blade_root_dir)
     config = load_config(options, blade_root_dir)
     build_dir = setup_build_dir(options, config)
+
     return blade_root_dir, working_dir, build_dir
 
 
 def setup_log(build_dir):
     log_file = os.path.join(build_dir, 'blade.log')
     console.set_log_file(log_file)
+
+
+def setup_native_builder(options, config):
+    if not options.native_builder:
+        options.native_builder = config.configs['global_config']['native_builder']
 
 
 def clear_build_script():
@@ -398,13 +404,13 @@ def clear_build_script():
 def run_subcommand(command, options, targets, blade_path, build_dir):
     if command == 'query' and options.depended:
         targets = ['.:...']
-    blade.blade = Blade(targets,
-                        blade_path,
-                        _WORKING_DIR,
-                        build_dir,
-                        _BLADE_ROOT_DIR,
-                        options,
-                        command)
+    blade.blade = blade.Blade(targets,
+                              blade_path,
+                              _WORKING_DIR,
+                              build_dir,
+                              _BLADE_ROOT_DIR,
+                              options,
+                              command)
 
     # Build the targets
     blade.blade.load_targets()
@@ -419,12 +425,12 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
 
     # Switch case due to different sub command
     action = {
-             'build': build,
-             'run': run,
-             'test': test,
-             'clean': clean,
-             'query': query
-             }[command]
+        'build': build,
+        'run': run,
+        'test': test,
+        'clean': clean,
+        'query': query
+    }[command]
     try:
         returncode = action(options)
     finally:
@@ -433,38 +439,44 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     return returncode
 
 
+def run_subcommand_profile(command, options, targets, blade_path, build_dir):
+    pstats_file = os.path.join(build_dir, 'blade.pstats')
+    # NOTE: can't use an plain int variable to receive exit_code
+    # because in python int is an immutable object, assign to it in the runctx
+    # wll not modify the local exit_code.
+    # so we use a mutable object list to obtain the return value of run_subcommand
+    exit_code = [-1]
+    cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, build_dir)",
+                    globals(), locals(), pstats_file)
+    p = pstats.Stats(pstats_file)
+    p.sort_stats('cumulative').print_stats(20)
+    p.sort_stats('time').print_stats(20)
+    console.info('Binary result file %s is also generated, '
+                 'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
+    console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
+                 ' | dot -T pdf -o blade.pdf' % pstats_file)
+    return exit_code[0]
+
+
 def _main(blade_path):
     """The main entry of blade. """
-
     command, options, targets = parse_command_line()
+    if not targets:
+        targets = ['.']
     global _BLADE_ROOT_DIR
     global _WORKING_DIR
     _BLADE_ROOT_DIR, _WORKING_DIR, build_dir = setup_dirs(options)
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
+    setup_native_builder(options, configparse.blade_config)
     setup_log(build_dir)
 
     lock_file_fd = lock_workspace()
     try:
-        if not options.profiling:
-            return run_subcommand(command, options, targets, blade_path, build_dir)
-        pstats_file = os.path.join(build_dir, 'blade.pstats')
-        # NOTE: can't use an plain int variable to receive exit_code
-        # because in python int is an immutable object, assign to it in the runctx
-        # wll not modify the local exit_code.
-        # so we use a mutable object list to obtain the return value of run_subcommand
-        exit_code = [-1]
-        cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, build_dir)",
-                        globals(), locals(), pstats_file)
-        p = pstats.Stats(pstats_file)
-        p.sort_stats('cumulative').print_stats(20)
-        p.sort_stats('time').print_stats(20)
-        console.info('Binary result file %s is also generated, '
-                     'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
-        console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
-                     ' | dot -T pdf -o blade.pdf' % pstats_file)
-        return exit_code[0]
+        if options.profiling:
+            return run_subcommand_profile(command, options, targets, blade_path, build_dir)
+        return run_subcommand(command, options, targets, blade_path, build_dir)
     finally:
         unlock_workspace(lock_file_fd)
 
