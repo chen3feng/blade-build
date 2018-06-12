@@ -15,11 +15,24 @@
 import os
 import platform
 import shlex
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 
 import console
 from blade_platform import BuildArchitecture
 from blade_platform import BuildPlatform
+
+
+TRUES = ('yes', 'true', 'y', '1')
+FALSES = ('no', 'false', 'n', '0')
+
+
+def str2bool(v):
+    if v.lower() in TRUES:
+        return True
+    elif v.lower() in FALSES:
+        return False
+    else:
+        raise ArgumentTypeError('Unsupported bool value encountered')
 
 
 class CmdArguments(object):
@@ -88,7 +101,7 @@ class CmdArguments(object):
             console.error_exit('Unknown architecture: %s' % compiler_arch)
 
         m = self.options.m
-        if m is None:
+        if not m:
             self.options.arch = arch
             self.options.m = BuildArchitecture.get_architecture_bits(arch)
             assert self.options.m
@@ -139,7 +152,8 @@ class CmdArguments(object):
         """Add plat and profile arguments. """
         parser.add_argument('-m',
                             dest='m',
-                            choices=['32', '64', ''],
+                            choices=['32', '64'],
+                            default='',
                             help=('Generate code for a 32-bit(-m32) or '
                                   '64-bit(-m64) environment, '
                                   'default is autodetect'))
@@ -336,7 +350,10 @@ class CmdArguments(object):
             parser.add_argument(
                 '--color', dest='color', choices=['yes', 'no', 'auto'], default='auto',
                 help='Output color mode selection')
-
+            parser.add_argument(
+                '--load-local-config', dest='load_local_config', type=str2bool,
+                nargs='?', default=True, const=True, metavar=str(TRUES + FALSES),
+                help='Whether load load BLADE_ROOT.local')
 
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""
