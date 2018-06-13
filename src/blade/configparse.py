@@ -41,6 +41,7 @@ class BladeConfig(object):
                 'build_path_template': 'build${m}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
                 'test_timeout': None,
+                'native_builder': 'scons',
             },
 
             'cc_test_config': {

@@ -378,12 +378,18 @@ def setup_dirs(options):
     working_dir = os.path.relpath(working_dir, blade_root_dir)
     config = load_config(options, blade_root_dir)
     build_dir = setup_build_dir(options, config)
+
     return blade_root_dir, working_dir, build_dir
 
 
 def setup_log(build_dir):
     log_file = os.path.join(build_dir, 'blade.log')
     console.set_log_file(log_file)
+
+
+def setup_native_builder(options, config):
+    if not options.native_builder:
+        options.native_builder = config.configs['global_config']['native_builder']
 
 
 def clear_build_script():
@@ -463,6 +469,7 @@ def _main(blade_path):
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
+    setup_native_builder(options, configparse.blade_config)
     setup_log(build_dir)
 
     lock_file_fd = lock_workspace()
