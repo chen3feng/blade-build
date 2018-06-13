@@ -315,11 +315,8 @@ def query(options):
 
 
 def lock_workspace():
-    lock_file_fd = open('.Building.lock', 'w')
-    old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
-    fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
-    locked, ret_code = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    if not locked:
+    lock_file_fd, ret_code = lock_file('.Building.lock')
+    if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
                     'There is already an active building in current source '
@@ -330,11 +327,7 @@ def lock_workspace():
 
 
 def unlock_workspace(lock_file_fd):
-    try:
-        unlock_file(lock_file_fd.fileno())
-        lock_file_fd.close()
-    except OSError:
-        pass
+    unlock_file(lock_file_fd)
 
 
 def parse_command_line():

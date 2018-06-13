@@ -55,22 +55,25 @@ def md5sum(obj):
     return md5sum_str(obj)
 
 
-def lock_file(fd, flags):
+def lock_file(filename):
     """lock file. """
     try:
-        fcntl.flock(fd, flags)
-        return (True, 0)
+        fd = os.open(filename, os.O_CREAT|os.O_RDWR)
+        old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd, 0
     except IOError, ex_value:
-        return (False, ex_value[0])
+        return -1, ex_value[0]
 
 
 def unlock_file(fd):
     """unlock file. """
     try:
         fcntl.flock(fd, fcntl.LOCK_UN)
-        return (True, 0)
-    except IOError, ex_value:
-        return (False, ex_value[0])
+        os.close(fd)
+    except IOError:
+        pass
 
 
 def var_to_list(var):
