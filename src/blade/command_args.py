@@ -22,19 +22,6 @@ from blade_platform import BuildArchitecture
 from blade_platform import BuildPlatform
 
 
-TRUES = ('yes', 'true', 'y', '1')
-FALSES = ('no', 'false', 'n', '0')
-
-
-def str2bool(v):
-    if v.lower() in TRUES:
-        return True
-    elif v.lower() in FALSES:
-        return False
-    else:
-        raise ArgumentTypeError('Unsupported bool value encountered')
-
-
 class CmdArguments(object):
     """CmdArguments
 
@@ -351,9 +338,14 @@ class CmdArguments(object):
                 '--color', dest='color', choices=['yes', 'no', 'auto'], default='auto',
                 help='Output color mode selection')
             parser.add_argument(
-                '--load-local-config', dest='load_local_config', type=str2bool,
-                nargs='?', default=True, const=True, metavar=str(TRUES + FALSES),
-                help='Whether load load BLADE_ROOT.local')
+                '--load-local-config', dest='load_local_config',
+                default=True, action='store_true',
+                help='Load BLADE_ROOT.local')
+            parser.add_argument(
+                '--no-load-local-config', dest='load_local_config',
+                action='store_false',
+                help='Do not load BLADE_ROOT.local')
+
 
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""
