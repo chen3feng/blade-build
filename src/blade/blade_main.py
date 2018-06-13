@@ -68,7 +68,6 @@
 import cProfile
 import datetime
 import errno
-import fcntl
 import os
 import pstats
 import signal
