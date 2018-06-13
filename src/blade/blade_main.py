@@ -346,12 +346,16 @@ def parse_command_line():
 
 
 def load_config(options, blade_root_dir):
+    """load the configuration file and parse. """
     # Init global build attributes
     build_attributes.attributes = build_attributes.TargetAttributes(options)
 
-    # Init global configuration manager
-    configparse.blade_config = BladeConfig(blade_root_dir)
-    configparse.blade_config.parse()
+    config = configparse.blade_config
+    config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+    config.try_parse_file(os.path.expanduser('~/.bladerc'))
+    config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
+    if options.load_local_config:
+        config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
     return configparse.blade_config
 
 
