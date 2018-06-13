@@ -17,7 +17,7 @@ import os
 import configparse
 import console
 
-from blade_util import relative_path, cpu_count
+from blade_util import cpu_count
 from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
 from blade_platform import BuildPlatform
@@ -90,22 +90,6 @@ class Blade(object):
 
         self.svn_root_dirs = []
 
-    def _get_normpath_target(self, command_target):
-        """returns a tuple (path, name).
-
-        path is a full path from BLADE_ROOT
-
-        """
-        target_path = relative_path(self.__working_dir, self.__root_dir)
-        path, name = command_target.split(':')
-        if target_path != '.':
-            if path:
-                path = target_path + '/' + path
-            else:
-                path = target_path
-        path = os.path.normpath(path)
-        return path, name
-
     def load_targets(self):
         """Load the targets. """
         console.info('loading BUILDs...')
@@ -148,11 +132,10 @@ class Blade(object):
 
     def run(self, target):
         """Run the target. """
-        key = self._get_normpath_target(target)
         runner = BinaryRunner(self.__build_targets,
                               self.__options,
                               self.__target_database)
-        return runner.run_target(key)
+        return runner.run_target(target)
 
     def test(self):
         """Run tests. """
