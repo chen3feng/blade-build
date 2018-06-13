@@ -84,7 +84,7 @@ import console
 import configparse
 
 from blade_util import find_blade_root_dir, find_file_bottom_up
-from blade_util import get_cwd, relative_path
+from blade_util import get_cwd
 from blade_util import lock_file, unlock_file
 from command_args import CmdArguments
 from configparse import BladeConfig
@@ -165,7 +165,7 @@ def split_targets_into_scm_root(targets, working_dir):
         for scm in scms:
             scm_root = find_scm_root(target_dir, scm)
             if scm_root:
-                rel_target_dir = relative_path(target_dir, scm_root)
+                rel_target_dir = os.path.relpath(target_dir, scm_root)
                 if scm_root in scm_root_dirs:
                     scm_root_dirs[scm_root][1].append(rel_target_dir)
                 else:

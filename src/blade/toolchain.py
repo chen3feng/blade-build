@@ -160,7 +160,7 @@ const struct BladeResourceEntry {1}[] = {{'''.format(header, index_name)
 
     for s in sources:
         entry_var = blade_util.regular_variable_name(s)
-        entry_name = blade_util.relative_path(s, path)
+        entry_name = os.path.relpath(s, path)
         entry_size = os.path.getsize(s)
         print >>h, '// %s' % entry_name
         print >>h, 'extern const char RESOURCE_%s[%d];' % (entry_var, entry_size)
