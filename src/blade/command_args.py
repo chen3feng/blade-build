@@ -15,7 +15,7 @@
 import os
 import platform
 import shlex
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser
 
 import console
 from blade_platform import BuildArchitecture

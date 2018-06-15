@@ -315,11 +315,8 @@ import scons_helper
         cc_library_config = self.blade_config.get_config('cc_library_config')
         # By default blade use 'ar rcs' and skip ranlib
         # to generate index for static library
-        arflags = cc_library_config['arflags']
-        if arflags:
-            self._add_rule('top_env.Replace(ARFLAGS="%s")' % ''.join(arflags))
-        else:
-            self._add_rule('top_env.Replace(ARFLAGS="rcs")')
+        arflags = ''.join(cc_library_config['arflags'])
+        self._add_rule('top_env.Replace(ARFLAGS="%s")' % ''.join(arflags))
         ranlibflags = cc_library_config['ranlibflags']
         if ranlibflags:
             self._add_rule('top_env.Replace(RANLIBFLAGS="%s")' % ''.join(ranlibflags))
@@ -453,9 +450,11 @@ cxx_warnings = %s
         ld = os.environ.get('LD', 'g++')
         self.ccflags_manager.set_cc(cc)
         cc_config = self.blade_config.get_config('cc_config')
+        cc_library_config = self.blade_config.get_config('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
         cppflags, ldflags = self.ccflags_manager.get_flags_except_warning()
         cppflags = cc_config['cppflags'] + cppflags
+        arflags = ''.join(cc_library_config['arflags'])
         ldflags = cc_config['linkflags'] + ldflags
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
@@ -493,7 +492,7 @@ build __securecc_phony__ : phony
                 restat=True)
 
         self.generate_rule(name='ar',
-                           command='ar rcs $out $in',
+                           command='rm -f $out; ar %s $out $in' % arflags,
                            description='AR ${out}')
         self.generate_rule(name='link',
                            command='%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (

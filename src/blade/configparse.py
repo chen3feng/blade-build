@@ -141,7 +141,7 @@ class BladeConfig(object):
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
-                'arflags': [],
+                'arflags': ['rcs'],
                 'ranlibflags': [],
             }
         }
