@@ -267,12 +267,13 @@ def _ninja_build(options):
 
 def build(options):
     _check_code_style(_TARGETS)
+    console.info('building...')
     if options.native_builder == 'ninja':
         returncode = _ninja_build(options)
     else:
         returncode = _scons_build(options)
     if returncode != 0:
-        console.error('building failure')
+        console.error('building failure.')
     else:
         console.info('building done.')
     console.flush()
@@ -369,7 +370,7 @@ def setup_dirs(options):
     if blade_root_dir != working_dir:
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
-        print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
+        print "Blade: Entering directory `%s'" % blade_root_dir
         os.chdir(blade_root_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)
     config = load_config(options, blade_root_dir)

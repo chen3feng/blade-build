@@ -93,38 +93,6 @@ def stable_unique(seq):
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-def relative_path(a_path, reference_path):
-    """_relative_path.
-
-    Get the relative path of a_path by considering reference_path as the
-    root directory.  For example, if
-    reference_path = '/src/paralgo'
-    a_path        = '/src/paralgo/mapreduce_lite/sorted_buffer'
-    then
-     _relative_path(a_path, reference_path) = 'mapreduce_lite/sorted_buffer'
-
-    """
-    if not a_path:
-        raise ValueError('no path specified')
-
-    # Count the number of segments shared by reference_path and a_path.
-    reference_list = os.path.abspath(reference_path).split(os.path.sep)
-    path_list = os.path.abspath(a_path).split(os.path.sep)
-    i = 0
-    for i in range(min(len(reference_list), len(path_list))):
-        # TODO(yiwang): Why use lower here?
-        if reference_list[i].lower() != path_list[i].lower():
-            break
-        else:
-            # TODO(yiwnag): Why do not move i+=1 out from the loop?
-            i += 1
-
-    rel_list = [os.path.pardir] * (len(reference_list) - i) + path_list[i:]
-    if not rel_list:
-        return os.path.curdir
-    return os.path.join(*rel_list)
-
-
 def get_cwd():
     """get_cwd
 
