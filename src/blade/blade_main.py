@@ -384,8 +384,8 @@ def setup_log(build_dir):
     console.set_log_file(log_file)
 
 
-def setup_native_builder(options, config):
-    if not options.native_builder:
+def adjust_options_by_config(options, config):
+    if hasattr(options, 'native_builder') and not options.native_builder:
         options.native_builder = config.configs['global_config']['native_builder']
 
 
@@ -466,7 +466,7 @@ def _main(blade_path):
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
-    setup_native_builder(options, configparse.blade_config)
+    adjust_options_by_config(options, configparse.blade_config)
     setup_log(build_dir)
 
     lock_file_fd = lock_workspace()
