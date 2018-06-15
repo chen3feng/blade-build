@@ -316,7 +316,7 @@ import scons_helper
         # By default blade use 'ar rcs' and skip ranlib
         # to generate index for static library
         arflags = ''.join(cc_library_config['arflags'])
-        self._add_rule('top_env.Replace(ARFLAGS="%s")' % ''.join(arflags))
+        self._add_rule('top_env.Replace(ARFLAGS="%s")' % arflags)
         ranlibflags = cc_library_config['ranlibflags']
         if ranlibflags:
             self._add_rule('top_env.Replace(RANLIBFLAGS="%s")' % ''.join(ranlibflags))
