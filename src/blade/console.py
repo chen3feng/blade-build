@@ -28,7 +28,7 @@ _verbose = False
 
 # Global color enabled or not
 color_enabled = (sys.stdout.isatty() and
-                 os.environ['TERM'] not in ('emacs', 'dumb'))
+                 os.environ.get('TERM') not in ('emacs', 'dumb'))
 
 
 # See http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -119,7 +119,7 @@ def info(msg, prefix=True):
     log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
-    print >>sys.stderr, msg
+    print >>sys.stdout, msg
 
 
 def debug(msg):

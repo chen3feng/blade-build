@@ -68,7 +68,6 @@
 import cProfile
 import datetime
 import errno
-import fcntl
 import os
 import pstats
 import signal
@@ -268,12 +267,13 @@ def _ninja_build(options):
 
 def build(options):
     _check_code_style(_TARGETS)
+    console.info('building...')
     if options.native_builder == 'ninja':
         returncode = _ninja_build(options)
     else:
         returncode = _scons_build(options)
     if returncode != 0:
-        console.error('building failure')
+        console.error('building failure.')
     else:
         console.info('building done.')
     console.flush()
@@ -315,11 +315,8 @@ def query(options):
 
 
 def lock_workspace():
-    lock_file_fd = open('.Building.lock', 'w')
-    old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
-    fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
-    locked, ret_code = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    if not locked:
+    lock_file_fd, ret_code = lock_file('.Building.lock')
+    if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
                     'There is already an active building in current source '
@@ -330,11 +327,7 @@ def lock_workspace():
 
 
 def unlock_workspace(lock_file_fd):
-    try:
-        unlock_file(lock_file_fd.fileno())
-        lock_file_fd.close()
-    except OSError:
-        pass
+    unlock_file(lock_file_fd)
 
 
 def parse_command_line():
@@ -346,12 +339,16 @@ def parse_command_line():
 
 
 def load_config(options, blade_root_dir):
+    """load the configuration file and parse. """
     # Init global build attributes
     build_attributes.attributes = build_attributes.TargetAttributes(options)
 
-    # Init global configuration manager
-    configparse.blade_config = BladeConfig(blade_root_dir)
-    configparse.blade_config.parse()
+    config = configparse.blade_config
+    config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+    config.try_parse_file(os.path.expanduser('~/.bladerc'))
+    config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
+    if options.load_local_config:
+        config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
     return configparse.blade_config
 
 
@@ -373,7 +370,7 @@ def setup_dirs(options):
     if blade_root_dir != working_dir:
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
-        print >>sys.stderr, "Blade: Entering directory `%s'" % blade_root_dir
+        print "Blade: Entering directory `%s'" % blade_root_dir
         os.chdir(blade_root_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)
     config = load_config(options, blade_root_dir)

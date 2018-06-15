@@ -20,21 +20,9 @@ from cc_targets import HEAP_CHECK_VALUES
 from proto_library_target import ProtocPlugin
 
 
-# Global config object
-blade_config = None
-
-
-def config_items(**kwargs):
-    """Used in config functions for config file, to construct a appended
-    items dict, and then make syntax more pretty
-    """
-    return kwargs
-
-
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
-    def __init__(self, current_source_dir):
-        self.current_source_dir = current_source_dir
+    def __init__(self):
         self.current_file_name = ''
         self.configs = {
             'global_config' : {
@@ -153,30 +141,24 @@ class BladeConfig(object):
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
-                'arflags': [],
+                'arflags': ['rcs'],
                 'ranlibflags': [],
             }
         }
 
     _globals = None
 
-    def _try_parse_file(self, filename):
+    def try_parse_file(self, filename):
         """load the configuration file and parse. """
+        if BladeConfig._globals is None:
+            BladeConfig._globals = globals()
+            BladeConfig._globals['build_target'] = build_attributes.attributes
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
                 execfile(filename, BladeConfig._globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s, exit...' % filename)
-
-    def parse(self):
-        """load the configuration file and parse. """
-        if BladeConfig._globals is None:
-            BladeConfig._globals = globals()
-            BladeConfig._globals['build_target'] = build_attributes.attributes
-        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
-        self._try_parse_file(os.path.expanduser('~/.bladerc'))
-        self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
@@ -225,6 +207,17 @@ class BladeConfig(object):
     def get_config(self, section_name):
         """get config section, returns default values if not set """
         return self.configs.get(section_name, {})
+
+
+# Global config object
+blade_config = BladeConfig()
+
+
+def config_items(**kwargs):
+    """Used in config functions for config file, to construct a appended
+    items dict, and then make syntax more pretty
+    """
+    return kwargs
 
 
 def cc_test_config(append=None, **kwargs):
