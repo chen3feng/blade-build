@@ -304,7 +304,7 @@ struct BladeResourceEntry {
     for s in source:
         src = str(s)
         var_name = blade_util.regular_variable_name(src)
-        org_src = blade_util.relative_path(src, source_path)
+        org_src = os.path.relpath(src, source_path)
         print >>h, '// %s' % org_src
         print >>h, 'extern const char RESOURCE_%s[%d];' % (var_name, s.get_size())
         print >>h, 'extern const unsigned RESOURCE_%s_len;\n' % var_name

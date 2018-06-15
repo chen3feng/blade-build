@@ -68,7 +68,6 @@
 import cProfile
 import datetime
 import errno
-import fcntl
 import os
 import pstats
 import signal
@@ -84,7 +83,7 @@ import console
 import configparse
 
 from blade_util import find_blade_root_dir, find_file_bottom_up
-from blade_util import get_cwd, relative_path
+from blade_util import get_cwd
 from blade_util import lock_file, unlock_file
 from command_args import CmdArguments
 from configparse import BladeConfig
@@ -165,7 +164,7 @@ def split_targets_into_scm_root(targets, working_dir):
         for scm in scms:
             scm_root = find_scm_root(target_dir, scm)
             if scm_root:
-                rel_target_dir = relative_path(target_dir, scm_root)
+                rel_target_dir = os.path.relpath(target_dir, scm_root)
                 if scm_root in scm_root_dirs:
                     scm_root_dirs[scm_root][1].append(rel_target_dir)
                 else:
@@ -315,11 +314,8 @@ def query(options):
 
 
 def lock_workspace():
-    lock_file_fd = open('.Building.lock', 'w')
-    old_fd_flags = fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_GETFD)
-    fcntl.fcntl(lock_file_fd.fileno(), fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
-    locked, ret_code = lock_file(lock_file_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    if not locked:
+    lock_file_fd, ret_code = lock_file('.Building.lock')
+    if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
                     'There is already an active building in current source '
@@ -330,11 +326,7 @@ def lock_workspace():
 
 
 def unlock_workspace(lock_file_fd):
-    try:
-        unlock_file(lock_file_fd.fileno())
-        lock_file_fd.close()
-    except OSError:
-        pass
+    unlock_file(lock_file_fd)
 
 
 def parse_command_line():
