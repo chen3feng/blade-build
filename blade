@@ -73,6 +73,10 @@ blade_path=`_full_real_path $0`
 blade_dir=$(cd $(dirname $blade_path) && pwd)
 blade_file="$blade_dir/bootstrap.py"
 
+if [ -e $blade_dir/blade_init ]; then
+    source $blade_dir/blade_init
+fi
+
 if [[ "$BLADE_AUTO_UPGRADE" != "no" ]]; then
     # Auto update blade main program to latest version and run it
     if svn_up_info=`svn up --trust-server-cert --non-interactive ${blade_dir} 2>&1`; then

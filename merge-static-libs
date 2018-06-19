@@ -3,7 +3,7 @@
 set -e
 
 if [[ $# < 1 || $# == 1 && "$1" == '--help' ]]; then
-    echo "Usage <blade-target-name> [build arguments]"
+    echo -e "Usage:\n  $0 <blade-target-name> [build arguments]"
     exit 1;
 fi
 
