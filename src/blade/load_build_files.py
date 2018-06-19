@@ -62,9 +62,9 @@ def _report_not_exist(source_dir, path, blade):
     """Report dir or BUILD file does not exist. """
     depender = _find_dir_depender(source_dir, blade)
     if depender:
-        console.error_exit('//%s not found, required by %s, exit...' % (path, depender))
+        console.error_exit('//%s not found, required by %s' % (path, depender))
     else:
-        console.error_exit('//%s not found, exit...' % path)
+        console.error_exit('//%s not found' % path)
 
 
 def enable_if(cond, true_value, false_value=None):
@@ -135,25 +135,18 @@ build_rules.register_function(glob)
 build_rules.register_function(include)
 
 
-IGNORE_IF_FAIL = 0
-WARN_IF_FAIL = 1
-ABORT_IF_FAIL = 2
-
-
-def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
-    """_load_build_file to load the BUILD and place the targets into database.
+def _load_build_file(source_dir, processed_source_dirs, blade):
+    """Load the BUILD and place the targets into database.
 
     Invoked by _load_targets.  Load and execute the BUILD
     file, which is a Python script, in source_dir.  Statements in BUILD
     depends on global variable current_source_dir, and will register build
-    target/rules into global variables target_database.  If path/BUILD
-    does NOT exsit, take action corresponding to action_if_fail.  The
-    parameters processed_source_dirs refers to a set defined in the
+    target/rules into global variables target_database.  Report error
+    and exit if path/BUILD does NOT exist.
+    The parameters processed_source_dirs refers to a set defined in the
     caller and used to avoid duplicated execution of BUILD files.
 
     """
-    build_rules.register_variable('build_target', build_attributes.attributes)
-
     source_dir = os.path.normpath(source_dir)
     # TODO(yiwang): the character '#' is a magic value.
     if source_dir in processed_source_dirs or source_dir == '#':
@@ -174,13 +167,12 @@ def _load_build_file(source_dir, action_if_fail, processed_source_dirs, blade):
             __current_globles = build_rules.get_all()
             execfile(build_file, __current_globles, None)
         except SystemExit:
-            console.error_exit('%s: fatal error, exit...' % build_file)
+            console.error_exit('%s: fatal error' % build_file)
         except:
-            console.error_exit('Parse error in %s, exit...\n%s' % (
+            console.error_exit('Parse error in %s\n%s' % (
                     build_file, traceback.format_exc()))
     else:
-        if action_if_fail == ABORT_IF_FAIL:
-            _report_not_exist(source_dir, build_file, blade)
+        _report_not_exist(source_dir, build_file, blade)
 
     blade.set_current_source_path(old_current_source_path)
 
@@ -221,6 +213,7 @@ def load_targets(target_ids, blade_root_dir, blade):
     files.  Returns a map which contains all these targets.
 
     """
+    build_rules.register_variable('build_target', build_attributes.attributes)
     target_database = blade.get_target_database()
 
     # targets specified in command line
@@ -243,25 +236,23 @@ def load_targets(target_ids, blade_root_dir, blade):
         if target_name != '*' and target_name != '...':
             cited_targets.add((source_dir, target_name))
         elif target_name == '...':
-            source_dirs.append((source_dir, WARN_IF_FAIL))
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
                 dirs[:] = [d for d in dirs if not _is_load_excluded(d)]
-                for d in dirs:
-                    source_dirs.append((os.path.join(root, d), IGNORE_IF_FAIL))
+                if 'BUILD' in files:
+                    source_dirs.append(root)
         else:
-            source_dirs.append((source_dir, ABORT_IF_FAIL))
+            source_dirs.append(source_dir)
 
     direct_targets = list(cited_targets)
 
     # Load BUILD files in paths, and add all loaded targets into
     # cited_targets.  Together with above step, we can ensure that all
     # targets mentioned in the command line are now in cited_targets.
-    for source_dir, action_if_fail in source_dirs:
+    for source_dir in source_dirs:
         _load_build_file(source_dir,
-                         action_if_fail,
                          processed_source_dirs,
                          blade)
 
@@ -280,12 +271,11 @@ def load_targets(target_ids, blade_root_dir, blade):
             continue
 
         _load_build_file(source_dir,
-                         ABORT_IF_FAIL,
                          processed_source_dirs,
                          blade)
 
         if target_id not in target_database:
-            console.error_exit('%s: target //%s:%s does not exists' % (
+            console.error_exit('%s: target //%s:%s does not exist' % (
                 _find_depender(target_id, blade), source_dir, target_name))
 
         related_targets[target_id] = target_database[target_id]
