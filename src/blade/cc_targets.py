@@ -306,18 +306,13 @@ class CcTarget(Target):
         return (cpp_flags, incs)
 
     def _get_as_flags(self):
-        """_get_as_flags.
-
-        Return the as flags according to the build architecture.
-
-        """
+        """Return the as flags according to the build architecture. """
         options = self.blade.get_options()
         as_flags = ['-g', '--' + options.m]
         aspp_flags = ['-Wa,--' + options.m]
         return as_flags, aspp_flags
+
     def _export_incs_list(self):
-        """_export_incs_list.
-        """
         inc_list = []
         for dep in self.expanded_deps:
             # system dep
@@ -329,7 +324,7 @@ class CcTarget(Target):
         return inc_list
 
     def _get_incs_list(self):
-        ''' Get all incs includes export_incs of all depends'''
+        '''Get all incs includes export_incs of all depends'''
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order

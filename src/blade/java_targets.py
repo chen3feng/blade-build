@@ -260,7 +260,9 @@ class JavaTargetMixIn(object):
         maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
         maven_repo = '.m2/repository/'
         for dep_jar in dep_jars:
-            if maven_repo not in dep_jar:
+            if maven_repo not in dep_jar or not os.path.exists(dep_jar):
+                console.debug('%s: %s not found in local maven repository' % (
+                              self.fullname, dep_jar))
                 continue
             parts = dep_jar[dep_jar.find(maven_repo) + len(maven_repo):].split('/')
             if len(parts) < 4:
