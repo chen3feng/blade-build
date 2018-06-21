@@ -203,7 +203,7 @@ class PythonLibrary(PythonTarget):
         """
         self._prepare_to_generate_rule()
         env_name = self._env_name()
-        var_name = self._var_name()
+        var_name = self._var_name('pylib')
 
         sources = self.data.get('python_sources', [])
         if sources:
@@ -252,7 +252,7 @@ def py_library(name,
 build_rules.register_function(py_library)
 
 
-class PythonBinary(PythonTarget):
+class PythonBinary(PythonLibrary):
     """A python binary target subclass.
 
     This class is derived from SconsTarget and generates python binary package.
@@ -269,15 +269,15 @@ class PythonBinary(PythonTarget):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        PythonTarget.__init__(self,
-                              name,
-                              'py_binary',
-                              srcs,
-                              deps,
-                              base,
-                              None,
-                              kwargs)
+        PythonLibrary.__init__(self,
+                               name,
+                               srcs,
+                               deps,
+                               base,
+                               None,
+                               kwargs)
 
+        self.type = 'py_binary'
         self.data['run_in_shell'] = True
         if main:
             self.data['main'] = main
@@ -304,28 +304,28 @@ class PythonBinary(PythonTarget):
         It outputs the scons rules according to user options.
 
         """
-        self._prepare_to_generate_rule()
+        super(PythonBinary, self).scons_rules()
         env_name = self._env_name()
         var_name = self._var_name()
 
         self._write_rule('%s.Append(ENTRY="%s")' % (env_name, self._get_entry()))
         targets = self.blade.get_build_targets()
-        sources = self.data.get('python_sources', [])
-        dep_var_list = []
+        dep_var_list = [self.data.get('python_var')]
         for dep in self.expanded_deps:
             python_var = targets[dep].data.get('python_var')
             if python_var:
                 dep_var_list.append(python_var)
 
-        self._write_rule('%s = %s.PythonBinary("%s", %s + [%s])' % (
+        self._write_rule('%s = %s.PythonBinary("%s", [%s])' % (
                          var_name,
                          env_name,
                          self._target_file_path(),
-                         sources, ','.join(dep_var_list)))
+                         ','.join(dep_var_list)))
 
     def ninja_rules(self):
+        super(PythonBinary, self).ninja_rules()
         output = self._target_file_path()
-        inputs = [self._source_file_path(s) for s in self.srcs]
+        inputs = [self._get_target_file('pylib')]
         targets = self.blade.get_build_targets()
         for key in self.expanded_deps:
             dep = targets[key]
