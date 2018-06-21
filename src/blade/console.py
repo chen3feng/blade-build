@@ -133,7 +133,6 @@ def log(msg):
         print >>_log, msg
 
 def flush():
-    '''FLush '''
     sys.stdout.flush()
     sys.stderr.flush()
     if _log:

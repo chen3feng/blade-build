@@ -268,6 +268,7 @@ def _ninja_build(options):
 def build(options):
     _check_code_style(_TARGETS)
     console.info('building...')
+    console.flush()
     if options.native_builder == 'ninja':
         returncode = _ninja_build(options)
     else:
@@ -276,7 +277,6 @@ def build(options):
         console.error('building failure.')
     else:
         console.info('building done.')
-    console.flush()
     return returncode
 
 
