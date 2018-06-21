@@ -193,45 +193,46 @@ class PythonLibrary(PythonTarget):
                               visibility,
                               kwargs)
 
-    def scons_rules(self):
-        """scons_rules.
-
-        Description
-        -----------
-        It outputs the scons rules according to user options.
-
-        """
-        self._prepare_to_generate_rule()
+    def _scons_pylib(self):
         env_name = self._env_name()
         var_name = self._var_name('pylib')
 
         sources = self.data.get('python_sources', [])
-        if sources:
-            self._write_rule('%s = %s.PythonLibrary("%s", %s)' % (
-                             var_name, env_name,
-                             '%s.pylib' % self._target_file_path(),
-                             sources))
-            self.data['python_var'] = var_name
-            dep_var_list = []
-            targets = self.blade.get_build_targets()
-            for dep in self.deps:
-                var = targets[dep].data.get('python_var')
-                if var:
-                    dep_var_list.append(var)
+        if not sources:
+            return ''
+        self._write_rule('%s = %s.PythonLibrary("%s", %s)' % (
+                         var_name, env_name,
+                         '%s.pylib' % self._target_file_path(),
+                         sources))
+        self.data['python_var'] = var_name
+        dep_var_list = []
+        targets = self.blade.get_build_targets()
+        for dep in self.deps:
+            var = targets[dep].data.get('python_var')
+            if var:
+                dep_var_list.append(var)
 
-            for dep_var in dep_var_list:
-                self._write_rule('%s.Depends(%s, %s)' % (
-                                 env_name, var_name, dep_var))
+        for dep_var in dep_var_list:
+            self._write_rule('%s.Depends(%s, %s)' % (
+                             env_name, var_name, dep_var))
+        return var_name
 
-    def ninja_rules(self):
+    def scons_rules(self):
+        self._prepare_to_generate_rule()
+        self._scons_pylib()
+
+    def _ninja_pylib(self):
         if not self.srcs:
-            return
+            return ''
         output = self._target_file_path() + '.pylib'
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self.ninja_vars()
         self.ninja_build(output, 'pythonlibrary', inputs=inputs, variables=vars)
         self._add_target_file('pylib', output)
+        return output
 
+    def ninja_rules(self):
+        self._ninja_pylib()
 
 def py_library(name,
                srcs=[],
@@ -297,20 +298,15 @@ class PythonBinary(PythonLibrary):
         return rel_path.replace('/', '.')
 
     def scons_rules(self):
-        """scons_rules.
-
-        Description
-        -----------
-        It outputs the scons rules according to user options.
-
-        """
-        super(PythonBinary, self).scons_rules()
+        self._prepare_to_generate_rule()
         env_name = self._env_name()
         var_name = self._var_name()
 
+        self_pylib = self._scons_pylib()
+        dep_var_list = [self_pylib] if self_pylib else []
+
         self._write_rule('%s.Append(ENTRY="%s")' % (env_name, self._get_entry()))
         targets = self.blade.get_build_targets()
-        dep_var_list = [self.data.get('python_var')]
         for dep in self.expanded_deps:
             python_var = targets[dep].data.get('python_var')
             if python_var:
@@ -323,9 +319,9 @@ class PythonBinary(PythonLibrary):
                          ','.join(dep_var_list)))
 
     def ninja_rules(self):
-        super(PythonBinary, self).ninja_rules()
         output = self._target_file_path()
-        inputs = [self._get_target_file('pylib')]
+        pylib = self._ninja_pylib()
+        inputs = [pylib] if pylib else []
         targets = self.blade.get_build_targets()
         for key in self.expanded_deps:
             dep = targets[key]
