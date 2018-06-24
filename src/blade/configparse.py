@@ -30,6 +30,7 @@ class BladeConfig(object):
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
                 'test_timeout': None,
                 'native_builder': 'scons',
+                'debug_info_level': 'mid',
             },
 
             'cc_test_config': {
@@ -64,7 +65,13 @@ class BladeConfig(object):
                 'maven_central': '',
                 'warnings':['-Werror', '-Xlint:all'],
                 'source_encoding': None,
-                'java_home':''
+                'java_home':'',
+                'debug_info_levels': {
+                    'no': ['-g:none'],
+                    'low': ['-g:lines'],
+                    'mid': ['-g:sources,lines'],
+                    'high': ['-g'],
+                },
             },
 
             'java_binary_config': {
@@ -134,6 +141,12 @@ class BladeConfig(object):
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
                 'securecc' : None,
+                'debug_info_levels': {
+                    'no': ['-g0'],
+                    'low': ['-g1'],
+                    'mid': ['-g'],
+                    'high': ['-g3'],
+                },
             },
             'cc_library_config': {
                 'prebuilt_libpath_pattern' : 'lib${bits}_${profile}',
@@ -206,7 +219,7 @@ class BladeConfig(object):
 
     def get_config(self, section_name):
         """get config section, returns default values if not set """
-        return self.configs.get(section_name, {})
+        return self.configs[section_name]
 
 
 # Global config object
