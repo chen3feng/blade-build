@@ -514,13 +514,14 @@ build __securecc_phony__ : phony
         if config['protobuf_java_incs']:
             protobuf_java_incs = protoc_import_path_option(config['protobuf_java_incs'])
         self._add_rule('''
+protocflags =
 protoccpppluginflags =
 protocjavapluginflags =
 protocpythonpluginflags =
 ''')
         self.generate_rule(name='proto',
                            command='%s --proto_path=. %s -I=`dirname ${in}` '
-                                   '--cpp_out=%s ${protoccpppluginflags} ${in}' % (
+                                   '--cpp_out=%s ${protocflags} ${protoccpppluginflags} ${in}' % (
                                    protoc, protobuf_incs, self.build_dir),
                            description='PROTOC ${in}')
         self.generate_rule(name='protojava',

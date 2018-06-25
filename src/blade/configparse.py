@@ -115,6 +115,7 @@ class BladeConfig(object):
                 # All the generated go source files will be placed
                 # into $GOPATH/src/protobuf_go_path
                 'protobuf_go_path': '',
+                'protoc_direct_dependencies': False,
             },
 
             'protoc_plugin_config' : {
