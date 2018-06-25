@@ -84,8 +84,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         Init the proto target.
 
         """
-        srcs_list = var_to_list(srcs)
-        self._check_proto_srcs_name(srcs_list)
+        srcs = var_to_list(srcs)
+        self._check_proto_srcs_name(srcs)
         CcTarget.__init__(self,
                           name,
                           'proto_library',
@@ -96,6 +96,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                           [], [], [], optimize, [], [],
                           blade,
                           kwargs)
+        if srcs:
+            self.data['public_protos'] = [self._source_file_path(s) for s in srcs]
 
         proto_config = configparse.blade_config.get_config('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
@@ -145,13 +147,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['python_sources'] = []
         self.data['generate_descriptors'] = generate_descriptors
 
-    def _check_proto_srcs_name(self, srcs_list):
-        """_check_proto_srcs_name.
-
-        Checks whether the proto file's name ends with 'proto'.
-
-        """
-        for src in srcs_list:
+    def _check_proto_srcs_name(self, srcs):
+        """Checks whether the proto file's name ends with 'proto'. """
+        for src in srcs:
             if not src.endswith('.proto'):
                 console.error_exit('Invalid proto file name %s' % src)
 
@@ -361,6 +359,22 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 flags[language] = p.protoc_plugin_flag(self.build_path)
         return flags
 
+    def protoc_direct_dependencies(self):
+        protos = self.data.get('public_protos')[:]
+        for key in self.deps:
+            dep = self.target_database[key]
+            protos += dep.data.get('public_protos', [])
+        return protos
+
+    def _protoc_direct_dependencies_rules(self):
+        config = configparse.blade_config.get_config('proto_library_config')
+        if config['protoc_direct_dependencies']:
+            dependencies = self.protoc_direct_dependencies()
+            if len(dependencies) > 1:
+                env_name = self._env_name()
+                self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
+                                 env_name, ':'.join(dependencies)))
+
     def scons_rules(self):
         """scons_rules.
 
@@ -374,6 +388,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         env_name = self._env_name()
         options = self.blade.get_options()
 
+        self._protoc_direct_dependencies_rules()
         self._protoc_plugin_rules()
 
         if (getattr(options, 'generate_java', False) or
@@ -439,7 +454,14 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             key = 'protoc%spluginflags' % language
             value = flags[language]
             return { key: value }
-        return None
+        return {}
+
+    def ninja_protoc_direct_dependencies(self, vars):
+        config = configparse.blade_config.get_config('proto_library_config')
+        if config['protoc_direct_dependencies']:
+            dependencies = self.protoc_direct_dependencies()
+            if len(dependencies) > 1:
+                vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
     def ninja_proto_java_rules(self, plugin_flags):
         java_sources = []
@@ -495,6 +517,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         plugin_flags = self.protoc_plugin_flags()
         vars = self.ninja_protoc_plugin_vars(plugin_flags, 'cpp')
+        self.ninja_protoc_direct_dependencies(vars)
         cpp_sources, cpp_headers = [], []
         for src in self.srcs:
             source, header = self._proto_gen_files(src)

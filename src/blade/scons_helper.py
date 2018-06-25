@@ -1277,7 +1277,7 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
     proto_bld = SCons.Builder.Builder(action = MakeAction(
-        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $PROTOCCPPPLUGINFLAGS $SOURCE" % (
+        "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $PROTOCFLAGS $PROTOCCPPPLUGINFLAGS $SOURCE" % (
             protoc_bin, protobuf_incs_str, build_dir),
         compile_proto_cc_message))
     top_env.Append(BUILDERS = {"Proto" : proto_bld})
@@ -1317,7 +1317,8 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
         generate_proto_descriptor_message))
     top_env.Append(BUILDERS = {"ProtoDescriptors" : proto_descriptor_bld})
 
-    top_env.Replace(PROTOCCPPPLUGINFLAGS = "",
+    top_env.Replace(PROTOCFLAGS = "",
+                    PROTOCCPPPLUGINFLAGS = "",
                     PROTOCJAVAPLUGINFLAGS = "",
                     PROTOCPYTHONPLUGINFLAGS = "")
 
