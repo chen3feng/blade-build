@@ -49,7 +49,7 @@ class BinaryRunner(object):
 
     def _runfiles_dir(self, target):
         """Returns runfiles dir. """
-        return '%s.runfiles' % (self._executable(target))
+        return '%s.runfiles' % self._executable(target)
 
     def _get_prebuilt_files(self, target):
         """Get prebuilt files for one target that it depends. """
