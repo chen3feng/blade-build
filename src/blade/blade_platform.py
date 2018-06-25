@@ -248,11 +248,10 @@ class CcFlagsManager(object):
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
-        obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                   self.cc, obj, language, flag, obj))
+                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
+                   self.cc, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:

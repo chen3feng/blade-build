@@ -172,6 +172,8 @@ class BladeConfig(object):
                 execfile(filename, BladeConfig._globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s, exit...' % filename)
+        finally:
+            self.current_file_name = ''
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
@@ -226,6 +228,13 @@ class BladeConfig(object):
 blade_config = BladeConfig()
 
 
+def _check_kwarg_enum_value(kwargs, name, valid_values):
+    value = kwargs.get(name)
+    if value is not None and value not in valid_values:
+        console.error_exit('%s: Invalid %s value %s, can only be in %s' % (
+            blade_config.current_file_name, name, value, valid_values))
+
+
 def config_items(**kwargs):
     """Used in config functions for config file, to construct a appended
     items dict, and then make syntax more pretty
@@ -257,10 +266,9 @@ __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 
 def global_config(append=None, **kwargs):
     """global_config section. """
-    duplicated_source_action = kwargs.get('duplicated_source_action')
-    if duplicated_source_action not in __DUPLICATED_SOURCE_ACTION_VALUES:
-        console.error_exit('Invalid global_config.duplicated_source_action '
-                'value, can only be in %s' % __DUPLICATED_SOURCE_ACTION_VALUES)
+    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
+    debug_info_levels = blade_config.get_config('cc_config')['debug_info_levels'].keys()
+    _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     blade_config.update_config('global_config', append, kwargs)
 
 

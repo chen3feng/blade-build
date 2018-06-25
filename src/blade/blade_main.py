@@ -389,7 +389,7 @@ def adjust_config_by_options(config, options):
     for option in ('debug_info_level', 'native_builder'):
         value = getattr(options, option)
         if value:
-            config.configs['global_config'][option] = value
+            config.global_config(**{option: value})
 
 
 def clear_build_script():

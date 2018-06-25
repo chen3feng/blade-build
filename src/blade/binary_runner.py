@@ -45,11 +45,20 @@ class BinaryRunner(object):
 
     def _executable(self, target):
         """Returns the executable path. """
-        return os.path.join(self.build_dir, target.path, target.name)
+        return '%s/%s/%s' % (self.build_dir, target.path, target.name)
 
     def _runfiles_dir(self, target):
         """Returns runfiles dir. """
-        return '%s.runfiles' % self._executable(target)
+        return './%s.runfiles' % (self._executable(target))
+
+    def _prepare_run_env(self, target):
+        """Prepare the run environment. """
+        profile_link_name = os.path.basename(self.build_dir)
+        target_dir = os.path.dirname(self._executable(target))
+        lib_link = os.path.join(target_dir, profile_link_name)
+        if os.path.exists(lib_link):
+            os.remove(lib_link)
+        os.symlink(os.path.abspath(self.build_dir), lib_link)
 
     def _get_prebuilt_files(self, target):
         """Get prebuilt files for one target that it depends. """
