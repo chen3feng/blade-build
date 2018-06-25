@@ -68,8 +68,8 @@ class BladeConfig(object):
                 'java_home':'',
                 'debug_info_levels': {
                     'no': ['-g:none'],
-                    'low': ['-g:lines'],
-                    'mid': ['-g:sources,lines'],
+                    'low': ['-g:source'],
+                    'mid': ['-g:source,lines'],
                     'high': ['-g'],
                 },
             },

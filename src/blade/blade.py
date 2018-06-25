@@ -344,6 +344,7 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
+        native_builder = self.get_config('global_config')['native_builder']
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
@@ -359,7 +360,7 @@ class Blade(object):
                 and k not in self.__direct_targets):
                 continue
 
-            if self.get_config('global_config')['native_builder'] == 'ninja':
+            if native_builder == 'ninja':
                 blade_object.ninja_rules()
             else:
                 blade_object.scons_rules()
