@@ -248,11 +248,10 @@ class CcFlagsManager(object):
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
-        obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                   self.cc, obj, language, flag, obj))
+                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
+                   self.cc, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
@@ -268,17 +267,15 @@ class CcFlagsManager(object):
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
+        global_config = configparse.blade_config.get_config('global_config')
+        cc_config = configparse.blade_config.get_config('cc_config')
         flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
         linkflags = ['-m%s' % self.options.m]
 
         # Debugging information setting
-        if self.options.no_debug_info:
-            flags_except_warning.append('-g0')
-        else:
-            if self.options.profile == 'debug':
-                flags_except_warning.append('-ggdb3')
-            elif self.options.profile == 'release':
-                flags_except_warning.append('-g')
+        debug_info_level = global_config['debug_info_level']
+        debug_info_options = cc_config['debug_info_levels'][debug_info_level]
+        flags_except_warning += debug_info_options
 
         # Option debugging flags
         if self.options.profile == 'debug':
