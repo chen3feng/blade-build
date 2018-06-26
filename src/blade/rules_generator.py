@@ -552,10 +552,15 @@ protocpythonpluginflags =
                                    '-e "s/^unsigned int /const unsigned int RESOURCE_/g" > ${out}',
                            description='RESOURCE ${in}')
 
-    def generate_javac_rules(self, java_config):
+    def get_java_command(self, java_config, cmd):
         java_home = java_config['java_home']
-        javac = os.path.join(java_home, 'bin', 'javac')
-        jar = os.path.join(java_home, 'bin', 'jar')
+        if java_home:
+            return os.path.join(java_home, 'bin', cmd)
+        return cmd
+
+    def generate_javac_rules(self, java_config):
+        javac = self.get_java_command(java_config, 'javac')
+        jar = self.get_java_command(java_config, 'jar')
         cmd = [javac]
         version = java_config['version']
         source_version = java_config.get('source_version', version)
@@ -615,12 +620,16 @@ javacflags =
                            command=self.generate_toolchain_command('java_binary'),
                            description='JAVA BIN ${out}')
 
-    def generate_scala_rules(self, java_home):
+    def generate_scala_rules(self, java_config):
         scala_config = self.blade_config.get_config('scala_config')
         scala_home = scala_config['scala_home']
-        scala = os.path.join(scala_home, 'bin', 'scala')
-        scalac = os.path.join(scala_home, 'bin', 'scalac')
-        java = os.path.join(java_home, 'bin', 'java')
+        if scala_home:
+            scala = os.path.join(scala_home, 'bin', 'scala')
+            scalac = os.path.join(scala_home, 'bin', 'scalac')
+        else:
+            scala = 'scala'
+            scalac = 'scalac'
+        java = self.get_java_command(java_config, 'java')
         self._add_rule('''
 scalacflags = -nowarn
 ''')
@@ -645,8 +654,7 @@ scalacflags = -nowarn
         java_config = self.blade_config.get_config('java_config')
         self.generate_javac_rules(java_config)
         self.generate_java_resource_rules()
-        java_home = java_config['java_home']
-        jar = os.path.join(java_home, 'bin', 'jar')
+        jar = self.get_java_command(java_config, 'jar')
         args = '%s ${out} ${in}' % jar
         self.generate_rule(name='javajar',
                            command=self.generate_toolchain_command('java_jar', suffix=args),
@@ -656,7 +664,7 @@ scalacflags = -nowarn
                            command=self.generate_toolchain_command('java_fatjar'),
                            description='FAT JAR ${out}')
         self.generate_java_binary_rules()
-        self.generate_scala_rules(java_home)
+        self.generate_scala_rules(java_config)
 
     def generate_thrift_rules(self):
         thrift_config = self.blade_config.get_config('thrift_config')

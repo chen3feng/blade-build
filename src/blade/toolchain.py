@@ -207,7 +207,7 @@ def generate_java_jar_entry(args):
             option = 'uf'
         cmd = ['%s %s %s' % (jar, option, target)]
         for resource in resources:
-            cmd.append("-C '%s' '%s'" % (resources_dir, 
+            cmd.append("-C '%s' '%s'" % (resources_dir,
                                          os.path.relpath(resource, resources_dir)))
         return blade_util.shell(cmd)
 
@@ -447,19 +447,14 @@ def generate_python_binary_entry(args):
     pybin = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
     dirs, dirs_with_init_py = set(), set()
     for arg in args[3:]:
-        if arg.endswith('.pylib'):
-            pylib = open(arg)
-            data = eval(pylib.read())
-            pylib.close()
-            pylib_base_dir = data['base_dir']
-            for libsrc, digest in data['srcs']:
-                arcname = os.path.relpath(libsrc, pylib_base_dir)
-                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-                pybin.write(libsrc, arcname)
-        else:
-            arcname = os.path.relpath(arg, basedir)
+        pylib = open(arg)
+        data = eval(pylib.read())
+        pylib.close()
+        pylib_base_dir = data['base_dir']
+        for libsrc, digest in data['srcs']:
+            arcname = os.path.relpath(libsrc, pylib_base_dir)
             _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-            pybin.write(arg, arcname)
+            pybin.write(libsrc, arcname)
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py

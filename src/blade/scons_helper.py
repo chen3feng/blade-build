@@ -228,19 +228,14 @@ def generate_python_binary(target, source, env):
     dirs_with_init_py = set()
     for s in source:
         src = str(s)
-        if src.endswith('.pylib'):
-            libfile = open(src)
-            data = eval(libfile.read())
-            libfile.close()
-            pylib_base_dir = data['base_dir']
-            for libsrc, digest in data['srcs']:
-                arcname = os.path.relpath(libsrc, pylib_base_dir)
-                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-                target_file.write(libsrc, arcname)
-        else:
-            arcname = os.path.relpath(src, base_dir)
+        libfile = open(src)
+        data = eval(libfile.read())
+        libfile.close()
+        pylib_base_dir = data['base_dir']
+        for libsrc, digest in data['srcs']:
+            arcname = os.path.relpath(libsrc, pylib_base_dir)
             _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-            target_file.write(src, arcname)
+            target_file.write(libsrc, arcname)
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py

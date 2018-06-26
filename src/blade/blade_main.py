@@ -269,7 +269,7 @@ def build(options):
     _check_code_style(_TARGETS)
     console.info('building...')
     console.flush()
-    if options.native_builder == 'ninja':
+    if configparse.blade_config.get_config('global_config')['native_builder'] == 'ninja':
         returncode = _ninja_build(options)
     else:
         returncode = _scons_build(options)
@@ -299,9 +299,10 @@ def test(options):
 def clean(options):
     console.info('cleaning...(hint: please specify --generate-dynamic to '
                  'clean your so)')
-    cmd = [options.native_builder]
+    native_builder = configparse.blade_config.get_config('global_config')['native_builder']
+    cmd = [native_builder]
     # cmd += native_builder_options(options)
-    if options.native_builder == 'ninja':
+    if native_builder == 'ninja':
         cmd += ['-t', 'clean']
     else:
         cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
@@ -384,9 +385,11 @@ def setup_log(build_dir):
     console.set_log_file(log_file)
 
 
-def adjust_options_by_config(options, config):
-    if hasattr(options, 'native_builder') and not options.native_builder:
-        options.native_builder = config.configs['global_config']['native_builder']
+def adjust_config_by_options(config, options):
+    for option in ('debug_info_level', 'native_builder'):
+        value = getattr(options, option)
+        if value:
+            config.global_config(**{option: value})
 
 
 def clear_build_script():
@@ -466,7 +469,7 @@ def _main(blade_path):
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
-    adjust_options_by_config(options, configparse.blade_config)
+    adjust_config_by_options(configparse.blade_config, options)
     setup_log(build_dir)
 
     lock_file_fd = lock_workspace()

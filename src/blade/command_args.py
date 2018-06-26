@@ -153,9 +153,9 @@ class CmdArguments(object):
                             help=('Build profile, default is release'))
 
         parser.add_argument('--no-debug-info',
-                            dest='no_debug_info',
-                            action='store_true',
-                            default=False,
+                            dest='debug_info_level',
+                            action='store_const',
+                            const='no',
                             help=('Do not produce debugging information, this '
                                   'make less disk space cost but hard to debug, '
                                   'default is false'))
