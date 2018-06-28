@@ -95,7 +95,7 @@ def _get_tar_mode_from_suffix(suffix):
 
 def generate_tar_package(path, sources, destinations, suffix):
     mode = _get_tar_mode_from_suffix(suffix)
-    tar = tarfile.open(path, mode)
+    tar = tarfile.open(path, mode, dereference=True)
     manifest = archive_package_sources(tar.add, sources, destinations)
     manifest_path = '%s.MANIFEST' % path
     m = open(manifest_path, 'w')

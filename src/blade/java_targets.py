@@ -799,6 +799,7 @@ class JavaTarget(Target, JavaTargetMixIn):
             self.ninja_build_jar(jar, inputs=srcs, javacflags=javacflags)
         elif resources:
             self.ninja_build(jar, 'javajar', inputs=resources)
+            self._add_target_file('jar', jar)
         else:
             jar = ''
         return jar
