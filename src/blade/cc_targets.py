@@ -660,7 +660,7 @@ class CcTarget(Target):
     def _setup_ninja_cc_vars(self, vars):
         """Set up warning, compile options and include directories for cc build. """
         if self.data.get('warning') != 'yes':
-            vars['cc_warnings'] = ''
+            vars['c_warnings'] = ''
             vars['cxx_warnings'] = ''
         cppflags, includes = self._get_cc_flags()
         if cppflags:
