@@ -83,18 +83,17 @@ def generate_zip_package(path, sources, destinations):
     zip.close()
 
 
-def _get_tar_mode_from_suffix(suffix):
-    return {
-        'tar' : 'w',
-        'tar.gz' : 'w:gz',
-        'tgz' : 'w:gz',
-        'tar.bz2' : 'w:bz2',
-        'tbz' : 'w:bz2',
-    }[suffix]
+_TAR_WRITE_MODES = {
+    'tar' : 'w',
+    'tar.gz' : 'w:gz',
+    'tgz' : 'w:gz',
+    'tar.bz2' : 'w:bz2',
+    'tbz' : 'w:bz2',
+}
 
 
 def generate_tar_package(path, sources, destinations, suffix):
-    mode = _get_tar_mode_from_suffix(suffix)
+    mode = _TAR_WRITE_MODES[suffix]
     tar = tarfile.open(path, mode, dereference=True)
     manifest = archive_package_sources(tar.add, sources, destinations)
     manifest_path = '%s.MANIFEST' % path
@@ -112,10 +111,12 @@ def generate_package_entry(args):
     middle = len(manifest) / 2
     sources = manifest[:middle]
     destinations = manifest[middle:]
-    suffix = os.path.splitext(path)[1]
-    if suffix == 'zip':
+    if path.endswith('.zip'):
         generate_zip_package(path, sources, destinations)
     else:
+        for suffix in _TAR_WRITE_MODES.keys():
+            if path.endswith(suffix):
+                break
         generate_tar_package(path, sources, destinations, suffix)
 
 
@@ -207,7 +208,7 @@ def generate_java_jar_entry(args):
             option = 'uf'
         cmd = ['%s %s %s' % (jar, option, target)]
         for resource in resources:
-            cmd.append("-C '%s' '%s'" % (resources_dir,
+            cmd.append("-C '%s' '%s'" % (resources_dir, 
                                          os.path.relpath(resource, resources_dir)))
         return blade_util.shell(cmd)
 
