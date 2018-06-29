@@ -208,7 +208,7 @@ def generate_java_jar_entry(args):
             option = 'uf'
         cmd = ['%s %s %s' % (jar, option, target)]
         for resource in resources:
-            cmd.append("-C '%s' '%s'" % (resources_dir, 
+            cmd.append("-C '%s' '%s'" % (resources_dir,
                                          os.path.relpath(resource, resources_dir)))
         return blade_util.shell(cmd)
 
