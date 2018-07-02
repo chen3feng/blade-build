@@ -539,7 +539,11 @@ toolchains = {
 
 if __name__ == '__main__':
     name = sys.argv[1]
-    ret = toolchains[name](sys.argv[2:])
+    try:
+        ret = toolchains[name](sys.argv[2:])
+    except Exception as e:
+        ret = 1
+        console.error(str(e))
     if ret:
         sys.exit(ret)
 
