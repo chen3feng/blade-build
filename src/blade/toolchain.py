@@ -515,7 +515,7 @@ def generate_python_binary(basedir, mainentry, path, args):
 
 
 def generate_python_binary_entry(args):
-    generate_python_binary(args[0], args[2], args[2], args[3:])
+    generate_python_binary(args[0], args[1], args[2], args[3:])
 
 
 toolchains = {
