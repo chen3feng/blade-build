@@ -40,6 +40,7 @@ import SCons.Scanner.Prog
 
 import blade_util
 import console
+import toolchain
 
 from console import colors
 
@@ -223,43 +224,9 @@ def generate_python_binary(target, source, env):
     """The action to generate python executable file. """
     target_name = str(target[0])
     base_dir, build_dir = env.get('BASE_DIR', ''), env['BUILD_DIR']
-    target_file = zipfile.ZipFile(target_name, 'w', zipfile.ZIP_DEFLATED)
-    dirs = set()
-    dirs_with_init_py = set()
-    for s in source:
-        src = str(s)
-        libfile = open(src)
-        data = eval(libfile.read())
-        libfile.close()
-        pylib_base_dir = data['base_dir']
-        for libsrc, digest in data['srcs']:
-            arcname = os.path.relpath(libsrc, pylib_base_dir)
-            _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-            target_file.write(libsrc, arcname)
-
-    # Insert __init__.py into each dir if missing
-    dirs_missing_init_py = dirs - dirs_with_init_py
-    for dir in sorted(dirs_missing_init_py):
-        target_file.writestr(os.path.join(dir, '__init__.py'), '')
-    target_file.writestr('__init__.py', '')
-    target_file.close()
-
-    target_file = open(target_name, 'rb')
-    zip_content = target_file.read()
-    target_file.close()
-
-    # Insert bootstrap before zip, it is also a valid zip file.
-    # unzip will seek actually start until meet the zip magic number.
     entry = env['ENTRY']
-    bootstrap = (
-        '#!/bin/sh\n'
-        '\n'
-        'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % entry
-    target_file = open(target_name, 'wb')
-    target_file.write(bootstrap)
-    target_file.write(zip_content)
-    target_file.close()
-    os.chmod(target_name, 0775)
+    srcs = [str(s) for s in source]
+    toolchain.generate_python_binary(base_dir, entry, target_name, srcs)
     return None
 
 

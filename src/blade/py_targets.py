@@ -234,19 +234,73 @@ class PythonLibrary(PythonTarget):
     def ninja_rules(self):
         self._ninja_pylib()
 
+
+class PrebuiltPythonLibrary(PythonTarget):
+    def __init__(self,
+                 name,
+                 srcs,
+                 deps,
+                 base,
+                 visibility,
+                 kwargs):
+        """Init method. """
+        PythonTarget.__init__(self,
+                              name,
+                              'prebuilt_py_library',
+                              srcs,
+                              deps,
+                              base,
+                              visibility,
+                              kwargs)
+        if base:
+            console.error_exit(r"%s: Prebuilt py_library doesn't support base" %
+                               self.fullname)
+        if len(self.srcs) != 1:
+            console.error_exit('%s: There can only be 1 file in prebuilt py_library' %
+                               self.fullname)
+        src = self.srcs[0]
+        if not src.endswith('.egg') and not src.endswith('.whl'):
+            console.error_exit(
+                '%s: Invalid file %s in srcs, prebuilt py_library only support egg and whl' %
+                (self.fullname, src))
+
+    def scons_rules(self):
+        self._prepare_to_generate_rule()
+        env_name = self._env_name()
+        var_name = self._var_name('pylib')
+
+        self._write_rule('%s = %s.File("%s")' % (
+                         var_name, env_name,
+                         self._source_file_path(self.srcs[0])))
+        self.data['python_var'] = var_name
+
+    def ninja_rules(self):
+        self._add_target_file('pylib', self._source_file_path(self.srcs[0]))
+
+
 def py_library(name,
                srcs=[],
                deps=[],
                base=None,
+               prebuilt=None,
                visibility=None,
                **kwargs):
     """python library. """
-    target = PythonLibrary(name,
-                           srcs,
-                           deps,
-                           base,
-                           visibility,
-                           kwargs)
+    if prebuilt:
+        target = PrebuiltPythonLibrary(name,
+                                       srcs,
+                                       deps,
+                                       base,
+                                       visibility,
+                                       kwargs)
+    else:
+        target = PythonLibrary(name,
+                               srcs,
+                               deps,
+                               base,
+                               visibility,
+                               kwargs)
+
     blade.blade.register_target(target)
 
 
