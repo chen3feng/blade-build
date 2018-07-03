@@ -144,9 +144,10 @@ class ScalaTarget(Target, JavaTargetMixIn):
                                  scala=True, scalacflags=scalacflags)
         elif resources:
             self.ninja_build(jar, 'javajar', inputs=resources)
-            self._add_target_file('jar', jar)
         else:
             jar = ''
+        if jar:
+            self._add_target_file('jar', jar)
         return jar
 
 

@@ -474,8 +474,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self.ninja_build(output, 'protojava', inputs=input, variables=vars)
             java_sources.append(output)
 
-        self.ninja_build_jar(inputs=java_sources,
-                             source_encoding=self.data.get('source_encoding'))
+        jar = self.ninja_build_jar(inputs=java_sources,
+                                   source_encoding=self.data.get('source_encoding'))
+        self._add_target_file('jar', jar)
 
     def ninja_proto_python_rules(self, plugin_flags):
         # vars = self.ninja_protoc_plugin_vars(plugin_flags, 'python')
