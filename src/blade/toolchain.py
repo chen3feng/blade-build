@@ -455,7 +455,7 @@ def _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py):
         name_list = lib.namelist()
         for name in name_list:
             if filter(name):
-                if not dirs is None and not dirs_with_init_py is None:
+                if dirs is not None and dirs_with_init_py is not None:
                     _update_init_py_dirs(name, dirs, dirs_with_init_py)
                 pybin.writestr(name, lib.read(name))
 
@@ -515,7 +515,7 @@ def generate_python_binary(basedir, mainentry, path, args):
 
 
 def generate_python_binary_entry(args):
-    generate_python_binary(args[0], args[2], args[2], args[3:])
+    generate_python_binary(args[0], args[1], args[2], args[3:])
 
 
 toolchains = {
@@ -539,7 +539,11 @@ toolchains = {
 
 if __name__ == '__main__':
     name = sys.argv[1]
-    ret = toolchains[name](sys.argv[2:])
+    try:
+        ret = toolchains[name](sys.argv[2:])
+    except Exception as e:
+        ret = 1
+        console.error(str(e))
     if ret:
         sys.exit(ret)
 
