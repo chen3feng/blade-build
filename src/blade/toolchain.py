@@ -455,7 +455,7 @@ def _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py):
         name_list = lib.namelist()
         for name in name_list:
             if filter(name):
-                if not dirs is None and not dirs_with_init_py is None:
+                if dirs is not None and dirs_with_init_py is not None:
                     _update_init_py_dirs(name, dirs, dirs_with_init_py)
                 pybin.writestr(name, lib.read(name))
 

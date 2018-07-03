@@ -253,7 +253,7 @@ class PrebuiltPythonLibrary(PythonTarget):
                               visibility,
                               kwargs)
         if base:
-            console.error_exit(r"%s: Prebuilt py_library doesn't support base" %
+            console.error_exit("%s: Prebuilt py_library doesn't support base" %
                                self.fullname)
         if len(self.srcs) != 1:
             console.error_exit('%s: There can only be 1 file in prebuilt py_library' %
