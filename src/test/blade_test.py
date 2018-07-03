@@ -30,7 +30,7 @@ class TargetTest(unittest.TestCase):
         if full_targets:
             self.targets = full_targets
         else:
-            self.targets = ['%s/%s' % (path, target)]
+            self.targets = ['%s:%s' % (path, target)]
         self.target_path = path
         self.cur_dir = os.getcwd()
         os.chdir('./testdata')
@@ -39,6 +39,7 @@ class TargetTest(unittest.TestCase):
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
         options = {
+                'arch': 'x86_64',
                 'm': '64',
                 'profile': 'release',
                 'generate_dynamic': True,
@@ -53,8 +54,11 @@ class TargetTest(unittest.TestCase):
         self.related_targets = {}
 
         # Init global configuration manager
-        blade.configparse.blade_config = BladeConfig(self.current_source_dir)
-        blade.configparse.blade_config.parse()
+        blade.configparse.blade_config = BladeConfig()
+        config = blade.configparse.blade_config
+        config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+        config.try_parse_file(os.path.expanduser('~/.bladerc'))
+        config.try_parse_file(os.path.join('.', 'BLADE_ROOT'))
 
         blade.blade.blade = Blade(self.targets,
                                   self.blade_path,

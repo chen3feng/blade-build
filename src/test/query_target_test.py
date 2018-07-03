@@ -18,7 +18,7 @@ class TestQuery(blade_test.TargetTest):
     """Test cc_library """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_query', full_targets=['...'], command='query')
+        self.doSetUp('test_query', full_targets=['.:...'], command='query')
         self.query_targets = ['test_query:poppy']
         self.all_targets = self.blade.get_build_targets()
 
