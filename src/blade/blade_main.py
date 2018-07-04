@@ -493,7 +493,7 @@ def _main(blade_path):
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
-    adjust_config_by_options(configparse.blade_config, options)
+    adjust_config_by_options(configparse, options)
     setup_log(build_dir)
     generate_scm(build_dir)
 

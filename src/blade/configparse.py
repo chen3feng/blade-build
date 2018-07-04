@@ -123,6 +123,7 @@ class BladeConfig(object):
                 # into $GOPATH/src/protobuf_go_path
                 'protobuf_go_path': '',
                 'protoc_direct_dependencies': False,
+                'protobuf_python_libs' : [],
             },
 
             'protoc_plugin_config' : {

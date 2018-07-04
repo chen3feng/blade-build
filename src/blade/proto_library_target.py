@@ -102,10 +102,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         proto_config = configparse.blade_config.get_config('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
+        protobuf_python_libs = var_to_list(proto_config['protobuf_python_libs'])
 
         # Hardcode deps rule to thirdparty protobuf lib.
         self._add_hardcode_library(protobuf_libs)
         self._add_hardcode_java_library(protobuf_java_libs)
+        self._add_hardcode_library(protobuf_python_libs)
 
         plugins = var_to_list(plugins)
         self.data['protoc_plugins'] = plugins

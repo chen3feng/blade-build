@@ -116,6 +116,7 @@ class BuildEnvironment(object):
         """Generates ccache rules. """
         if self.ccache_installed:
             self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
+            self._add_rule('top_env.Append(CCACHE_NOHASHDIR="true")')
 
     def setup_scons_cache(self, options):
         """Setup scons cache"""

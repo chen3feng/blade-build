@@ -192,8 +192,9 @@ class BinaryRunner(object):
         for target in self.targets.values():
             self._clean_target(target)
 
-    def run_target(self, target_key):
+    def run_target(self, target_name):
         """Run one single target. """
+        target_key = tuple(target_name.split(':'))
         target = self.targets[target_key]
         if target.type not in self.run_list:
             console.error_exit('target %s:%s is not a target that could run' % (
