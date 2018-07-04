@@ -436,18 +436,24 @@ builddir = %s
                            description='COPY ${in} ${out}')
 
     def generate_cc_warning_vars(self):
-        warnings, cxx_warnings, cc_warnings = self.ccflags_manager.get_warning_flags()
-        cc_warnings += warnings
+        warnings, cxx_warnings, c_warnings = self.ccflags_manager.get_warning_flags()
+        c_warnings += warnings
         cxx_warnings += warnings
         self._add_rule('''
-cc_warnings = %s
+c_warnings = %s
 cxx_warnings = %s
-''' % (' '.join(cc_warnings), ' '.join(cxx_warnings)))
+''' % (' '.join(c_warnings), ' '.join(cxx_warnings)))
 
     def generate_cc_rules(self):
+        build_with_ccache = self.build_environment.ccache_installed
         cc = os.environ.get('CC', 'gcc')
         cxx = os.environ.get('CXX', 'g++')
         ld = os.environ.get('LD', 'g++')
+        if build_with_ccache:
+            os.environ['CCACHE_BASEDIR'] = self.build_environment.blade_root_dir
+            os.environ['CCACHE_NOHASHDIR'] = 'true'
+            cc = 'ccache ' + cc
+            cxx = 'ccache ' + cxx
         self.ccflags_manager.set_cc(cc)
         cc_config = self.blade_config.get_config('cc_config')
         cc_library_config = self.blade_config.get_config('cc_library_config')
@@ -463,7 +469,7 @@ cxx_warnings = %s
         self.generate_cc_warning_vars()
         self.generate_rule(name='cc',
                 command='%s -o ${out} -MMD -MF ${out}.d '
-                        '-c -fPIC %s %s ${cc_warnings} ${cppflags} '
+                        '-c -fPIC %s %s ${c_warnings} ${cppflags} '
                         '%s ${includes} ${in}' % (
                         cc, ' '.join(cflags), ' '.join(cppflags), includes),
                 description='CC ${in}',

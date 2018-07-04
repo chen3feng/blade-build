@@ -442,21 +442,58 @@ def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
         dir = os.path.dirname(dir)
 
 
-def generate_python_binary_entry(args):
-    basedir, mainentry, path = args[:3]
-    if basedir == '__pythonbasedir__':
-        basedir = ''
-    pybin = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
-    dirs, dirs_with_init_py = set(), set()
-    for arg in args[3:]:
-        pylib = open(arg)
+def _pybin_add_pylib(pybin, libname, dirs, dirs_with_init_py):
+    with open(libname) as pylib:
         data = eval(pylib.read())
-        pylib.close()
         pylib_base_dir = data['base_dir']
         for libsrc, digest in data['srcs']:
             arcname = os.path.relpath(libsrc, pylib_base_dir)
             _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
             pybin.write(libsrc, arcname)
+
+
+def _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py):
+    with zipfile.ZipFile(libname, 'r') as lib:
+        name_list = lib.namelist()
+        for name in name_list:
+            if filter(name):
+                if dirs is not None and dirs_with_init_py is not None:
+                    _update_init_py_dirs(name, dirs, dirs_with_init_py)
+                pybin.writestr(name, lib.read(name))
+
+
+def _pybin_add_egg(pybin, libname):
+    def filter(name):
+        if name.startswith('EGG-INFO'):
+            return False
+        if name.endswith('.pyc'):
+            return False
+        return True
+    _pybin_add_zip(pybin, libname, filter, None, None)
+
+
+def _pybin_add_whl(pybin, libname, dirs, dirs_with_init_py):
+    def filter(name):
+        if '.dist-info/' in name:
+            return False
+        return True
+    _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py)
+
+
+def generate_python_binary(basedir, mainentry, path, args):
+    if basedir == '__pythonbasedir__':
+        basedir = ''
+    pybin = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+    dirs, dirs_with_init_py = set(), set()
+    for arg in args:
+        if arg.endswith('.pylib'):
+            _pybin_add_pylib(pybin, arg, dirs, dirs_with_init_py)
+        elif arg.endswith('.egg'):
+            _pybin_add_egg(pybin, arg)
+        elif arg.endswith('.whl'):
+            _pybin_add_whl(pybin, arg, dirs, dirs_with_init_py)
+        else:
+            assert False
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py
@@ -477,6 +514,10 @@ def generate_python_binary_entry(args):
     f.write(zip_content)
     f.close()
     os.chmod(path, 0755)
+
+
+def generate_python_binary_entry(args):
+    generate_python_binary(args[0], args[1], args[2], args[3:])
 
 
 toolchains = {
@@ -500,7 +541,11 @@ toolchains = {
 
 if __name__ == '__main__':
     name = sys.argv[1]
-    ret = toolchains[name](sys.argv[2:])
+    try:
+        ret = toolchains[name](sys.argv[2:])
+    except Exception as e:
+        ret = 1
+        console.error(str(e))
     if ret:
         sys.exit(ret)
 
