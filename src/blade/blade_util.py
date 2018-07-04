@@ -15,6 +15,7 @@
 
 import fcntl
 import os
+import json
 import sys
 import re
 import string
@@ -191,6 +192,16 @@ def shell(cmd, env=None):
         _echo(stdout, stderr)
 
     return p.returncode
+
+
+def load_scm(build_dir):
+    revision = url = 'unknown'
+    path = os.path.join(build_dir, 'scm.json')
+    if os.path.exists(path):
+        with open(path) as f:
+            scm = json.load(f)
+            revision, url = scm['revision'], scm['url']
+    return revision, url
 
 
 def environ_add_path(env, key, path):
