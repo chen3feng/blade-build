@@ -19,7 +19,7 @@ import os
 import time
 import subprocess
 
-import configparse
+import config
 import console
 
 from blade_platform import CcFlagsManager
@@ -55,11 +55,8 @@ class ScriptHeaderGenerator(object):
         self.ccflags_manager = CcFlagsManager(options, build_dir, gcc_version)
         self.svn_roots = svn_roots
 
-        self.blade_config = configparse.blade_config
-        self.distcc_enabled = self.blade_config.get_config(
-                              'distcc_config').get('enabled', False)
-        self.dccc_enabled = self.blade_config.get_config(
-                              'link_config').get('enable_dccc', False)
+        self.distcc_enabled = config.get_item('distcc_config', 'enabled')
+        self.dccc_enabled = config.get_item('link_config', 'enable_dccc')
 
     def _add_rule(self, rule):
         """Append one rule to buffer. """
@@ -129,8 +126,7 @@ import scons_helper
         # Add java_home/bin into PATH to make scons
         # construction variables of java work as expected
         # See http://scons.org/faq.html#SCons_Questions
-        java_config = self.blade_config.get_config('java_config')
-        java_home = java_config['java_home']
+        java_home = config.get_item('java_config', 'java_home')
         if java_home:
             self._add_rule('blade_util.environ_add_path(os.environ, "PATH", '
                            'os.path.join("%s", "bin"))' % java_home)
@@ -146,7 +142,7 @@ import scons_helper
 
     def _generate_fast_link_builders(self):
         """Generates fast link builders if it is specified in blade bash. """
-        link_config = self.blade_config.get_config('link_config')
+        link_config = config.get_section('link_config')
         enable_dccc = link_config['enable_dccc']
         if link_config['link_on_tmp']:
             if (not enable_dccc) or (
@@ -155,7 +151,7 @@ import scons_helper
 
     def _generate_proto_builders(self):
         self._add_rule('time_value = Value("%s")' % time.asctime())
-        proto_config = self.blade_config.get_config('proto_library_config')
+        proto_config = config.get_section('proto_library_config')
         protoc_bin = proto_config['protoc']
         protoc_java_bin = protoc_bin
         if proto_config['protoc_java']:
@@ -180,7 +176,7 @@ import scons_helper
 
     def _generate_thrift_builders(self):
         # Generate thrift library builders.
-        thrift_config = self.blade_config.get_config('thrift_config')
+        thrift_config = config.get_section('thrift_config')
         thrift_incs_str = _incs_list_to_string(thrift_config['thrift_incs'])
         thrift_bin = thrift_config['thrift']
         if thrift_bin.startswith('//'):
@@ -191,7 +187,7 @@ import scons_helper
                     self.build_dir, thrift_bin, thrift_incs_str))
 
     def _generate_fbthrift_builders(self):
-        fbthrift_config = self.blade_config.get_config('fbthrift_config')
+        fbthrift_config = config.get_section('fbthrift_config')
         fbthrift1_bin = fbthrift_config['fbthrift1']
         fbthrift2_bin = fbthrift_config['fbthrift2']
         fbthrift_incs_str = _incs_list_to_string(fbthrift_config['fbthrift_incs'])
@@ -209,19 +205,18 @@ import scons_helper
         self._add_rule('scons_helper.setup_swig_builders(top_env, "%s")' % self.build_dir)
 
     def _generate_java_builders(self):
-        config = self.blade_config.get_config('java_config')
-        bin_config = self.blade_config.get_config('java_binary_config')
         self._add_rule('scons_helper.setup_java_builders(top_env, "%s", "%s")' % (
-            config['java_home'], bin_config['one_jar_boot_jar']))
+            config.get_item('java_config', 'java_home'),
+            config.get_item('java_binary_config', 'one_jar_boot_jar')))
 
     def _generate_scala_builders(self):
-        config = self.blade_config.get_config('scala_config')
-        self._add_rule('scons_helper.setup_scala_builders(top_env, "%s")' % config['scala_home'])
+        self._add_rule('scons_helper.setup_scala_builders(top_env, "%s")' %
+                       config.get_item('scala_config', 'scala_home'))
 
     def _generate_go_builders(self):
-        config = self.blade_config.get_config('go_config')
+        go_config = config.get_section('go_config')
         self._add_rule('scons_helper.setup_go_builders(top_env, "%s", "%s")' %
-                       (config['go'], config['go_home']))
+                       (go_config['go'], go_config['go_home']))
 
     def _generate_other_builders(self):
         self._add_rule('scons_helper.setup_other_builders(top_env)')
@@ -288,7 +283,7 @@ import scons_helper
                         building_var=ld,
                         condition=build_with_dccc)
 
-        cc_config = self.blade_config.get_config('cc_config')
+        cc_config = config.get_section('cc_config')
         cc_env_str = ('CC="%s", CXX="%s", SECURECXX="%s %s"' % (
                       cc_str, cxx_str, cc_config['securecc'], cxx))
         ld_env_str = 'LINK="%s"' % ld_str
@@ -312,7 +307,7 @@ import scons_helper
                         cc_config['cxxflags'],
                         ld_env_str, linkflags))
 
-        cc_library_config = self.blade_config.get_config('cc_library_config')
+        cc_library_config = config.get_section('cc_library_config')
         # By default blade use 'ar rcs' and skip ranlib
         # to generate index for static library
         arflags = ''.join(cc_library_config['arflags'])
@@ -355,7 +350,7 @@ import scons_helper
     def _setup_env_java(self):
         env_java = 'env_java'
         self._add_rule('%s = top_env.Clone()' % env_java)
-        java_config = self.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         version = java_config['version']
         source_version = java_config.get('source_version', version)
         target_version = java_config.get('target_version', version)
@@ -369,8 +364,7 @@ import scons_helper
         if target_version:
             self._add_rule('%s.Append(JAVACFLAGS="-target %s")' % (
                            env_java, target_version))
-        java_test_config = self.blade_config.get_config('java_test_config')
-        jacoco_home = java_test_config['jacoco_home']
+        jacoco_home = config.get_item('java_test_config', 'jacoco_home')
         if jacoco_home:
             jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
             self._add_rule('%s.Replace(JACOCOAGENT="%s")' % (env_java, jacoco_agent))
@@ -455,8 +449,8 @@ cxx_warnings = %s
             cc = 'ccache ' + cc
             cxx = 'ccache ' + cxx
         self.ccflags_manager.set_cc(cc)
-        cc_config = self.blade_config.get_config('cc_config')
-        cc_library_config = self.blade_config.get_config('cc_library_config')
+        cc_config = config.get_section('cc_config')
+        cc_library_config = config.get_section('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
         cppflags, ldflags = self.ccflags_manager.get_flags_except_warning()
         cppflags = cc_config['cppflags'] + cppflags
@@ -510,15 +504,15 @@ build __securecc_phony__ : phony
                            description='SHAREDLINK ${out}')
 
     def generate_proto_rules(self):
-        config = self.blade_config.get_config('proto_library_config')
-        protoc = config['protoc']
+        proto_config = config.get_section('proto_library_config')
+        protoc = proto_config['protoc']
         protoc_java = protoc
-        if config['protoc_java']:
-            protoc_java = config['protoc_java']
-        protobuf_incs = protoc_import_path_option(config['protobuf_incs'])
+        if proto_config['protoc_java']:
+            protoc_java = proto_config['protoc_java']
+        protobuf_incs = protoc_import_path_option(proto_config['protobuf_incs'])
         protobuf_java_incs = protobuf_incs
-        if config['protobuf_java_incs']:
-            protobuf_java_incs = protoc_import_path_option(config['protobuf_java_incs'])
+        if proto_config['protobuf_java_incs']:
+            protobuf_java_incs = protoc_import_path_option(proto_config['protobuf_java_incs'])
         self._add_rule('''
 protocflags =
 protoccpppluginflags =
@@ -600,8 +594,7 @@ javacflags =
                            description='JAVA RESOURCE ${in}')
 
     def generate_java_test_rules(self):
-        java_test_config = self.blade_config.get_config('java_test_config')
-        jacoco_home = java_test_config['jacoco_home']
+        jacoco_home = config.get_item('java_test_config', 'jacoco_home')
         if jacoco_home:
             jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
             prefix = 'JACOCOAGENT=%s' % jacoco_agent
@@ -616,8 +609,7 @@ javacflags =
                            description='JAVA TEST ${out}')
 
     def generate_java_binary_rules(self):
-        config = self.blade_config.get_config('java_binary_config')
-        bootjar = config['one_jar_boot_jar']
+        bootjar = config.get_item('java_binary_config', 'one_jar_boot_jar')
         args = '%s ${mainclass} ${out} ${in}' % bootjar
         self.generate_rule(name='onejar',
                            command=self.generate_toolchain_command('java_onejar', suffix=args),
@@ -627,8 +619,7 @@ javacflags =
                            description='JAVA BIN ${out}')
 
     def generate_scala_rules(self, java_config):
-        scala_config = self.blade_config.get_config('scala_config')
-        scala_home = scala_config['scala_home']
+        scala_home = config.get_item('scala_config', 'scala_home')
         if scala_home:
             scala = os.path.join(scala_home, 'bin', 'scala')
             scalac = os.path.join(scala_home, 'bin', 'scalac')
@@ -657,7 +648,7 @@ scalacflags = -nowarn
                            description='SCALA TEST ${out}')
 
     def generate_java_scala_rules(self):
-        java_config = self.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         self.generate_javac_rules(java_config)
         self.generate_java_resource_rules()
         jar = self.get_java_command(java_config, 'jar')
@@ -673,7 +664,7 @@ scalacflags = -nowarn
         self.generate_scala_rules(java_config)
 
     def generate_thrift_rules(self):
-        thrift_config = self.blade_config.get_config('thrift_config')
+        thrift_config = config.get_section('thrift_config')
         incs = _incs_list_to_string(thrift_config['thrift_incs'])
         thrift = thrift_config['thrift']
         if thrift.startswith('//'):

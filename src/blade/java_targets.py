@@ -460,8 +460,7 @@ class JavaTargetMixIn(object):
     def _generate_java_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if source_encoding is None:
-            config = self.blade.get_config('java_config')
-            source_encoding = config['source_encoding']
+            source_encoding = config.get_item('java_config', 'source_encoding')
         if source_encoding:
             self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
                 self._env_name(), source_encoding))
@@ -738,8 +737,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._generate_java_source_encoding()
         warnings = self.data.get('warnings')
         if warnings is None:
-            config = self.blade.get_config('java_config')
-            warnings = config['warnings']
+            warnings = config.get_item('java_config', 'warnings')
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))

@@ -21,7 +21,7 @@ import sys
 
 import blade
 import console
-import configparse
+import config
 
 from blade_util import environ_add_path
 
@@ -106,16 +106,14 @@ class BinaryRunner(object):
         self._prepare_test_data(target)
         run_env = dict(os.environ)
         environ_add_path(run_env, 'LD_LIBRARY_PATH', runfiles_dir)
-        config = configparse.blade_config.get_config('cc_binary_config')
-        run_lib_paths = config['run_lib_paths']
+        run_lib_paths = config.get_item('cc_binary_config', 'run_lib_paths')
         if run_lib_paths:
             for path in run_lib_paths:
                 if path.startswith('//'):
                     path = path[2:]
                 path = os.path.abspath(path)
                 environ_add_path(run_env, 'LD_LIBRARY_PATH', path)
-        java_config = configparse.blade_config.get_config('java_config')
-        java_home = java_config['java_home']
+        java_home = config.get_item('java_config', 'java_home')
         if java_home:
             java_home = os.path.abspath(java_home)
             environ_add_path(run_env, 'PATH', os.path.join(java_home, 'bin'))

@@ -18,7 +18,7 @@ from string import Template
 import Queue
 
 import blade
-import configparse
+import config
 import console
 import build_rules
 from blade_util import var_to_list, stable_unique
@@ -208,8 +208,7 @@ class CcTarget(Target):
         options = self.blade.get_options()
         m, arch, profile = options.m, options.arch, options.profile
         if CcTarget._default_prebuilt_libpath is None:
-            config = self.blade.get_config('cc_library_config')
-            pattern = config['prebuilt_libpath_pattern']
+            pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
                     bits=m, arch=arch, profile=profile)
 
@@ -266,8 +265,7 @@ class CcTarget(Target):
         oflags = []
         opt_list = self.data.get('optimize')
         if not opt_list:
-            cc_config = self.blade.get_config('cc_config')
-            opt_list = cc_config['optimize']
+            opt_list = config.get_item('cc_config', 'optimize')
         if opt_list:
             for flag in opt_list:
                 if flag.startswith('-'):
@@ -479,7 +477,7 @@ class CcTarget(Target):
         if not self._prebuilt_cc_library_is_depended():
             return
 
-        if self.blade.get_config('global_config')['native_builder'] == 'ninja':
+        if config.get_item('global_config', 'native_builder') == 'ninja':
             paths = self._prebuilt_cc_library_ninja_rules()
         else:
             paths = self._prebuilt_cc_library_scons_rules()
@@ -528,10 +526,9 @@ class CcTarget(Target):
 
     def _need_dynamic_library(self):
         options = self.blade.get_options()
-        config = self.blade.get_config('cc_library_config')
         return (getattr(options, 'generate_dynamic') or
                 self.data.get('build_dynamic') or
-                config.get('generate_dynamic'))
+                config.get_item('cc_library_config', 'generate_dynamic'))
 
     def _cc_library(self):
         self._static_cc_library()
@@ -1023,9 +1020,8 @@ class CcBinary(CcTarget):
         self.data['dynamic_link'] = dynamic_link
         self.data['export_dynamic'] = export_dynamic
 
-        cc_binary_config = self.blade.get_config('cc_binary_config')
         # add extra link library
-        link_libs = var_to_list(cc_binary_config['extra_libs'])
+        link_libs = var_to_list(config.get_item('cc_binary_config', 'extra_libs'))
         self._add_hardcode_library(link_libs)
 
     def _allow_duplicate_source(self):
@@ -1215,7 +1211,7 @@ build_rules.register_function(cc_binary)
 
 def cc_benchmark(name, deps=[], **kwargs):
     """cc_benchmark target. """
-    cc_config = configparse.blade_config.get_config('cc_config')
+    cc_config = config.get_section('cc_config')
     benchmark_libs = cc_config['benchmark_libs']
     benchmark_main_libs = cc_config['benchmark_main_libs']
     deps = var_to_list(deps) + benchmark_libs + benchmark_main_libs
@@ -1415,7 +1411,7 @@ class CcTest(CcBinary):
         Init the cc test.
 
         """
-        cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        cc_test_config = config.get_section('cc_test_config')
         if dynamic_link is None:
             dynamic_link = cc_test_config['dynamic_link']
 

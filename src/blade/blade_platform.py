@@ -15,7 +15,7 @@
 import os
 import subprocess
 
-import configparse
+import config
 import console
 from blade_util import var_to_list
 
@@ -267,8 +267,8 @@ class CcFlagsManager(object):
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
-        global_config = configparse.blade_config.get_config('global_config')
-        cc_config = configparse.blade_config.get_config('cc_config')
+        global_config = config.get_section('global_config')
+        cc_config = config.get_section('cc_config')
         flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
         linkflags = ['-m%s' % self.options.m]
 
@@ -311,7 +311,7 @@ class CcFlagsManager(object):
 
     def get_warning_flags(self):
         """Get the warning flags. """
-        cc_config = configparse.blade_config.get_config('cc_config')
+        cc_config = config.get_section('cc_config')
         cppflags = cc_config['warnings']
         cxxflags = cc_config['cxx_warnings']
         cflags = cc_config['c_warnings']
