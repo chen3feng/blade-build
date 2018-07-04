@@ -114,8 +114,9 @@ def generate_package_entry(args):
     if path.endswith('.zip'):
         generate_zip_package(path, sources, destinations)
     else:
-        for suffix in _TAR_WRITE_MODES.keys():
-            if path.endswith(suffix):
+        for ext in _TAR_WRITE_MODES:
+            if path.endswith(ext):
+                suffix = ext
                 break
         generate_tar_package(path, sources, destinations, suffix)
 
