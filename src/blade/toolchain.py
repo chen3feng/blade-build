@@ -83,19 +83,18 @@ def generate_zip_package(path, sources, destinations):
     zip.close()
 
 
-def _get_tar_mode_from_suffix(suffix):
-    return {
-        'tar' : 'w',
-        'tar.gz' : 'w:gz',
-        'tgz' : 'w:gz',
-        'tar.bz2' : 'w:bz2',
-        'tbz' : 'w:bz2',
-    }[suffix]
+_TAR_WRITE_MODES = {
+    'tar' : 'w',
+    'tar.gz' : 'w:gz',
+    'tgz' : 'w:gz',
+    'tar.bz2' : 'w:bz2',
+    'tbz' : 'w:bz2',
+}
 
 
 def generate_tar_package(path, sources, destinations, suffix):
-    mode = _get_tar_mode_from_suffix(suffix)
-    tar = tarfile.open(path, mode)
+    mode = _TAR_WRITE_MODES[suffix]
+    tar = tarfile.open(path, mode, dereference=True)
     manifest = archive_package_sources(tar.add, sources, destinations)
     manifest_path = '%s.MANIFEST' % path
     m = open(manifest_path, 'w')
@@ -112,10 +111,13 @@ def generate_package_entry(args):
     middle = len(manifest) / 2
     sources = manifest[:middle]
     destinations = manifest[middle:]
-    suffix = os.path.splitext(path)[1]
-    if suffix == 'zip':
+    if path.endswith('.zip'):
         generate_zip_package(path, sources, destinations)
     else:
+        for ext in _TAR_WRITE_MODES:
+            if path.endswith(ext):
+                suffix = ext
+                break
         generate_tar_package(path, sources, destinations, suffix)
 
 
