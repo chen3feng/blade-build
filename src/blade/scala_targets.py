@@ -146,6 +146,8 @@ class ScalaTarget(Target, JavaTargetMixIn):
             self.ninja_build(jar, 'javajar', inputs=resources)
         else:
             jar = ''
+        if jar:
+            self._add_target_file('jar', jar)
         return jar
 
 
