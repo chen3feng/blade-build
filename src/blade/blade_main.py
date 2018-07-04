@@ -86,7 +86,6 @@ from blade_util import find_blade_root_dir, find_file_bottom_up
 from blade_util import get_cwd
 from blade_util import lock_file, unlock_file
 from command_args import CmdArguments
-from config import BladeConfig
 
 
 # Run target
