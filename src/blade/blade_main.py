@@ -68,6 +68,7 @@
 import cProfile
 import datetime
 import errno
+import json
 import os
 import pstats
 import signal
@@ -385,6 +386,29 @@ def setup_log(build_dir):
     console.set_log_file(log_file)
 
 
+def generate_scm(build_dir):
+    # TODO(wentingli): Add git scm
+    p = subprocess.Popen('svn info', shell=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+    if p.returncode != 0:
+        console.debug('Failed to generate scm: %s' % stderr)
+        return
+    revision = url = 'unknown'
+    for line in stdout.splitlines():
+        if line.startswith('URL: '):
+            url = line.strip().split()[-1]
+        if line.startswith('Revision: '):
+            revision = line.strip().split()[-1]
+            break
+    path = os.path.join(build_dir, 'scm.json')
+    with open(path, 'w') as f:
+        json.dump({
+            'revision' : revision,
+            'url' : url,
+        }, f)
+
+
 def adjust_config_by_options(config, options):
     for option in ('debug_info_level', 'native_builder'):
         value = getattr(options, option)
@@ -471,6 +495,7 @@ def _main(blade_path):
     _TARGETS = targets
     adjust_config_by_options(configparse, options)
     setup_log(build_dir)
+    generate_scm(build_dir)
 
     lock_file_fd = lock_workspace()
     try:

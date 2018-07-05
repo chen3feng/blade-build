@@ -19,6 +19,7 @@ import os
 import time
 import subprocess
 
+import blade_util
 import configparse
 import console
 
@@ -723,17 +724,7 @@ pythonbasedir = __pythonbasedir__
                            description='PACKAGE ${out}')
 
     def generate_version_rules(self):
-        p = subprocess.Popen('svn info', shell=True,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        revision = url = 'unknown'
-        if p.returncode == 0:
-            for line in stdout.splitlines():
-                if line.startswith('URL: '):
-                    url = line.strip().split()[-1]
-                if line.startswith('Revision: '):
-                    revision = line.strip().split()[-1]
-                    break
+        revision, url = blade_util.load_scm(self.build_dir)
         args = '${out} ${revision} ${url} ${profile} "${compiler}"'
         self.generate_rule(name='scm',
                            command=self.generate_toolchain_command('scm', suffix=args),
