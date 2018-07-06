@@ -248,10 +248,15 @@ class CcFlagsManager(object):
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
+        # Put compilation output into test.o instead of /dev/null
+        # because the command line with '--coverage' below exit
+        # with status 1 which makes '--coverage' unsupported
+        # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
+        obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
-                   self.cc, language, flag))
+                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
+                   self.cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
