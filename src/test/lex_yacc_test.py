@@ -29,8 +29,8 @@ class TestLexYacc(blade_test.TargetTest):
         lex_yacc_library = (self.target_path, 'parser')
         self.command_file = 'cmds.tmp'
 
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(lex_yacc_library in self.all_targets.keys())
+        self.assertIn(cc_library_lower, self.all_targets.keys())
+        self.assertIn(lex_yacc_library, self.all_targets.keys())
 
         self.assertTrue(self.dryRun())
 
@@ -45,26 +45,26 @@ class TestLexYacc(blade_test.TargetTest):
                 com_lower_line = line
             if 'bison -d -o' in line:
                 com_bison_line = line
-            if 'flex -R -t' in line:
+            if 'flex -R -o' in line:
                 com_flex_line = line
-            if 'line_parser.ll.cc.o -c' in line:
+            if 'line_parser.ll.os -c' in line:
                 com_ll_static_line = line
-            if 'line_parser.yy.cc.o -c' in line:
+            if 'line_parser.yy.os -c' in line:
                 com_yy_static_line = line
             if 'libparser.so' in line:
                 lex_yacc_depends_libs = line
 
         self.assertCxxFlags(com_lower_line)
 
-        self.assertTrue('line_parser.yy.cc' in com_bison_line)
-        self.assertTrue('line_parser.ll.cc' in com_flex_line)
+        self.assertIn('line_parser.yy.cc', com_bison_line)
+        self.assertIn('line_parser.ll.cc', com_flex_line)
 
         self.assertCxxFlags(com_ll_static_line)
         self.assertCxxFlags(com_yy_static_line)
 
-        self.assertTrue('liblowercase.so' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.ll.cc.o' in lex_yacc_depends_libs)
-        self.assertTrue('line_parser.yy.cc.o' in lex_yacc_depends_libs)
+        self.assertIn('liblowercase.so', lex_yacc_depends_libs)
+        self.assertIn('line_parser.ll.os', lex_yacc_depends_libs)
+        self.assertIn('line_parser.yy.os', lex_yacc_depends_libs)
         self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 

@@ -17,12 +17,13 @@ import os
 import configparse
 import console
 
-from blade_util import relative_path, cpu_count
+from blade_util import cpu_count
 from dependency_analyzer import analyze_deps
 from load_build_files import load_targets
-from blade_platform import SconsPlatform
+from blade_platform import BuildPlatform
 from build_environment import BuildEnvironment
 from rules_generator import SconsRulesGenerator
+from rules_generator import NinjaRulesGenerator
 from binary_runner import BinaryRunner
 from test_runner import TestRunner
 
@@ -84,43 +85,19 @@ class Blade(object):
         # Inidcating that whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
-        self.__scons_platform = SconsPlatform()
+        self.__build_platform = BuildPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
 
         self.svn_root_dirs = []
 
-    def _get_normpath_target(self, command_target):
-        """returns a tuple (path, name).
-
-        path is a full path from BLADE_ROOT
-
-        """
-        target_path = relative_path(self.__working_dir, self.__root_dir)
-        path, name = command_target.split(':')
-        if target_path != '.':
-            if path:
-                path = target_path + '/' + path
-            else:
-                path = target_path
-        path = os.path.normpath(path)
-        return path, name
-
     def load_targets(self):
         """Load the targets. """
         console.info('loading BUILDs...')
-        if self.__command == 'query' and getattr(self.__options,
-            'depended', False):
-            # For query depended command, always start from root with target ...
-            # that is scanning the whole tree
-            working_dir = self.__root_dir
-        else:
-            working_dir = self.__working_dir
         (self.__direct_targets,
          self.__all_command_targets,
          self.__build_targets) = load_targets(self.__command_targets,
-                                                  working_dir,
-                                                  self.__root_dir,
-                                                  self)
+                                              self.__root_dir,
+                                              self)
         console.info('loading done.')
         return self.__direct_targets, self.__all_command_targets  # For test
 
@@ -134,29 +111,31 @@ class Blade(object):
         console.info('analyzing done.')
         return self.__build_targets  # For test
 
+    def get_build_rules_generator(self):
+        if self.get_config('global_config')['native_builder'] == 'ninja':
+            return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
+        else:
+            return SconsRulesGenerator('SConstruct', self.__blade_path, self)
+
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('generating build rules...')
-        build_rules_generator = SconsRulesGenerator('SConstruct',
-                                                    self.__blade_path, self)
-        rules_buf = build_rules_generator.generate_scons_script()
+        generator = self.get_build_rules_generator()
+        rules = generator.generate_build_script()
         console.info('generating done.')
-        return rules_buf
+        return rules
 
     def generate(self):
         """Generate the build script. """
-        self.load_targets()
-        self.analyze_targets()
         if self.__command != 'query':
             self.generate_build_rules()
 
     def run(self, target):
         """Run the target. """
-        key = self._get_normpath_target(target)
         runner = BinaryRunner(self.__build_targets,
                               self.__options,
                               self.__target_database)
-        return runner.run_target(key)
+        return runner.run_target(target)
 
     def test(self):
         """Run tests. """
@@ -168,15 +147,13 @@ class Blade(object):
 
     def query(self, targets):
         """Query the targets. """
-        print_deps = getattr(self.__options, 'deps', False)
-        print_depended = getattr(self.__options, 'depended', False)
-        dot_file = getattr(self.__options, 'output_to_dot', '')
-        print_dep_tree = getattr(self.__options, 'output_tree', False)
+        print_deps = self.__options.deps
+        print_depended = self.__options.depended
+        dot_file = self.__options.output_to_dot
+        print_dep_tree = self.__options.output_tree
         result_map = self.query_helper(targets)
         if dot_file:
             print_mode = 0
-            if print_deps:
-                print_mode = 0
             if print_depended:
                 print_mode = 1
             dot_file = os.path.join(self.__working_dir, dot_file)
@@ -238,27 +215,20 @@ class Blade(object):
         """Query the targets helper method. """
         all_targets = self.__build_targets
         query_list = []
-        target_path = relative_path(self.__working_dir, self.__root_dir)
         t_path = ''
         for t in targets:
-            if t.find(':') != -1:
-                key = t.split(':')
-                if target_path == '.':
-                    t_path = key[0]
-                else:
-                    t_path = target_path + '/' + key[0]
-                t_path = os.path.normpath(t_path)
-                query_list.append((t_path, key[1]))
-            elif t.endswith('...'):
-                t_path = os.path.normpath(target_path + '/' + t[:-3])
+            t_path, name = t.split(':')
+            if name == '...':
                 for tkey in all_targets:
                     if tkey[0].startswith(t_path):
-                        query_list.append((tkey[0], tkey[1]))
-            else:
-                t_path = os.path.normpath(target_path + '/' + t)
+                        query_list.append(tkey)
+            elif name == '*':
                 for tkey in all_targets:
                     if tkey[0] == t_path:
-                        query_list.append((t_path, tkey[1]))
+                        query_list.append(tkey)
+            else:
+                query_list.append((t_path, name))
+
         result_map = {}
         for key in query_list:
             deps = all_targets[key].expanded_deps
@@ -306,6 +276,10 @@ class Blade(object):
         """Return the blade root path. """
         return self.__root_dir
 
+    def get_command(self):
+        """Get the blade command. """
+        return self.__command
+
     def set_current_source_path(self, current_source_path):
         """Set the current source path. """
         self.__current_source_path = current_source_path
@@ -326,16 +300,23 @@ class Blade(object):
         """Get all the targets to be build. """
         return self.__build_targets
 
+    def get_depended_target_database(self):
+        """Get depended target database that query dependent targets directly. """
+        return self.__depended_targets
+
     def get_options(self):
         """Get the global command options. """
         return self.__options
+
+    def get_config(self, section_name):
+        return configparse.blade_config.get_config(section_name)
 
     def is_expanded(self):
         """Whether the targets are expanded. """
         return self.__targets_expanded
 
     def register_target(self, target):
-        """Register scons targets into the scons targets map.
+        """Register a target into blade target database.
 
         It is used to do quick looking.
 
@@ -363,13 +344,14 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
+        native_builder = self.get_config('global_config')['native_builder']
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
                 continue
-            scons_object = self.__target_database.get(k, None)
-            if not scons_object:
-                console.warning('not registered scons object, key %s' % str(k))
+            blade_object = self.__target_database.get(k, None)
+            if not blade_object:
+                console.warning('not registered blade object, key %s' % str(k))
                 continue
             if (skip_test and target.type.endswith('_test')
                 and k not in self.__direct_targets):
@@ -377,8 +359,12 @@ class Blade(object):
             if (skip_package and target.type == 'package'
                 and k not in self.__direct_targets):
                 continue
-            scons_object.scons_rules()
-            rules = scons_object.get_rules()
+
+            if native_builder == 'ninja':
+                blade_object.ninja_rules()
+            else:
+                blade_object.scons_rules()
+            rules = blade_object.get_rules()
             if rules:
                 rules_buf.append('\n')
                 rules_buf += rules
@@ -386,7 +372,7 @@ class Blade(object):
 
     def get_scons_platform(self):
         """Return handle of the platform class. """
-        return self.__scons_platform
+        return self.__build_platform
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.
@@ -408,7 +394,7 @@ class Blade(object):
 
         # Calculate job numbers smartly
         jobs_num = 0
-        distcc_enabled = configparse.blade_config.get_config('distcc_config')['enabled']
+        distcc_enabled = self.get_config('distcc_config')['enabled']
 
         if distcc_enabled and self.build_environment.distcc_env_prepared:
             # Distcc cost doesn;t much local cpu, jobs can be quite large.

@@ -19,7 +19,7 @@ class TestTestRunner(blade_test.TargetTest):
     """Test cc_library """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_test_runner', ':string_test_main',
+        self.doSetUp('test_test_runner', 'string_test_main',
                      fulltest=False, args='', test_jobs=1, show_details=True)
 
     def testLoadBuildsNotNone(self):
@@ -34,7 +34,7 @@ class TestTestRunner(blade_test.TargetTest):
         test_env_dir = './build%s_%s/test_test_runner' % (
                 self.options.m, self.options.profile)
         if not os.path.exists(test_env_dir):
-            os.mkdir(test_env_dir)
+            os.makedirs(test_env_dir)
 
         cc_library_lower = (self.target_path, 'lowercase')
         cc_library_upper = (self.target_path, 'uppercase')

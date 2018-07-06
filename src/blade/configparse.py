@@ -14,32 +14,23 @@ import os
 import sys
 
 import console
+import build_attributes
 from blade_util import var_to_list
 from cc_targets import HEAP_CHECK_VALUES
 from proto_library_target import ProtocPlugin
 
 
-# Global config object
-blade_config = None
-
-
-def config_items(**kwargs):
-    """Used in config functions for config file, to construct a appended
-    items dict, and then make syntax more pretty
-    """
-    return kwargs
-
-
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
-    def __init__(self, current_source_dir):
-        self.current_source_dir = current_source_dir
+    def __init__(self):
         self.current_file_name = ''
         self.configs = {
             'global_config' : {
                 'build_path_template': 'build${m}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
                 'test_timeout': None,
+                'native_builder': 'scons',
+                'debug_info_level': 'mid',
             },
 
             'cc_test_config': {
@@ -74,7 +65,13 @@ class BladeConfig(object):
                 'maven_central': '',
                 'warnings':['-Werror', '-Xlint:all'],
                 'source_encoding': None,
-                'java_home':''
+                'java_home':'',
+                'debug_info_levels': {
+                    'no': ['-g:none'],
+                    'low': ['-g:source'],
+                    'mid': ['-g:source,lines'],
+                    'high': ['-g'],
+                },
             },
 
             'java_binary_config': {
@@ -117,6 +114,7 @@ class BladeConfig(object):
                 'protobuf_libs': [],
                 'protobuf_path': '',
                 'protobuf_incs': [],
+                'protobuf_java_incs': [],
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
                 'protobuf_java_libs' : [],
@@ -124,6 +122,8 @@ class BladeConfig(object):
                 # All the generated go source files will be placed
                 # into $GOPATH/src/protobuf_go_path
                 'protobuf_go_path': '',
+                'protoc_direct_dependencies': False,
+                'protobuf_python_libs' : [],
             },
 
             'protoc_plugin_config' : {
@@ -143,31 +143,39 @@ class BladeConfig(object):
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
                 'securecc' : None,
+                'debug_info_levels': {
+                    'no': ['-g0'],
+                    'low': ['-g1'],
+                    'mid': ['-g'],
+                    'high': ['-g3'],
+                },
             },
             'cc_library_config': {
+                'prebuilt_libpath_pattern' : 'lib${bits}_${profile}',
                 'generate_dynamic' : None,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
-                'arflags': [],
+                'arflags': ['rcs'],
                 'ranlibflags': [],
             }
         }
 
-    def _try_parse_file(self, filename):
+    _globals = None
+
+    def try_parse_file(self, filename):
         """load the configuration file and parse. """
+        if BladeConfig._globals is None:
+            BladeConfig._globals = globals()
+            BladeConfig._globals['build_target'] = build_attributes.attributes
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
-                execfile(filename)
+                execfile(filename, BladeConfig._globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s, exit...' % filename)
-
-    def parse(self):
-        """load the configuration file and parse. """
-        self._try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
-        self._try_parse_file(os.path.expanduser('~/.bladerc'))
-        self._try_parse_file(os.path.join(self.current_source_dir, 'BLADE_ROOT'))
+        finally:
+            self.current_file_name = ''
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
@@ -215,7 +223,25 @@ class BladeConfig(object):
 
     def get_config(self, section_name):
         """get config section, returns default values if not set """
-        return self.configs.get(section_name, {})
+        return self.configs[section_name]
+
+
+# Global config object
+blade_config = BladeConfig()
+
+
+def _check_kwarg_enum_value(kwargs, name, valid_values):
+    value = kwargs.get(name)
+    if value is not None and value not in valid_values:
+        console.error_exit('%s: Invalid %s value %s, can only be in %s' % (
+            blade_config.current_file_name, name, value, valid_values))
+
+
+def config_items(**kwargs):
+    """Used in config functions for config file, to construct a appended
+    items dict, and then make syntax more pretty
+    """
+    return kwargs
 
 
 def cc_test_config(append=None, **kwargs):
@@ -242,10 +268,9 @@ __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 
 def global_config(append=None, **kwargs):
     """global_config section. """
-    duplicated_source_action = kwargs.get('duplicated_source_action')
-    if duplicated_source_action not in __DUPLICATED_SOURCE_ACTION_VALUES:
-        console.error_exit('Invalid global_config.duplicated_source_action '
-                'value, can only be in %s' % __DUPLICATED_SOURCE_ACTION_VALUES)
+    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
+    debug_info_levels = blade_config.get_config('cc_config')['debug_info_levels'].keys()
+    _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     blade_config.update_config('global_config', append, kwargs)
 
 

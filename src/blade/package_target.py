@@ -35,7 +35,7 @@ class PackageTarget(Target):
     """
 
     This class is derived from Target and used to generate scons
-    rules for packaging files into an archive which could be 
+    rules for packaging files into an archive which could be
     compressed using gzip or bz2 according to the package type.
 
     """
@@ -108,7 +108,7 @@ class PackageTarget(Target):
             path = src
         else:
             path = self._source_file_path(src)
-        
+
         if not dst:
             dst = src
         return path, dst
@@ -185,6 +185,29 @@ class PackageTarget(Target):
         if locations:
             self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
                 env_name, var_name, env_name, sorted(set(locations))))
+
+
+    def ninja_rules(self):
+        inputs, entries = [], []
+        for src, dst in self.data['sources']:
+            inputs.append(src)
+            entries.append(dst)
+
+        targets = self.blade.get_build_targets()
+        for key, type, dst in self.data['locations']:
+            path = targets[key]._get_target_file(type)
+            if not path:
+                console.warning('%s: Location %s %s is missing. Ignored.' %
+                                (self.fullname, key, type))
+                continue
+            if not dst:
+                dst = os.path.basename(path)
+            inputs.append(path)
+            entries.append(dst)
+
+        output = self._target_file_path(self.data['out'])
+        self.ninja_build(output, 'package', inputs=inputs,
+                         variables={ 'entries' : ' '.join(entries) })
 
 
 def package(name,

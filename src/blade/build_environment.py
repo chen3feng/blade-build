@@ -62,6 +62,13 @@ class BuildEnvironment(object):
     @staticmethod
     def _check_ccache_install():
         """Check ccache is installed or not. """
+        CC = os.getenv('CC')
+        CXX = os.getenv('CXX')
+        # clang scan-build always fail with ccache.
+        if CC and os.path.basename(CC) == 'ccc-analyzer' and CXX and os.path.basename(CXX) == 'c++-analyzer':
+            console.info('ccache is disabled for scan-build')
+            return False
+
         try:
             p = subprocess.Popen(
                 ['ccache', '-V'],
@@ -109,6 +116,7 @@ class BuildEnvironment(object):
         """Generates ccache rules. """
         if self.ccache_installed:
             self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
+            self._add_rule('top_env.Append(CCACHE_NOHASHDIR="true")')
 
     def setup_scons_cache(self, options):
         """Setup scons cache"""
