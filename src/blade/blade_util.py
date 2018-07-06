@@ -15,8 +15,11 @@
 
 import fcntl
 import os
+import json
+import sys
 import re
 import string
+import signal
 import subprocess
 
 import console
@@ -53,22 +56,25 @@ def md5sum(obj):
     return md5sum_str(obj)
 
 
-def lock_file(fd, flags):
+def lock_file(filename):
     """lock file. """
     try:
-        fcntl.flock(fd, flags)
-        return (True, 0)
+        fd = os.open(filename, os.O_CREAT|os.O_RDWR)
+        old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd, 0
     except IOError, ex_value:
-        return (False, ex_value[0])
+        return -1, ex_value[0]
 
 
 def unlock_file(fd):
     """unlock file. """
     try:
         fcntl.flock(fd, fcntl.LOCK_UN)
-        return (True, 0)
-    except IOError, ex_value:
-        return (False, ex_value[0])
+        os.close(fd)
+    except IOError:
+        pass
 
 
 def var_to_list(var):
@@ -88,38 +94,6 @@ def stable_unique(seq):
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-def relative_path(a_path, reference_path):
-    """_relative_path.
-
-    Get the relative path of a_path by considering reference_path as the
-    root directory.  For example, if
-    reference_path = '/src/paralgo'
-    a_path        = '/src/paralgo/mapreduce_lite/sorted_buffer'
-    then
-     _relative_path(a_path, reference_path) = 'mapreduce_lite/sorted_buffer'
-
-    """
-    if not a_path:
-        raise ValueError('no path specified')
-
-    # Count the number of segments shared by reference_path and a_path.
-    reference_list = os.path.abspath(reference_path).split(os.path.sep)
-    path_list = os.path.abspath(a_path).split(os.path.sep)
-    i = 0
-    for i in range(min(len(reference_list), len(path_list))):
-        # TODO(yiwang): Why use lower here?
-        if reference_list[i].lower() != path_list[i].lower():
-            break
-        else:
-            # TODO(yiwnag): Why do not move i+=1 out from the loop?
-            i += 1
-
-    rel_list = [os.path.pardir] * (len(reference_list) - i) + path_list[i:]
-    if not rel_list:
-        return os.path.curdir
-    return os.path.join(*rel_list)
-
-
 def get_cwd():
     """get_cwd
 
@@ -130,6 +104,104 @@ def get_cwd():
     """
     p = subprocess.Popen(['pwd'], stdout=subprocess.PIPE, shell=True)
     return p.communicate()[0].strip()
+
+
+def find_file_bottom_up(name, from_dir=None):
+    """Find the specified file/dir from from_dir bottom up until found or failed.
+       Returns abspath if found, or empty if failed.
+    """
+    if from_dir is None:
+        from_dir = get_cwd()
+    finding_dir = os.path.abspath(from_dir)
+    while True:
+        path = os.path.join(finding_dir, name)
+        if os.path.exists(path):
+            return path
+        if finding_dir == '/':
+            break
+        finding_dir = os.path.dirname(finding_dir)
+    return ''
+
+
+def find_blade_root_dir(working_dir=None):
+    """find_blade_root_dir to find the dir holds the BLADE_ROOT file.
+
+    The blade_root_dir is the directory which is the closest upper level
+    directory of the current working directory, and containing a file
+    named BLADE_ROOT.
+
+    """
+    blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
+    if not blade_root:
+        console.error_exit(
+                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+                "Blade need this file as a placeholder to locate the root source directory "
+                "(aka the directory where you #include start from).\n"
+                "You should create it manually at the first time.")
+    return os.path.dirname(blade_root)
+
+
+if "check_output" not in dir( subprocess ):
+    def check_output(*popenargs, **kwargs):
+        r"""Run command with arguments and return its output as a byte string.
+
+        Backported from Python 2.7 as it's implemented as pure python on stdlib.
+
+        >>> check_output(["ls", "-l", "/dev/null"])
+        'crw-rw-rw- 1 root root 1, 3 Oct 18  2007 /dev/null\n'
+
+        """
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            error = subprocess.CalledProcessError(retcode, cmd)
+            error.output = output
+            raise error
+        return output
+
+
+def _echo(stdout, stderr):
+    """Echo messages to stdout and stderr. """
+    if stdout:
+        sys.stdout.write(stdout)
+    if stderr:
+        sys.stderr.write(stderr)
+
+
+def shell(cmd, env=None):
+    if isinstance(cmd, list):
+        cmdline = ' '.join(cmd)
+    else:
+        cmdline = cmd
+    p = subprocess.Popen(cmdline,
+                         env=env,
+                         stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         shell=True)
+    stdout, stderr = p.communicate()
+    if p.returncode:
+        if p.returncode != -signal.SIGINT:
+            # Error
+            _echo(stdout, stderr)
+    else:
+        # Warnings
+        _echo(stdout, stderr)
+
+    return p.returncode
+
+
+def load_scm(build_dir):
+    revision = url = 'unknown'
+    path = os.path.join(build_dir, 'scm.json')
+    if os.path.exists(path):
+        with open(path) as f:
+            scm = json.load(f)
+            revision, url = scm['revision'], scm['url']
+    return revision, url
 
 
 def environ_add_path(env, key, path):

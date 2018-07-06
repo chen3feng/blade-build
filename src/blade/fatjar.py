@@ -13,8 +13,12 @@ into a single fatjar file.
 
 import os
 import sys
+import time
 import zipfile
+import blade_util
+import console
 
+console_logging = False
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -40,6 +44,14 @@ def _is_fat_jar_excluded(name):
             return True
 
     return name == _JAR_MANIFEST or _is_signature_file(name)
+
+
+def _manifest_scm(build_dir):
+    revision, url = blade_util.load_scm(build_dir)
+    return [
+        'SCM-Url: %s' % url,
+        'SCM-Revision: %s' % revision,
+    ]
 
 
 def generate_fat_jar(target, jars):
@@ -72,13 +84,23 @@ def generate_fat_jar(target, jars):
 
     if zip_path_conflicts:
         log = '%s: Found %d conflicts when packaging.' % (target, zip_path_conflicts)
-        print >>sys.stdout, log
-        print >>sys.stderr, '\n'.join(zip_path_logs)
+        if console_logging:
+            console.warning(log)
+            console.debug('\n'.join(zip_path_logs))
+        else:
+            print >>sys.stdout, log
+            print >>sys.stderr, '\n'.join(zip_path_logs)
 
     # TODO(wentingli): Create manifest from dependency jars later if needed
-    contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
-    contents += '\n'
-    target_fat_jar.writestr(_JAR_MANIFEST, contents)
+    contents = [
+        'Manifest-Version: 1.0',
+        'Created-By: Python.Zipfile (Blade)',
+        'Built-By: %s' % os.getenv('USER'),
+        'Build-Time: %s' % time.asctime(),
+    ]
+    contents += _manifest_scm(target.split(os.sep)[0])
+    contents.append('\n')
+    target_fat_jar.writestr(_JAR_MANIFEST, '\n'.join(contents))
     target_fat_jar.close()
 
 

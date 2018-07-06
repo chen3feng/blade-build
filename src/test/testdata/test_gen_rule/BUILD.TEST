@@ -15,7 +15,7 @@ cc_library(
 gen_rule(
     name='process_media',
     outs='process.tmp',
-    cmd='echo this_is_the_process_gen_rule',
+    cmd='echo this_is_the_process_gen_rule > $FIRST_OUT',
     deps=[':lowercase']
 )
 

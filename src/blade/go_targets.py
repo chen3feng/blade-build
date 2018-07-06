@@ -88,6 +88,12 @@ class GoTarget(Target):
         self._write_rule('%s.Replace(GOPACKAGE="%s")' % (
             env_name, self.data['go_package']))
 
+    def _expand_deps_generation(self):
+        build_targets = self.blade.get_build_targets()
+        for dep in self.expanded_deps:
+            d = build_targets[dep]
+            d.data['generate_go'] = True
+
     def _generate_go_dependencies(self):
         env_name = self._env_name()
         var_name = self._var_name()

@@ -41,6 +41,7 @@ class WorkerThread(threading.Thread):
         """Init methods for this thread. """
         threading.Thread.__init__(self)
         self.thread_id = id
+        self.running = True
         self.job_queue = job_queue
         self.job_handler = job_handler
         self.redirect = redirect
@@ -55,6 +56,10 @@ class WorkerThread(threading.Thread):
         """Private handler to handle one job. """
         console.info('blade worker %d starts to process' % self.thread_id)
         console.info('blade worker %d finish' % self.thread_id)
+
+    def terminate(self):
+        """Terminate the worker. """
+        self.running = False
 
     def cleanup_job(self):
         """Clean up job data. """
@@ -91,7 +96,7 @@ class WorkerThread(threading.Thread):
         try:
             if self.job_handler:
                 job_queue = self.job_queue
-                while not job_queue.empty():
+                while not job_queue.empty() and self.running:
                     try:
                         job = job_queue.get_nowait()
                     except Queue.Empty:
@@ -162,12 +167,10 @@ class TestScheduler(object):
                              close_fds=True,
                              shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
-
         stdout = p.communicate()[0]
         result = self.__get_result(p.returncode)
         console.info('Output of %s:\n%s\n%s finished: %s\n' % (
                      test_name, stdout, test_name, result))
-
         return p.returncode
 
     def _run_job(self, job, job_thread):
@@ -240,19 +243,25 @@ class TestScheduler(object):
         """Wait for worker threads to complete. """
         config = configparse.blade_config.get_config('global_config')
         test_timeout = config['test_timeout']
-        while threads:
-            time.sleep(1)  # Check every second
-            now = time.time()
-            dead_threads = []
-            for t in threads:
-                if t.isAlive():
-                    if test_timeout is not None:
-                        t.check_job_timeout(now)
-                else:
-                    dead_threads.append(t)
+        try:
+            while threads:
+                time.sleep(1)  # Check every second
+                now = time.time()
+                dead_threads = []
+                for t in threads:
+                    if t.isAlive():
+                        if test_timeout is not None:
+                            t.check_job_timeout(now)
+                    else:
+                        dead_threads.append(t)
 
-            for dt in dead_threads:
-                threads.remove(dt)
+                for dt in dead_threads:
+                    threads.remove(dt)
+        except KeyboardInterrupt:
+            console.error('KeyboardInterrupt: Terminate workers...')
+            for t in threads:
+                t.terminate()
+            raise
 
     def schedule_jobs(self):
         """scheduler. """
