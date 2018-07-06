@@ -255,10 +255,11 @@ def _scons_build(options):
 def _ninja_build(options):
     cmd = ['ninja']
     cmd += native_builder_options(options)
-    if options.jobs:
+    # if options.jobs:
         # Unlike scons, ninja enable parallel building defaultly,
         # so only set it when user specified it explicitly.
-        cmd.append('-j%s' % options.jobs)
+        # cmd.append('-j%s' % options.jobs)
+    cmd.append('-j%s' % (options.jobs or blade.blade.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
     if options.verbose:

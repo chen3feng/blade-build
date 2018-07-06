@@ -748,9 +748,8 @@ class CcTarget(Target):
         pos = obj.rfind('.', 0, -2)
         assert pos != -1
         secure_obj = '%s__securecc__.cc.o' % obj[:pos]
-        if os.path.exists(src):
-            path = self._source_file_path(src)
-        else:
+        path = self._source_file_path(src)
+        if not os.path.exists(path):
             path = self._target_file_path(src)
             self._securecc_object_rules('', path, False)
         self.ninja_build(secure_obj, 'securecccompile', inputs=path,

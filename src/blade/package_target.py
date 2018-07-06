@@ -35,7 +35,7 @@ class PackageTarget(Target):
     """
 
     This class is derived from Target and used to generate scons
-    rules for packaging files into an archive which could be 
+    rules for packaging files into an archive which could be
     compressed using gzip or bz2 according to the package type.
 
     """
@@ -108,7 +108,7 @@ class PackageTarget(Target):
             path = src
         else:
             path = self._source_file_path(src)
-        
+
         if not dst:
             dst = src
         return path, dst
