@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
+
 Documentation in zh_CN
 ===================
 
