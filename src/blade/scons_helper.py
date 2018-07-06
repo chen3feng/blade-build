@@ -211,15 +211,6 @@ def generate_python_library(target, source, env):
     return None
 
 
-def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
-    dir = os.path.dirname(arcname)
-    if os.path.basename(arcname) == '__init__.py':
-        dirs_with_init_py.add(dir)
-    while dir:
-        dirs.add(dir)
-        dir = os.path.dirname(dir)
-
-
 def generate_python_binary(target, source, env):
     """The action to generate python executable file. """
     target_name = str(target[0])

@@ -226,12 +226,15 @@ class CcTarget(Target):
     def _prebuilt_cc_library_dynamic_soname(self, so):
         """Get the soname of prebuilt shared library. """
         soname = None
-        output = subprocess.check_output('objdump -p %s' % so, shell=True)
-        for line in output.splitlines():
-            parts = line.split()
-            if len(parts) == 2 and parts[0] == 'SONAME':
-                soname = parts[1]
-                break
+        try:
+            output = subprocess.check_output('objdump -p %s' % so, shell=True)
+            for line in output.splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[0] == 'SONAME':
+                    soname = parts[1]
+                    break
+        except subprocess.CalledProcessError:
+            pass
         return soname
 
     def _setup_cc_flags(self):
@@ -748,9 +751,8 @@ class CcTarget(Target):
         pos = obj.rfind('.', 0, -2)
         assert pos != -1
         secure_obj = '%s__securecc__.cc.o' % obj[:pos]
-        if os.path.exists(src):
-            path = self._source_file_path(src)
-        else:
+        path = self._source_file_path(src)
+        if not os.path.exists(path):
             path = self._target_file_path(src)
             self._securecc_object_rules('', path, False)
         self.ninja_build(secure_obj, 'securecccompile', inputs=path,

@@ -677,7 +677,6 @@ class JavaTargetMixIn(object):
             vars['source_encoding'] = source_encoding
         self.ninja_build(output, rule, inputs=inputs,
                          implicit_deps=implicit_deps, variables=vars)
-        self._add_target_file('jar', output)
         return output
 
     def ninja_build_fat_jar(self, dep_jars, maven_jars):
@@ -801,6 +800,8 @@ class JavaTarget(Target, JavaTargetMixIn):
             self.ninja_build(jar, 'javajar', inputs=resources)
         else:
             jar = ''
+        if jar:
+            self._add_target_file('jar', jar)
         return jar
 
 
