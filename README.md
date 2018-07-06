@@ -1,7 +1,10 @@
-[![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
-
 Documentation in zh_CN
 ===================
+
+# Typhoon-Blade - A easy-to-use, fast modern building system for trunk monorepo development
+
+## Build status
+[![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
 
 通知
 ---
