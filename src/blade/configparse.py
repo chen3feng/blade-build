@@ -179,7 +179,7 @@ class BladeConfig(object):
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
-        config = self.configs.get(section_name, {})
+        config = self.configs.get(section_name)
         if config:
             if append:
                 self._append_config(section_name, config, append)
