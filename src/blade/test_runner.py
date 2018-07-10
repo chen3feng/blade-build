@@ -67,7 +67,7 @@ class TestRunner(binary_runner.BinaryRunner):
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
         self.inctest_md5_file = '.blade.test.stamp'
-        self.tests_detail_file = './blade_tests_detail'
+        self.tests_detail_file = 'blade_tests_detail'
         self.inctest_run_list = []
         self.last_test_stamp = {}
         self.last_test_stamp['md5'] = {}
