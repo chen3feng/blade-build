@@ -23,7 +23,7 @@
 import os
 
 import blade
-import configparse
+import config
 import console
 
 import build_rules
@@ -65,7 +65,7 @@ class FBThriftLibrary(CcTarget):
                           blade,
                           kwargs)
 
-        fbthrift_config = configparse.blade_config.get_config('fbthrift_config')
+        fbthrift_config = config.get_section('fbthrift_config')
         fbthrift_libs = var_to_list(fbthrift_config['fbthrift_libs'])
         fbthrift1_bin = fbthrift_config['fbthrift1']
         fbthrift2_bin = fbthrift_config['fbthrift2']

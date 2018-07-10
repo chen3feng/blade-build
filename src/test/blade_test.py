@@ -15,9 +15,8 @@ import unittest
 
 sys.path.append('..')
 import blade.blade
-import blade.configparse
+import blade.config
 from blade.blade import Blade
-from blade.configparse import BladeConfig
 from blade.argparse import Namespace
 
 
@@ -54,11 +53,7 @@ class TargetTest(unittest.TestCase):
         self.related_targets = {}
 
         # Init global configuration manager
-        blade.configparse.blade_config = BladeConfig()
-        config = blade.configparse.blade_config
-        config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
-        config.try_parse_file(os.path.expanduser('~/.bladerc'))
-        config.try_parse_file(os.path.join('.', 'BLADE_ROOT'))
+        blade.config.load_files('.', False)
 
         blade.blade.blade = Blade(self.targets,
                                   self.blade_path,

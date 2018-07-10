@@ -13,7 +13,7 @@ import subprocess
 
 import blade
 import build_rules
-import configparse
+import config
 import console
 
 from target import Target
@@ -61,12 +61,12 @@ class GoTarget(Target):
                                'should be in the same directory. Sources: %s' %
                                (self.fullname, ', '.join(self.srcs)))
         path = dirs.pop()
-        go_home = configparse.blade_config.get_config('go_config')['go_home']
+        go_home = config.get_item('go_config', 'go_home')
         self.data['go_package'] = os.path.relpath(path, os.path.join(go_home, 'src'))
 
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:
-            go = configparse.blade_config.get_config('go_config')['go']
+            go = config.get_item('go_config', 'go')
             p = subprocess.Popen('%s env' % go,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
@@ -110,7 +110,7 @@ class GoLibrary(GoTarget):
 
     def _target_file_path(self):
         """Return package object path according to the standard go directory layout. """
-        go_home = configparse.blade_config.get_config('go_config')['go_home']
+        go_home = config.get_item('go_config', 'go_home')
         return os.path.join(go_home, 'pkg',
                             '%s_%s' % (GoTarget._go_os, GoTarget._go_arch),
                             '%s.a' % self.data['go_package'])
@@ -134,7 +134,7 @@ class GoBinary(GoTarget):
 
     def _target_file_path(self):
         """Return command executable path according to the standard go directory layout. """
-        go_home = configparse.blade_config.get_config('go_config')['go_home']
+        go_home = config.get_item('go_config', 'go_home')
         return os.path.join(go_home, 'bin',
                             os.path.basename(self.data['go_package']))
 

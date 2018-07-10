@@ -20,7 +20,7 @@ import subprocess
 import time
 
 import binary_runner
-import configparse
+import config
 import console
 
 from blade_util import environ_add_path
@@ -261,9 +261,9 @@ class TestRunner(binary_runner.BinaryRunner):
         return coverage_data
 
     def _generate_java_coverage_report(self):
-        config = configparse.blade_config.get_config('java_test_config')
-        jacoco_home = config['jacoco_home']
-        coverage_reporter = config['coverage_reporter']
+        java_test_config = config.get_section('java_test_config')
+        jacoco_home = java_test_config['jacoco_home']
+        coverage_reporter = java_test_config['coverage_reporter']
         if not jacoco_home or not coverage_reporter:
             console.warning('Missing jacoco home or coverage report generator '
                             'in global configuration. '
@@ -391,8 +391,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
             test_env['HEAPCHECK'] = target.data.get('heap_check', '')
-            config = configparse.blade_config.get_config('cc_test_config')
-            pprof_path = config['pprof_path']
+            pprof_path = config.get_item('cc_test_config', 'pprof_path')
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
             if self.coverage:

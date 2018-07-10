@@ -18,6 +18,7 @@ from distutils.version import LooseVersion
 import blade
 import blade_util
 import build_rules
+import config
 import console
 import maven
 
@@ -193,7 +194,7 @@ class JavaTargetMixIn(object):
         maven_jars: a list of jars managed by maven repository.
         """
         dep = self.target_database[dkey]
-        if self.blade.get_config('global_config')['native_builder'] == 'ninja':
+        if config.get_item('global_config', 'native_builder') == 'ninja':
             jar = dep._get_target_file('jar')
         else:
             jar = dep._get_target_var('jar')
@@ -441,7 +442,7 @@ class JavaTargetMixIn(object):
         return resource
 
     def _generate_java_versions(self):
-        java_config = self.blade.get_config('java_config')
+        java_config = config.get_section('java_config')
         version = java_config['version']
         source_version = java_config.get('source_version', version)
         target_version = java_config.get('target_version', version)
@@ -460,8 +461,7 @@ class JavaTargetMixIn(object):
     def _generate_java_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if source_encoding is None:
-            config = self.blade.get_config('java_config')
-            source_encoding = config['source_encoding']
+            source_encoding = config.get_item('java_config', 'source_encoding')
         if source_encoding:
             self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
                 self._env_name(), source_encoding))
@@ -738,8 +738,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._generate_java_source_encoding()
         warnings = self.data.get('warnings')
         if warnings is None:
-            config = self.blade.get_config('java_config')
-            warnings = config['warnings']
+            warnings = config.get_item('java_config', 'warnings')
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))
@@ -774,8 +773,8 @@ class JavaTarget(Target, JavaTargetMixIn):
         return ''
 
     def javac_flags(self):
-        global_config = self.blade.get_config('global_config')
-        java_config = self.blade.get_config('java_config')
+        global_config = config.get_section('global_config')
+        java_config = config.get_section('java_config')
         debug_info_level = global_config['debug_info_level']
         debug_info_options = java_config['debug_info_levels'][debug_info_level]
         warnings = self.data.get('warnings')
