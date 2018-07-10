@@ -24,7 +24,7 @@ _config_globals = {}
 
 
 def config_rule(func):
-    '''Annotation for functions accessible in config files'''
+    '''Decorator for functions accessible in config files'''
     _config_globals[func.__name__] = func
     return func
 
@@ -188,7 +188,7 @@ class BladeConfig(object):
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
-        section = self.configs.get(section_name, {})
+        section = self.configs.get(section_name)
         if section:
             if append:
                 self._append_config(section_name, section, append)
