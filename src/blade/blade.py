@@ -164,7 +164,7 @@ class Blade(object):
                     self.query_dependency_tree(targets)
                 else:
                     for key in result_map:
-                        print '\n'
+                        print
                         deps = result_map[key][0]
                         console.info('//%s:%s depends on the following targets:' % (
                                 key[0], key[1]))
@@ -172,7 +172,7 @@ class Blade(object):
                             print '%s:%s' % (d[0], d[1])
             if print_depended:
                 for key in result_map:
-                    print '\n'
+                    print
                     depended_by = result_map[key][1]
                     console.info('//%s:%s is depended by the following targets:' % (
                             key[0], key[1]))
