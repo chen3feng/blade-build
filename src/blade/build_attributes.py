@@ -31,3 +31,7 @@ class TargetAttributes(object):
     def is_debug(self):
         return self.options.profile == 'debug'
 
+
+def initialize(options):
+    global attributes
+    attributes = TargetAttributes(options)

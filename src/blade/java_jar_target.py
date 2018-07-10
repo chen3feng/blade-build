@@ -17,7 +17,7 @@ import blade
 
 import build_rules
 import console
-import configparse
+import config
 
 from blade_util import var_to_list
 from target import Target
@@ -189,7 +189,7 @@ class JavaJarTarget(Target):
         new_target_idx = 0
         classes_var = '%s_classes' % (self._var_name())
 
-        java_config = configparse.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         source_version = java_config['source_version']
         target_version = java_config['target_version']
         javac_cmd = 'javac'
