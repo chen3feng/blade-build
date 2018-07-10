@@ -20,7 +20,7 @@ import time
 import traceback
 
 import blade_util
-import configparse
+import config
 import console
 
 
@@ -241,8 +241,7 @@ class TestScheduler(object):
 
     def _wait_worker_threads(self, threads):
         """Wait for worker threads to complete. """
-        config = configparse.blade_config.get_config('global_config')
-        test_timeout = config['test_timeout']
+        test_timeout = config.get_item('global_config', 'test_timeout')
         try:
             while threads:
                 time.sleep(1)  # Check every second

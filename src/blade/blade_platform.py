@@ -15,7 +15,7 @@
 import os
 import subprocess
 
-import configparse
+import config
 import console
 from blade_util import var_to_list
 
@@ -255,8 +255,8 @@ class CcFlagsManager(object):
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                   self.cc, obj, language, flag, obj))
+                   '%s -o /dev/null -c -x %s %s - > /dev/null 2>&1' % (
+                   self.cc, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
@@ -272,8 +272,8 @@ class CcFlagsManager(object):
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
-        global_config = configparse.blade_config.get_config('global_config')
-        cc_config = configparse.blade_config.get_config('cc_config')
+        global_config = config.get_section('global_config')
+        cc_config = config.get_section('cc_config')
         flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
         linkflags = ['-m%s' % self.options.m]
 
@@ -316,7 +316,7 @@ class CcFlagsManager(object):
 
     def get_warning_flags(self):
         """Get the warning flags. """
-        cc_config = configparse.blade_config.get_config('cc_config')
+        cc_config = config.get_section('cc_config')
         cppflags = cc_config['warnings']
         cxxflags = cc_config['cxx_warnings']
         cflags = cc_config['c_warnings']

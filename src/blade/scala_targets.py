@@ -11,7 +11,7 @@ Implement scala_library, scala_fat_library and scala_test
 
 import blade
 import build_rules
-import configparse
+import config
 import console
 
 from target import Target
@@ -58,8 +58,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
             self.data['warnings'] = warnings
 
     def _generate_scala_target_platform(self):
-        config = configparse.blade_config.get_config('scala_config')
-        target_platform = config['target_platform']
+        target_platform = config.get_item('scala_config', 'target_platform')
         if target_platform:
             self._write_rule('%s.Append(SCALACFLAGS=["-target:%s"])' % (
                 self._env_name(), target_platform))
@@ -67,8 +66,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _generate_scala_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if not source_encoding:
-            config = configparse.blade_config.get_config('scala_config')
-            source_encoding = config['source_encoding']
+            source_encoding = config.get_item('scala_config', 'source_encoding')
         if source_encoding:
             self._write_rule('%s.Append(SCALACFLAGS=["-encoding %s"])' % (
                 self._env_name(), source_encoding))
@@ -76,8 +74,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _generate_scala_warnings(self):
         warnings = self.data.get('warnings')
         if not warnings:
-            config = configparse.blade_config.get_config('scala_config')
-            warnings = config['warnings']
+            warnings = config.get_item('scala_config', 'warnings')
             if not warnings:
                 warnings = '-nowarn'
         self._write_rule('%s.Append(SCALACFLAGS=["%s"])' % (
@@ -116,14 +113,14 @@ class ScalaTarget(Target, JavaTargetMixIn):
 
     def scalac_flags(self):
         flags = []
-        config = configparse.blade_config.get_config('scala_config')
-        target_platform = config['target_platform']
+        scala_config = config.get_section('scala_config')
+        target_platform = scala_config['target_platform']
         if target_platform:
             flags.append('-target:%s' % target_platform)
         warnings = self.data.get('warnings')
         if warnings:
             flags.append(warnings)
-        global_warnings = config['warnings']
+        global_warnings = scala_config['warnings']
         if global_warnings:
             flags.append(global_warnings)
         return flags
@@ -205,8 +202,7 @@ class ScalaTest(ScalaFatLibrary):
                                  warnings, [], kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
-        config = configparse.blade_config.get_config('scala_test_config')
-        scalatest_libs = config['scalatest_libs']
+        scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
         else:
