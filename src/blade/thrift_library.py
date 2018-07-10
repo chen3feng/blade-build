@@ -17,7 +17,7 @@ different languages from .thrift file.
 import os
 
 import blade
-import configparse
+import config
 import console
 
 import build_rules
@@ -61,10 +61,9 @@ class ThriftLibrary(CcTarget):
         self.data['python_vars'] = []
         self.data['python_sources'] = []
 
-        thrift_config = configparse.blade_config.get_config('thrift_config')
-        thrift_lib = var_to_list(thrift_config['thrift_libs'])
+        thrift_libs = config.get_item('thrift_config', 'thrift_libs')
         # Hardcode deps rule to thrift libraries.
-        self._add_hardcode_library(thrift_lib)
+        self._add_hardcode_library(thrift_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
