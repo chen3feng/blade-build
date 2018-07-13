@@ -173,7 +173,7 @@ class BladeConfig(object):
             if os.path.exists(filename):
                 execfile(filename, BladeConfig._globals, None)
         except SystemExit:
-            console.error_exit('Parse error in config file %s, exit...' % filename)
+            console.error_exit('Parse error in config file %s' % filename)
         finally:
             self.current_file_name = ''
 

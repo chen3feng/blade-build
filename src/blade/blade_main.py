@@ -322,8 +322,7 @@ def lock_workspace():
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
-                    'There is already an active building in current source '
-                    'dir tree. Blade will exit...')
+                    'There is already an active building in current source tree.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
