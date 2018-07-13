@@ -14,7 +14,7 @@
 
 import os
 
-import configparse
+import config
 import console
 
 from blade_util import cpu_count
@@ -112,7 +112,7 @@ class Blade(object):
         return self.__build_targets  # For test
 
     def get_build_rules_generator(self):
-        if self.get_config('global_config')['native_builder'] == 'ninja':
+        if config.get_item('global_config', 'native_builder') == 'ninja':
             return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
         else:
             return SconsRulesGenerator('SConstruct', self.__blade_path, self)
@@ -308,9 +308,6 @@ class Blade(object):
         """Get the global command options. """
         return self.__options
 
-    def get_config(self, section_name):
-        return configparse.blade_config.get_config(section_name)
-
     def is_expanded(self):
         """Whether the targets are expanded. """
         return self.__targets_expanded
@@ -344,7 +341,7 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
-        native_builder = self.get_config('global_config')['native_builder']
+        native_builder = config.get_item('global_config', 'native_builder')
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_scons_object_type(target.type):
@@ -394,7 +391,7 @@ class Blade(object):
 
         # Calculate job numbers smartly
         jobs_num = 0
-        distcc_enabled = self.get_config('distcc_config')['enabled']
+        distcc_enabled = config.get_item('distcc_config', 'enabled')
 
         if distcc_enabled and self.build_environment.distcc_env_prepared:
             # Distcc cost doesn;t much local cpu, jobs can be quite large.

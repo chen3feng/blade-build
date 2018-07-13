@@ -81,13 +81,12 @@ from string import Template
 import blade
 import build_attributes
 import console
-import configparse
+import config
 
 from blade_util import find_blade_root_dir, find_file_bottom_up
 from blade_util import get_cwd
 from blade_util import lock_file, unlock_file
 from command_args import CmdArguments
-from configparse import BladeConfig
 
 
 # Run target
@@ -197,7 +196,7 @@ def _get_changed_files(targets, blade_root_dir, working_dir):
 
 
 def _check_code_style(targets):
-    cpplint = configparse.blade_config.configs['cc_config']['cpplint']
+    cpplint = config.get_item('cc_config', 'cpplint')
     if not cpplint:
         console.info('cpplint disabled')
         return 0
@@ -271,7 +270,7 @@ def build(options):
     _check_code_style(_TARGETS)
     console.info('building...')
     console.flush()
-    if configparse.blade_config.get_config('global_config')['native_builder'] == 'ninja':
+    if config.get_item('global_config', 'native_builder') == 'ninja':
         returncode = _ninja_build(options)
     else:
         returncode = _scons_build(options)
@@ -301,7 +300,7 @@ def test(options):
 def clean(options):
     console.info('cleaning...(hint: please specify --generate-dynamic to '
                  'clean your so)')
-    native_builder = configparse.blade_config.get_config('global_config')['native_builder']
+    native_builder = config.get_item('global_config', 'native_builder')
     cmd = [native_builder]
     # cmd += native_builder_options(options)
     if native_builder == 'ninja':
@@ -343,19 +342,12 @@ def parse_command_line():
 def load_config(options, blade_root_dir):
     """load the configuration file and parse. """
     # Init global build attributes
-    build_attributes.attributes = build_attributes.TargetAttributes(options)
-
-    config = configparse.blade_config
-    config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
-    config.try_parse_file(os.path.expanduser('~/.bladerc'))
-    config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
-    if options.load_local_config:
-        config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
-    return configparse.blade_config
+    build_attributes.initialize(options)
+    config.load_files(blade_root_dir, options.load_local_config)
 
 
-def setup_build_dir(options, config):
-    build_path_format = config.configs['global_config']['build_path_template']
+def setup_build_dir(options):
+    build_path_format = config.get_item('global_config', 'build_path_template')
     s = Template(build_path_format)
     build_dir = s.substitute(m=options.m, profile=options.profile)
     if not os.path.exists(build_dir):
@@ -375,8 +367,8 @@ def setup_dirs(options):
         print "Blade: Entering directory `%s'" % blade_root_dir
         os.chdir(blade_root_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)
-    config = load_config(options, blade_root_dir)
-    build_dir = setup_build_dir(options, config)
+    load_config(options, blade_root_dir)
+    build_dir = setup_build_dir(options)
 
     return blade_root_dir, working_dir, build_dir
 
@@ -493,7 +485,7 @@ def _main(blade_path):
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
-    adjust_config_by_options(configparse, options)
+    adjust_config_by_options(config, options)
     setup_log(build_dir)
     generate_scm(build_dir)
 

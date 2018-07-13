@@ -13,7 +13,7 @@ import re
 import blade
 
 import console
-import configparse
+import config
 import build_rules
 import java_targets
 from blade_util import var_to_list
@@ -99,7 +99,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if srcs:
             self.data['public_protos'] = [self._source_file_path(s) for s in srcs]
 
-        proto_config = configparse.blade_config.get_config('proto_library_config')
+        proto_config = config.get_section('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
         protobuf_python_libs = var_to_list(proto_config['protobuf_python_libs'])
@@ -112,7 +112,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         plugins = var_to_list(plugins)
         self.data['protoc_plugins'] = plugins
         # Handle protoc plugin deps according to the language
-        protoc_plugin_config = configparse.blade_config.get_config('protoc_plugin_config')
+        protoc_plugin_config = config.get_section('protoc_plugin_config')
         protoc_plugin_deps = set()
         protoc_plugin_java_deps = set()
         for plugin in plugins:
@@ -157,7 +157,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _check_proto_deps(self):
         """Only proto_library or gen_rule target is allowed as deps. """
-        proto_config = configparse.blade_config.get_config('proto_library_config')
+        proto_config = config.get_section('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
         protobuf_libs = [self._unify_dep(d) for d in protobuf_libs + protobuf_java_libs]
@@ -308,11 +308,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Generate go files. """
         env_name = self._env_name()
         var_name = self._var_name('go')
-        go_home = configparse.blade_config.get_config('go_config')['go_home']
+        go_home = config.get_item('go_config', 'go_home')
         if not go_home:
             console.error_exit('%s: go_home is not configured in BLADE_ROOT.' % self.fullname)
-        proto_config = configparse.blade_config.get_config('proto_library_config')
-        proto_go_path = proto_config['protobuf_go_path']
+        proto_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
         self._write_rule('%s.Replace(PROTOBUFGOPATH="%s")' % (env_name, proto_go_path))
         self._write_rule('%s = []' % var_name)
         for src in self.srcs:
@@ -344,19 +343,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _protoc_plugin_rules(self):
         """Generate scons rules for each protoc plugin. """
         env_name = self._env_name()
-        config = configparse.blade_config.get_config('protoc_plugin_config')
+        protoc_plugin_config = config.get_section('protoc_plugin_config')
         for plugin in self.data['protoc_plugins']:
-            p = config[plugin]
+            p = protoc_plugin_config[plugin]
             for language in p.code_generation:
                 self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
                                  env_name, language.upper(),
                                  p.protoc_plugin_flag(self.build_path)))
 
     def protoc_plugin_flags(self):
-        config = configparse.blade_config.get_config('protoc_plugin_config')
+        protoc_plugin_config = config.get_section('protoc_plugin_config')
         flags = {}
         for plugin in self.data['protoc_plugins']:
-            p = config[plugin]
+            p = protoc_plugin_config[plugin]
             for language in p.code_generation:
                 flags[language] = p.protoc_plugin_flag(self.build_path)
         return flags
@@ -369,8 +368,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         return protos
 
     def _protoc_direct_dependencies_rules(self):
-        config = configparse.blade_config.get_config('proto_library_config')
-        if config['protoc_direct_dependencies']:
+        if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
             if len(dependencies) > 1:
                 env_name = self._env_name()
@@ -459,8 +457,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         return {}
 
     def ninja_protoc_direct_dependencies(self, vars):
-        config = configparse.blade_config.get_config('proto_library_config')
-        if config['protoc_direct_dependencies']:
+        if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
             if len(dependencies) > 1:
                 vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)

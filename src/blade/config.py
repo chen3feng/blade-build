@@ -20,6 +20,15 @@ from cc_targets import HEAP_CHECK_VALUES
 from proto_library_target import ProtocPlugin
 
 
+_config_globals = {}
+
+
+def config_rule(func):
+    '''Decorator for functions accessible in config files'''
+    _config_globals[func.__name__] = func
+    return func
+
+
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
     def __init__(self):
@@ -171,7 +180,7 @@ class BladeConfig(object):
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
-                execfile(filename, BladeConfig._globals, None)
+                execfile(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
         finally:
@@ -179,25 +188,25 @@ class BladeConfig(object):
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
-        config = self.configs.get(section_name)
-        if config:
+        section = self.configs.get(section_name)
+        if section:
             if append:
-                self._append_config(section_name, config, append)
-            self._replace_config(section_name, config, user_config)
+                self._append_config(section_name, section, append)
+            self._replace_config(section_name, section, user_config)
         else:
             console.error('%s: %s: unknown config section name' % (
                           self.current_file_name, section_name))
 
-    def _append_config(self, section_name, config, append):
+    def _append_config(self, section_name, section, append):
         """Append config section items"""
         if not isinstance(append, dict):
             console.error('%s: %s: append must be a dict' %
                     (self.current_file_name, section_name))
         else:
             for k in append:
-                if k in config:
-                    if isinstance(config[k], list):
-                        config[k] += var_to_list(append[k])
+                if k in section:
+                    if isinstance(section[k], list):
+                        section[k] += var_to_list(append[k])
                     else:
                         console.warning('%s: %s: config item %s is not a list' %
                                 (self.current_file_name, section_name, k))
@@ -206,12 +215,12 @@ class BladeConfig(object):
                     console.warning('%s: %s: unknown config item name: %s' %
                             (self.current_file_name, section_name, k))
 
-    def _replace_config(self, section_name, config, user_config):
+    def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
         unknown_keys = []
         for k in user_config:
-            if k in config:
-                if isinstance(config[k], list):
+            if k in section:
+                if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
                 console.warning('%s: %s: unknown config item name: %s' %
@@ -219,24 +228,42 @@ class BladeConfig(object):
                 unknown_keys.append(k)
         for k in unknown_keys:
             del user_config[k]
-        config.update(user_config)
+        section.update(user_config)
 
-    def get_config(self, section_name):
+    def get_section(self, section_name):
         """get config section, returns default values if not set """
         return self.configs[section_name]
 
 
 # Global config object
-blade_config = BladeConfig()
+_blade_config = BladeConfig()
+
+
+def load_files(blade_root_dir, load_local_config):
+    _config_globals['build_target'] = build_attributes.attributes
+    _blade_config.try_parse_file(os.path.join(os.path.dirname(sys.argv[0]), 'blade.conf'))
+    _blade_config.try_parse_file(os.path.expanduser('~/.bladerc'))
+    _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
+    if load_local_config:
+        _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
+
+
+def get_section(section_name):
+    return _blade_config.get_section(section_name)
+
+
+def get_item(section_name, item_name):
+    return _blade_config.get_section(section_name)[item_name]
 
 
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
         console.error_exit('%s: Invalid %s value %s, can only be in %s' % (
-            blade_config.current_file_name, name, value, valid_values))
+            _blade_config.current_file_name, name, value, valid_values))
 
 
+@config_rule
 def config_items(**kwargs):
     """Used in config functions for config file, to construct a appended
     items dict, and then make syntax more pretty
@@ -244,116 +271,133 @@ def config_items(**kwargs):
     return kwargs
 
 
+@config_rule
 def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
                 HEAP_CHECK_VALUES)
-    blade_config.update_config('cc_test_config', append, kwargs)
+    _blade_config.update_config('cc_test_config', append, kwargs)
 
 
+@config_rule
 def cc_binary_config(append=None, **kwargs):
     """cc_binary_config section. """
-    blade_config.update_config('cc_binary_config', append, kwargs)
+    _blade_config.update_config('cc_binary_config', append, kwargs)
 
 
+@config_rule
 def cc_library_config(append=None, **kwargs):
     """cc_library_config section. """
-    blade_config.update_config('cc_library_config', append, kwargs)
+    _blade_config.update_config('cc_library_config', append, kwargs)
 
 
 __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 
 
+@config_rule
 def global_config(append=None, **kwargs):
     """global_config section. """
     _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
-    debug_info_levels = blade_config.get_config('cc_config')['debug_info_levels'].keys()
+    debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
-    blade_config.update_config('global_config', append, kwargs)
+    _blade_config.update_config('global_config', append, kwargs)
 
 
+@config_rule
 def distcc_config(append=None, **kwargs):
     """distcc_config. """
-    blade_config.update_config('distcc_config', append, kwargs)
+    _blade_config.update_config('distcc_config', append, kwargs)
 
 
+@config_rule
 def link_config(append=None, **kwargs):
     """link_config. """
-    blade_config.update_config('link_config', append, kwargs)
+    _blade_config.update_config('link_config', append, kwargs)
 
 
+@config_rule
 def java_config(append=None, **kwargs):
     """java_config. """
-    blade_config.update_config('java_config', append, kwargs)
+    _blade_config.update_config('java_config', append, kwargs)
 
 
+@config_rule
 def java_binary_config(append=None, **kwargs):
     """java_test_config. """
-    blade_config.update_config('java_binary_config', append, kwargs)
+    _blade_config.update_config('java_binary_config', append, kwargs)
 
 
+@config_rule
 def java_test_config(append=None, **kwargs):
     """java_test_config. """
-    blade_config.update_config('java_test_config', append, kwargs)
+    _blade_config.update_config('java_test_config', append, kwargs)
 
 
+@config_rule
 def scala_config(append=None, **kwargs):
     """scala_config. """
-    blade_config.update_config('scala_config', append, kwargs)
+    _blade_config.update_config('scala_config', append, kwargs)
 
 
+@config_rule
 def scala_test_config(append=None, **kwargs):
     """scala_test_config. """
-    blade_config.update_config('scala_test_config', append, kwargs)
+    _blade_config.update_config('scala_test_config', append, kwargs)
 
 
+@config_rule
 def go_config(append=None, **kwargs):
     """go_config. """
-    blade_config.update_config('go_config', append, kwargs)
+    _blade_config.update_config('go_config', append, kwargs)
 
 
+@config_rule
 def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
     if path:
         console.warning(('%s: proto_library_config: protobuf_include_path has '
                          'been renamed to protobuf_incs, and become a list') %
-                         blade_config.current_file_name)
+                         _blade_config.current_file_name)
         del kwargs['protobuf_include_path']
         if isinstance(path, basestring) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()
         else:
             kwargs['protobuf_incs'] = [path]
 
-    blade_config.update_config('proto_library_config', append, kwargs)
+    _blade_config.update_config('proto_library_config', append, kwargs)
 
 
+@config_rule
 def protoc_plugin(**kwargs):
     """protoc_plugin. """
     if 'name' not in kwargs:
         console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
-    config = blade_config.get_config('protoc_plugin_config')
-    config[kwargs['name']] = ProtocPlugin(**kwargs)
+    section = _blade_config.get_section('protoc_plugin_config')
+    section[kwargs['name']] = ProtocPlugin(**kwargs)
 
 
+@config_rule
 def thrift_library_config(append=None, **kwargs):
     """thrift config. """
-    blade_config.update_config('thrift_config', append, kwargs)
+    _blade_config.update_config('thrift_config', append, kwargs)
 
 
+@config_rule
 def fbthrift_library_config(append=None, **kwargs):
     """fbthrift config. """
-    blade_config.update_config('fbthrift_config', append, kwargs)
+    _blade_config.update_config('fbthrift_config', append, kwargs)
 
 
+@config_rule
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, basestring) and ' ' in extra_incs:
             console.warning('%s: cc_config: extra_incs has been changed to list' %
-                    blade_config.current_file_name)
+                    _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()
-    blade_config.update_config('cc_config', append, kwargs)
+    _blade_config.update_config('cc_config', append, kwargs)

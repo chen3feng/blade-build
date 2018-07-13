@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import time
 
-import configparse
+import config
 import console
 
 
@@ -61,7 +61,7 @@ class MavenCache(object):
         #   value: an instance of MavenArtifact
         self.__jar_database = {}
 
-        java_config = configparse.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         self.__maven = java_config.get('maven')
         self.__central_repository = java_config.get('maven_central')
         # Local repository is set to the maven default directory

@@ -13,7 +13,7 @@
 
 import os
 import blade
-import configparse
+import config
 
 import build_rules
 from blade_util import var_to_list
@@ -325,7 +325,7 @@ class CuTest(CuBinary):
         self.data['always_run'] = always_run
         self.data['exclusive'] = exclusive
 
-        cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        cc_test_config = config.get_section('cc_test_config')
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
 
