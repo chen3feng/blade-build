@@ -35,7 +35,7 @@ class BladeConfig(object):
         self.current_file_name = ''
         self.configs = {
             'global_config' : {
-                'build_path_template': 'build${m}_${profile}',
+                'build_path_template': 'build${bits}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
                 'test_timeout': None,
                 'native_builder': 'scons',
