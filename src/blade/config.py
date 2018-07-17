@@ -35,7 +35,7 @@ class BladeConfig(object):
         self.current_file_name = ''
         self.configs = {
             'global_config' : {
-                'build_path_template': 'build${m}_${profile}',
+                'build_path_template': 'build${bits}_${profile}',
                 'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
                 'test_timeout': None,
                 'native_builder': 'scons',
@@ -182,7 +182,7 @@ class BladeConfig(object):
             if os.path.exists(filename):
                 execfile(filename, _config_globals, None)
         except SystemExit:
-            console.error_exit('Parse error in config file %s, exit...' % filename)
+            console.error_exit('Parse error in config file %s' % filename)
         finally:
             self.current_file_name = ''
 

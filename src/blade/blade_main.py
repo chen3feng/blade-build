@@ -321,8 +321,7 @@ def lock_workspace():
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
-                    'There is already an active building in current source '
-                    'dir tree. Blade will exit...')
+                    'There is already an active building in current source tree.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
@@ -350,7 +349,7 @@ def load_config(options, blade_root_dir):
 def setup_build_dir(options):
     build_path_format = config.get_item('global_config', 'build_path_template')
     s = Template(build_path_format)
-    build_dir = s.substitute(m=options.m, profile=options.profile)
+    build_dir = s.substitute(bits=options.m, profile=options.profile)
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     return build_dir

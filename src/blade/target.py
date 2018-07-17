@@ -70,7 +70,7 @@ class Target(object):
         self._check_deps(deps)
         self._init_target_deps(deps)
         self._init_visibility(visibility)
-        self.scons_rule_buf = []
+        self.build_rules = []
         self.__cached_generate_header_files = None
 
     def _clone_env(self):
@@ -631,7 +631,7 @@ class Target(object):
         Append the rule to the buffer at first.
 
         """
-        self.scons_rule_buf.append('%s\n' % rule)
+        self.build_rules.append('%s\n' % rule)
 
     def scons_rules(self):
         """scons_rules.
@@ -673,18 +673,8 @@ class Target(object):
                     self._write_rule('  %s =' % name)
 
     def get_rules(self):
-        """get_rules.
-
-        Returns
-        -----------
-        The scons rules buffer
-
-        Description
-        -----------
-        Returns the buffer.
-
-        """
-        return self.scons_rule_buf
+        """Return build rules. """
+        return self.build_rules
 
     def _convert_string_to_target_helper(self, target_string):
         """
