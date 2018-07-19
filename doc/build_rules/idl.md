@@ -1,7 +1,7 @@
-构建protobuf和thrift
+# 构建protobuf和thrift
 ---
 
-# proto_library
+## proto_library
 用于定义protobuf目标
 deps 为import所涉及的其他proto_library
 自动依赖protobuf，使用者不需要再显式指定。
@@ -20,7 +20,7 @@ Blade支持proto_library，使得在项目中使用protobuf十分方便。
 
 proto_library被Java目标依赖时，会自动构建Java相关的结果，Python也类似。因此同一个proto_library目标可以被多种语言所使用。
 
-# thrift_library
+## thrift_library
 用于定义thrift库目标
 deps 为import所涉及的其他thrift_library
 自动依赖thrift，使用者不需要再显式指定。
