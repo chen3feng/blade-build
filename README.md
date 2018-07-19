@@ -108,11 +108,13 @@ $ blade test -m32 -pdebug common...
 * 为了支持python 2.6及更低版本，我们把python 2.7中的argparse.py放入了源码包。
 * Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，又增强了 Blade，这些库包括 [glog](http://code.google.com/p/google-glog/), [protobuf](http://code.google.com/p/protobuf/),[gtest](http://code.google.com/p/googletest/), [gperftools](http://code.google.com/p/gperftools/)。
 
-更多文档请参考Blade wiki。
+我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
 
 欢迎使用以及帮助我们改进Blade，我们期待你的贡献。
 
-那么，阅读[完整文档](/doc/user_manual_zh_CN.md)，开始使用吧。
+文档
+---
+看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/user_manual_zh_CN.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/FAQ_zh_CN.md)，也许有你需要的信息。
 
