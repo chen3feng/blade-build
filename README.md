@@ -7,20 +7,21 @@ A easy-to-use, fast modern building system for trunk monorepo development
 通知
 ---
 
-* Blade 发布1.1.1，包含以下特性：
- * python 最低版本要求从2.7下降到2.4
- * 修正了python 2.7.0 argparse 模块 bug 带来的问题
- * install 命令支持 zsh
- * 集成cpplint，构建前自动调用cpplint对被更改的代码做代码检查。
- * 新增 cc_config.optimize 选项，可以控制整体默认优化级别。
- * 更新文档
+* Blade 发布1.1.2，包含以下特性：
+ * python 最低版本要求2.6
+ * 对Java，scala构建的完善支持
+ * 支持扩展
+ 
+1.1.2版是最后一个1.x版本，我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
+* 后端支持[ninja]，大幅度提高构建性能
+* 全面支持Python构建
+* 完善对扩展的支持
+* 支持kotlin，rust构建
 
-贡献者名单：
+敬请期待
 
-* chenjingxu at qiyi dot com
-* whuwxl at github dot com
-* yeshunping at github dot com
-* guanqun at github dot com
+[贡献者名单](/AUTHORS)
+
 
 概述
 ---
