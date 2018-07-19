@@ -20,8 +20,6 @@ A easy-to-use, fast modern building system for trunk monorepo development
 
 敬请期待
 
-[贡献者名单](/AUTHORS)
-
 
 概述
 ---
@@ -111,7 +109,7 @@ $ blade test -m32 -pdebug common...
 
 我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
 
-欢迎使用以及帮助我们改进Blade，我们期待你的贡献。
+欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](/AUTHORS)
 
 文档
 ---
