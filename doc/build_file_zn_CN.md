@@ -1,9 +1,9 @@
-编写BUILD文件
+# 编写BUILD文件
 --------
 
 Blade 通过一系列的名字为 "BUILD" 的文件（文件名全大写），这些文件需要开发者去编写。每个 BUILD文件通过一组目标描述函数描述了一个目标的源文件，所依赖的其他目标，以及其他一些属性。
 
-# BUILD文件的示例
+## BUILD文件的示例
 
 构建脚本很简单：
 
@@ -23,7 +23,7 @@ cc_library(
 ```
 也是说明式的，只需要列出目标名，源文件名和依赖名（可以没有）即可。
 
-# 风格建议
+## 风格建议
 ---------
 * 四空格缩进，不要用tab字符
 * 总是用单引号
@@ -33,7 +33,7 @@ cc_library(
 * 不同目标之间空一行，前面可以加注释
 * 注释的 # 后面空一格，比如 # This is a comment
 
-# 通用属性
+## 通用属性
 Blade用一组target函数来定义目标，这些target的通用属性有：
 
  * name: 字符串，和路径一起成为target的唯一标识，也决定了构建的输出命名
@@ -64,11 +64,11 @@ cc_`*` 目标
 || incs || 用户定义的include || incs=['poppy/myinc'] || 用户通常不要使用 ||
 || optimize || 用户定义的optimize flags || optimize=['O3'] || 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library ||
 
-# Blade支持的构建规则
+## Blade支持的构建规则
 
-## [构建C/C++目标](rules/cc.md)
-## [构建protobuf和thrift](rules/idl.md)
-## [构建Java](rules/java.md)
-## [构建Scala](rules/scala.md)
-## [构建SWIG](rules/swig.md)
-## [自定义规则构建](rules/gen_rule.md)
+### [构建C/C++目标](rules/cc.md)
+### [构建protobuf和thrift](rules/idl.md)
+### [构建Java](rules/java.md)
+### [构建Scala](rules/scala.md)
+### [构建SWIG](rules/swig.md)
+### [自定义规则构建](rules/gen_rule.md)
