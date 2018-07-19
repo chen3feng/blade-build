@@ -1,4 +1,15 @@
 # C/C++规则
+
+cc_`*` 目标
+CC 目标均支持的属性为：
+
+| 属性 | 解释 | 举例 | 备注 |
+|------|-----|-----|------|
+| warning | 是否屏蔽warning  | warning='no' | 默认不屏蔽 warning='yes' , 默认不用写，已开启 |
+| defs | 用户定义的宏加入编译中 | defs=['_MT'] | A=1 |
+| incs | 增加编译源文件时的头文件查找路径 | incs=['poppy/myinc'] | 一般用于第三方库，用户代码建议使用全路径include，不要使用该属性 |
+| optimize | 用户定义的optimize flags | optimize=['O3'] | 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library |
+
 ## cc_library
 
 用于描述C++库目标。
@@ -15,7 +26,7 @@ cc_library(
 )
 ```
 
-参数：
+属性：
 
 * link_all_symbols=True
 库在被静态链接时，确保库里所有的符号都被链接，以保证依赖全局对象构造函数，比如自动注册器的代码能够正常工作。
@@ -32,6 +43,9 @@ False: debug版本不作优化。
 
 * prebuilt=True
 主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64}_{release,debug} 这样的子目录中。不区分debug/release时可以只有两个实际的目录。
+
+* export_incs
+类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标 | incs=['poppy/myinc'] |，和incs一样，用户代码不建议使用
 
 ##### cc_binary
 定义C++可执行文件目标
@@ -107,7 +121,7 @@ lex_yacc_library(
 
 ## cc_plugin
 
-支持生成target所依赖的库都是静态库.a的so库，即plugin。
+把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
 ```python
 cc_plugin(
     name='mystring',
@@ -122,7 +136,7 @@ cc_plugin(
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
 ## resource_library
-编译静态资源。
+把数据文件编译成静态资源，可以在程序中中读取。
 
 大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
 blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
