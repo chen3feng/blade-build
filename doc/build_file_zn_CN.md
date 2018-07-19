@@ -46,24 +46,6 @@ deps的允许的格式：
  * ":name" 当前BUILD文件内的target， path可以省略。
  * "#pthread" 系统库。直接写#跟名字即可。
 
-cc_`*` 目标
-包括 cc_test, cc_binary, cc_library，CC 目标均支持的参数为：
-
- * srcs 源文件列表
- * deps 依赖列表
- * incs 头文件路径列表
- * defs 宏定义列表
- * warning 警告设置
- * optimize 优化设置
-
-* 注：thirdparty是我们代码库里的一个特殊目录，里面的代码都是一些第三方库，按照台风系统的代码规范，只允许对这里的代码用incs, defs和warnings，自己开发的代码要按照规范组织。Blade会对这个目录之外的代码使用这些参数发出警告。
-
-|| *字段* || *解释* || *举例* || *备注* ||
-|| warning || 是否屏蔽warning  || warning='no' || 默认不屏蔽 warning='yes' , 默认不用写，已开启 ||
-|| defs || 用户定义的宏加入编译中 || defs=['_MT'] || 如果用户定义C++关键字，报warning ||
-|| incs || 用户定义的include || incs=['poppy/myinc'] || 用户通常不要使用 ||
-|| optimize || 用户定义的optimize flags || optimize=['O3'] || 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library ||
-
 ## 构建规则
 
 ### [构建C/C++目标](build_rules/cc.md)
