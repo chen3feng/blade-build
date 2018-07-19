@@ -130,6 +130,19 @@ class Blade(object):
         if self.__command != 'query':
             self.generate_build_rules()
 
+    def verify(self):
+        """Verify specific targets after build is complete. """
+        error = 0
+        header_inclusion_dependencies = config.get_item('cc_config',
+                                                        'header_inclusion_dependencies')
+        for k in self.__sorted_targets_keys:
+            target = self.__build_targets[k]
+            if (header_inclusion_dependencies and
+                target.type == 'cc_library' and target.srcs):
+                if not target.verify_header_inclusion_dependencies():
+                    error += 1
+        return not error
+
     def run(self, target):
         """Run the target. """
         runner = BinaryRunner(self.__build_targets,

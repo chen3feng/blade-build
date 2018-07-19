@@ -158,6 +158,7 @@ class BladeConfig(object):
                     'mid': ['-g'],
                     'high': ['-g3'],
                 },
+                'header_inclusion_dependencies': False,
             },
             'cc_library_config': {
                 'prebuilt_libpath_pattern' : 'lib${bits}_${profile}',

@@ -478,6 +478,14 @@ cxx_warnings = %s
                 description='CXX ${in}',
                 depfile='${out}.d',
                 deps='gcc')
+        if config.get_item('cc_config', 'header_inclusion_dependencies'):
+            preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2>${out}'
+            self.generate_rule(name='cchdrs',
+                    command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
+                    description='CC HDRS ${in}')
+            self.generate_rule(name='cxxhdrs',
+                    command=preprocess % (cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                    description='CXX HDRS ${in}')
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self._add_rule('''
 build __securecc_phony__ : phony
