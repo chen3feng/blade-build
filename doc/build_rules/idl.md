@@ -31,6 +31,7 @@ thrift_library(
     name = 'shared_thrift',
     srcs = 'shared.thrift',
 )
+
 thrift_library(
     name = 'tutorial_thrift',
     srcs = 'tutorial.thrift',
