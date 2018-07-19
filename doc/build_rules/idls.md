@@ -18,6 +18,8 @@ Blade支持proto_library，使得在项目中使用protobuf十分方便。
 要引用某 proto 文件生成的头文件，需要从 BLADE_ROOT 的目录开始，只是把 proto 扩展名改为 pb.h 扩展名。
 比如 //common/base/string_test.proto 生成的头文件，路径为 "common/base/string_test.pb.h"。
 
+proto_library被Java目标依赖时，会自动构建Java相关的结果，Python也类似。因此同一个proto_library目标可以被多种语言所使用。
+
 # thrift_library
 用于定义thrift库目标
 deps 为import所涉及的其他thrift_library
