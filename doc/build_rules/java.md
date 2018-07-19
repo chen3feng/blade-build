@@ -1,7 +1,6 @@
-构建Java目标
----
+# 构建Java目标
 
-# java_library
+## java_library
 
 把java源代码编译为库。
 ```python
@@ -32,14 +31,16 @@ java_library(
 ```
 
 Blade还支持使用来自maven的库
-# maven_jar
+## maven_jar
 maven_jar (
   name = 'hadoop-common-2.7.2-tdw',
   id = 'org.apache.hadoop:hadoop-common:2.7.2-tdw-1.0.1',  # 完整的maven artifact id
   transitive = False,  # 是否自动透传其依赖
 )
 
-# java_binary
+## java_fat_binary
+
+## java_binary
 把java源代码编译为可执行文件。
 ```python
 java_binary(
@@ -54,7 +55,7 @@ java_binary(
 )
 ```
 
-# java_test
+## java_test
 编译和运行java测试代码。
 ```python
 java_test(
