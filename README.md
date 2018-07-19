@@ -7,20 +7,19 @@ A easy-to-use, fast modern building system for trunk monorepo development
 通知
 ---
 
-* Blade 发布1.1.1，包含以下特性：
- * python 最低版本要求从2.7下降到2.4
- * 修正了python 2.7.0 argparse 模块 bug 带来的问题
- * install 命令支持 zsh
- * 集成cpplint，构建前自动调用cpplint对被更改的代码做代码检查。
- * 新增 cc_config.optimize 选项，可以控制整体默认优化级别。
- * 更新文档
+* Blade 发布1.1.2，包含以下特性：
+ * python 最低版本要求2.6
+ * 对Java，scala构建的完善支持
+ * 支持扩展
+ 
+1.1.2版是最后一个1.x版本，我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
+* 后端支持[ninja]，大幅度提高构建性能
+* 全面支持Python构建
+* 完善对扩展的支持
+* 支持kotlin，rust构建
 
-贡献者名单：
+敬请期待
 
-* chenjingxu at qiyi dot com
-* whuwxl at github dot com
-* yeshunping at github dot com
-* guanqun at github dot com
 
 概述
 ---
@@ -108,9 +107,15 @@ $ blade test -m32 -pdebug common...
 * 为了支持python 2.6及更低版本，我们把python 2.7中的argparse.py放入了源码包。
 * Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，又增强了 Blade，这些库包括 [glog](http://code.google.com/p/google-glog/), [protobuf](http://code.google.com/p/protobuf/),[gtest](http://code.google.com/p/googletest/), [gperftools](http://code.google.com/p/gperftools/)。
 
-更多文档请参考Blade wiki。
+我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
 
-欢迎使用以及帮助我们改进Blade，我们期待你的贡献。
+欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](/AUTHORS)
+
+文档
+---
+看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/user_manual_zh_CN.md)，开始使用吧。
+
+如果遇到有问题，可以试试先查一下[FAQ](/doc/FAQ_zh_CN.md)，也许有你需要的信息。
 
 Documentation in en_US
 ====================
