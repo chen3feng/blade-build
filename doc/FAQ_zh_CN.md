@@ -1,4 +1,3 @@
-<wiki:toc max_depth="3" />
 Blade FAQ
 ========
 
