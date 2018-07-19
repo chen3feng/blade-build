@@ -112,7 +112,7 @@ $ blade test -m32 -pdebug common...
 
 欢迎使用以及帮助我们改进Blade，我们期待你的贡献。
 
-[开始使用吧](/doc/user_manual_zh_CN.md)
+那么，阅读[完整文档](/doc/user_manual_zh_CN.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/FAQ_zh_CN.md)，也许有你需要的信息。
 
