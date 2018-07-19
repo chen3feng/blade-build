@@ -100,6 +100,7 @@ cc_library(
 
 ### 描述目标
 
+#### 通用规则
 Blade用一组target函数来定义目标，这些target的通用属性有：
 
  * name: 字符串，和路径一起成为target的唯一标识，也决定了构建的输出命名
@@ -109,7 +110,7 @@ Blade用一组target函数来定义目标，这些target的通用属性有：
 deps的允许的格式：
 
  * "//path/to/dir/:name" 其他目录下的target，path为从BLADE_ROOT出发的路径，name为被依赖的目标名。看见就知道在哪里。
- * ":name" 当前目录下的target， path可以省略。
+ * ":name" 当前BUILD文件内的target， path可以省略。
  * "#pthread" 系统库。直接写#跟名字即可。
 
 cc_`*` 目标
@@ -131,7 +132,8 @@ cc_`*` 目标
 || optimize || 用户定义的optimize flags || optimize=['O3'] || 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library ||
 
 
-#### cc_library
+#### C/C++规则
+##### cc_library
 
 用于描述C++库目标。
 cc_library同时用于构建静态和动态库，默认只构建静态库，只有被dynamic_link=1的cc_binary依赖时或者命令行指定
@@ -165,7 +167,7 @@ False: debug版本不作优化。
 * prebuilt=True
 主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64}_{release,debug} 这样的子目录中。不区分debug/release时可以只有两个实际的目录。
 
-####cc_binary
+##### cc_binary
 定义C++可执行文件目标
 ```python
 cc_binary(
@@ -185,7 +187,7 @@ cc_binary(
 这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中的这些符号。
 详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
-####cc_test
+##### cc_test
 相当于cc_binary，再加上自动链接gtest和gtest_main
 还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt
 用blade test子命令，会在成功构建后到name.runfiles目录下自动运行，并输出总结信息。
@@ -215,45 +217,7 @@ cc_test(
 )
 ```
 
-#### proto_library
-用于定义protobuf目标
-deps 为import所涉及的其他proto_library
-自动依赖protobuf，使用者不需要再显式指定。
-构建时自动调用protoc生成cc和h，并且编译成对应的cc_library
-```python
-proto_library(
-    name = 'rpc_meta_info_proto',
-    srcs = 'rpc_meta_info.proto',
-    deps = ':rpc_option_proto',
-)
-```
-Blade支持proto_library，使得在项目中使用protobuf十分方便。
-
-要引用某 proto 文件生成的头文件，需要从 BLADE_ROOT 的目录开始，只是把 proto 扩展名改为 pb.h 扩展名。
-比如 //common/base/string_test.proto 生成的头文件，路径为 "common/base/string_test.pb.h"。
-
-#### thrift_library
-用于定义thrift库目标
-deps 为import所涉及的其他thrift_library
-自动依赖thrift，使用者不需要再显式指定。
-构建时自动调用thrift命令生成cpp和h，并且编译成对应的cc_library
-
-```python
-thrift_library(
-    name = 'shared_thrift',
-    srcs = 'shared.thrift',
-)
-thrift_library(
-    name = 'tutorial_thrift',
-    srcs = 'tutorial.thrift',
-    deps = ':shared_thrift'
-)
-```
-
-C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
- * thrift 0.9版（之前版本未测）有个[https://issues.apache.org/jira/browse/THRIFT-1859 bug]，需要修正才能使用，此bug已经在开发版本中[https://builds.apache.org/job/Thrift/633/changes#detail13 修正]
-
-#### lex_yacc_library
+##### lex_yacc_library
 
 srcs 必须为二元列表，后缀分别为ll和yy
 构建时自动调用flex和bison, 并且编译成对应的cc_library
@@ -275,57 +239,7 @@ lex_yacc_library(
 * recursive=True
 生成可重入的C scanner.
 
-
-#### gen_rule
-
-用于定制自己的目标
-outs = []，表示输出的文件列表，需要填写这个域gen_rule才会被执行
-cmd, 字符串，表示被调用的命令行
-cmd中可含有如下变量，运行时会被替换成srcs和outs中的对应值
-$SRCS
-$OUTS
-$FIRST_SRC
-$FIRST_OUT
-$BUILD_DIR -- 可被替换为 build[64,32]_[release,debug] 输出目录
-
-```python
-gen_rule(
-    name='test_gen_target',
-    cmd='echo what_a_nice_day;touch test2.c',
-    deps=[':test_gen'],                         # 可以有deps , 也可以被别的target依赖
-    outs=['test2.c']
-)
-````
-
-很多用户使用gen_rule动态生成代码文件然后和某个cc_library或者cc_binary一起编译，
-需要注意应该尽量在输出目录生成代码文件,如build64_debug下，并且文件的路径名要写对，
-如 outs = ['websearch2/project_example/module_1/file_2.cc'], 这样使用
-gen_rule生成的文件和库一起编译时就不会发生找不到动态生成的代码文件问题了。
-
-####swig_library
-
-根据.i文件生成相应的python, java 和php cxx模块代码，并且生成对应语言的代码。
-
-```python
-swig_library(
-    name = 'poppy_client',
-    srcs = [
-        'poppy_client.i'
-    ],
-    deps = [
-        ':poppy_swig_wrap'
-    ],
-    warning='yes',
-    java_package='com.soso.poppy.swig',   # 生成的java文件的所在package名称
-    java_lib_packed=1, # 表示把生成的libpoppy_client_java.so打包到依赖者的jar包里，如java_jar依赖这个swig_library
-    optimize=['O3']    # 编译优化选项
-)
-```
-
-* warning
-这里的warning仅仅指swig编译参数cpperraswarn是否被指定了，swig_library默认使用非标准编译告警级别（没有那么严格）。
-
-#### cc_plugin
+##### cc_plugin
 
 支持生成target所依赖的库都是静态库.a的so库，即plugin。
 ```python
@@ -341,7 +255,7 @@ cc_plugin(
 
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
-#### resource_library
+##### resource_library
 编译静态资源。
 
 大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
@@ -375,13 +289,78 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 
 用 static resource 在某些情况下也有一点不方便：就是不能在运行期间更新，因此是否使用，需要根据具体场景自己权衡。
 
-#### java_jar
-编译java源代码。
+
+#### 构建protobuf和thrift
+##### proto_library
+用于定义protobuf目标
+deps 为import所涉及的其他proto_library
+自动依赖protobuf，使用者不需要再显式指定。
+构建时自动调用protoc生成cc和h，并且编译成对应的cc_library
 ```python
-java_jar(
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+    deps = ':rpc_option_proto',
+)
+```
+Blade支持proto_library，使得在项目中使用protobuf十分方便。
+
+要引用某 proto 文件生成的头文件，需要从 BLADE_ROOT 的目录开始，只是把 proto 扩展名改为 pb.h 扩展名。
+比如 //common/base/string_test.proto 生成的头文件，路径为 "common/base/string_test.pb.h"。
+
+##### thrift_library
+用于定义thrift库目标
+deps 为import所涉及的其他thrift_library
+自动依赖thrift，使用者不需要再显式指定。
+构建时自动调用thrift命令生成cpp和h，并且编译成对应的cc_library
+
+```python
+thrift_library(
+    name = 'shared_thrift',
+    srcs = 'shared.thrift',
+)
+thrift_library(
+    name = 'tutorial_thrift',
+    srcs = 'tutorial.thrift',
+    deps = ':shared_thrift'
+)
+```
+
+C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
+ * thrift 0.9版（之前版本未测）有个[https://issues.apache.org/jira/browse/THRIFT-1859 bug]，需要修正才能使用，此bug已经在开发版本中[https://builds.apache.org/job/Thrift/633/changes#detail13 修正]
+
+####swig_library
+
+根据.i文件生成相应的python, java 和php cxx模块代码，并且生成对应语言的代码。
+
+```python
+swig_library(
+    name = 'poppy_client',
+    srcs = [
+        'poppy_client.i'
+    ],
+    deps = [
+        ':poppy_swig_wrap'
+    ],
+    warning='yes',
+    java_package='com.soso.poppy.swig',   # 生成的java文件的所在package名称
+    java_lib_packed=1, # 表示把生成的libpoppy_client_java.so打包到依赖者的jar包里，如java_jar依赖这个swig_library
+    optimize=['O3']    # 编译优化选项
+)
+```
+
+* warning
+这里的warning仅仅指swig编译参数cpperraswarn是否被指定了，swig_library默认使用非标准编译告警级别（没有那么严格）。
+
+#### Java构建
+##### java_library
+
+把java源代码编译为库。
+```python
+java_library(
     name = 'poppy_java_client',
     srcs = [
-        'src/com/soso/poppy'                 # 这里只需要指定java文件所在目录，不要写上具体java文件列表
+        glob('src/com/soso/poppy/*/*.Java)'
     ],
     deps = [
         '//poppy:rpc_meta_info_proto',       # 可以依赖proto_library生成的java文件一起编译打包
@@ -389,12 +368,85 @@ java_jar(
         '//poppy:rpc_message_proto',
         '//poppy:poppy_client',              # 可以依赖swig_library生成的java文件一起编译打包
         './lib:protobuf-java',               # 可以依赖别的jar包
+    ]
+)
+```
+
+java_library还支持
+* prebuilt=True
+主要应用在已经编译打包好的java jar 包。
+```python
+java_library(                                                                                        
+    name = 'parquet-column-gdt',                                                                     
+    prebuilt = True,                                                                                 
+    binary_jar = 'parquet-column-1.9.1-SNAPSHOT.jar',                                                
+) 
+```
+
+Blade还支持使用来自maven的库
+##### maven_jar
+maven_jar (
+  name = 'hadoop-common-2.7.2-tdw',
+  id = 'org.apache.hadoop:hadoop-common:2.7.2-tdw-1.0.1',  # 完整的maven artifact id
+  transitive = False,  # 是否自动透传其依赖
+)
+
+##### java_binary
+把java源代码编译为可执行文件。
+```python
+java_binary(
+    name = 'poppy_java_example',
+    srcs = [
+        glob('src/com/soso/poppy/*/*.Java)'
+    ],
+    deps = [
+        '//poppy:poppy_java_client',
+        '//poppy:rpc_example_proto',
+    ]
+)
+```
+
+##### java_test
+编译和运行java测试代码。
+```python
+java_test(
+    name = 'poppy_java_test',
+    srcs = [
+        glob('test/com/soso/poppy/*/×Test.Java)'
+    ],
+    deps = [
+        '//poppy:poppy_java_client',
         './lib:junit',
     ]
 )
 ```
- * prebuilt=True
-主要应用在已经编译打包好的java jar 包。
+
+#### 自定义规则
+##### gen_rule
+
+用于定制自己的目标
+outs = []，表示输出的文件列表，需要填写这个域gen_rule才会被执行
+cmd, 字符串，表示被调用的命令行
+cmd中可含有如下变量，运行时会被替换成srcs和outs中的对应值
+$SRCS
+$OUTS
+$FIRST_SRC
+$FIRST_OUT
+$BUILD_DIR -- 可被替换为 build[64,32]_[release,debug] 输出目录
+
+```python
+gen_rule(
+    name='test_gen_target',
+    cmd='echo what_a_nice_day;touch test2.c',
+    deps=[':test_gen'],                         # 可以有deps , 也可以被别的target依赖
+    outs=['test2.c']
+)
+````
+
+很多用户使用gen_rule动态生成代码文件然后和某个cc_library或者cc_binary一起编译，
+需要注意应该尽量在输出目录生成代码文件,如build64_debug下，并且文件的路径名要写对，
+如 outs = ['websearch2/project_example/module_1/file_2.cc'], 这样使用
+gen_rule生成的文件和库一起编译时就不会发生找不到动态生成的代码文件问题了。
 
 Blade的输出
 -----------
@@ -499,17 +551,28 @@ targets是一个列表，支持的格式：
 * --generate-java      为proto_library 和 swig_library 生成java文件
 * --generate-php       为proto_library 和 swig_library 生成php文件
 * --gprof              支持 GNU gprof
-* --gcov               支持 GNU gcov 做覆盖率测试
+* --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
 
 配置
 ----
-Blade 支持三个配置文件
+Blade 支持三个配置文件，按以下顺序依次加载，后加载的配置会覆盖前面的配置
 
-* blade.zip 同一个目录下的 blade.conf，这是全局配置。
+* blade 安装目录下的 blade.conf，这是全局配置。
 * ~/.bladerc 用户 HOME 目录下的 .bladerc 文件，这是用户级的配置。
 * BLADE_ROOT 其实也是个配置文件，写在这里的是项目级配置。
+* BLADE_ROOT.local 开发者自己的本地配置文件，用于临时调整参数等用途
 
 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
+
+### global_config
+Blade全局配置
+```python
+global_config(
+    native_builder = 'ninja',  # 后端构建系统，目前支持scons和ninja
+    duplicated_source_action = 'error',  # 发现同一个源文件属于多个目标时的行为，默认为warning
+    test_timeout = 600  # 600s  # 测试超时，单位秒，超过超时值依然未结束，视为测试失败
+) 
+```
 
 ### cc_config
 所有c/c++目标的公共配置
