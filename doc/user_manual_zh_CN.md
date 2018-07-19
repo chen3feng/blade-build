@@ -1,5 +1,3 @@
-<wiki:toc max_depth="2" />
-
 Blade用户手册
 ============
 
