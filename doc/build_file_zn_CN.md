@@ -64,9 +64,11 @@ cc_`*` 目标
 || incs || 用户定义的include || incs=['poppy/myinc'] || 用户通常不要使用 ||
 || optimize || 用户定义的optimize flags || optimize=['O3'] || 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library ||
 
-# [构建C/C++目标](rules/cc.md)
-# [构建protobuf和thrift](rules/idl.md)
-# [构建Java](rules/java.md)
-# [构建Scala](rules/scala.md)
-# [构建SWIG](rules/swig.md)
-# [自定义规则构建](rules/gen_rule.md)
+# Blade支持的构建规则
+
+## [构建C/C++目标](rules/cc.md)
+## [构建protobuf和thrift](rules/idl.md)
+## [构建Java](rules/java.md)
+## [构建Scala](rules/scala.md)
+## [构建SWIG](rules/swig.md)
+## [自定义规则构建](rules/gen_rule.md)
