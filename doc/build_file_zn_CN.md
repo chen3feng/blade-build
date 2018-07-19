@@ -52,5 +52,7 @@ deps的允许的格式：
 ### [构建protobuf和thrift](build_rules/idl.md)
 ### [构建Java](build_rules/java.md)
 ### [构建Scala](build_rules/scala.md)
+### [构建Python](build_rules/python.md)
 ### [构建SWIG](build_rules/swig.md)
+### [Bash测试](build_rules/shell.md)
 ### [自定义规则构建](build_rules/gen_rule.md)
