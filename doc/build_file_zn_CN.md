@@ -66,9 +66,9 @@ cc_`*` 目标
 
 ## Blade支持的构建规则
 
-### [构建C/C++目标](rules/cc.md)
-### [构建protobuf和thrift](rules/idl.md)
-### [构建Java](rules/java.md)
-### [构建Scala](rules/scala.md)
-### [构建SWIG](rules/swig.md)
-### [自定义规则构建](rules/gen_rule.md)
+### [构建C/C++目标](build_rules/cc.md)
+### [构建protobuf和thrift](build_rules/idl.md)
+### [构建Java](build_rules/java.md)
+### [构建Scala](build_rules/scala.md)
+### [构建SWIG](build_rules/swig.md)
+### [自定义规则构建](build_rules/gen_rule.md)
