@@ -1,2 +1,12 @@
 language: python
-script: true
+
+addons:
+  apt:
+    sources:
+    - kubuntu-backports
+    - ubuntu-toolchain-r-test
+    packages:
+    - ninja-build
+    
+script:
+  - src/test/runalltests.sh
