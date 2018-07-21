@@ -252,11 +252,12 @@ class CcFlagsManager(object):
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
+        src = os.path.join(self.build_dir, 'test.c')
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                   self.cc, obj, language, flag, obj))
+                   '%s -o %s -c -x %s %s %s > /dev/null 2>&1 && rm -f %s %s' % (
+                   self.cc, obj, language, flag, src, obj, src))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
