@@ -531,6 +531,8 @@ class CcTarget(Target):
     def _cc_library(self):
         self._static_cc_library()
         if self._need_dynamic_library():
+            import sys
+            print>>sys.stderr, '_cc_library: generate_dynamic=', True
             self._dynamic_cc_library()
 
     def _generated_header_files_dependencies(self):

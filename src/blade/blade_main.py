@@ -407,6 +407,7 @@ def adjust_config_by_options(config, options):
         if value:
             config.global_config(**{name: value})
     value = getattr(options, 'generate_dynamic', None)
+    print>>sys.stderr, 'generate_dynamic=', value
     if value:
         config.cc_library_config(**{'generate_dynamic': value})
 
