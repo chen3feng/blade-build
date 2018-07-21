@@ -11,7 +11,4 @@ addons:
     - ninja-build
     
 script:
-  - cpp --version
-  - gcc -v
-  - g++ -v
   - src/test/runalltests.sh
