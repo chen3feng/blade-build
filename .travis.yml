@@ -1,9 +1,6 @@
 language: python
 
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -q
-  - sudo apt-get install gcc gcc-c++ -y
+before_install: true
 
 addons:
   apt:
@@ -17,5 +14,4 @@ script:
   - cpp --version
   - gcc -v
   - g++ -v
-  - echo "int main() { return 0; }" > "test.c"; gcc -c -x c -g -Wall -Wextra test.c
   - src/test/runalltests.sh
