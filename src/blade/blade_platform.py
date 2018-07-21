@@ -253,18 +253,18 @@ class CcFlagsManager(object):
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() {{ return 0; }}" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
         src = os.path.join(self.build_dir, 'test.c')
-	with open(src, 'w') as f:
-	    f.write('int main() { return 0; }\n"')
+        with open(src, 'w') as f:
+            f.write('int main() { return 0; }\n')
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
-            cmd = ('{cc} -o {obj} -c -x {language} {flag} {src}'.format(
+            cmd = ('{cc} -o {obj} -c -x {language} {flag} {src} > /dev/null 2>&1 '.format(
                    cc=self.cc, src=src, obj=obj, language=language, flag=flag))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
                 unsupported_flags.append(flag)
-	os.remove(src)
-	os.remove(obj)
+        os.remove(src)
+        os.remove(obj)
         if unsupported_flags:
             console.warning('Unsupported C/C++ flags: %s' %
                             ', '.join(unsupported_flags))
@@ -313,19 +313,19 @@ class CcFlagsManager(object):
                 linkflags += ['-Wl,--whole-archive', '-lgcov',
                               '-Wl,--no-whole-archive']
 
-        flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)	
-	
-        return (flags_except_warning, linkflags)	
-	
-    def get_warning_flags(self):	
-        """Get the warning flags. """	
-        cc_config = config.get_section('cc_config')	
-        cppflags = cc_config['warnings']	
-        cxxflags = cc_config['cxx_warnings']	
-        cflags = cc_config['c_warnings']	
-	
-        filtered_cppflags = self._filter_out_invalid_flags(cppflags)	
-        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')	
-        filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')	
-	
+        flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
+
+        return (flags_except_warning, linkflags)
+
+    def get_warning_flags(self):
+        """Get the warning flags. """
+        cc_config = config.get_section('cc_config')
+        cppflags = cc_config['warnings']
+        cxxflags = cc_config['cxx_warnings']
+        cflags = cc_config['c_warnings']
+
+        filtered_cppflags = self._filter_out_invalid_flags(cppflags)
+        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
+        filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
+
         return (filtered_cppflags, filtered_cxxflags, filtered_cflags)

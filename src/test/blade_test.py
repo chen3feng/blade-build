@@ -51,7 +51,8 @@ class TargetTest(unittest.TestCase):
         self.direct_targets = []
         self.all_command_targets = []
         self.related_targets = {}
-
+        if not os.path.exists(self.current_building_path):
+            os.mkdir(self.current_building_path)
         # Init global configuration manager
         blade.config.load_files('.', False)
 
