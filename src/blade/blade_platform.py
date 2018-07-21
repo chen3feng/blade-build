@@ -258,6 +258,7 @@ class CcFlagsManager(object):
             cmd = ('echo "int main() { return 0; }" | '
                    '%s -o %s -c -x %s %s %s > /dev/null 2>&1 && rm -f %s %s' % (
                    self.cc, obj, language, flag, src, obj, src))
+            print cmd
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
