@@ -22,18 +22,6 @@ class TestSwigLibrary(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        poppy_client = (self.target_path, 'poppy_client')
-        self.command_file = 'cmds.tmp'
-
-        self.assertTrue(cc_library_lower in self.all_targets.keys())
-        self.assertTrue(poppy_client in self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         com_lower_line = ''
 
         com_swig_python = ''
@@ -62,8 +50,8 @@ class TestSwigLibrary(blade_test.TargetTest):
 
         self.assertCxxFlags(com_lower_line)
 
-        self.assertTrue('poppy_client_pywrap.cxx' in com_swig_python)
-        self.assertTrue('poppy_client_javawrap.cxx' in com_swig_java)
+        self.assertIn('poppy_client_pywrap.cxx', com_swig_python)
+        self.assertIn('poppy_client_javawrap.cxx', com_swig_java)
 
         self.assertCxxFlags(com_swig_python_cxx)
         self.assertCxxFlags(com_swig_java_cxx)

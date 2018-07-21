@@ -22,19 +22,6 @@ class TestCcBinary(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        cc_library_upper = (self.target_path, 'uppercase')
-        cc_library_string = (self.target_path, 'string_main_prog')
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(cc_library_upper, self.all_targets.keys())
-        self.assertIn(cc_library_string, self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         com_lower_line = ''
         com_upper_line = ''
         com_string_line = ''

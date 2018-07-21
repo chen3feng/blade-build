@@ -30,66 +30,27 @@ class TargetTest(unittest.TestCase):
             self.targets = full_targets
         else:
             self.targets = ['%s:%s' % (path, target)]
-        self.target_path = path
         self.cur_dir = os.getcwd()
         os.chdir('./testdata')
-        self.blade_path = '../../blade'
-        self.working_dir = '.'
-        self.current_building_path = 'build64_release'
-        self.current_source_dir = '.'
-        options = {
-                'arch': 'x86_64',
-                'm': '64',
-                'profile': 'release',
-                'generate_dynamic': True,
-                'generate_java': True,
-                'generate_php': generate_php,
-                'verbose': True
-                }
-        options.update(kwargs)
-        self.options = Namespace(**options)
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.related_targets = {}
-        if not os.path.exists(self.current_building_path):
-            os.mkdir(self.current_building_path)
-        # Init global configuration manager
-        blade.config.load_files('.', False)
-
-        blade.blade.blade = Blade(self.targets,
-                                  self.blade_path,
-                                  self.working_dir,
-                                  self.current_building_path,
-                                  self.current_source_dir,
-                                  self.options,
-                                  self.command)
-        self.blade = blade.blade.blade
-        (self.direct_targets,
-         self.all_command_targets) = self.blade.load_targets()
-        self.blade.analyze_targets()
-        self.all_targets = self.blade.get_build_targets()
+        self.blade_path = '../../../blade'
         self.scons_output_file = 'scons_output.txt'
+        self.assertTrue(self.dryRun())
 
     def tearDown(self):
         """tear down method. """
         try:
-            os.remove('./SConstruct')
             os.remove(self.scons_output_file)
-        except OSError:
+            os.chdir(self.cur_dir)
+        except (OSError, AttributeError):
             pass
-
-        os.chdir(self.cur_dir)
-
-    def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
-        self.assertEqual(self.direct_targets, [])
-        self.assertTrue(self.all_command_targets)
 
     def dryRun(self):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
-        p = subprocess.Popen('scons --dry-run > %s' % self.scons_output_file,
-                             shell=True)
+        os.environ['BLADE_AUTO_UPGRADE'] = 'no'
+        cmd = '%s build --generate-python --generate-java --verbose --dry-run %s > %s' % (
+                self.blade_path, ' '.join(self.targets), self.scons_output_file)
+        p = subprocess.Popen(cmd, shell=True)
         try:
             p.wait()
             self.scons_output = open(self.scons_output_file)

@@ -22,7 +22,6 @@ cc_config(
         "-Werror=empty-body",
         "-Werror=endif-labels",
         "-Werror=format",
-        "-Werror=format-nonliteral",
         "-Werror=missing-include-dirs",
         "-Werror=non-virtual-dtor",
         "-Werror=overflow",
@@ -51,7 +50,8 @@ cc_config(
         "-Werror=vla",
         "-Werror=non-virtual-dtor"
     ],
-    c_warnings = ["-Werror-implicit-function-declaration"]
+    c_warnings = ["-Werror-implicit-function-declaration"],
+    cpplint = '',
 )
 
 cc_library_config(

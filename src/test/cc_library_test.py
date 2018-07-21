@@ -26,25 +26,11 @@ class TestCcLibrary(blade_test.TargetTest):
         Scons can use the rules for dry running.
 
         """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        cc_library_upper = (self.target_path, 'uppercase')
-        cc_library_string = (self.target_path, 'blade_string')
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(cc_library_upper, self.all_targets.keys())
-        self.assertIn(cc_library_string, self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         com_lower_line = ''
         com_upper_line = ''
         com_string_line = ''
         string_depends_libs = ''
         for line in self.scons_output:
-            print line
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'puppercase.cpp.o -c' in line:

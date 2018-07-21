@@ -26,17 +26,6 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         Scons can use the rules for dry running.
 
         """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        cc_library_upper = (self.target_path, 'uppercase')
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(cc_library_upper, self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         copy_lower_line = ''
         com_upper_line = ''
         upper_depends_libs = ''

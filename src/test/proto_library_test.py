@@ -20,20 +20,6 @@ class TestProtoLibrary(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        proto_library_option = (self.target_path, 'rpc_option_proto')
-        proto_library_meta = (self.target_path, 'rpc_option_proto')
-        self.command_file = 'cmds.tmp'
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(proto_library_option, self.all_targets.keys())
-        self.assertIn(proto_library_meta, self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         com_lower_line = ''
         com_proto_cpp_option = ''
         com_proto_java_option = ''

@@ -22,20 +22,6 @@ class TestGenRule(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        cc_library_upper = (self.target_path, 'uppercase')
-        gen_rule = (self.target_path, 'process_media')
-        self.command_file = 'cmds.tmp'
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(cc_library_upper, self.all_targets.keys())
-        self.assertIn(gen_rule, self.all_targets.keys())
-
-        self.assertTrue(self.dryRun())
-
         com_lower_line = ''
         com_upper_line = ''
 

@@ -51,9 +51,9 @@ swig_library(
     java_lib_packed=True
 )
 
-java_jar(
+java_library(
     name = 'poppy_java_client',
-    srcs = ['src/com/soso/poppy'],
+    srcs = glob('src/com/soso/poppy/**/*.java'),
     deps = []
 )
 
