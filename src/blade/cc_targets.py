@@ -525,9 +525,7 @@ class CcTarget(Target):
             self._add_target_var('so', var_name)
 
     def _need_dynamic_library(self):
-        options = self.blade.get_options()
-        return (getattr(options, 'generate_dynamic') or
-                self.data.get('build_dynamic') or
+        return (self.data.get('build_dynamic') or
                 config.get_item('cc_library_config', 'generate_dynamic'))
 
     def _cc_library(self):

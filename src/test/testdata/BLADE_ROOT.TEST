@@ -54,6 +54,10 @@ cc_config(
     c_warnings = ["-Werror-implicit-function-declaration"]
 )
 
+cc_library_config(
+    generate_dynamic = True,
+)
+
 cc_test_config(
     dynamic_link=False,
     heap_check='',

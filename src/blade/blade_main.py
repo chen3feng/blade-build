@@ -406,6 +406,9 @@ def adjust_config_by_options(config, options):
         value = getattr(options, name, None)
         if value:
             config.global_config(**{name: value})
+    value = getattr(options, 'generate_dynamic', None)
+    if value:
+        config.cc_library_config(**{'generate_dynamic': value})
 
 
 def clear_build_script():
