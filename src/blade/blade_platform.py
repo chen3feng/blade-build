@@ -256,7 +256,7 @@ class CcFlagsManager(object):
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s %s > /dev/null 2>&1 && rm -f %s %s' % (
+                   '%s -o %s -c -x %s %s %s; rm -f %s %s' % (
                    self.cc, obj, language, flag, src, obj, src))
             print cmd
             if subprocess.call(cmd, shell=True) == 0:
