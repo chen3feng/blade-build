@@ -48,7 +48,8 @@ class TargetTest(unittest.TestCase):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
         os.environ['BLADE_AUTO_UPGRADE'] = 'no'
-        cmd = '%s build --generate-python --generate-java --verbose --dry-run %s > %s' % (
+        cmd = ('%s build --generate-dynamic --generate-python --generate-java '
+               '--verbose --dry-run %s > %s') % (
                 self.blade_path, ' '.join(self.targets), self.scons_output_file)
         p = subprocess.Popen(cmd, shell=True)
         try:
