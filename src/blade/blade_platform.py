@@ -257,7 +257,7 @@ class CcFlagsManager(object):
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" > {src} '
                    '{cc} -o {obj} -c -x {language} {flag} {src}; rm -f {src} {obj}'.format(
-                   cc=self.cc, obj=obj, language=language, flag=flag))
+                   cc=self.cc, src=src, obj=obj, language=language, flag=flag))
             print cmd
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
