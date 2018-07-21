@@ -14,5 +14,5 @@ script:
   - cpp --version
   - gcc -v
   - g++ -v
-  - echo "int main() { return 0; }" | gcc -c -x c --Wall -Wextra -
+  - echo "int main() { return 0; }" > "test.c"; gcc -c -x c -g -Wall -Wextra test.c
   - src/test/runalltests.sh
