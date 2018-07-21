@@ -253,16 +253,18 @@ class CcFlagsManager(object):
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() {{ return 0; }}" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
         src = os.path.join(self.build_dir, 'test.c')
+	with open(src) as f:
+	    f.write('int main() {{ return 0; }\n"')
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
-            cmd = ('echo "int main() {{ return 0; }}" > {src} '
-                   '{cc} -o {obj} -c -x {language} {flag} {src}; rm -f {src} {obj}'.format(
+            cmd = ('{cc} -o {obj} -c -x {language} {flag} {src}'.format(
                    cc=self.cc, src=src, obj=obj, language=language, flag=flag))
-            print cmd
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
                 unsupported_flags.append(flag)
+	os.remove(src)
+	os.remove(obj)
         if unsupported_flags:
             console.warning('Unsupported C/C++ flags: %s' %
                             ', '.join(unsupported_flags))
