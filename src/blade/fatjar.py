@@ -82,8 +82,8 @@ def generate_fat_jar(target, jars):
                     # Always log all conflicts for diagnosis
                     if console_logging:
                         console.debug(message)
-                    if not '/.m2/repository/' in dep_jar:
-                        # Their are too many conflicts between maven jars,
+                    if '/.m2/repository/' not in dep_jar:
+                        # There are too many conflicts between maven jars,
                         # so we have to ignore them, only count source code conflicts
                         conflict_logs.append(message)
         jar.close()
