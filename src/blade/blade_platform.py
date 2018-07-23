@@ -8,7 +8,6 @@
 """
  This is the blade_platform module which deals with the environment
  variable.
-
 """
 
 
@@ -235,9 +234,7 @@ class BuildPlatform(object):
 
 class CcFlagsManager(object):
     """The CcFlagsManager class.
-
     This class manages the compile warning flags.
-
     """
     def __init__(self, options, build_dir, gcc_version):
         self.cc = ''
@@ -251,14 +248,12 @@ class CcFlagsManager(object):
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
-        # echo "int main() {{ return 0; }}" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
-        src = os.path.join(self.build_dir, 'test.c')
+        # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
-            cmd = ('echo "int main() {{ return 0; }}" > {src} '
-                   '{cc} -o {obj} -c -x {language} {flag} {src}; rm -f {src} {obj}'.format(
-                   cc=self.cc, src=src, obj=obj, language=language, flag=flag))
-            print cmd
+            cmd = ('echo "int main() { return 0; }" | '
+                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
+                   self.cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
@@ -311,4 +306,20 @@ class CcFlagsManager(object):
                 linkflags += ['-Wl,--whole-archive', '-lgcov',
                               '-Wl,--no-whole-archive']
 
-        flags_except_warning
+        flags_except_warning = self._filter_out_invalid_flags(
+                flags_except_warning)
+
+        return (flags_except_warning, linkflags)
+
+    def get_warning_flags(self):
+        """Get the warning flags. """
+        cc_config = config.get_section('cc_config')
+        cppflags = cc_config['warnings']
+        cxxflags = cc_config['cxx_warnings']
+        cflags = cc_config['c_warnings']
+
+        filtered_cppflags = self._filter_out_invalid_flags(cppflags)
+        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
+        filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
+
+        return (filtered_cppflags, filtered_cxxflags, filtered_cflags)
