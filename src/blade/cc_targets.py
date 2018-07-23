@@ -944,6 +944,7 @@ class CcLibrary(CcTarget):
 
             1. dir/src/foo.h
             2. dir/include/foo.h
+            3. dir/inc/foo.h
         """
         path = self._source_file_path(src)
         dir, base = os.path.split(path)
@@ -953,6 +954,7 @@ class CcLibrary(CcTarget):
         parent_dir = os.path.dirname(dir)
         if parent_dir:
             self_hdr_patterns.append(os.path.join(parent_dir, 'include', hdr_base))
+            self_hdr_patterns.append(os.path.join(parent_dir, 'inc', hdr_base))
         return self_hdr_patterns
 
     def _extract_cc_hdrs(self, src):
@@ -976,17 +978,19 @@ class CcLibrary(CcTarget):
 
     def verify_header_inclusion_dependencies(self):
         build_targets = self.blade.get_build_targets()
+
+        # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
         for key in self.deps:
             dep = build_targets[key]
-            if 'hdrs' in dep.data:
-                declared_hdrs.update(dep.data['hdrs'])
+            declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
+        build_dir = self.build_path
         undeclared_hdrs = set()
         for src in self.srcs:
             path = self._source_file_path(src)
             hdrs = self._extract_cc_hdrs(src)
-            hdrs = [h for h in hdrs if h.endswith('.pb.h')]
+            hdrs = [h for h in hdrs if h.startswith(build_dir)]
             for hdr in hdrs:
                 if hdr not in declared_hdrs:
                     undeclared_hdrs.add(hdr)

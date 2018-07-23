@@ -141,7 +141,7 @@ class Blade(object):
                 target.type == 'cc_library' and target.srcs):
                 if not target.verify_header_inclusion_dependencies():
                     error += 1
-        return not error
+        return error == 0
 
     def run(self, target):
         """Run the target. """

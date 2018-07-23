@@ -132,6 +132,7 @@ class ResourceLibrary(CcTarget):
         self._write_rule('%s = %s.ResourceIndex(["%s", "%s"], %s)' % (
                      v_index, env_name, res_index_source_path, res_index_header_path,
                      src_list))
+        self.data['generated_hdrs'].append(res_index_header_path)
 
         return (out_dir, res_index_name)
 
@@ -148,6 +149,7 @@ class ResourceLibrary(CcTarget):
                              'name' : self._regular_variable_name(self.name),
                              'path' : self.path
                          })
+        self.data['generated_hdrs'].append(index[0])
         sources = ['%s.c' % self.name]
         for resource in self.srcs:
             generated_source = '%s.c' % resource
