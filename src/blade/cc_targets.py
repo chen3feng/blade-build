@@ -83,6 +83,7 @@ class CcTarget(Target):
         self.data['extra_cppflags'] = extra_cppflags
         self.data['extra_linkflags'] = extra_linkflags
         self.data['objs_name'] = None
+        self.data['hdrs'] = []
 
         self._check_defs()
         self._check_incorrect_no_warning()
@@ -729,6 +730,9 @@ class CcTarget(Target):
                         usr_libs.append(lib)
         return sys_libs, usr_libs, link_all_symbols_libs
 
+    def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
+        pass
+
     def _cc_objects_generated_header_files_dependency(self):
         """Return a stamp which depends on targets which generate header files. """
         deps = self._generated_header_files_dependencies()
@@ -770,7 +774,7 @@ class CcTarget(Target):
             implicit_deps.append('__securecc_phony__')
 
         objs_dir = self._target_file_path() + '.objs'
-        objs = []
+        objs, hdrs_inclusion_srcs = [], []
         if sources:
             srcs = sources
         else:
@@ -789,6 +793,7 @@ class CcTarget(Target):
                     path = self._source_file_path(src)
                     if os.path.exists(path):
                         input = path
+                        hdrs_inclusion_srcs.append((path, obj, rule))
                     else:
                         input = self._target_file_path(src)
                 self.ninja_build(obj, rule, inputs=input,
@@ -797,6 +802,9 @@ class CcTarget(Target):
             objs.append(obj)
 
         self.data['objs'] = objs
+        if (config.get_item('cc_config', 'header_inclusion_dependencies') and
+            hdrs_inclusion_srcs):
+            self._cc_hdrs_ninja(hdrs_inclusion_srcs, vars)
 
     def _static_cc_library_ninja(self):
         output = self._target_file_path('lib%s.a' % self.name)
@@ -898,6 +906,113 @@ class CcLibrary(CcTarget):
         if path.endswith('.so'):
             return os.path.dirname(path)
         return None
+
+    def _extract_cc_hdrs_from_stack(self, path):
+        """Extract headers from header stack(.H) generated during preprocessing. """
+        hdrs = []
+        level_two_hdrs = {}
+        with open(path) as f:
+            current_hdr = ''
+            for line in f.read().splitlines():
+                if line.startswith('Multiple include guards may be useful for'):
+                    break
+                if line.startswith('. '):
+                    hdr = line[2:]
+                    if hdr[0] == '/':
+                        current_hdr = ''
+                    else:
+                        if hdr.startswith('./'):
+                            hdr = hdr[2:]
+                        current_hdr = hdr
+                        level_two_hdrs[current_hdr] = []
+                        hdrs.append(hdr)
+                elif line.startswith('.. ') and current_hdr:
+                    hdr = line[3:]
+                    if hdr[0] != '/':
+                        if hdr.startswith('./'):
+                            hdr = hdr[2:]
+                        level_two_hdrs[current_hdr].append(hdr)
+
+        return hdrs, level_two_hdrs
+
+    def _cc_self_hdr_patterns(self, src):
+        """Given src(dir/src/foo.cc), return the possible corresponding header paths.
+
+        Although the header(foo.h) may sometimes be in different directories
+        depending on various styles and layouts of different projects,
+        Currently tries the following common patterns:
+
+            1. dir/src/foo.h
+            2. dir/include/foo.h
+            3. dir/inc/foo.h
+        """
+        path = self._source_file_path(src)
+        dir, base = os.path.split(path)
+        pos = base.rindex('.')
+        hdr_base = '%s.h' % base[:pos]
+        self_hdr_patterns = [os.path.join(dir, hdr_base)]
+        parent_dir = os.path.dirname(dir)
+        if parent_dir:
+            self_hdr_patterns.append(os.path.join(parent_dir, 'include', hdr_base))
+            self_hdr_patterns.append(os.path.join(parent_dir, 'inc', hdr_base))
+        return self_hdr_patterns
+
+    def _extract_cc_hdrs(self, src):
+        """Extract headers included by .cc/.h directly. """
+        objs_dir = self._target_file_path() + '.objs'
+        path = '%s.o.H' % os.path.join(objs_dir, src)
+        if not os.path.exists(path):
+            return []
+        hdrs, level_two_hdrs = self._extract_cc_hdrs_from_stack(path)
+        self_hdr_patterns = self._cc_self_hdr_patterns(src)
+        self_hdr_index = -1
+        for i, hdr in enumerate(hdrs):
+            if hdr in self_hdr_patterns:
+                self_hdr_index = i
+                break
+
+        if self_hdr_index == -1:
+            return hdrs
+        else:
+            return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
+
+    def verify_header_inclusion_dependencies(self):
+        build_targets = self.blade.get_build_targets()
+
+        # TODO(wentingli): Check regular headers as well
+        declared_hdrs = set()
+        for key in self.deps:
+            dep = build_targets[key]
+            declared_hdrs.update(dep.data.get('generated_hdrs', []))
+
+        build_dir = self.build_path
+        undeclared_hdrs = set()
+        for src in self.srcs:
+            path = self._source_file_path(src)
+            hdrs = self._extract_cc_hdrs(src)
+            hdrs = [h for h in hdrs if h.startswith(build_dir)]
+            for hdr in hdrs:
+                if hdr not in declared_hdrs:
+                    undeclared_hdrs.add(hdr)
+                    console.error("%s: '%s' included from '%s|.h' is "
+                                  "missing dependency declaration in BUILD." % (
+                                  self.fullname, hdr, path))
+
+        return not undeclared_hdrs
+
+    def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
+        for path in self.blade.get_sources_keyword_list():
+            if self.path.startswith(path):
+                return
+        for key in ('c_warnings', 'cxx_warnings'):
+            if key in vars:
+                del vars[key]
+        for src, obj, rule in hdrs_inclusion_srcs:
+            output = '%s.H' % obj
+            rule = '%shdrs' % rule
+            self.ninja_build(output, rule, inputs=src,
+                             implicit_deps=[obj],
+                             variables=vars)
 
     def scons_rules(self):
         """scons_rules.

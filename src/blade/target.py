@@ -71,6 +71,7 @@ class Target(object):
         self._init_target_deps(deps)
         self._init_visibility(visibility)
         self.build_rules = []
+        self.data['generated_hdrs'] = []
         self.__cached_generate_header_files = None
 
     def _clone_env(self):

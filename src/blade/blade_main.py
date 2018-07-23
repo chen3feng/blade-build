@@ -276,9 +276,12 @@ def build(options):
         returncode = _scons_build(options)
     if returncode != 0:
         console.error('building failure.')
-    else:
-        console.info('building done.')
-    return returncode
+        return returncode
+    if not blade.blade.verify():
+        console.error('building failure.')
+        return 1
+    console.info('building done.')
+    return 0
 
 
 def run(options):

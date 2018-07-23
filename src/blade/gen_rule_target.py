@@ -125,6 +125,8 @@ class GenRuleTarget(Target):
                          cmd))
         for i in range(len(self.data['outs'])):
             self._add_target_var('%s' % i, '%s[%s]' % (var_name, i))
+        self.data['generated_hdrs'] = [self._target_file_path(o) for o in self.data['outs']
+                                       if o.endswith('.h')]
 
         # TODO(phongchen): add Target.get_all_vars
         dep_var_list = []
@@ -196,6 +198,7 @@ class GenRuleTarget(Target):
                          variables=vars)
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
+        self.data['generated_hdrs'] = [o for o in outputs if o.endswith('.h')]
 
 
 def gen_rule(name,

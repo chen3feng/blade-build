@@ -186,6 +186,7 @@ class ThriftLibrary(CcTarget):
         for src in self.srcs:
             thrift_cpp_files = self._thrift_gen_cpp_files(src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
+            self.data['generated_hdrs'] += [h for h in thrift_cpp_files if h.endswith('.h')]
 
             self._write_rule('%s.Thrift(%s, "%s")' % (
                              env_name,
@@ -221,6 +222,7 @@ class ThriftLibrary(CcTarget):
             headers += [h for h in thrift_files if h.endswith('.h')]
             thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
             sources += [os.path.relpath(s, build_path) for s in thrift_cpp_sources]
+        self.data['generated_hdrs'] = headers
         self._cc_objects_ninja(sources, True, generated_headers=headers)
         self._cc_library_ninja()
 

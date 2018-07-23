@@ -525,6 +525,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                              inputs=self._source_file_path(src),
                              variables=vars)
             cpp_headers.append(header)
+            self.data['generated_hdrs'].append(header)
             names = self._proto_gen_file_names(src)
             cpp_sources.append(names[1])
         self._cc_objects_ninja(cpp_sources, True, generated_headers=cpp_headers)
