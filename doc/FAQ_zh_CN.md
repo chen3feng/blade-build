@@ -61,7 +61,7 @@ su.1.0 前就查找不到了，所以输出undefined reference.
 解决过程：
 
  1. 查看ccache manual, ccache在direct mode 可能会有internal error。
- - 告知XFS同事如果再次遇到这个问题，立刻修改配置查看是否是cache自身问题。
+ - 如果再次遇到这个问题，立刻修改配置查看是否是cache自身问题。
  - 同时查看预处理cpp文件后的结果，发现头文件修改没有反映在预处理后的文件里。
  - 应该是包含路径错误，经过查找，build64_release下存在相同的头文件，而且build64_release默认是加到
 -I里， 编译时默认加入 -Ibuild64_realease -I.
@@ -214,6 +214,21 @@ cc_config(
 )
 ```
 
-程序故障
----------
+### 编译出来的结果占用了太多的磁盘空间
+```
+# 降低调试符号占用的开销
+global_config(
+    debug_info_level = 'no'
+)
+说明：
+no: 没有调试符号，程序无法gdb调试
+low: 低调试符号，可以看到函数名和全局变量
+mid: 中等，比low多了局部变量，函数参数
+high: 最高，包含了宏等的调试信息
 
+# 测试程序采用动态链接
+cc_test_config(
+    dynamic_link = True
+)
+测试程序不会用来发布，动态链接可以减少大量的磁盘开销，如果某个具体的测试动态链接出错，可以单独为它指定dynamic_link = False。
+```
