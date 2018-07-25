@@ -83,7 +83,6 @@ class CcTarget(Target):
         self.data['extra_cppflags'] = extra_cppflags
         self.data['extra_linkflags'] = extra_linkflags
         self.data['objs_name'] = None
-        self.data['hdrs'] = []
 
         self._check_defs()
         self._check_incorrect_no_warning()
@@ -852,6 +851,7 @@ class CcLibrary(CcTarget):
     def __init__(self,
                  name,
                  srcs,
+                 hdrs,
                  deps,
                  visibility,
                  warning,
@@ -895,11 +895,44 @@ class CcLibrary(CcTarget):
             self.srcs = []
             if prebuilt_libpath_pattern:
                 self.data['prebuilt_libpath_pattern'] = prebuilt_libpath_pattern
+        self.data['hdrs'] = []
+        if hdrs:
+            self._process_hdrs(var_to_list(hdrs))
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
         self.data['secure'] = secure
+
+    def _process_hdrs(self, hdrs):
+        for hdr in hdrs:
+            if ':' in hdr:
+                key = self._unify_dep(hdr)
+                if 'generated_hdrs_deps' in self.data:
+                    self.data['generated_hdrs_deps'].append(key)
+                else:
+                    self.data['generated_hdrs_deps'] = [key]
+            else:
+                path = self._source_file_path(hdr)
+                if os.path.exists(path):
+                    self.data['hdrs'].append(path)
+                else:
+                    console.error_exit('%s: %s not found.' % (self.fullname, path))
+
+    def _setup_generated_hdrs(self):
+        generated_hdrs_deps = self.data.get('generated_hdrs_deps')
+        if generated_hdrs_deps:
+            build_targets = self.blade.get_build_targets()
+            for key in generated_hdrs_deps:
+                assert key in self.deps
+                dep = build_targets[key]
+                if dep.type == 'gen_rule':
+                    self.data['generated_hdrs'] += dep.data['generated_hdrs']
+                else:
+                    console.error_exit('%s: %s is invalid in hdrs. '
+                                       'Currently only gen_rule targets could be listed '
+                                       'in hdrs of cc_library to be exported.' % (
+                                       self.fullname, key))
 
     def _rpath_link(self, dynamic):
         path = self._prebuilt_cc_library_path(dynamic)[1]
@@ -1031,6 +1064,7 @@ class CcLibrary(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
+        self._setup_generated_hdrs()
         if self.type == 'prebuilt_cc_library':
             self._prebuilt_cc_library()
         elif self.srcs:
@@ -1040,6 +1074,7 @@ class CcLibrary(CcTarget):
 
 def cc_library(name,
                srcs=[],
+               hdrs=[],
                deps=[],
                visibility=None,
                warning='yes',
@@ -1061,6 +1096,7 @@ def cc_library(name,
     """cc_library target. """
     target = CcLibrary(name,
                        srcs,
+                       hdrs,
                        deps,
                        visibility,
                        warning,
