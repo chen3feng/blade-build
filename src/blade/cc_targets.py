@@ -906,39 +906,41 @@ class CcLibrary(CcTarget):
 
     def _process_hdrs(self, hdrs):
         for hdr in hdrs:
-            if ':' in hdr:
-                key = self._unify_dep(hdr)
-                if 'generated_hdrs_deps' in self.data:
-                    self.data['generated_hdrs_deps'].append(key)
-                else:
-                    self.data['generated_hdrs_deps'] = [key]
+            path = self._source_file_path(hdr)
+            if os.path.exists(path):
+                self.data['hdrs'].append(path)
             else:
-                path = self._source_file_path(hdr)
-                if os.path.exists(path):
-                    self.data['hdrs'].append(path)
+                path = self._target_file_path(hdr)
+                if 'exported_hdrs' in self.data:
+                    self.data['exported_hdrs'].append(path)
                 else:
-                    console.error_exit('%s: %s not found.' % (self.fullname, path))
+                    self.data['exported_hdrs'] = [path]
 
     def _setup_generated_hdrs(self):
-        generated_hdrs_deps = self.data.get('generated_hdrs_deps')
-        if generated_hdrs_deps:
+        exported_hdrs = self.data.get('exported_hdrs')
+        if exported_hdrs:
             build_targets = self.blade.get_build_targets()
-            for key in generated_hdrs_deps:
-                assert key in self.deps
+            generated_hdrs = set()
+            for key in self.deps:
                 dep = build_targets[key]
-                if dep.type == 'gen_rule':
-                    self.data['generated_hdrs'] += dep.data['generated_hdrs']
-                else:
-                    console.error_exit('%s: %s is invalid in hdrs. '
-                                       'Currently only gen_rule targets could be listed '
-                                       'in hdrs of cc_library to be exported.' % (
-                                       self.fullname, key))
+                generated_hdrs.update(dep.data['generated_hdrs'])
+            for hdr in exported_hdrs:
+                if hdr not in generated_hdrs:
+                    console.error_exit('%s: %s is invalid for generated hdrs.' % (
+                                       self.fullname, hdr))
+            self.data['generated_hdrs'] += exported_hdrs
 
     def _rpath_link(self, dynamic):
         path = self._prebuilt_cc_library_path(dynamic)[1]
         if path.endswith('.so'):
             return os.path.dirname(path)
         return None
+
+    def _need_generate_hdrs(self):
+        for path in self.blade.get_sources_keyword_list():
+            if self.path.startswith(path):
+                return False
+        return True
 
     def _extract_cc_hdrs_from_stack(self, path):
         """Extract headers from header stack(.H) generated during preprocessing. """
@@ -1010,8 +1012,10 @@ class CcLibrary(CcTarget):
             return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
 
     def verify_header_inclusion_dependencies(self):
-        build_targets = self.blade.get_build_targets()
+        if not self._need_generate_hdrs():
+            return True
 
+        build_targets = self.blade.get_build_targets()
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
         for key in self.deps:
@@ -1034,9 +1038,8 @@ class CcLibrary(CcTarget):
         return not undeclared_hdrs
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        for path in self.blade.get_sources_keyword_list():
-            if self.path.startswith(path):
-                return
+        if not self._need_generate_hdrs():
+            return
         for key in ('c_warnings', 'cxx_warnings'):
             if key in vars:
                 del vars[key]
