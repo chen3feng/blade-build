@@ -125,9 +125,9 @@ class TestJavaJar(blade_test.TargetTest):
         self.assertIn('-mcx16 -pipe -g', com_swig_java_cxx)
         self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_java_cxx)
 
-        self.assertTrue(java_com_line)
-        self.assertTrue(java_so_line)
-        self.assertTrue(jar_line)
+        self.assertNotEqual('', java_com_line)
+        self.assertNotEqual('', java_so_line)
+        self.assertNotEqual('', jar_line)
 
         self.assertIn('test_java_jar/java/lib/junit.jar', java_com_line)
         # FIXME self.assertIn('com/soso/poppy/swig/*.java', java_com_line)

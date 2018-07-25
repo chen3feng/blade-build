@@ -83,6 +83,7 @@ class CcTarget(Target):
         self.data['extra_cppflags'] = extra_cppflags
         self.data['extra_linkflags'] = extra_linkflags
         self.data['objs_name'] = None
+        self.data['hdrs'] = []
 
         self._check_defs()
         self._check_incorrect_no_warning()

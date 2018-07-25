@@ -8,7 +8,6 @@
 """
  This is the blade_platform module which deals with the environment
  variable.
-
 """
 
 
@@ -235,9 +234,7 @@ class BuildPlatform(object):
 
 class CcFlagsManager(object):
     """The CcFlagsManager class.
-
     This class manages the compile warning flags.
-
     """
     def __init__(self, options, build_dir, gcc_version):
         self.cc = ''
