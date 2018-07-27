@@ -22,8 +22,11 @@ import sys
 _log = None
 
 
-# Whether verbose output on the console or not
-_verbose = False
+# Output verbosiity control, valid values:
+# verbose: verbose mode, show more details
+# quiet: quiet mode, only show warnings and errors
+# empty string: normal mode, show infos, warnings and errors
+_verbosity = ''
 
 
 # Global color enabled or not
@@ -61,10 +64,14 @@ def get_log_file():
     return _log.name
 
 
-def set_verbose(verbose):
+def set_verbosity(value):
     """Set the global verbose. """
-    global _verbose
-    _verbose = verbose
+    global _verbosity
+    _verbosity = value
+
+
+def get_verbosity():
+    return _verbosity
 
 
 def inerasable(msg):
@@ -88,9 +95,15 @@ def colors(name):
     return ''
 
 
-def error(msg):
+def _print(msg):
+    if _verbosity != 'quiet':
+        print msg
+
+
+def error(msg, prefix=True):
     """dump error message. """
-    msg = 'Blade(error): ' + msg
+    if prefix:
+        msg = 'Blade(error): ' + msg
     log(msg)
     if color_enabled:
         msg = _colors['red'] + msg + _colors['end']
@@ -119,18 +132,21 @@ def info(msg, prefix=True):
     log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
-    print >>sys.stdout, msg
+    _print(msg)
 
 
 def debug(msg):
     """dump debug message. """
     log(msg)
+    if _verbosity == 'verbose':
+        _print(msg)
 
 
 def log(msg):
     """Dump message into log file. """
     if _log:
         print >>_log, msg
+
 
 def flush():
     sys.stdout.flush()

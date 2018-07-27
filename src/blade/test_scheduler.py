@@ -169,8 +169,12 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
         result = self.__get_result(p.returncode)
-        console.info('Output of %s:\n%s\n%s finished: %s\n' % (
-                     test_name, stdout, test_name, result))
+        msg = 'Output of %s:\n%s\n%s finished: %s\n' % (
+                test_name, stdout, test_name, result)
+        if console.get_verbosity() == 'quiet' and p.returncode != 0:
+            console.error(msg, prefix=False)
+        else:
+            console.info(msg)
         return p.returncode
 
     def _run_job(self, job, job_thread):
@@ -276,8 +280,8 @@ class TestScheduler(object):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)
-
-        redirect = num_of_workers > 1
+        quiet = console.get_verbosity() == 'quiet'
+        redirect = num_of_workers > 1 or quiet
         threads = []
         for i in range(num_of_workers):
             t = WorkerThread(i, self.job_queue, self._process_job, redirect)
@@ -288,7 +292,7 @@ class TestScheduler(object):
         if not self.exclusive_job_queue.empty():
             console.info('spawn 1 worker to run exclusive tests')
             last_t = WorkerThread(num_of_workers, self.exclusive_job_queue,
-                                  self._process_job, False)
+                                  self._process_job, quiet)
             last_t.start()
             self._wait_worker_threads([last_t])
 

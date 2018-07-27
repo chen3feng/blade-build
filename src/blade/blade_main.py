@@ -128,6 +128,8 @@ def _normalize_target(target, working_dir):
 
 
 def normalize_targets(targets, blade_root_dir, working_dir):
+    if not targets:
+        targets = ['.']
     return [_normalize_target(target, working_dir) for target in targets]
 
 
@@ -222,8 +224,11 @@ def _check_code_style(targets):
     return 0
 
 
-def _run_native_builder(cmd):
-    p = subprocess.Popen(subprocess.list2cmdline(cmd), shell=True)
+def _run_native_builder(cmd, options):
+    cmdstr = subprocess.list2cmdline(cmd)
+    if options.verbosity == 'quiet':
+        cmdstr += ' > /dev/null'
+    p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
         return p.returncode
@@ -248,7 +253,7 @@ def _scons_build(options):
     cmd += ['--duplicate=soft-copy', '--cache-show']
     if options.keep_going:
         cmd.append('-k')
-    return _run_native_builder(cmd)
+    return _run_native_builder(cmd, options)
 
 
 def _ninja_build(options):
@@ -261,9 +266,9 @@ def _ninja_build(options):
     cmd.append('-j%s' % (options.jobs or blade.blade.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
-    if options.verbose:
+    if options.verbosity == 'verbose':
         cmd.append('-v')
-    return _run_native_builder(cmd)
+    return _run_native_builder(cmd, options)
 
 
 def build(options):
@@ -358,27 +363,19 @@ def setup_build_dir(options):
     return build_dir
 
 
-def setup_dirs(options):
-    # Set blade_root_dir to the directory which contains the
-    # file BLADE_ROOT, is upper than and is closest to the current
-    # directory.  Set working_dir to current directory.
+def get_source_dirs():
+    '''Get workspace dir and working dir reletive to working dir'''
     working_dir = get_cwd()
     blade_root_dir = find_blade_root_dir(working_dir)
-    if blade_root_dir != working_dir:
-        # This message is required by vim quickfix mode if pwd is changed during
-        # the building, DO NOT change the pattern of this message.
-        print "Blade: Entering directory `%s'" % blade_root_dir
-        os.chdir(blade_root_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)
-    load_config(options, blade_root_dir)
-    build_dir = setup_build_dir(options)
 
-    return blade_root_dir, working_dir, build_dir
+    return blade_root_dir, working_dir
 
 
-def setup_log(build_dir):
+def setup_log(build_dir, options):
     log_file = os.path.join(build_dir, 'blade.log')
     console.set_log_file(log_file)
+    console.set_verbosity(options.verbosity)
 
 
 def generate_scm(build_dir):
@@ -480,16 +477,26 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
 def _main(blade_path):
     """The main entry of blade. """
     command, options, targets = parse_command_line()
-    if not targets:
-        targets = ['.']
+
     global _BLADE_ROOT_DIR
     global _WORKING_DIR
-    _BLADE_ROOT_DIR, _WORKING_DIR, build_dir = setup_dirs(options)
+    _BLADE_ROOT_DIR, _WORKING_DIR = get_source_dirs()
+    if _BLADE_ROOT_DIR != _WORKING_DIR:
+        # This message is required by vim quickfix mode if pwd is changed during
+        # the building, DO NOT change the pattern of this message.
+        if options.verbosity != 'quiet':
+            print "Blade: Entering directory `%s'" % _BLADE_ROOT_DIR
+        os.chdir(_BLADE_ROOT_DIR)
+
+    load_config(options, _BLADE_ROOT_DIR)
+    adjust_config_by_options(config, options)
+
+    build_dir = setup_build_dir(options)
+    setup_log(build_dir, options)
+
     global _TARGETS
     targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     _TARGETS = targets
-    adjust_config_by_options(config, options)
-    setup_log(build_dir)
     generate_scm(build_dir)
 
     lock_file_fd = lock_workspace()
