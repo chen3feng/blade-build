@@ -15,7 +15,7 @@ py_library(
 )
 ```
 
-当在代码中import python模块时，需要从workspace目录开始写起，可以通过base属性指定，比如
+当在代码中import python模块时，需要从workspace目录开始写起。可以通过base属性来改变这个行为，比如
 ```python
 base = '.'
 ```
