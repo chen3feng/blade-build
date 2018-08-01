@@ -527,6 +527,7 @@ protocflags =
 protoccpppluginflags =
 protocjavapluginflags =
 protocpythonpluginflags =
+protocgoflags =
 ''')
         self.generate_rule(name='proto',
                            command='%s --proto_path=. %s -I=`dirname ${in}` '
@@ -549,6 +550,19 @@ protocpythonpluginflags =
                                    '--include_source_info ${in}' % (
                                    protoc, protobuf_incs),
                            description='PROTODESCRIPTORS ${in}')
+        protoc_go_plugin = proto_config['protoc_go_plugin']
+        if protoc_go_plugin:
+            go_home = config.get_item('go_config', 'go_home')
+            if not go_home:
+                console.error_exit('go_home is not configured in BLADE_ROOT.')
+            self.generate_rule(name='protogo',
+                               command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                       '--plugin=protoc-gen-go=%s '
+                                       '--go_out=${protocgoflags}:%s ${in}' % (
+                                       protoc, protobuf_incs,
+                                       protoc_go_plugin, os.path.join(go_home, 'src')),
+                               description='PROTOCGOLANG ${in}')
+
 
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
