@@ -68,3 +68,13 @@ py_test(
 ```
 
 我们一般使用unittest库进行python单元测试。
+
+## 使用protobuf
+proto文件首先需要用[proto_library](idl.md#proto_library)来描述，在py_* 的deps中引入。
+blade build时会自动生成相应的python protobuf编码解码库。
+
+在python代码中的import路径规则是，从workspace根出发，/替换为.，文件名结尾的.proto替换为_py2，比如
+```python
+# proto文件路径为 //common/base/user_info.proto
+import common.base.user_info_py2
+```
