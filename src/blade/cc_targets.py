@@ -852,7 +852,6 @@ class CcLibrary(CcTarget):
     def __init__(self,
                  name,
                  srcs,
-                 hdrs,
                  deps,
                  visibility,
                  warning,
@@ -896,52 +895,17 @@ class CcLibrary(CcTarget):
             self.srcs = []
             if prebuilt_libpath_pattern:
                 self.data['prebuilt_libpath_pattern'] = prebuilt_libpath_pattern
-        self.data['hdrs'] = []
-        if hdrs:
-            self._process_hdrs(var_to_list(hdrs))
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
         self.data['secure'] = secure
 
-    def _process_hdrs(self, hdrs):
-        for hdr in hdrs:
-            path = self._source_file_path(hdr)
-            if os.path.exists(path):
-                self.data['hdrs'].append(path)
-            else:
-                path = self._target_file_path(hdr)
-                if 'exported_hdrs' in self.data:
-                    self.data['exported_hdrs'].append(path)
-                else:
-                    self.data['exported_hdrs'] = [path]
-
-    def _setup_generated_hdrs(self):
-        exported_hdrs = self.data.get('exported_hdrs')
-        if exported_hdrs:
-            build_targets = self.blade.get_build_targets()
-            generated_hdrs = set()
-            for key in self.deps:
-                dep = build_targets[key]
-                generated_hdrs.update(dep.data['generated_hdrs'])
-            for hdr in exported_hdrs:
-                if hdr not in generated_hdrs:
-                    console.error_exit('%s: %s is invalid for generated hdrs.' % (
-                                       self.fullname, hdr))
-            self.data['generated_hdrs'] += exported_hdrs
-
     def _rpath_link(self, dynamic):
         path = self._prebuilt_cc_library_path(dynamic)[1]
         if path.endswith('.so'):
             return os.path.dirname(path)
         return None
-
-    def _need_generate_hdrs(self):
-        for path in self.blade.get_sources_keyword_list():
-            if self.path.startswith(path):
-                return False
-        return True
 
     def _extract_cc_hdrs_from_stack(self, path):
         """Extract headers from header stack(.H) generated during preprocessing. """
@@ -1013,9 +977,6 @@ class CcLibrary(CcTarget):
             return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
 
     def verify_header_inclusion_dependencies(self):
-        if not self._need_generate_hdrs():
-            return True
-
         build_targets = self.blade.get_build_targets()
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
@@ -1039,8 +1000,9 @@ class CcLibrary(CcTarget):
         return not undeclared_hdrs
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        if not self._need_generate_hdrs():
-            return
+        for path in self.blade.get_sources_keyword_list():
+            if self.path.startswith(path):
+                return
         for key in ('c_warnings', 'cxx_warnings'):
             if key in vars:
                 del vars[key]
@@ -1068,7 +1030,6 @@ class CcLibrary(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
-        self._setup_generated_hdrs()
         if self.type == 'prebuilt_cc_library':
             self._prebuilt_cc_library()
         elif self.srcs:
@@ -1078,7 +1039,6 @@ class CcLibrary(CcTarget):
 
 def cc_library(name,
                srcs=[],
-               hdrs=[],
                deps=[],
                visibility=None,
                warning='yes',
@@ -1100,7 +1060,6 @@ def cc_library(name,
     """cc_library target. """
     target = CcLibrary(name,
                        srcs,
-                       hdrs,
                        deps,
                        visibility,
                        warning,
