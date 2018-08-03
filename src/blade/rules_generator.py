@@ -554,7 +554,7 @@ protocgoflags =
         if protoc_go_plugin:
             go_home = config.get_item('go_config', 'go_home')
             if not go_home:
-                console.error_exit('go_home is not configured in BLADE_ROOT.')
+                console.error_exit('go_home is not configured in either BLADE_ROOT or BLADE_ROOT.local.')
             outdir = os.path.join(go_home, 'src')
             subplugins = proto_config['protoc_go_subplugins']
             if subplugins:
