@@ -555,12 +555,16 @@ protocgoflags =
             go_home = config.get_item('go_config', 'go_home')
             if not go_home:
                 console.error_exit('go_home is not configured in BLADE_ROOT.')
+            outdir = os.path.join(go_home, 'src')
+            subplugins = proto_config['protoc_go_subplugins']
+            if subplugins:
+                go_out = 'plugins=%s:%s' % ('+'.join(subplugins), outdir)
+            else:
+                go_out = outdir
             self.generate_rule(name='protogo',
                                command='%s --proto_path=. %s -I=`dirname ${in}` '
-                                       '--plugin=protoc-gen-go=%s '
-                                       '--go_out=${protocgoflags}:%s ${in}' % (
-                                       protoc, protobuf_incs,
-                                       protoc_go_plugin, os.path.join(go_home, 'src')),
+                                       '--plugin=protoc-gen-go=%s --go_out=%s ${in}' % (
+                                       protoc, protobuf_incs, protoc_go_plugin, go_out),
                                description='PROTOCGOLANG ${in}')
 
 
