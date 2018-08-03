@@ -102,7 +102,7 @@ class BladeConfig(object):
             },
             'go_config' : {
                 'go' : '',
-                'go_home' : '',  # GOPATH
+                'go_home' : '$HOME/go',  # GOPATH
             },
             'thrift_config': {
                 'thrift': 'thrift',
