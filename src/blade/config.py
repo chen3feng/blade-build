@@ -102,7 +102,7 @@ class BladeConfig(object):
             },
             'go_config' : {
                 'go' : '',
-                'go_home' : '$HOME/go',  # GOPATH
+                'go_home' : os.path.expandvars('$HOME/go'),  # GOPATH
             },
             'thrift_config': {
                 'thrift': 'thrift',
