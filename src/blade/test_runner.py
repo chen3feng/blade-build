@@ -406,9 +406,8 @@ class TestRunner(binary_runner.BinaryRunner):
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
-            console.warning('KeyboardInterrupt, all tests stoped')
+            console.warning('KeyboardInterrupt, all tests stopped')
             console.flush()
-            pass
 
         if self.coverage:
             self._generate_coverage_report()
