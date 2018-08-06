@@ -158,7 +158,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('Running %s' % cmd)
+        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
@@ -171,6 +171,7 @@ class TestScheduler(object):
         result = self.__get_result(p.returncode)
         console.info('Output of %s:\n%s\n%s finished: %s\n' % (
                      test_name, stdout, test_name, result))
+        console.flush()
         return p.returncode
 
     def _run_job(self, job, job_thread):
@@ -181,7 +182,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('Running %s' % cmd)
+        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
