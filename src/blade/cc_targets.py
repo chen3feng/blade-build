@@ -978,7 +978,6 @@ class CcLibrary(CcTarget):
 
     def verify_header_inclusion_dependencies(self):
         build_targets = self.blade.get_build_targets()
-
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
         for key in self.deps:
