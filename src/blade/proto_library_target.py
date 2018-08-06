@@ -222,9 +222,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         return ''
 
     def _get_go_package_name(self, path):
-        f = open(path)
-        content = f.read()
-        f.close()
+        with open(path) as f:
+            content = f.read()
         pattern = r'^\s*option\s+go_package\s*=\s*"([\w./]+)";'
         m = re.search(pattern, content, re.MULTILINE)
         if m:
