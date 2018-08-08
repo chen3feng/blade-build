@@ -228,7 +228,6 @@ class Blade(object):
         """Query the targets helper method. """
         all_targets = self.__build_targets
         query_list = []
-        t_path = ''
         for t in targets:
             t_path, name = t.split(':')
             if name == '...':
@@ -259,8 +258,6 @@ class Blade(object):
                     'Target %s is not supported by dependency tree query. '
                     'The target should be in the format directory:name.' % target)
             path, name = target.split(':')
-            relpath = os.path.relpath(self.__working_dir, self.__root_dir)
-            path = os.path.normpath(os.path.join(relpath, path))
             query_targets.append((path, name))
 
         for key in query_targets:
