@@ -22,7 +22,7 @@ import sys
 _log = None
 
 
-# Output verbosiity control, valid values:
+# Output verbosity control, valid values:
 # verbose: verbose mode, show more details
 # quiet: quiet mode, only show warnings and errors
 # empty string: normal mode, show infos, warnings and errors

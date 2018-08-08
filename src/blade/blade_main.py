@@ -227,7 +227,7 @@ def _check_code_style(targets):
 def _run_native_builder(cmd, options):
     cmdstr = subprocess.list2cmdline(cmd)
     if options.verbosity == 'quiet':
-        cmdstr += ' > /dev/null'
+        cmdstr += r'| sed -e "/^\[[0-9]\+\/[0-9]\+\] /d"'
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -315,7 +315,7 @@ def clean(options):
         cmd += ['-t', 'clean']
     else:
         cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
-    returncode = _run_native_builder(cmd)
+    returncode = _run_native_builder(cmd, options)
     console.info('cleaning done.')
     return returncode
 
@@ -364,7 +364,7 @@ def setup_build_dir(options):
 
 
 def get_source_dirs():
-    '''Get workspace dir and working dir reletive to working dir'''
+    '''Get workspace dir and working dir relative to workspace dir'''
     working_dir = get_cwd()
     blade_root_dir = find_blade_root_dir(working_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)

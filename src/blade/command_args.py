@@ -345,7 +345,7 @@ class CmdArguments(object):
                 '--verbose', dest='verbosity', action='store_const', const='verbose',
                 default='', help='Show all details')
             parser.add_argument(
-                '--quiet', dest='verbosity', action='store_const', const = 'quiet',
+                '--quiet', dest='verbosity', action='store_const', const='quiet',
                 help='Only show warnings and errors')
 
     def _cmd_parse(self):
