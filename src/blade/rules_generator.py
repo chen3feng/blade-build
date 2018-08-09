@@ -527,7 +527,6 @@ protocflags =
 protoccpppluginflags =
 protocjavapluginflags =
 protocpythonpluginflags =
-protocgoflags =
 ''')
         self.generate_rule(name='proto',
                            command='%s --proto_path=. %s -I=`dirname ${in}` '
@@ -566,7 +565,6 @@ protocgoflags =
                                        '--plugin=protoc-gen-go=%s --go_out=%s ${in}' % (
                                        protoc, protobuf_incs, protoc_go_plugin, go_out),
                                description='PROTOCGOLANG ${in}')
-
 
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
