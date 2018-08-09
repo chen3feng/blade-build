@@ -171,7 +171,7 @@ class TestScheduler(object):
         result = self.__get_result(p.returncode)
         msg = 'Output of %s:\n%s\n%s finished: %s\n' % (
                 test_name, stdout, test_name, result)
-        if console.get_verbosity() == 'quiet' and p.returncode != 0:
+        if console.verbosity_le('quiet') and p.returncode != 0:
             console.error(msg, prefix=False)
         else:
             console.info(msg)
@@ -280,7 +280,7 @@ class TestScheduler(object):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)
-        quiet = console.get_verbosity() == 'quiet'
+        quiet = console.verbosity_le('quiet')
         redirect = num_of_workers > 1 or quiet
         threads = []
         for i in range(num_of_workers):

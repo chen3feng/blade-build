@@ -45,7 +45,7 @@ import toolchain
 from console import colors
 
 # option_verbose to indicate print verbosity level
-_verbosity = ''
+_verbosity = 'normal'
 
 
 # blade path
@@ -883,7 +883,7 @@ def generate_go_test(target, source, env):
 
 
 def MakeAction(cmd, cmdstr):
-    if _verbosity == 'verbose':
+    if console.verbosity_compare(_verbosity, 'verbose') >= 0:
         return SCons.Action.Action(cmd)
     else:
         return SCons.Action.Action(cmd, cmdstr)
@@ -946,7 +946,7 @@ def echospawn(sh, escape, cmd, args, env):
                          universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    if _verbosity != 'verbose':
+    if console.verbosity_compare(_verbosity, 'verbose') < 0:
         if stdout:
             stdout = error_colorize(stdout)
         if stderr:
@@ -1160,7 +1160,7 @@ def setup_compliation_verbosity(top_env, color_enabled, verbosity):
     jar_message = console.erasable('%sCreating Jar %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
-    if verbosity != 'verbose':
+    if console.verbosity_compare(verbosity, 'verbose') < 0:
         top_env.Append(
                 CXXCOMSTR = compile_source_message,
                 CCCOMSTR = compile_source_message,

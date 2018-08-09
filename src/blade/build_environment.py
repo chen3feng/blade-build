@@ -41,7 +41,7 @@ class BuildEnvironment(object):
                             'distcc installed, will just build locally')
         self.distcc_log_file = os.environ.get('DISTCC_LOG', '')
         if self.distcc_log_file:
-            console.info('distcc log: %s' % self.distcc_log_file)
+            console.debug('distcc log: %s' % self.distcc_log_file)
 
         # dccc
         self.dccc_env_prepared = True
@@ -66,7 +66,7 @@ class BuildEnvironment(object):
         CXX = os.getenv('CXX')
         # clang scan-build always fail with ccache.
         if CC and os.path.basename(CC) == 'ccc-analyzer' and CXX and os.path.basename(CXX) == 'c++-analyzer':
-            console.info('ccache is disabled for scan-build')
+            console.debug('ccache is disabled for scan-build')
             return False
 
         try:
@@ -80,7 +80,7 @@ class BuildEnvironment(object):
             if p.returncode == 0:
                 version_line = stdout.splitlines(True)[0]
                 if version_line and version_line.find('ccache version') != -1:
-                    console.info('ccache found')
+                    console.debug('ccache found')
                     return True
         except OSError:
             pass
@@ -100,7 +100,7 @@ class BuildEnvironment(object):
         if p.returncode == 0:
             version_line = stdout.splitlines(True)[0]
             if version_line and version_line.find('distcc') != -1:
-                console.info('distcc found')
+                console.debug('distcc found')
                 return True
 
     @staticmethod
@@ -108,7 +108,7 @@ class BuildEnvironment(object):
         """Check dccc is installed or not. """
         home_dir = os.environ.get('HOME', '')
         if home_dir and os.path.exists(os.path.join(home_dir, 'bin', 'dccc')):
-            console.info('dccc found')
+            console.debug('dccc found')
             return True
         return False
 
@@ -139,8 +139,8 @@ class BuildEnvironment(object):
                     cache_dir, cache_size))
         self._add_rule('Progress(scache_manager, interval=100)')
 
-        console.info('using cache directory %s' % cache_dir)
-        console.info('scache size %d' % cache_size)
+        console.debug('using cache directory %s' % cache_dir)
+        console.debug('scache size %d' % cache_size)
 
     def setup_build_cache(self, options):
         if self.ccache_installed:  # Perfer ccache because it also cache warning
@@ -201,7 +201,7 @@ class ScacheManager(object):
         if not file_list:
             return
         map(self.cache_remove, file_list)
-        console.info('scons cache purged')
+        console.debug('scons cache purged')
 
     def get_file_list(self):
         if not self.cache_path:

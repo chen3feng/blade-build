@@ -224,10 +224,7 @@ def _check_code_style(targets):
     return 0
 
 
-def _run_native_builder(cmd, options):
-    cmdstr = subprocess.list2cmdline(cmd)
-    if options.verbosity == 'quiet':
-        cmdstr += r'| sed -e "/^\[[0-9]\+\/[0-9]\+\] /d"'
+def _run_native_builder(cmdstr, options):
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -253,7 +250,10 @@ def _scons_build(options):
     cmd += ['--duplicate=soft-copy', '--cache-show']
     if options.keep_going:
         cmd.append('-k')
-    return _run_native_builder(cmd, options)
+    if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
+        cmd.append('-s')
+    cmdstr = subprocess.list2cmdline(cmd)
+    return _run_native_builder(cmdstr, options)
 
 
 def _ninja_build(options):
@@ -266,9 +266,13 @@ def _ninja_build(options):
     cmd.append('-j%s' % (options.jobs or blade.blade.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
-    if options.verbosity == 'verbose':
+    if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
         cmd.append('-v')
-    return _run_native_builder(cmd, options)
+    cmdstr = subprocess.list2cmdline(cmd)
+    if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
+        # Filter out description message such as '[1/123] CC xxx.cc'
+        cmdstr += r' | sed -e "/^\[[0-9]*\/[0-9]*\] /d"'
+    return _run_native_builder(cmdstr, options)
 
 
 def build(options):
@@ -315,7 +319,8 @@ def clean(options):
         cmd += ['-t', 'clean']
     else:
         cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
-    returncode = _run_native_builder(cmd, options)
+    cmdstr = subprocess.list2cmdline(cmd)
+    returncode = _run_native_builder(cmdstr, options)
     console.info('cleaning done.')
     return returncode
 

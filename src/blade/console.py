@@ -24,9 +24,12 @@ _log = None
 
 # Output verbosity control, valid values:
 # verbose: verbose mode, show more details
+# normal: normal mode, show infos, warnings and errors
 # quiet: quiet mode, only show warnings and errors
-# empty string: normal mode, show infos, warnings and errors
-_verbosity = ''
+_VERBOSITIES = ('quiet', 'normal', 'verbose')
+
+
+_verbosity = 'normal'
 
 
 # Global color enabled or not
@@ -65,13 +68,31 @@ def get_log_file():
 
 
 def set_verbosity(value):
-    """Set the global verbose. """
+    """Set the global verbosity. """
     global _verbosity
+    assert value in _VERBOSITIES
     _verbosity = value
 
 
 def get_verbosity():
     return _verbosity
+
+
+def verbosity_compare(lhs, rhs):
+    """Return -1, 0, 1 according to their order"""
+    a = _VERBOSITIES.index(lhs)
+    b = _VERBOSITIES.index(rhs)
+    return (a > b) - (a < b)
+
+
+def verbosity_le(verbosity):
+    """verbosity less than or equal"""
+    return verbosity_compare(lhs, rhs) <= 0
+
+
+def verbosity_ge(lhs, rhs):
+    """verbosity greater than or equal"""
+    return verbosity_compare(lhs, rhs) >= 0
 
 
 def inerasable(msg):
@@ -95,8 +116,8 @@ def colors(name):
     return ''
 
 
-def _print(msg):
-    if _verbosity != 'quiet':
+def _print(msg, verbosity):
+    if verbosity_ge(_verbosity, verbosity):
         print msg
 
 
@@ -132,14 +153,15 @@ def info(msg, prefix=True):
     log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
-    _print(msg)
+    _print(msg, 'normal')
 
 
-def debug(msg):
+def debug(msg, prefix=True):
     """dump debug message. """
+    if prefix:
+        msg = 'Blade(debug): ' + msg
     log(msg)
-    if _verbosity == 'verbose':
-        _print(msg)
+    _print(msg, 'verbose')
 
 
 def log(msg):

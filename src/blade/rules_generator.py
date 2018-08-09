@@ -241,10 +241,10 @@ import scons_helper
         cc = toolchain_dir + os.environ.get('CC', 'gcc')
         cxx = toolchain_dir + os.environ.get('CXX', 'g++')
         ld = toolchain_dir + os.environ.get('LD', 'g++')
-        console.info('CPP=%s' % cpp)
-        console.info('CC=%s' % cc)
-        console.info('CXX=%s' % cxx)
-        console.info('LD=%s' % ld)
+        console.debug('CPP=%s' % cpp)
+        console.debug('CC=%s' % cc)
+        console.debug('CXX=%s' % cxx)
+        console.debug('LD=%s' % ld)
 
         self.ccflags_manager.set_cc(cc)
 

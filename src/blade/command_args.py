@@ -343,7 +343,7 @@ class CmdArguments(object):
                 help='Do not load BLADE_ROOT.local')
             parser.add_argument(
                 '--verbose', dest='verbosity', action='store_const', const='verbose',
-                default='', help='Show all details')
+                default='normal', help='Show all details')
             parser.add_argument(
                 '--quiet', dest='verbosity', action='store_const', const='quiet',
                 help='Only show warnings and errors')
