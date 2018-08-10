@@ -907,6 +907,12 @@ class CcLibrary(CcTarget):
             return os.path.dirname(path)
         return None
 
+    def _need_generate_hdrs(self):
+        for path in self.blade.get_sources_keyword_list():
+            if self.path.startswith(path):
+                return False
+        return True
+
     def _extract_cc_hdrs_from_stack(self, path):
         """Extract headers from header stack(.H) generated during preprocessing. """
         hdrs = []
@@ -976,33 +982,121 @@ class CcLibrary(CcTarget):
         else:
             return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
 
+    @staticmethod
+    def _parse_hdr_level(line):
+        pos = line.find(' ')
+        assert pos != -1
+        level, hdr = line[:pos].count('.'), line[pos + 1:]
+        if hdr.startswith('./'):
+            hdr = hdr[2:]
+        return level, hdr
+
+    def _extract_generated_hdrs_inclusion_stacks(self, src):
+        """Extract generated headers and inclusion stacks for each one of them.
+
+        Given the following inclusions found in the app/example/foo.cc.o.H:
+
+            . ./app/example/foo.h
+            .. build64_release/app/example/proto/foo.pb.h
+            ... build64_release/common/rpc/rpc_service.pb.h
+            . build64_release/app/example/proto/bar.pb.h
+            . ./common/rpc/rpc_client.h
+            .. build64_release/common/rpc/rpc_options.pb.h
+
+        Return a list with each item being a list representing where the
+        generated header is included from in the current translation unit.
+
+        Note that ONLY the first generated header is tracked while other
+        headers included from the generated header directly or indirectly
+        are ignored since that part of inclusion is ensured by imports of
+        proto_library.
+
+        As shown in the example above, it returns:
+
+            [
+                ['app/example/foo.h', 'build64_release/app/example/proto/foo.pb.h'],
+                ['build64_release/app/example/proto/bar.pb.h'],
+                ['common/rpc/rpc_client.h', 'build64_release/common/rpc/rpc_options.pb.h'],
+            ]
+        """
+        objs_dir = self._target_file_path() + '.objs'
+        path = '%s.o.H' % os.path.join(objs_dir, src)
+        if not os.path.exists(path):
+            return []
+
+        build_dir = self.build_path
+        stacks, hdrs_stack = [], []
+
+        def _process_hdr(level, hdr, current_level):
+            if hdr.startswith('/'):
+                skip_level = level
+            elif hdr.startswith(build_dir):
+                skip_level = level
+                stacks.append(hdrs_stack + [hdr])
+            else:
+                current_level = level
+                hdrs_stack.append(hdr)
+                skip_level = -1
+            return current_level, skip_level
+
+        current_level = 0
+        skip_level = -1
+        with open(path) as f:
+            for line in f.read().splitlines():
+                if line.startswith('Multiple include guards may be useful for'):
+                    break
+                level, hdr = self._parse_hdr_level(line)
+                if level > current_level:
+                    if skip_level != -1 and level > skip_level:
+                        continue
+                    assert level == current_level + 1
+                    current_level, skip_level = _process_hdr(level, hdr, current_level)
+                else:
+                    while current_level >= level:
+                        current_level -= 1
+                        hdrs_stack.pop()
+                    current_level, skip_level = _process_hdr(level, hdr, current_level)
+
+        return stacks
+
     def verify_header_inclusion_dependencies(self):
+        if not self._need_generate_hdrs():
+            return True
+
         build_targets = self.blade.get_build_targets()
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
-        for key in self.deps:
+        for key in self.expanded_deps:
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
-        build_dir = self.build_path
         undeclared_hdrs = set()
         for src in self.srcs:
             path = self._source_file_path(src)
-            hdrs = self._extract_cc_hdrs(src)
-            hdrs = [h for h in hdrs if h.startswith(build_dir)]
-            for hdr in hdrs:
-                if hdr not in declared_hdrs:
-                    undeclared_hdrs.add(hdr)
-                    console.error("%s: '%s' included from '%s|.h' is "
-                                  "missing dependency declaration in BUILD." % (
-                                  self.fullname, hdr, path))
+            stacks = self._extract_generated_hdrs_inclusion_stacks(src)
+            for stack in stacks:
+                generated_hdr = stack[-1]
+                if generated_hdr not in declared_hdrs:
+                    undeclared_hdrs.add(generated_hdr)
+                    stack.pop()
+                    if not stack:
+                        msg = ['In file included from %s' % path]
+                    else:
+                        stack.reverse()
+                        msg = ['In file included from %s' % stack[0]]
+                        prefix = '                 from %s'
+                        msg += [prefix % h for h in stack[1:]]
+                        msg.append(prefix % path)
+                    console.info('\n%s' % '\n'.join(msg))
+                    console.error('%s: Missing dependency declaration in BUILD for %s.' % (
+                                  self.fullname, generated_hdr))
 
         return not undeclared_hdrs
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        for path in self.blade.get_sources_keyword_list():
-            if self.path.startswith(path):
-                return
+        if not self._need_generate_hdrs():
+            return
+
         for key in ('c_warnings', 'cxx_warnings'):
             if key in vars:
                 del vars[key]
