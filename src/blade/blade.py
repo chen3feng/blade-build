@@ -13,6 +13,7 @@
 
 
 import os
+import time
 
 import config
 import console
@@ -84,6 +85,8 @@ class Blade(object):
 
         # Inidcating that whether the deps list is expanded by expander or not
         self.__targets_expanded = False
+
+        self.__build_time = time.time()
 
         self.__build_platform = BuildPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
@@ -277,6 +280,9 @@ class Blade(object):
         console.info(console.colors('end') + console.colors('gray') + output)
         for dkey in build_targets[key].deps:
             self._query_dependency_tree(dkey, level + 1, build_targets)
+
+    def get_build_time(self):
+        return self.__build_time
 
     def get_build_path(self):
         """The current building path. """

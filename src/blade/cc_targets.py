@@ -1021,8 +1021,9 @@ class CcLibrary(CcTarget):
         """
         objs_dir = self._target_file_path() + '.objs'
         path = '%s.o.H' % os.path.join(objs_dir, src)
-        if not os.path.exists(path):
-            return []
+        if (not os.path.exists(path) or
+            os.path.getmtime(path) < self.blade.get_build_time()):
+            return '', []
 
         build_dir = self.build_path
         stacks, hdrs_stack = [], []
@@ -1057,7 +1058,7 @@ class CcLibrary(CcTarget):
                         hdrs_stack.pop()
                     current_level, skip_level = _process_hdr(level, hdr, current_level)
 
-        return stacks
+        return path, stacks
 
     def verify_header_inclusion_dependencies(self):
         if not self._need_generate_hdrs():
@@ -1070,28 +1071,34 @@ class CcLibrary(CcTarget):
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
-        undeclared_hdrs = set()
+        undeclared_hdrs, preprocessed_paths = set(), set()
         for src in self.srcs:
-            path = self._source_file_path(src)
-            stacks = self._extract_generated_hdrs_inclusion_stacks(src)
+            source = self._source_file_path(src)
+            path, stacks = self._extract_generated_hdrs_inclusion_stacks(src)
             for stack in stacks:
                 generated_hdr = stack[-1]
                 if generated_hdr not in declared_hdrs:
                     undeclared_hdrs.add(generated_hdr)
+                    preprocessed_paths.add(path)
                     stack.pop()
                     if not stack:
-                        msg = ['In file included from %s' % path]
+                        msg = ['In file included from %s' % source]
                     else:
                         stack.reverse()
                         msg = ['In file included from %s' % stack[0]]
                         prefix = '                 from %s'
                         msg += [prefix % h for h in stack[1:]]
-                        msg.append(prefix % path)
+                        msg.append(prefix % source)
                     console.info('\n%s' % '\n'.join(msg))
                     console.error('%s: Missing dependency declaration in BUILD for %s.' % (
                                   self.fullname, generated_hdr))
 
-        return not undeclared_hdrs
+        if undeclared_hdrs:
+            for preprocess in preprocessed_paths:
+                os.remove(preprocess)
+            return False
+        else:
+            return True
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
         if not self._need_generate_hdrs():
