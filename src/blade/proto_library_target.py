@@ -382,10 +382,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _protoc_direct_dependencies_rules(self):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                env_name = self._env_name()
-                self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
-                                 env_name, ':'.join(dependencies)))
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            env_name = self._env_name()
+            self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
+                             env_name, ':'.join(dependencies)))
 
     def scons_rules(self):
         """scons_rules.
@@ -471,8 +471,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_protoc_direct_dependencies(self, vars):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
     def ninja_proto_java_rules(self, plugin_flags):
         java_sources = []
