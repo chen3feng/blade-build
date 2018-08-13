@@ -326,7 +326,7 @@ class CcTarget(Target):
         return inc_list
 
     def _get_incs_list(self):
-        '''Get all incs includes export_incs of all depends'''
+        """Get all incs includes export_incs of all depends. """
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
