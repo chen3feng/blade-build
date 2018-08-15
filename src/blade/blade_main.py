@@ -224,7 +224,7 @@ def _check_code_style(targets):
     return 0
 
 
-def _run_native_builder(cmdstr, options):
+def _run_native_builder(cmdstr):
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -253,7 +253,7 @@ def _scons_build(options):
     if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
         cmd.append('-s')
     cmdstr = subprocess.list2cmdline(cmd)
-    return _run_native_builder(cmdstr, options)
+    return _run_native_builder(cmdstr)
 
 
 def _ninja_build(options):
@@ -272,7 +272,7 @@ def _ninja_build(options):
     if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
         # Filter out description message such as '[1/123] CC xxx.cc'
         cmdstr += r' | sed -e "/^\[[0-9]*\/[0-9]*\] /d"'
-    return _run_native_builder(cmdstr, options)
+    return _run_native_builder(cmdstr)
 
 
 def build(options):
@@ -320,7 +320,7 @@ def clean(options):
     else:
         cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
     cmdstr = subprocess.list2cmdline(cmd)
-    returncode = _run_native_builder(cmdstr, options)
+    returncode = _run_native_builder(cmdstr)
     console.info('cleaning done.')
     return returncode
 
