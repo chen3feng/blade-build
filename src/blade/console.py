@@ -85,14 +85,14 @@ def verbosity_compare(lhs, rhs):
     return (a > b) - (a < b)
 
 
-def verbosity_le(verbosity):
-    """verbosity less than or equal"""
-    return verbosity_compare(lhs, rhs) <= 0
+def verbosity_le(expected):
+    """Current verbosity less than or equal to expected"""
+    return verbosity_compare(_verbosity, expected) <= 0
 
 
-def verbosity_ge(lhs, rhs):
-    """verbosity greater than or equal"""
-    return verbosity_compare(lhs, rhs) >= 0
+def verbosity_ge(expected):
+    """Current verbosity greater than or equal to expected"""
+    return verbosity_compare(_verbosity, expected) >= 0
 
 
 def inerasable(msg):
@@ -117,7 +117,7 @@ def colors(name):
 
 
 def _print(msg, verbosity):
-    if verbosity_ge(_verbosity, verbosity):
+    if verbosity_ge(verbosity):
         print msg
 
 
