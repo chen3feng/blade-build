@@ -14,6 +14,7 @@
 
 import os
 import time
+import json
 
 import config
 import console
@@ -66,7 +67,7 @@ class Blade(object):
 
         # Given some targets specified in the command line, Blade will load
         # BUILD files containing these command line targets; global target
-        # functions, i.e., cc_libarary, cc_binary and etc, in these BUILD
+        # functions, i.e., cc_library, cc_binary and etc, in these BUILD
         # files will register targets into target_database, which then becomes
         # the input to dependency analyzer and SCons rules generator.  It is
         # notable that not all targets in target_database are dependencies of
@@ -83,7 +84,7 @@ class Blade(object):
         # The depended targets dict after topological sorting
         self.__depended_targets = {}
 
-        # Inidcating that whether the deps list is expanded by expander or not
+        # Indicate whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
         self.__build_time = time.time()
@@ -92,6 +93,11 @@ class Blade(object):
         self.build_environment = BuildEnvironment(self.__root_dir)
 
         self.svn_root_dirs = []
+
+        self._verify_history_path = os.path.join(build_path, '.blade_verify.json')
+        self._verify_history = {
+            'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
+        }
 
     def load_targets(self):
         """Load the targets. """
@@ -135,15 +141,18 @@ class Blade(object):
 
     def verify(self):
         """Verify specific targets after build is complete. """
+        verify_history = self.load_verify_history()
         error = 0
         header_inclusion_dependencies = config.get_item('cc_config',
                                                         'header_inclusion_dependencies')
+        header_inclusion_history = verify_history['header_inclusion_dependencies']
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if (header_inclusion_dependencies and
                 target.type == 'cc_library' and target.srcs):
-                if not target.verify_header_inclusion_dependencies():
+                if not target.verify_header_inclusion_dependencies(header_inclusion_history):
                     error += 1
+        self.dump_verify_history()
         return error == 0
 
     def run(self, target):
@@ -397,6 +406,16 @@ class Blade(object):
         """
         keywords = ['thirdparty']
         return keywords
+
+    def load_verify_history(self):
+        if os.path.exists(self._verify_history_path):
+            with open(self._verify_history_path) as f:
+                self._verify_history = json.load(f)
+        return self._verify_history
+
+    def dump_verify_history(self):
+        with open(self._verify_history_path, 'w') as f:
+            json.dump(self._verify_history, f)
 
     def parallel_jobs_num(self):
         """Tune the jobs num. """

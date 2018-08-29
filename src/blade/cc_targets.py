@@ -991,7 +991,7 @@ class CcLibrary(CcTarget):
             hdr = hdr[2:]
         return level, hdr
 
-    def _extract_generated_hdrs_inclusion_stacks(self, src):
+    def _extract_generated_hdrs_inclusion_stacks(self, src, history):
         """Extract generated headers and inclusion stacks for each one of them.
 
         Given the following inclusions found in the app/example/foo.cc.o.H:
@@ -1022,7 +1022,7 @@ class CcLibrary(CcTarget):
         objs_dir = self._target_file_path() + '.objs'
         path = '%s.o.H' % os.path.join(objs_dir, src)
         if (not os.path.exists(path) or
-            os.path.getmtime(path) < self.blade.get_build_time()):
+            (path in history and int(os.path.getmtime(path)) == history[path])):
             return '', []
 
         build_dir = self.build_path
@@ -1060,7 +1060,7 @@ class CcLibrary(CcTarget):
 
         return path, stacks
 
-    def verify_header_inclusion_dependencies(self):
+    def verify_header_inclusion_dependencies(self, history):
         if not self._need_generate_hdrs():
             return True
 
@@ -1071,15 +1071,17 @@ class CcLibrary(CcTarget):
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
-        undeclared_hdrs, preprocessed_paths = set(), set()
+        preprocess_paths, failed_preprocess_paths = set(), set()
         for src in self.srcs:
             source = self._source_file_path(src)
-            path, stacks = self._extract_generated_hdrs_inclusion_stacks(src)
+            path, stacks = self._extract_generated_hdrs_inclusion_stacks(src, history)
+            if not path:
+                continue
+            preprocess_paths.add(path)
             for stack in stacks:
                 generated_hdr = stack[-1]
                 if generated_hdr not in declared_hdrs:
-                    undeclared_hdrs.add(generated_hdr)
-                    preprocessed_paths.add(path)
+                    failed_preprocess_paths.add(path)
                     stack.pop()
                     if not stack:
                         msg = ['In file included from %s' % source]
@@ -1093,12 +1095,12 @@ class CcLibrary(CcTarget):
                     console.error('%s: Missing dependency declaration in BUILD for %s.' % (
                                   self.fullname, generated_hdr))
 
-        if undeclared_hdrs:
-            for preprocess in preprocessed_paths:
-                os.remove(preprocess)
-            return False
-        else:
-            return True
+        for preprocess in failed_preprocess_paths:
+            if preprocess in history:
+                del history[preprocess]
+        for preprocess in preprocess_paths - failed_preprocess_paths:
+            history[preprocess] = int(os.path.getmtime(preprocess))
+        return not failed_preprocess_paths
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
         if not self._need_generate_hdrs():
