@@ -505,6 +505,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_proto_go_rules(self, plugin_flags):
         go_home = config.get_item('go_config', 'go_home')
         protobuf_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
+        generated_goes = []
         for src in self.srcs:
             path = self._source_file_path(src)
             package = self._get_go_package_name(path)
@@ -514,6 +515,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
             self.ninja_build(output, 'protogo', inputs=path)
+            generated_goes.append(output)
+        self._add_target_file('gopkg', generated_goes)
 
     def ninja_proto_rules(self, options, plugin_flags):
         """Generate ninja rules for other languages if needed. """
