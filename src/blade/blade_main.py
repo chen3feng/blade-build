@@ -197,28 +197,9 @@ def _get_changed_files(targets, blade_root_dir, working_dir):
 
 def _check_code_style(targets):
     cpplint = config.get_item('cc_config', 'cpplint')
-    if not cpplint:
-        console.info('cpplint disabled')
-        return 0
-    changed_files = _get_changed_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
-    if not changed_files:
-        return 0
-    console.info('Begin to check code style for changed source code')
-    p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(changed_files))), shell=True)
-    try:
-        p.wait()
-        if p.returncode != 0:
-            if p.returncode == 127:
-                msg = ("Can't execute '{0}' to check style, you can config the "
-                       "'cpplint' option to be a valid cpplint path in the "
-                       "'cc_config' section of blade.conf or BLADE_ROOT, or "
-                       "make sure '{0}' command is correct.").format(cpplint)
-            else:
-                msg = 'Please fixing style warnings before submitting the code!'
-            console.warning(msg)
-    except KeyboardInterrupt, e:
-        console.error(str(e))
-        return 1
+    if cpplint:
+        console.info('cpplint is no longer supported by blade, '
+                     'please run cpplint alone if needed.')
     return 0
 
 
