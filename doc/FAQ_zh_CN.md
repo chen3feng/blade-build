@@ -232,3 +232,9 @@ cc_test_config(
 )
 测试程序不会用来发布，动态链接可以减少大量的磁盘开销，如果某个具体的测试动态链接出错，可以单独为它指定dynamic_link = False。
 ```
+
+### cannot find -lstdc++
+需要安装libstdc++的静态版本
+```
+yum install glibc-static
+```
