@@ -985,7 +985,8 @@ class CcLibrary(CcTarget):
     @staticmethod
     def _parse_hdr_level(line):
         pos = line.find(' ')
-        assert pos != -1
+        if pos == -1:
+            return -1, ''
         level, hdr = line[:pos].count('.'), line[pos + 1:]
         if hdr.startswith('./'):
             hdr = hdr[2:]
@@ -1047,6 +1048,9 @@ class CcLibrary(CcTarget):
                 if line.startswith('Multiple include guards may be useful for'):
                     break
                 level, hdr = self._parse_hdr_level(line)
+                if level == -1:
+                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
+                    break
                 if level > current_level:
                     if skip_level != -1 and level > skip_level:
                         continue
