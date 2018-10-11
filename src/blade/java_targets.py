@@ -271,16 +271,16 @@ class JavaTargetMixIn(object):
             key = (group, artifact)
             id = ':'.join((group, artifact, version))
             if key in maven_jar_dict:
-                old_value = maven_jar_dict[key]
-                if version == old_value[0]:
-                    # jar must be different because dep_jars is a set
-                    old_value[1].add(dep_jar)
+                old_version, old_jars = maven_jar_dict[key]
+                if version == old_version:
+                    # jar name must be different because dep_jars is a set
+                    old_jars.add(dep_jar)
                     continue
-                old_id = ':'.join((group, artifact, old_value[0]))
+                old_id = ':'.join((group, artifact, old_version))
                 if old_id in maven_dep_ids:
                     conflicted_jars.add(dep_jar)
-                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_value[0]):
-                    conflicted_jars |= old_value[1]
+                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_version):
+                    conflicted_jars |= old_jars
                     maven_jar_dict[key] = (version, set([dep_jar]))
                 else:
                     conflicted_jars.add(dep_jar)
@@ -288,7 +288,7 @@ class JavaTargetMixIn(object):
                 console.debug('%s: Maven dependency version conflict '
                               '%s:%s:{%s, %s} during %s. Use %s' % (
                               self.fullname, key[0], key[1],
-                              version, old_value[0], scope, value[0]))
+                              version, old_version, scope, value[0]))
             else:
                 maven_jar_dict[key] = (version, set([dep_jar]))
 
