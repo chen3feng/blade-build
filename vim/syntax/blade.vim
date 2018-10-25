@@ -27,9 +27,9 @@ syn keyword bladeTarget resource_library swig_library thrift_library
 
 " Sorted by alphabet order
 syn keyword bladeArg always_run binary_jar cmd defs deprecated deps dynamic_link embed_version
-syn keyword bladeArg exclusions exclusive export_dynamic export_incs exported_deps
+syn keyword bladeArg excludes exclusions exclusive export_dynamic export_incs exported_deps
 syn keyword bladeArg extra_cppflags extra_linkflags generate_descriptors glob
-syn keyword bladeArg heap_check heap_check_debug incs link_all_symbols main_class
+syn keyword bladeArg heap_check heap_check_debug include incs link_all_symbols main_class
 syn keyword bladeArg name optimize out outs plugins prebuilt prefix provided_deps
 syn keyword bladeArg resources secure source_encoding srcs suffix
 syn keyword bladeArg target_under_test testdata transitive visibility warning warnings
