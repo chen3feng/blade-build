@@ -2,9 +2,8 @@
 
 ---
 
-Taken from [vim-typhoon-blade](https://github.com/zhangyafeikimi/vim-typhoon-blade).
-
-Vim syntax plugin for [typhoon-blade](https://github.com/chen3feng/typhoon-blade).
+Separate vim syntax plugin [vim-typhoon-blade](https://github.com/hiberabyss/vim-typhoon-blade)
+could be installed via vundle or vim-plug.
 
 ## Installation
 
