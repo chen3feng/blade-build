@@ -1581,7 +1581,7 @@ def _exec_get_version_info(cmd, cwd):
     if p.returncode:
         return None
     else:
-        return stdout.replace('\n', '\\n"\n"')
+        return stdout.replace('"','\\"').replace('\n', '\\n"\n"')
 
 
 def _get_version_info(blade_root_dir, svn_roots):
