@@ -382,10 +382,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _protoc_direct_dependencies_rules(self):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                env_name = self._env_name()
-                self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
-                                 env_name, ':'.join(dependencies)))
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            env_name = self._env_name()
+            self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
+                             env_name, ':'.join(dependencies)))
 
     def scons_rules(self):
         """scons_rules.
@@ -471,8 +471,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_protoc_direct_dependencies(self, vars):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
     def ninja_proto_java_rules(self, plugin_flags):
         java_sources = []
@@ -505,6 +505,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_proto_go_rules(self, plugin_flags):
         go_home = config.get_item('go_config', 'go_home')
         protobuf_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
+        generated_goes = []
         for src in self.srcs:
             path = self._source_file_path(src)
             package = self._get_go_package_name(path)
@@ -514,6 +515,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
             self.ninja_build(output, 'protogo', inputs=path)
+            generated_goes.append(output)
+        self._add_target_file('gopkg', generated_goes)
 
     def ninja_proto_rules(self, options, plugin_flags):
         """Generate ninja rules for other languages if needed. """

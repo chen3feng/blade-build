@@ -63,6 +63,10 @@ class LexYaccLibrary(CcTarget):
         self.data['allow_undefined'] = allow_undefined
         self.data['link_all_symbols'] = True
 
+    def _generate_header_files(self):
+        """Whether this target generates header files during building."""
+        return True
+
     def _setup_lex_yacc_flags(self):
         """Set up lex/yacc flags according to the options. """
         lex_flags, yacc_flags = [], []
@@ -157,6 +161,11 @@ class LexYaccLibrary(CcTarget):
         lex_cc, lex_cc_path = self.ninja_lex_yacc_rules(lex, 'lex',
                                                         implicit_deps=[yacc_cc_path],
                                                         vars=lex_vars)
+        if yacc_cc.endswith('.c'):
+            yacc_hdr = '%s.h' % yacc_cc_path[:-2]
+        else:
+            yacc_hdr = '%s.h' % yacc_cc_path[:-3]
+        self.data['generated_hdrs'].append(yacc_hdr)
         self._cc_objects_ninja([lex_cc, yacc_cc], True)
         self._cc_library_ninja()
 

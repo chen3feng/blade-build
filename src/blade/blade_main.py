@@ -11,7 +11,7 @@
  error-prone complexity.  With Blade, users wrote a BUILD file and
  put it in each of the source directory.  In each BUILD file, there
  could be one or more build rules, each has a TARGET NAME, source
- files and dependent targets.  Blade suports the following types of
+ files and dependent targets.  Blade supports the following types of
  build rules:
 
 

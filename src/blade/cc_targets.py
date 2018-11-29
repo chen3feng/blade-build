@@ -326,7 +326,7 @@ class CcTarget(Target):
         return inc_list
 
     def _get_incs_list(self):
-        '''Get all incs includes export_incs of all depends'''
+        """Get all incs includes export_incs of all depends. """
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
@@ -985,13 +985,14 @@ class CcLibrary(CcTarget):
     @staticmethod
     def _parse_hdr_level(line):
         pos = line.find(' ')
-        assert pos != -1
+        if pos == -1:
+            return -1, ''
         level, hdr = line[:pos].count('.'), line[pos + 1:]
         if hdr.startswith('./'):
             hdr = hdr[2:]
         return level, hdr
 
-    def _extract_generated_hdrs_inclusion_stacks(self, src):
+    def _extract_generated_hdrs_inclusion_stacks(self, src, history):
         """Extract generated headers and inclusion stacks for each one of them.
 
         Given the following inclusions found in the app/example/foo.cc.o.H:
@@ -1021,8 +1022,9 @@ class CcLibrary(CcTarget):
         """
         objs_dir = self._target_file_path() + '.objs'
         path = '%s.o.H' % os.path.join(objs_dir, src)
-        if not os.path.exists(path):
-            return []
+        if (not os.path.exists(path) or
+            (path in history and int(os.path.getmtime(path)) == history[path])):
+            return '', []
 
         build_dir = self.build_path
         stacks, hdrs_stack = [], []
@@ -1046,6 +1048,9 @@ class CcLibrary(CcTarget):
                 if line.startswith('Multiple include guards may be useful for'):
                     break
                 level, hdr = self._parse_hdr_level(line)
+                if level == -1:
+                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
+                    break
                 if level > current_level:
                     if skip_level != -1 and level > skip_level:
                         continue
@@ -1057,9 +1062,9 @@ class CcLibrary(CcTarget):
                         hdrs_stack.pop()
                     current_level, skip_level = _process_hdr(level, hdr, current_level)
 
-        return stacks
+        return path, stacks
 
-    def verify_header_inclusion_dependencies(self):
+    def verify_header_inclusion_dependencies(self, history):
         if not self._need_generate_hdrs():
             return True
 
@@ -1070,28 +1075,36 @@ class CcLibrary(CcTarget):
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
-        undeclared_hdrs = set()
+        preprocess_paths, failed_preprocess_paths = set(), set()
         for src in self.srcs:
-            path = self._source_file_path(src)
-            stacks = self._extract_generated_hdrs_inclusion_stacks(src)
+            source = self._source_file_path(src)
+            path, stacks = self._extract_generated_hdrs_inclusion_stacks(src, history)
+            if not path:
+                continue
+            preprocess_paths.add(path)
             for stack in stacks:
                 generated_hdr = stack[-1]
                 if generated_hdr not in declared_hdrs:
-                    undeclared_hdrs.add(generated_hdr)
+                    failed_preprocess_paths.add(path)
                     stack.pop()
                     if not stack:
-                        msg = ['In file included from %s' % path]
+                        msg = ['In file included from %s' % source]
                     else:
                         stack.reverse()
                         msg = ['In file included from %s' % stack[0]]
                         prefix = '                 from %s'
                         msg += [prefix % h for h in stack[1:]]
-                        msg.append(prefix % path)
+                        msg.append(prefix % source)
                     console.info('\n%s' % '\n'.join(msg))
                     console.error('%s: Missing dependency declaration in BUILD for %s.' % (
                                   self.fullname, generated_hdr))
 
-        return not undeclared_hdrs
+        for preprocess in failed_preprocess_paths:
+            if preprocess in history:
+                del history[preprocess]
+        for preprocess in preprocess_paths - failed_preprocess_paths:
+            history[preprocess] = int(os.path.getmtime(preprocess))
+        return not failed_preprocess_paths
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
         if not self._need_generate_hdrs():

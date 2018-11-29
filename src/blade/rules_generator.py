@@ -715,6 +715,29 @@ pythonbasedir = __pythonbasedir__
                            command=self.generate_toolchain_command('python_binary', suffix=args),
                            description='PYTHON BINARY ${out}')
 
+    def generate_go_rules(self):
+        go_home = config.get_item('go_config', 'go_home')
+        go = config.get_item('go_config', 'go')
+        if go_home and go:
+            go_pool = 'golang_pool'
+            self._add_rule('''
+pool %s
+  depth = 1''' % go_pool)
+            go_path = os.path.normpath(os.path.abspath(go_home))
+            prefix = 'GOPATH=%s %s' % (go_path, go)
+            self.generate_rule(name='gopackage',
+                               command='%s install ${package}' % prefix,
+                               description='GOLANG PACKAGE ${package}',
+                               pool=go_pool)
+            self.generate_rule(name='gocommand',
+                               command='%s build -o ${out} ${package}' % prefix,
+                               description='GOLANG COMMAND ${package}',
+                               pool=go_pool)
+            self.generate_rule(name='gotest',
+                               command='%s test -c -o ${out} ${package}' % prefix,
+                               description='GOLANG TEST ${package}',
+                               pool=go_pool)
+
     def generate_shell_rules(self):
         self.generate_rule(name='shelltest',
                            command=self.generate_toolchain_command('shell_test'),
@@ -779,6 +802,7 @@ build %s: cxx %s
         self.generate_java_scala_rules()
         self.generate_thrift_rules()
         self.generate_python_rules()
+        self.generate_go_rules()
         self.generate_shell_rules()
         self.generate_lex_yacc_rules()
         self.generate_package_rules()
