@@ -73,8 +73,8 @@ py_test(
 proto文件首先需要用[proto_library](idl.md#proto_library)来描述，在py_* 的deps中引入。
 blade build时会自动生成相应的python protobuf编码解码库。
 
-在python代码中的import路径规则是，从workspace根出发，/替换为.，文件名结尾的.proto替换为_py2，比如
+在python代码中的import路径规则是，从workspace根出发，/替换为.，文件名结尾的.proto替换为_pb2，比如
 ```python
 # proto文件路径为 //common/base/user_info.proto
-import common.base.user_info_py2
+import common.base.user_info_pb2
 ```
