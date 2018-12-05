@@ -207,15 +207,15 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        m, arch, profile = options.m, options.arch, options.profile
+        bits, arch, profile = options.bits, options.arch, options.profile
         if CcTarget._default_prebuilt_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                    bits=m, arch=arch, profile=profile)
+                    bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('prebuilt_libpath_pattern')
         if pattern:
-            libpath = Template(pattern).substitute(bits=m,
+            libpath = Template(pattern).substitute(bits=bits,
                                                    arch=arch,
                                                    profile=profile)
         else:
@@ -308,11 +308,13 @@ class CcTarget(Target):
         return (cpp_flags, incs)
 
     def _get_as_flags(self):
-        """Return the as flags according to the build architecture. """
+        """Return as flags according to the build architecture. """
         options = self.blade.get_options()
-        as_flags = ['-g', '--' + options.m]
-        aspp_flags = ['-Wa,--' + options.m]
-        return as_flags, aspp_flags
+        if options.m:
+            as_flags = ['-g', '--' + options.m]
+            aspp_flags = ['-Wa,--' + options.m]
+            return as_flags, aspp_flags
+        return [], []
 
     def _export_incs_list(self):
         inc_list = []

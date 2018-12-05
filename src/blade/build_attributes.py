@@ -22,7 +22,7 @@ class TargetAttributes(object):
 
     @property
     def bits(self):
-        return int(self.options.m)
+        return int(self.options.bits)
 
     @property
     def arch(self):

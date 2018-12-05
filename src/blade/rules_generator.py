@@ -322,8 +322,9 @@ import scons_helper
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
         options = self.options
-        self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
-        self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
+        if options.m:
+            self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
+            self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
 
         self._setup_cache()
 

@@ -352,7 +352,7 @@ def load_config(options, blade_root_dir):
 def setup_build_dir(options):
     build_path_format = config.get_item('global_config', 'build_path_template')
     s = Template(build_path_format)
-    build_dir = s.substitute(bits=options.m, profile=options.profile)
+    build_dir = s.substitute(bits=options.bits, profile=options.profile)
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     return build_dir
