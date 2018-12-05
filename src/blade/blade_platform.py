@@ -42,7 +42,7 @@ class BuildArchitecture(object):
             'bits' : '32'
         },
         'aarch64' : {
-            'alias' : [],
+            'alias' : ['arm64'],
             'bits' : '64',
         },
         'ppc' : {
