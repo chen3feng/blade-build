@@ -285,7 +285,7 @@ class CcFlagsManager(object):
         else:
             flags_except_warning = ['-m%s' % self.options.m]
             linkflags = ['-m%s' % self.options.m]
-        flags_except_warning += ['-mcx16', '-pipe']
+        flags_except_warning.append('-pipe')
 
         # Debugging information setting
         debug_info_level = global_config['debug_info_level']
