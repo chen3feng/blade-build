@@ -5,7 +5,9 @@
 # Date:   July 12, 2016
 
 """
-Implement go_library, go_binary and go_test
+Implement go_library, go_binary and go_test. In addition, provide
+a simple wrapper function go_package wrapping all sorts of go tar-
+gets totally.
 """
 
 import os
@@ -252,9 +254,9 @@ def extract_go_package(path):
     raise Exception('Failed to find package in %s' % path)
 
 
-def go_target(name,
-              deps=[],
-              testdata=[]):
+def go_package(name,
+               deps=[],
+               testdata=[]):
     path = blade.blade.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
@@ -280,4 +282,4 @@ def go_target(name,
 build_rules.register_function(go_library)
 build_rules.register_function(go_binary)
 build_rules.register_function(go_test)
-build_rules.register_function(go_target)
+build_rules.register_function(go_package)
