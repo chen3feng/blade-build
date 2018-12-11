@@ -172,6 +172,7 @@ java_binary(
     ]
 )
 ```
+编译结果包括一个启动用的shell脚本文件和一个已经包含了相关依赖的fat-jar。
 
 ## java_test
 编译和运行java测试代码。
