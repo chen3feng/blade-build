@@ -426,11 +426,11 @@ class CcTarget(Target):
     def _prebuilt_cc_library_rules(self, var_name, target, source):
         """Generate scons rules for prebuilt cc library. """
         if source.endswith('.a'):
-            self._write_rule('%s = top_env.File("%s")' % (var_name, source))
+            self._write_rule('%s = top_env.File("%s")' % (var_name, os.path.realpath(source)))
         else:
             self._write_rule('%s = top_env.Command("%s", "%s", '
                              'Copy("$TARGET", "$SOURCE"))' % (
-                             var_name, target, source))
+                             var_name, target, os.path.realpath(source)))
 
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,
