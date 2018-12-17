@@ -19,6 +19,8 @@ global_config(
 ) 
 ```
 
+[ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
+
 ### cc_config
 所有c/c++目标的公共配置
 ```python
@@ -57,7 +59,7 @@ cc_config(
 
 注意:
 
-* gtest 1.6开始，去掉了 make install，但是可以绕过[http://blog.csdn.net/chengwenyao18/article/details/7181514 gtest1.6.0安装方法]。
+* gtest 1.6开始，去掉了 make install，但是可以绕过，参见[gtest1.6.0安装方法](http://blog.csdn.net/chengwenyao18/article/details/7181514)。
 * gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
 * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
 
