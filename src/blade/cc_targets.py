@@ -207,15 +207,15 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        m, arch, profile = options.m, options.arch, options.profile
+        bits, arch, profile = options.bits, options.arch, options.profile
         if CcTarget._default_prebuilt_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                    bits=m, arch=arch, profile=profile)
+                    bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('prebuilt_libpath_pattern')
         if pattern:
-            libpath = Template(pattern).substitute(bits=m,
+            libpath = Template(pattern).substitute(bits=bits,
                                                    arch=arch,
                                                    profile=profile)
         else:
@@ -308,11 +308,13 @@ class CcTarget(Target):
         return (cpp_flags, incs)
 
     def _get_as_flags(self):
-        """Return the as flags according to the build architecture. """
+        """Return as flags according to the build architecture. """
         options = self.blade.get_options()
-        as_flags = ['-g', '--' + options.m]
-        aspp_flags = ['-Wa,--' + options.m]
-        return as_flags, aspp_flags
+        if options.m:
+            as_flags = ['-g', '--' + options.m]
+            aspp_flags = ['-Wa,--' + options.m]
+            return as_flags, aspp_flags
+        return [], []
 
     def _export_incs_list(self):
         inc_list = []
@@ -424,11 +426,11 @@ class CcTarget(Target):
     def _prebuilt_cc_library_rules(self, var_name, target, source):
         """Generate scons rules for prebuilt cc library. """
         if source.endswith('.a'):
-            self._write_rule('%s = top_env.File("%s")' % (var_name, source))
+            self._write_rule('%s = top_env.File("%s")' % (var_name, os.path.realpath(source)))
         else:
             self._write_rule('%s = top_env.Command("%s", "%s", '
                              'Copy("$TARGET", "$SOURCE"))' % (
-                             var_name, target, source))
+                             var_name, target, os.path.realpath(source)))
 
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,

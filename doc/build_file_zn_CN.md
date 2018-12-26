@@ -57,3 +57,7 @@ deps的允许的格式：
 ### [Bash测试](build_rules/shell.md)
 ### [自定义规则构建](build_rules/gen_rule.md)
 ### [文件打包](build_rules/package.md)
+
+## 其他特性
+
+### [自定义构建规则](include.md)

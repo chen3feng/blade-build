@@ -37,6 +37,14 @@ class BuildArchitecture(object):
                 '32' : 'i386',
             }
         },
+        'arm' : {
+            'alias' : [],
+            'bits' : '32'
+        },
+        'aarch64' : {
+            'alias' : ['arm64'],
+            'bits' : '64',
+        },
         'ppc' : {
             'alias' : ['powerpc'],
             'bits' : '32',
@@ -271,8 +279,13 @@ class CcFlagsManager(object):
         """Get the flags that are not warning flags. """
         global_config = config.get_section('global_config')
         cc_config = config.get_section('cc_config')
-        flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
-        linkflags = ['-m%s' % self.options.m]
+        if not self.options.m:
+            flags_except_warning = []
+            linkflags = []
+        else:
+            flags_except_warning = ['-m%s' % self.options.m]
+            linkflags = ['-m%s' % self.options.m]
+        flags_except_warning.append('-pipe')
 
         # Debugging information setting
         debug_info_level = global_config['debug_info_level']

@@ -31,7 +31,7 @@ class CmdArguments(object):
     """
     def __init__(self):
         """Init the class. """
-        (self.options, others) = self._cmd_parse()
+        self.options, others = self._cmd_parse()
 
         # If '--' in arguments, use all other arguments after it as run
         # arguments
@@ -45,7 +45,7 @@ class CmdArguments(object):
 
         for t in self.targets:
             if t.startswith('-'):
-                console.error_exit('unregconized option %s, use blade [action] '
+                console.error_exit('Unrecognized option %s, use blade [action] '
                                    '--help to get all the options' % t)
 
         command = self.options.command
@@ -90,9 +90,10 @@ class CmdArguments(object):
         m = self.options.m
         if not m:
             self.options.arch = arch
-            self.options.m = BuildArchitecture.get_architecture_bits(arch)
-            assert self.options.m
+            self.options.bits = BuildArchitecture.get_architecture_bits(arch)
+            assert self.options.bits
         else:
+            self.options.bits = m
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
             if self.options.arch is None:
                 console.error_exit('-m %s is not supported by the architecture %s'

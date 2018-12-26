@@ -45,6 +45,7 @@ class PackageTarget(Target):
                  deps,
                  type,
                  out,
+                 shell,
                  blade,
                  kwargs):
         srcs = var_to_list(srcs)
@@ -70,6 +71,7 @@ class PackageTarget(Target):
         if not out:
             out = '%s.%s' % (name, type)
         self.data['out'] = out
+        self.data['shell'] = shell
 
     def _process_srcs(self, srcs):
         """
@@ -186,7 +188,6 @@ class PackageTarget(Target):
             self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
                 env_name, var_name, env_name, sorted(set(locations))))
 
-
     def ninja_rules(self):
         inputs, entries = [], []
         for src, dst in self.data['sources']:
@@ -206,8 +207,44 @@ class PackageTarget(Target):
             entries.append(dst)
 
         output = self._target_file_path(self.data['out'])
-        self.ninja_build(output, 'package', inputs=inputs,
-                         variables={ 'entries' : ' '.join(entries) })
+        if not self.data['shell']:
+            self.ninja_build(output, 'package', inputs=inputs,
+                             variables={ 'entries' : ' '.join(entries) })
+        else:
+            self.ninja_package_in_shell(output, inputs, entries)
+
+    @staticmethod
+    def ninja_rule_from_package_type(t):
+        if t == 'zip':
+            return 'package_zip'
+        return 'package_tar'
+
+    @staticmethod
+    def tar_flags(t):
+        return {
+            'tar': '',
+            'tar.gz': '-z',
+            'tgz': '-z',
+            'tar.bz2': '-j',
+            'tbz': '-j',
+        }[t]
+
+    def ninja_package_in_shell(self, output, inputs, entries):
+        packageroot = self._target_file_path() + '.sources'
+        package_sources = []
+        for src, dst in zip(inputs, entries):
+            dst = os.path.join(packageroot, dst)
+            self.ninja_build(dst, 'copy', inputs=src)
+            package_sources.append(dst)
+        vars = {
+            'entries' : ' '.join(entries),
+            'packageroot' : packageroot,
+        }
+        type = self.data['type']
+        rule = self.ninja_rule_from_package_type(type)
+        if type != 'zip':
+            vars['tarflags'] = self.tar_flags(type)
+        self.ninja_build(output, rule, inputs=package_sources, variables=vars)
 
 
 def package(name,
@@ -215,12 +252,14 @@ def package(name,
             deps=[],
             type='tar',
             out=None,
+            shell=False,
             **kwargs):
     package_target = PackageTarget(name,
                                    srcs,
                                    deps,
                                    type,
                                    out,
+                                   shell,
                                    blade.blade,
                                    kwargs)
     blade.blade.register_target(package_target)

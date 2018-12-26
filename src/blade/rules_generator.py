@@ -322,8 +322,9 @@ import scons_helper
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
         options = self.options
-        self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
-        self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
+        if options.m:
+            self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
+            self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
 
         self._setup_cache()
 
@@ -760,6 +761,13 @@ pool %s
         self.generate_rule(name='package',
                            command=self.generate_toolchain_command('package', suffix=args),
                            description='PACKAGE ${out}')
+        self.generate_rule(name='package_tar',
+                           command='tar -c -f ${out} ${tarflags} -C ${packageroot} ${entries}',
+                           description='TAR ${out}')
+        self.generate_rule(name='package_zip',
+                           command='cd ${packageroot} && zip -q temp_archive.zip ${entries} && '
+                                   'cd - && mv ${packageroot}/temp_archive.zip ${out}',
+                           description='ZIP ${out}')
 
     def generate_version_rules(self):
         revision, url = blade_util.load_scm(self.build_dir)
