@@ -44,8 +44,8 @@ import toolchain
 
 from console import colors
 
-# option_verbose to indicate print verbose or not
-option_verbose = False
+# option_verbose to indicate print verbosity level
+_verbosity = 'normal'
 
 
 # blade path
@@ -883,8 +883,7 @@ def generate_go_test(target, source, env):
 
 
 def MakeAction(cmd, cmdstr):
-    global option_verbose
-    if option_verbose:
+    if console.verbosity_compare(_verbosity, 'verbose') >= 0:
         return SCons.Action.Action(cmd)
     else:
         return SCons.Action.Action(cmd, cmdstr)
@@ -947,8 +946,7 @@ def echospawn(sh, escape, cmd, args, env):
                          universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    global option_verbose
-    if not option_verbose:
+    if console.verbosity_compare(_verbosity, 'verbose') < 0:
         if stdout:
             stdout = error_colorize(stdout)
         if stderr:
@@ -1142,9 +1140,11 @@ def get_link_program_message():
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
 
-def setup_compliation_verbose(top_env, color_enabled, verbose):
+def setup_compliation_verbosity(top_env, color_enabled, verbosity):
     """Generates color and verbose message. """
     console.color_enabled = color_enabled
+    global _verbosity
+    _verbosity = verbosity
     top_env["SPAWN"] = echospawn
 
     compile_source_message = get_compile_source_message()
@@ -1160,7 +1160,7 @@ def setup_compliation_verbose(top_env, color_enabled, verbose):
     jar_message = console.erasable('%sCreating Jar %s$TARGET%s%s' % (
         colors('green'), colors('purple'), colors('green'), colors('end')))
 
-    if not verbose:
+    if console.verbosity_compare(verbosity, 'verbose') < 0:
         top_env.Append(
                 CXXCOMSTR = compile_source_message,
                 CCCOMSTR = compile_source_message,

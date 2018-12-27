@@ -291,7 +291,6 @@ def generate_fat_jar_entry(args):
     jar = args[0]
     console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
     console.color_enabled = True
-    fatjar.console_logging = True
     fatjar.generate_fat_jar(jar, args[1:])
 
 

@@ -22,8 +22,14 @@ import sys
 _log = None
 
 
-# Whether verbose output on the console or not
-_verbose = False
+# Output verbosity control, valid values:
+# verbose: verbose mode, show more details
+# normal: normal mode, show infos, warnings and errors
+# quiet: quiet mode, only show warnings and errors
+_VERBOSITIES = ('quiet', 'normal', 'verbose')
+
+
+_verbosity = 'normal'
 
 
 # Global color enabled or not
@@ -61,10 +67,32 @@ def get_log_file():
     return _log.name
 
 
-def set_verbose(verbose):
-    """Set the global verbose. """
-    global _verbose
-    _verbose = verbose
+def set_verbosity(value):
+    """Set the global verbosity. """
+    global _verbosity
+    assert value in _VERBOSITIES
+    _verbosity = value
+
+
+def get_verbosity():
+    return _verbosity
+
+
+def verbosity_compare(lhs, rhs):
+    """Return -1, 0, 1 according to their order"""
+    a = _VERBOSITIES.index(lhs)
+    b = _VERBOSITIES.index(rhs)
+    return (a > b) - (a < b)
+
+
+def verbosity_le(expected):
+    """Current verbosity less than or equal to expected"""
+    return verbosity_compare(_verbosity, expected) <= 0
+
+
+def verbosity_ge(expected):
+    """Current verbosity greater than or equal to expected"""
+    return verbosity_compare(_verbosity, expected) >= 0
 
 
 def inerasable(msg):
@@ -88,9 +116,15 @@ def colors(name):
     return ''
 
 
-def error(msg):
+def _print(msg, verbosity):
+    if verbosity_ge(verbosity):
+        print msg
+
+
+def error(msg, prefix=True):
     """dump error message. """
-    msg = 'Blade(error): ' + msg
+    if prefix:
+        msg = 'Blade(error): ' + msg
     log(msg)
     if color_enabled:
         msg = _colors['red'] + msg + _colors['end']
@@ -119,18 +153,22 @@ def info(msg, prefix=True):
     log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
-    print >>sys.stdout, msg
+    _print(msg, 'normal')
 
 
-def debug(msg):
+def debug(msg, prefix=True):
     """dump debug message. """
+    if prefix:
+        msg = 'Blade(debug): ' + msg
     log(msg)
+    _print(msg, 'verbose')
 
 
 def log(msg):
     """Dump message into log file. """
     if _log:
         print >>_log, msg
+
 
 def flush():
     sys.stdout.flush()
