@@ -25,9 +25,15 @@ from blade_util import var_to_list, stable_unique
 from target import Target
 
 
-if "check_output" not in dir( subprocess ):
+if "check_output" not in dir(subprocess):
     from blade_util import check_output
     subprocess.check_output = check_output
+
+
+def _is_hdr(filename):
+    _, ext = os.path.splitext(filename)
+    ext = ext[1:]  # Remove leading '.'
+    return ext in ('h', 'hh', 'hpp', 'hxx', 'inc', 'tcc')
 
 
 class CcTarget(Target):
@@ -58,6 +64,7 @@ class CcTarget(Target):
 
         """
         srcs = var_to_list(srcs)
+        srcs = [src for src in srcs if not _is_hdr(src)]
         deps = var_to_list(deps)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
@@ -207,15 +214,15 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_pathname(self):
         options = self.blade.get_options()
-        m, arch, profile = options.m, options.arch, options.profile
+        bits, arch, profile = options.bits, options.arch, options.profile
         if CcTarget._default_prebuilt_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                    bits=m, arch=arch, profile=profile)
+                    bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('prebuilt_libpath_pattern')
         if pattern:
-            libpath = Template(pattern).substitute(bits=m,
+            libpath = Template(pattern).substitute(bits=bits,
                                                    arch=arch,
                                                    profile=profile)
         else:
@@ -308,11 +315,13 @@ class CcTarget(Target):
         return (cpp_flags, incs)
 
     def _get_as_flags(self):
-        """Return the as flags according to the build architecture. """
+        """Return as flags according to the build architecture. """
         options = self.blade.get_options()
-        as_flags = ['-g', '--' + options.m]
-        aspp_flags = ['-Wa,--' + options.m]
-        return as_flags, aspp_flags
+        if options.m:
+            as_flags = ['-g', '--' + options.m]
+            aspp_flags = ['-Wa,--' + options.m]
+            return as_flags, aspp_flags
+        return [], []
 
     def _export_incs_list(self):
         inc_list = []
@@ -326,7 +335,7 @@ class CcTarget(Target):
         return inc_list
 
     def _get_incs_list(self):
-        '''Get all incs includes export_incs of all depends'''
+        """Get all incs includes export_incs of all depends. """
         incs = self.data.get('incs', []) + self.data.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
@@ -424,11 +433,11 @@ class CcTarget(Target):
     def _prebuilt_cc_library_rules(self, var_name, target, source):
         """Generate scons rules for prebuilt cc library. """
         if source.endswith('.a'):
-            self._write_rule('%s = top_env.File("%s")' % (var_name, source))
+            self._write_rule('%s = top_env.File("%s")' % (var_name, os.path.realpath(source)))
         else:
             self._write_rule('%s = top_env.Command("%s", "%s", '
                              'Copy("$TARGET", "$SOURCE"))' % (
-                             var_name, target, source))
+                             var_name, target, os.path.realpath(source)))
 
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,
@@ -907,6 +916,12 @@ class CcLibrary(CcTarget):
             return os.path.dirname(path)
         return None
 
+    def _need_generate_hdrs(self):
+        for path in self.blade.get_sources_keyword_list():
+            if self.path.startswith(path):
+                return False
+        return True
+
     def _extract_cc_hdrs_from_stack(self, path):
         """Extract headers from header stack(.H) generated during preprocessing. """
         hdrs = []
@@ -976,34 +991,134 @@ class CcLibrary(CcTarget):
         else:
             return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
 
-    def verify_header_inclusion_dependencies(self):
-        build_targets = self.blade.get_build_targets()
+    @staticmethod
+    def _parse_hdr_level(line):
+        pos = line.find(' ')
+        if pos == -1:
+            return -1, ''
+        level, hdr = line[:pos].count('.'), line[pos + 1:]
+        if hdr.startswith('./'):
+            hdr = hdr[2:]
+        return level, hdr
 
+    def _extract_generated_hdrs_inclusion_stacks(self, src, history):
+        """Extract generated headers and inclusion stacks for each one of them.
+
+        Given the following inclusions found in the app/example/foo.cc.o.H:
+
+            . ./app/example/foo.h
+            .. build64_release/app/example/proto/foo.pb.h
+            ... build64_release/common/rpc/rpc_service.pb.h
+            . build64_release/app/example/proto/bar.pb.h
+            . ./common/rpc/rpc_client.h
+            .. build64_release/common/rpc/rpc_options.pb.h
+
+        Return a list with each item being a list representing where the
+        generated header is included from in the current translation unit.
+
+        Note that ONLY the first generated header is tracked while other
+        headers included from the generated header directly or indirectly
+        are ignored since that part of inclusion is ensured by imports of
+        proto_library.
+
+        As shown in the example above, it returns:
+
+            [
+                ['app/example/foo.h', 'build64_release/app/example/proto/foo.pb.h'],
+                ['build64_release/app/example/proto/bar.pb.h'],
+                ['common/rpc/rpc_client.h', 'build64_release/common/rpc/rpc_options.pb.h'],
+            ]
+        """
+        objs_dir = self._target_file_path() + '.objs'
+        path = '%s.o.H' % os.path.join(objs_dir, src)
+        if (not os.path.exists(path) or
+            (path in history and int(os.path.getmtime(path)) == history[path])):
+            return '', []
+
+        build_dir = self.build_path
+        stacks, hdrs_stack = [], []
+
+        def _process_hdr(level, hdr, current_level):
+            if hdr.startswith('/'):
+                skip_level = level
+            elif hdr.startswith(build_dir):
+                skip_level = level
+                stacks.append(hdrs_stack + [hdr])
+            else:
+                current_level = level
+                hdrs_stack.append(hdr)
+                skip_level = -1
+            return current_level, skip_level
+
+        current_level = 0
+        skip_level = -1
+        with open(path) as f:
+            for line in f.read().splitlines():
+                if line.startswith('Multiple include guards may be useful for'):
+                    break
+                level, hdr = self._parse_hdr_level(line)
+                if level == -1:
+                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
+                    break
+                if level > current_level:
+                    if skip_level != -1 and level > skip_level:
+                        continue
+                    assert level == current_level + 1
+                    current_level, skip_level = _process_hdr(level, hdr, current_level)
+                else:
+                    while current_level >= level:
+                        current_level -= 1
+                        hdrs_stack.pop()
+                    current_level, skip_level = _process_hdr(level, hdr, current_level)
+
+        return path, stacks
+
+    def verify_header_inclusion_dependencies(self, history):
+        if not self._need_generate_hdrs():
+            return True
+
+        build_targets = self.blade.get_build_targets()
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
-        for key in self.deps:
+        for key in self.expanded_deps:
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
 
-        build_dir = self.build_path
-        undeclared_hdrs = set()
+        preprocess_paths, failed_preprocess_paths = set(), set()
         for src in self.srcs:
-            path = self._source_file_path(src)
-            hdrs = self._extract_cc_hdrs(src)
-            hdrs = [h for h in hdrs if h.startswith(build_dir)]
-            for hdr in hdrs:
-                if hdr not in declared_hdrs:
-                    undeclared_hdrs.add(hdr)
-                    console.error("%s: '%s' included from '%s|.h' is "
-                                  "missing dependency declaration in BUILD." % (
-                                  self.fullname, hdr, path))
+            source = self._source_file_path(src)
+            path, stacks = self._extract_generated_hdrs_inclusion_stacks(src, history)
+            if not path:
+                continue
+            preprocess_paths.add(path)
+            for stack in stacks:
+                generated_hdr = stack[-1]
+                if generated_hdr not in declared_hdrs:
+                    failed_preprocess_paths.add(path)
+                    stack.pop()
+                    if not stack:
+                        msg = ['In file included from %s' % source]
+                    else:
+                        stack.reverse()
+                        msg = ['In file included from %s' % stack[0]]
+                        prefix = '                 from %s'
+                        msg += [prefix % h for h in stack[1:]]
+                        msg.append(prefix % source)
+                    console.info('\n%s' % '\n'.join(msg))
+                    console.error('%s: Missing dependency declaration in BUILD for %s.' % (
+                                  self.fullname, generated_hdr))
 
-        return not undeclared_hdrs
+        for preprocess in failed_preprocess_paths:
+            if preprocess in history:
+                del history[preprocess]
+        for preprocess in preprocess_paths - failed_preprocess_paths:
+            history[preprocess] = int(os.path.getmtime(preprocess))
+        return not failed_preprocess_paths
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        for path in self.blade.get_sources_keyword_list():
-            if self.path.startswith(path):
-                return
+        if not self._need_generate_hdrs():
+            return
+
         for key in ('c_warnings', 'cxx_warnings'):
             if key in vars:
                 del vars[key]
@@ -1046,6 +1161,7 @@ def cc_library(name,
                defs=[],
                incs=[],
                export_incs=[],
+               hdrs=[],
                optimize=[],
                always_optimize=False,
                pre_build=False,

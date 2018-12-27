@@ -318,8 +318,9 @@ import scons_helper
         # The default ASPPFLAGS of scons is same as ASFLAGS,
         # this is incorrect for gcc/gas
         options = self.options
-        self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
-        self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
+        if options.m:
+            self._add_rule('top_env.Replace(ASFLAGS=["-g", "--%s"])' % options.m)
+            self._add_rule('top_env.Replace(ASPPFLAGS="-Wa,--%s")' % options.m)
 
         self._setup_cache()
 
@@ -545,6 +546,22 @@ protocpythonpluginflags =
                                    '--include_source_info ${in}' % (
                                    protoc, protobuf_incs),
                            description='PROTODESCRIPTORS ${in}')
+        protoc_go_plugin = proto_config['protoc_go_plugin']
+        if protoc_go_plugin:
+            go_home = config.get_item('go_config', 'go_home')
+            if not go_home:
+                console.error_exit('go_home is not configured in either BLADE_ROOT or BLADE_ROOT.local.')
+            outdir = os.path.join(go_home, 'src')
+            subplugins = proto_config['protoc_go_subplugins']
+            if subplugins:
+                go_out = 'plugins=%s:%s' % ('+'.join(subplugins), outdir)
+            else:
+                go_out = outdir
+            self.generate_rule(name='protogo',
+                               command='%s --proto_path=. %s -I=`dirname ${in}` '
+                                       '--plugin=protoc-gen-go=%s --go_out=%s ${in}' % (
+                                       protoc, protobuf_incs, protoc_go_plugin, go_out),
+                               description='PROTOCGOLANG ${in}')
 
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
@@ -695,6 +712,29 @@ pythonbasedir = __pythonbasedir__
                            command=self.generate_toolchain_command('python_binary', suffix=args),
                            description='PYTHON BINARY ${out}')
 
+    def generate_go_rules(self):
+        go_home = config.get_item('go_config', 'go_home')
+        go = config.get_item('go_config', 'go')
+        if go_home and go:
+            go_pool = 'golang_pool'
+            self._add_rule('''
+pool %s
+  depth = 1''' % go_pool)
+            go_path = os.path.normpath(os.path.abspath(go_home))
+            prefix = 'GOPATH=%s %s' % (go_path, go)
+            self.generate_rule(name='gopackage',
+                               command='%s install ${package}' % prefix,
+                               description='GOLANG PACKAGE ${package}',
+                               pool=go_pool)
+            self.generate_rule(name='gocommand',
+                               command='%s build -o ${out} ${package}' % prefix,
+                               description='GOLANG COMMAND ${package}',
+                               pool=go_pool)
+            self.generate_rule(name='gotest',
+                               command='%s test -c -o ${out} ${package}' % prefix,
+                               description='GOLANG TEST ${package}',
+                               pool=go_pool)
+
     def generate_shell_rules(self):
         self.generate_rule(name='shelltest',
                            command=self.generate_toolchain_command('shell_test'),
@@ -717,6 +757,13 @@ pythonbasedir = __pythonbasedir__
         self.generate_rule(name='package',
                            command=self.generate_toolchain_command('package', suffix=args),
                            description='PACKAGE ${out}')
+        self.generate_rule(name='package_tar',
+                           command='tar -c -f ${out} ${tarflags} -C ${packageroot} ${entries}',
+                           description='TAR ${out}')
+        self.generate_rule(name='package_zip',
+                           command='cd ${packageroot} && zip -q temp_archive.zip ${entries} && '
+                                   'cd - && mv ${packageroot}/temp_archive.zip ${out}',
+                           description='ZIP ${out}')
 
     def generate_version_rules(self):
         revision, url = blade_util.load_scm(self.build_dir)
@@ -759,6 +806,7 @@ build %s: cxx %s
         self.generate_java_scala_rules()
         self.generate_thrift_rules()
         self.generate_python_rules()
+        self.generate_go_rules()
         self.generate_shell_rules()
         self.generate_lex_yacc_rules()
         self.generate_package_rules()

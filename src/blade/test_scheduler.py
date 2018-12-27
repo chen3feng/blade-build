@@ -13,6 +13,7 @@
 
 
 import Queue
+import signal
 import subprocess
 import sys
 import threading
@@ -24,16 +25,10 @@ import config
 import console
 
 
-signal_map = {-1: 'SIGHUP', -2: 'SIGINT', -3: 'SIGQUIT',
-              -4: 'SIGILL', -5: 'SIGTRAP', -6: 'SIGABRT',
-              -7: 'SIGBUS', -8: 'SIGFPE', -9: 'SIGKILL',
-              -10: 'SIGUSR1', -11: 'SIGSEGV', -12: 'SIGUSR2',
-              -13: 'SIGPIPE', -14: 'SIGALRM', -15: 'SIGTERM',
-              -17: 'SIGCHLD', -18: 'SIGCONT', -19: 'SIGSTOP',
-              -20: 'SIGTSTP', -21: 'SIGTTIN', -22: 'SIGTTOU',
-              -23: 'SIGURG', -24: 'SIGXCPU', -25: 'SIGXFSZ',
-              -26: 'SIGVTALRM', -27: 'SIGPROF', -28: 'SIGWINCH',
-              -29: 'SIGIO', -30: 'SIGPWR', -31: 'SIGSYS'}
+_SIGNAL_MAP = dict([
+    (-getattr(signal, name), name) for name in dir(signal)
+    if name.startswith('SIG') and not name.startswith('SIG_')
+])
 
 
 class WorkerThread(threading.Thread):
@@ -52,7 +47,7 @@ class WorkerThread(threading.Thread):
         self.job_lock = threading.Lock()
         console.info('blade test executor %d starts to work' % self.thread_id)
 
-    def __process(self):
+    def _process(self):
         """Private handler to handle one job. """
         console.info('blade worker %d starts to process' % self.thread_id)
         console.info('blade worker %d finish' % self.thread_id)
@@ -109,7 +104,7 @@ class WorkerThread(threading.Thread):
                     finally:
                         self.job_lock.release()
             else:
-                self.__process()
+                self._process()
         except:
             traceback.print_exc()
 
@@ -132,7 +127,7 @@ class TestScheduler(object):
         self.job_queue = Queue.Queue(0)
         self.exclusive_job_queue = Queue.Queue(0)
 
-    def __get_workers_num(self):
+    def _get_workers_num(self):
         """get the number of thread workers. """
         max_workers = max(self.cpu_core_num, self.max_worker_threads)
         if self.jobs <= 1:
@@ -142,11 +137,11 @@ class TestScheduler(object):
 
         return min(self.num_of_tests, self.jobs)
 
-    def __get_result(self, returncode):
+    def _get_result(self, returncode):
         """translate result from returncode. """
         result = 'SUCCESS'
         if returncode:
-            result = signal_map.get(returncode, 'FAILED')
+            result = _SIGNAL_MAP.get(returncode, 'FAILED')
             result = '%s:%s' % (result, returncode)
         return result
 
@@ -158,7 +153,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('Running %s' % cmd)
+        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
@@ -175,6 +170,8 @@ class TestScheduler(object):
             console.error(msg, prefix=False)
         else:
             console.info(msg)
+            console.flush()
+
         return p.returncode
 
     def _run_job(self, job, job_thread):
@@ -185,11 +182,11 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('Running %s' % cmd)
+        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
-        result = self.__get_result(p.returncode)
+        result = self._get_result(p.returncode)
         console.info('%s finished : %s\n' % (test_name, result))
 
         return p.returncode
@@ -224,7 +221,7 @@ class TestScheduler(object):
         self.tests_run_map_lock.acquire()
         run_item_map = self.tests_run_map.get(target.key, {})
         if run_item_map:
-            run_item_map['result'] = self.__get_result(returncode)
+            run_item_map['result'] = self._get_result(returncode)
             run_item_map['costtime'] = costtime
         self.tests_run_map_lock.release()
 
@@ -271,7 +268,7 @@ class TestScheduler(object):
         if self.num_of_tests <= 0:
             return
 
-        num_of_workers = self.__get_workers_num()
+        num_of_workers = self._get_workers_num()
         console.info('spawn %d worker(s) to run tests' % num_of_workers)
 
         for i in self.tests_list:

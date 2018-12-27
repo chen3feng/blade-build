@@ -143,9 +143,6 @@ class MavenCache(object):
         group, artifact, version = id.split(':')
         target_path = self._generate_jar_path(id)
         log, classpath = artifact + '__classpath.log', 'classpath.txt'
-        if classifier:
-            log = artifact + '-' + classifier + '__classpath.log'
-            classpath = 'classpath-%s.txt' % classifier
         log = os.path.join(target_path, log)
         if os.path.isfile(os.path.join(target_path, classpath)):
             if not version.endswith('-SNAPSHOT'):
@@ -153,15 +150,15 @@ class MavenCache(object):
             if os.path.isfile(log) and not self._is_log_expired(log):
                 return True
 
-        if classifier:
-            id = '%s:%s' % (id, classifier)
-            # Currently analyzing dependencies of classifier jar
-            # usually fails. Here when there is no classpath.txt
-            # file but classpath.log exists, that means the failure
-            # of analyzing dependencies last time
-            if (not os.path.exists(os.path.join(target_path, classpath))
-                and os.path.exists(log)):
-                return False
+        # if classifier:
+        #     id = '%s:%s' % (id, classifier)
+        #     # Currently analyzing dependencies of classifier jar
+        #     # usually fails. Here when there is no classpath.txt
+        #     # file but classpath.log exists, that means the failure
+        #     # of analyzing dependencies last time
+        #     if (not os.path.exists(os.path.join(target_path, classpath))
+        #         and os.path.exists(log)):
+        #         return False
 
         console.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
@@ -169,8 +166,6 @@ class MavenCache(object):
                         'dependency:build-classpath',
                         '-DincludeScope=runtime',
                         '-Dmdep.outputFile=%s' % classpath])
-        if classifier:
-            cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -f %s > %s' % (pom, log)
         if subprocess.call(cmd, shell=True):
             console.warning('Error occurred when resolving %s dependencies. '
@@ -226,8 +221,6 @@ class MavenCache(object):
             else:
                 path = self._generate_jar_path(id)
                 classpath = os.path.join(path, 'classpath.txt')
-                if classifier:
-                    classpath = os.path.join(path, 'classpath-%s.txt' % classifier)
                 with open(classpath) as f:
                     # Read the first line
                     artifact.deps = f.readline()

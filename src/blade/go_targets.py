@@ -5,11 +5,14 @@
 # Date:   July 12, 2016
 
 """
-Implement go_library, go_binary and go_test
+Implement go_library, go_binary and go_test. In addition, provide
+a simple wrapper function go_package wrapping all sorts of go tar-
+gets totally.
 """
 
 import os
 import subprocess
+import re
 
 import blade
 import build_rules
@@ -18,6 +21,9 @@ import console
 
 from target import Target
 from blade_util import var_to_list
+
+
+_package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
 
 
 class GoTarget(Target):
@@ -60,9 +66,8 @@ class GoTarget(Target):
             console.error_exit('%s: Go sources belonging to the same package '
                                'should be in the same directory. Sources: %s' %
                                (self.fullname, ', '.join(self.srcs)))
-        path = dirs.pop()
         go_home = config.get_item('go_config', 'go_home')
-        self.data['go_package'] = os.path.relpath(path, os.path.join(go_home, 'src'))
+        self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
 
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:
@@ -103,10 +108,41 @@ class GoTarget(Target):
             if var:
                 self._write_rule('%s.Depends(%s, %s)' % (env_name, var_name, var))
 
+    def ninja_go_dependencies(self):
+        targets = self.blade.get_build_targets()
+        srcs = [self._source_file_path(s) for s in self.srcs]
+        implicit_deps = []
+        for key in self.deps:
+            path = targets[key]._get_target_file('gopkg')
+            if path:
+                # There are two cases for go package(gopkg)
+                #
+                #   - gopkg produced by another go_library,
+                #     the target file here is a path to the
+                #     generated lib
+                #
+                #   - gopkg produced by a proto_library, the
+                #     target file is a list of pb.go files
+                implicit_deps += var_to_list(path)
+        return srcs + implicit_deps
+
+    def ninja_rules(self):
+        implicit_deps = self.ninja_go_dependencies()
+        output = self._target_file_path()
+        self.ninja_build(output, self.data['go_rule'],
+                         implicit_deps=implicit_deps,
+                         variables={ 'package' : self.data['go_package'] })
+        label = self.data.get('go_label')
+        if label:
+            self._add_target_file(label, output)
+
+
 class GoLibrary(GoTarget):
-    """GoLibrary generates scons rules for a go package. """
+    """GoLibrary generates build rules for a go package. """
     def __init__(self, name, srcs, deps, kwargs):
         GoTarget.__init__(self, name, 'go_library', srcs, deps, kwargs)
+        self.data['go_rule'] = 'gopackage'
+        self.data['go_label'] = 'gopkg'
 
     def _target_file_path(self):
         """Return package object path according to the standard go directory layout. """
@@ -128,15 +164,11 @@ class GoLibrary(GoTarget):
 
 
 class GoBinary(GoTarget):
-    """GoBinary generates scons rules for a go command executable. """
+    """GoBinary generates build rules for a go command executable. """
     def __init__(self, name, srcs, deps, kwargs):
         GoTarget.__init__(self, name, 'go_binary', srcs, deps, kwargs)
-
-    def _target_file_path(self):
-        """Return command executable path according to the standard go directory layout. """
-        go_home = config.get_item('go_config', 'go_home')
-        return os.path.join(go_home, 'bin',
-                            os.path.basename(self.data['go_package']))
+        self.data['go_rule'] = 'gocommand'
+        self.data['go_label'] = 'bin'
 
     def scons_rules(self):
         self._prepare_to_generate_rule()
@@ -151,9 +183,10 @@ class GoBinary(GoTarget):
 
 
 class GoTest(GoTarget):
-    """GoTest generates scons rules for a go test binary. """
+    """GoTest generates build rules for a go test binary. """
     def __init__(self, name, srcs, deps, testdata, kwargs):
         GoTarget.__init__(self, name, 'go_test', srcs, deps, kwargs)
+        self.data['go_rule'] = 'gotest'
         self.data['testdata'] = var_to_list(testdata)
 
     def scons_rules(self):
@@ -199,6 +232,54 @@ def go_test(name,
                                        kwargs))
 
 
+def find_go_srcs(path):
+    srcs, tests = [], []
+    for name in os.listdir(path):
+        if name.startswith('.') or not name.endswith('.go'):
+            continue
+        if os.path.isfile(os.path.join(path, name)):
+            if name.endswith('_test.go'):
+                tests.append(name)
+            else:
+                srcs.append(name)
+    return srcs, tests
+
+
+def extract_go_package(path):
+    with open(path) as f:
+        for line in f:
+            m = _package_re.match(line)
+            if m:
+                return m.group(1)
+    raise Exception('Failed to find package in %s' % path)
+
+
+def go_package(name,
+               deps=[],
+               testdata=[]):
+    path = blade.blade.get_current_source_path()
+    srcs, tests = find_go_srcs(path)
+    if not srcs and not tests:
+        console.error_exit('Empty go sources in %s' % path)
+    if srcs:
+        main = False
+        for src in srcs:
+            package = extract_go_package(os.path.join(path, src))
+            if package == 'main':
+                main = True
+                break
+        if main:
+            go_binary(name=name, srcs=srcs, deps=deps)
+        else:
+            go_library(name=name, srcs=srcs, deps=deps)
+    if tests:
+        go_test(name='%s_test' % name,
+                srcs=tests,
+                deps=deps,
+                testdata=testdata)
+
+
 build_rules.register_function(go_library)
 build_rules.register_function(go_binary)
 build_rules.register_function(go_test)
+build_rules.register_function(go_package)

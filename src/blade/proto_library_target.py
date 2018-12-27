@@ -221,6 +221,18 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         return ''
 
+    def _get_go_package_name(self, path):
+        with open(path) as f:
+            content = f.read()
+        pattern = r'^\s*option\s+go_package\s*=\s*"([\w./]+)";'
+        m = re.search(pattern, content, re.MULTILINE)
+        if m:
+            return m.group(1)
+        else:
+            console.error_exit('%s: "go_package" is mandatory to generate golang code '
+                               'in protocol buffers but is missing in %s.' % (
+                               self.fullname, path))
+
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
         pattern = '^\s*option\s+java_outer_classname\s*=\s*[\'"](\w+)["\']'
@@ -370,10 +382,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _protoc_direct_dependencies_rules(self):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                env_name = self._env_name()
-                self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
-                                 env_name, ':'.join(dependencies)))
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            env_name = self._env_name()
+            self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
+                             env_name, ':'.join(dependencies)))
 
     def scons_rules(self):
         """scons_rules.
@@ -459,8 +471,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_protoc_direct_dependencies(self, vars):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
-            if len(dependencies) > 1:
-                vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
+            dependencies += config.get_item('proto_library_config', 'well_known_protos')
+            vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
     def ninja_proto_java_rules(self, plugin_flags):
         java_sources = []
@@ -490,6 +502,22 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                          variables={ 'pythonbasedir' : self.build_path })
         self._add_target_file('pylib', pylib)
 
+    def ninja_proto_go_rules(self, plugin_flags):
+        go_home = config.get_item('go_config', 'go_home')
+        protobuf_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
+        generated_goes = []
+        for src in self.srcs:
+            path = self._source_file_path(src)
+            package = self._get_go_package_name(path)
+            if not package.startswith(protobuf_go_path):
+                console.warning('%s: go_package "%s" is not starting with "%s" in %s' %
+                                (self.fullname, package, protobuf_go_path, src))
+            basename = os.path.basename(src)
+            output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
+            self.ninja_build(output, 'protogo', inputs=path)
+            generated_goes.append(output)
+        self._add_target_file('gopkg', generated_goes)
+
     def ninja_proto_rules(self, options, plugin_flags):
         """Generate ninja rules for other languages if needed. """
         if (getattr(options, 'generate_java', False) or
@@ -500,6 +528,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if (getattr(options, 'generate_python', False) or
             self.data.get('generate_python')):
             self.ninja_proto_python_rules(plugin_flags)
+
+        if (getattr(options, 'generate_go', False) or
+            self.data.get('generate_go')):
+            self.ninja_proto_go_rules(plugin_flags)
 
         if self.data['generate_descriptors']:
             self.ninja_proto_descriptor_rules()
