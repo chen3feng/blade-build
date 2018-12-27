@@ -1617,6 +1617,7 @@ def _get_version_info(blade_root_dir, svn_roots):
 
     return svn_info_map
 
+
 def generate_version_file(top_env, blade_root_dir, build_dir,
                           profile, gcc_version, svn_roots):
     """Generate version information files. """

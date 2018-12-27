@@ -1,14 +1,16 @@
 import os
 import subprocess
 
+
 def _minimal_ext_cmd(cmd):
-        env = {}
-        for k in ['SYSTEMROOT', 'PATH']:
-            v = os.environ.get(k)
-            if v is not None:
-                env[k] = v
-        out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=env).communicate()[0]
-        return out
+    env = {}
+    for k in ['SYSTEMROOT', 'PATH']:
+        v = os.environ.get(k)
+        if v is not None:
+            env[k] = v
+    out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=env).communicate()[0]
+    return out
+
 
 def git_revision():
     try:
@@ -18,6 +20,7 @@ def git_revision():
         GIT_REVISION = "Unknown"
 
     return GIT_REVISION
+
 
 def git_url():
     try:
@@ -30,6 +33,7 @@ def git_url():
         GIT_URL = "Unknown"
 
     return GIT_URL.strip()
+
 
 def git_branch():
     try:
