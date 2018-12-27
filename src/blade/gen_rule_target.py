@@ -125,6 +125,8 @@ class GenRuleTarget(Target):
                          cmd))
         for i in range(len(self.data['outs'])):
             self._add_target_var('%s' % i, '%s[%s]' % (var_name, i))
+        self.data['generated_hdrs'] = [self._target_file_path(o) for o in self.data['outs']
+                                       if o.endswith('.h')]
 
         # TODO(phongchen): add Target.get_all_vars
         dep_var_list = []
@@ -146,6 +148,57 @@ class GenRuleTarget(Target):
             self._write_rule('%s.Depends(%s, %s)' % (env_name,
                                                      var_name,
                                                      dep_var_name))
+
+    def ninja_command(self):
+        cmd = self.data['cmd']
+        cmd = cmd.replace('$SRCS', '${in}')
+        cmd = cmd.replace('$OUTS', '${out}')
+        cmd = cmd.replace('$FIRST_SRC', '${_in_1}')
+        cmd = cmd.replace('$FIRST_OUT', '${_out_1}')
+        cmd = cmd.replace('$BUILD_DIR', self.build_path)
+        locations = self.data['locations']
+        if locations:
+            targets = self.blade.get_build_targets()
+            locations_paths = []
+            for key, label in locations:
+                path = targets[key]._get_target_file(label)
+                if not path:
+                    console.error_exit('%s: Invalid location reference %s %s' %
+                                       (self.fullname, ':'.join(key), label))
+                locations_paths.append(path)
+            cmd = cmd % tuple(locations_paths)
+        return cmd
+
+    def implicit_dependencies(self):
+        targets = self.blade.get_build_targets()
+        implicit_deps = []
+        for dep in self.expanded_deps:
+            implicit_deps += targets[dep]._get_target_files()
+        return implicit_deps
+
+    def ninja_rules(self):
+        rule = '%s__rule__' % self._regular_variable_name(
+                              self._source_file_path(self.name))
+        cmd = self.ninja_command()
+        description = '%sCOMMAND //%s%s' % (
+                      console.colors('dimpurple'), self.fullname, console.colors('end'))
+        self._write_rule('''rule %s
+  command = %s && cd %s && ls ${out} > /dev/null
+  description = %s
+''' % (rule, cmd, self.blade.get_root_dir(), description))
+        outputs = [self._target_file_path(o) for o in self.data['outs']]
+        inputs = [self._source_file_path(s) for s in self.srcs]
+        vars = {}
+        if '${_in_1}' in cmd:
+            vars['_in_1'] = inputs[0]
+        if '${_out_1}' in cmd:
+            vars['_out_1'] = outputs[0]
+        self.ninja_build(outputs, rule, inputs=inputs,
+                         implicit_deps=self.implicit_dependencies(),
+                         variables=vars)
+        for i, out in enumerate(outputs):
+            self._add_target_file(str(i), out)
+        self.data['generated_hdrs'] = [o for o in outputs if o.endswith('.h')]
 
 
 def gen_rule(name,

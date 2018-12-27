@@ -13,7 +13,7 @@
 
 import os
 import blade
-import configparse
+import config
 
 import build_rules
 from blade_util import var_to_list
@@ -81,23 +81,14 @@ class CuTarget(CcTarget):
         nvcc_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
-
         if (self.blade.get_options().profile == 'release' or
             self.data.get('always_optimize')):
             nvcc_flags += self._get_optimize_flags()
 
         # Incs
-        incs = self.data.get('incs', [])
-        new_incs_list = [os.path.join(self.path, inc) for inc in incs]
-        new_incs_list += self._export_incs_list()
-        # Remove duplicate items in incs list and keep the order
-        incs_list = []
-        for inc in new_incs_list:
-            new_inc = os.path.normpath(inc)
-            if new_inc not in incs_list:
-                incs_list.append(new_inc)
+        incs = self._get_incs_list()
 
-        return (nvcc_flags, incs_list)
+        return (nvcc_flags, incs)
 
 
     def _cu_objects_rules(self):
@@ -108,10 +99,8 @@ class CuTarget(CcTarget):
         incs_string = " -I".join(incs_list)
         flags_string = " ".join(flags_from_option)
         objs = []
-        sources = []
         for src in self.srcs:
-            obj = '%s_%s_object' % (var_name,
-                                    self._regular_variable_name(src))
+            obj = 'obj_%s' % self._var_name_of(src)
             target_path = os.path.join(
                     self.build_path, self.path, '%s.objs' % self.name, src)
             self._write_rule(
@@ -122,14 +111,8 @@ class CuTarget(CcTarget):
                                         flags_string,
                                         target_path,
                                         self._target_file_path(src)))
-            self._write_rule('%s.Depends(%s, "%s")' % (
-                             env_name,
-                             obj,
-                             self._target_file_path(src)))
-            sources.append(self._target_file_path(src))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(objs)))
-        return sources
 
 
 class CuLibrary(CuTarget):
@@ -149,10 +132,9 @@ class CuLibrary(CuTarget):
                  extra_linkflags,
                  blade,
                  kwargs):
-        type = 'cu_library'
         CuTarget.__init__(self,
                           name,
-                          type,
+                          'cu_library',
                           srcs,
                           deps,
                           warning,
@@ -343,7 +325,7 @@ class CuTest(CuBinary):
         self.data['always_run'] = always_run
         self.data['exclusive'] = exclusive
 
-        cc_test_config = configparse.blade_config.get_config('cc_test_config')
+        cc_test_config = config.get_section('cc_test_config')
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
 

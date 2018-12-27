@@ -21,7 +21,7 @@ import sys
 
 import blade
 import console
-import configparse
+import config
 
 from blade_util import environ_add_path
 
@@ -45,20 +45,11 @@ class BinaryRunner(object):
 
     def _executable(self, target):
         """Returns the executable path. """
-        return '%s/%s/%s' % (self.build_dir, target.path, target.name)
+        return os.path.join(self.build_dir, target.path, target.name)
 
     def _runfiles_dir(self, target):
         """Returns runfiles dir. """
-        return './%s.runfiles' % (self._executable(target))
-
-    def _prepare_run_env(self, target):
-        """Prepare the run environment. """
-        profile_link_name = os.path.basename(self.build_dir)
-        target_dir = os.path.dirname(self._executable(target))
-        lib_link = os.path.join(target_dir, profile_link_name)
-        if os.path.exists(lib_link):
-            os.remove(lib_link)
-        os.symlink(os.path.abspath(self.build_dir), lib_link)
+        return '%s.runfiles' % self._executable(target)
 
     def _get_prebuilt_files(self, target):
         """Get prebuilt files for one target that it depends. """
@@ -115,16 +106,14 @@ class BinaryRunner(object):
         self._prepare_test_data(target)
         run_env = dict(os.environ)
         environ_add_path(run_env, 'LD_LIBRARY_PATH', runfiles_dir)
-        config = configparse.blade_config.get_config('cc_binary_config')
-        run_lib_paths = config['run_lib_paths']
+        run_lib_paths = config.get_item('cc_binary_config', 'run_lib_paths')
         if run_lib_paths:
             for path in run_lib_paths:
                 if path.startswith('//'):
                     path = path[2:]
                 path = os.path.abspath(path)
                 environ_add_path(run_env, 'LD_LIBRARY_PATH', path)
-        java_config = configparse.blade_config.get_config('java_config')
-        java_home = java_config['java_home']
+        java_home = config.get_item('java_config', 'java_home')
         if java_home:
             java_home = os.path.abspath(java_home)
             environ_add_path(run_env, 'PATH', os.path.join(java_home, 'bin'))
@@ -201,8 +190,9 @@ class BinaryRunner(object):
         for target in self.targets.values():
             self._clean_target(target)
 
-    def run_target(self, target_key):
+    def run_target(self, target_name):
         """Run one single target. """
+        target_key = tuple(target_name.split(':'))
         target = self.targets[target_key]
         if target.type not in self.run_list:
             console.error_exit('target %s:%s is not a target that could run' % (

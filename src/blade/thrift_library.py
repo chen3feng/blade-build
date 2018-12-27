@@ -17,7 +17,7 @@ different languages from .thrift file.
 import os
 
 import blade
-import configparse
+import config
 import console
 
 import build_rules
@@ -61,10 +61,9 @@ class ThriftLibrary(CcTarget):
         self.data['python_vars'] = []
         self.data['python_sources'] = []
 
-        thrift_config = configparse.blade_config.get_config('thrift_config')
-        thrift_lib = var_to_list(thrift_config['thrift_libs'])
+        thrift_libs = config.get_item('thrift_config', 'thrift_libs')
         # Hardcode deps rule to thrift libraries.
-        self._add_hardcode_library(thrift_lib)
+        self._add_hardcode_library(thrift_libs)
 
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
@@ -187,6 +186,7 @@ class ThriftLibrary(CcTarget):
         for src in self.srcs:
             thrift_cpp_files = self._thrift_gen_cpp_files(src)
             thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
+            self.data['generated_hdrs'] += [h for h in thrift_cpp_files if h.endswith('.h')]
 
             self._write_rule('%s.Thrift(%s, "%s")' % (
                              env_name,
@@ -209,6 +209,22 @@ class ThriftLibrary(CcTarget):
                          env_name, self._objs_name(), sources))
 
         self._cc_library()
+
+    def ninja_rules(self):
+        if not self.srcs:
+            return
+        build_path = os.path.join(self.build_path, self.path)
+        sources, headers = [], []
+        for src in self.srcs:
+            thrift_files = self._thrift_gen_cpp_files(src)
+            self.ninja_build(thrift_files, 'thrift',
+                             inputs=self._source_file_path(src))
+            headers += [h for h in thrift_files if h.endswith('.h')]
+            thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
+            sources += [os.path.relpath(s, build_path) for s in thrift_cpp_sources]
+        self.data['generated_hdrs'] = headers
+        self._cc_objects_ninja(sources, True, generated_headers=headers)
+        self._cc_library_ninja()
 
 
 def thrift_library(name,

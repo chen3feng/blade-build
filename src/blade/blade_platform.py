@@ -8,20 +8,101 @@
 """
  This is the blade_platform module which deals with the environment
  variable.
-
 """
 
 
 import os
 import subprocess
 
-import configparse
+import config
 import console
 from blade_util import var_to_list
 
 
-class SconsPlatform(object):
-    """The scons platform class that it handles and gets the platform info. """
+class BuildArchitecture(object):
+    """
+    The BuildArchitecture class manages architecture/bits configuration
+    across various platforms/compilers combined with the input from
+    command line.
+    """
+    _build_architecture = {
+        'i386' : {
+            'alias' : ['x86'],
+            'bits' : '32',
+        },
+        'x86_64' : {
+            'alias' : ['amd64'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'i386',
+            }
+        },
+        'arm' : {
+            'alias' : [],
+            'bits' : '32'
+        },
+        'aarch64' : {
+            'alias' : ['arm64'],
+            'bits' : '64',
+        },
+        'ppc' : {
+            'alias' : ['powerpc'],
+            'bits' : '32',
+        },
+        'ppc64' : {
+            'alias' : ['powerpc64'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'ppc',
+            }
+        },
+        'ppc64le' : {
+            'alias' : ['powerpc64le'],
+            'bits' : '64',
+            'models' : {
+                '32' : 'ppcle',
+            }
+        },
+    }
+
+    @staticmethod
+    def get_canonical_architecture(arch):
+        """Get the canonical architecture from the specified arch. """
+        canonical_arch = None
+        for k, v in BuildArchitecture._build_architecture.iteritems():
+            if arch == k or arch in v['alias']:
+                canonical_arch = k
+                break
+        return canonical_arch
+
+    @staticmethod
+    def get_architecture_bits(arch):
+        """Get the architecture bits. """
+        arch = BuildArchitecture.get_canonical_architecture(arch)
+        if arch:
+            return BuildArchitecture._build_architecture[arch]['bits']
+        return None
+
+    @staticmethod
+    def get_model_architecture(arch, bits):
+        """
+        Get the model architecture from the specified arch and bits,
+        such as, if arch is x86_64 and bits is '32', then the resulting
+        model architecture is i386 which effectively means building
+        32 bit target in a 64 bit environment.
+        """
+        arch = BuildArchitecture.get_canonical_architecture(arch)
+        if arch:
+            if bits == BuildArchitecture._build_architecture[arch]['bits']:
+                return arch
+            models = BuildArchitecture._build_architecture[arch].get('models')
+            if models and bits in models:
+                return models[bits]
+        return None
+
+
+class BuildPlatform(object):
+    """The build platform class which handles and gets the platform info. """
     def __init__(self):
         """Init. """
         self.gcc_version = self._get_gcc_version()
@@ -36,7 +117,17 @@ class SconsPlatform(object):
         """Get the gcc version. """
         gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                            os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = SconsPlatform._execute(gcc + ' -dumpversion')
+        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpversion')
+        if returncode == 0:
+            return stdout.strip()
+        return ''
+
+    @staticmethod
+    def _get_cc_target_arch():
+        """Get the cc target architecture. """
+        gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
+                           os.environ.get('CC', 'gcc'))
+        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpmachine')
         if returncode == 0:
             return stdout.strip()
         return ''
@@ -45,7 +136,7 @@ class SconsPlatform(object):
     def _get_nvcc_version():
         """Get the nvcc version. """
         nvcc = os.environ.get('NVCC', 'nvcc')
-        returncode, stdout, stderr = SconsPlatform._execute(nvcc + ' --version')
+        returncode, stdout, stderr = BuildPlatform._execute(nvcc + ' --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[5]
@@ -55,7 +146,7 @@ class SconsPlatform(object):
     @staticmethod
     def _get_python_include():
         """Get the python include dir. """
-        returncode, stdout, stderr = SconsPlatform._execute('python-config --includes')
+        returncode, stdout, stderr = BuildPlatform._execute('python-config --includes')
         if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             header = include_line.split()[0][2:]
@@ -64,7 +155,7 @@ class SconsPlatform(object):
 
     @staticmethod
     def _get_php_include():
-        returncode, stdout, stderr = SconsPlatform._execute('php-config --includes')
+        returncode, stdout, stderr = BuildPlatform._execute('php-config --includes')
         if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
@@ -80,7 +171,7 @@ class SconsPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute(
+        returncode, stdout, stderr = BuildPlatform._execute(
                 'java -version', redirect_stderr_to_stdout = True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
@@ -99,7 +190,7 @@ class SconsPlatform(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        returncode, stdout, stderr = SconsPlatform._execute('nvcc --version')
+        returncode, stdout, stderr = BuildPlatform._execute('nvcc --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[4]
@@ -151,9 +242,7 @@ class SconsPlatform(object):
 
 class CcFlagsManager(object):
     """The CcFlagsManager class.
-
     This class manages the compile warning flags.
-
     """
     def __init__(self, options, build_dir, gcc_version):
         self.cc = ''
@@ -164,6 +253,10 @@ class CcFlagsManager(object):
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
+        # Put compilation output into test.o instead of /dev/null
+        # because the command line with '--coverage' below exit
+        # with status 1 which makes '--coverage' unsupported
+        # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
@@ -184,17 +277,20 @@ class CcFlagsManager(object):
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
-        flags_except_warning = ['-m%s' % self.options.m, '-mcx16', '-pipe']
-        linkflags = ['-m%s' % self.options.m]
+        global_config = config.get_section('global_config')
+        cc_config = config.get_section('cc_config')
+        if not self.options.m:
+            flags_except_warning = []
+            linkflags = []
+        else:
+            flags_except_warning = ['-m%s' % self.options.m]
+            linkflags = ['-m%s' % self.options.m]
+        flags_except_warning.append('-pipe')
 
         # Debugging information setting
-        if self.options.no_debug_info:
-            flags_except_warning.append('-g0')
-        else:
-            if self.options.profile == 'debug':
-                flags_except_warning.append('-ggdb3')
-            elif self.options.profile == 'release':
-                flags_except_warning.append('-g')
+        debug_info_level = global_config['debug_info_level']
+        debug_info_options = cc_config['debug_info_levels'][debug_info_level]
+        flags_except_warning += debug_info_options
 
         # Option debugging flags
         if self.options.profile == 'debug':
@@ -230,7 +326,7 @@ class CcFlagsManager(object):
 
     def get_warning_flags(self):
         """Get the warning flags. """
-        cc_config = configparse.blade_config.get_config('cc_config')
+        cc_config = config.get_section('cc_config')
         cppflags = cc_config['warnings']
         cxxflags = cc_config['cxx_warnings']
         cflags = cc_config['c_warnings']

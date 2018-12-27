@@ -17,9 +17,8 @@ import blade
 
 import build_rules
 import console
-import configparse
+import config
 
-from blade_util import relative_path
 from blade_util import var_to_list
 from target import Target
 
@@ -84,7 +83,7 @@ class JavaJarTarget(Target):
         dep_cmd_var = ''
         cmd_var_idx = 0
         for dep_src in self.java_jar_dep_source_list:
-            dep_dir = relative_path(dep_src[0], dep_src[1])
+            dep_dir = os.path.relpath(dep_src[0], dep_src[1])
             new_path = os.path.join(new_src, dep_dir)
             if dep_dir != '.':
                 new_dep_source_list.append(new_path)
@@ -158,7 +157,7 @@ class JavaJarTarget(Target):
 
         new_target_source_list = []
         for src_dir in target_source_list:
-            rel_path = relative_path(src_dir, self.path)
+            rel_path = os.path.relpath(src_dir, self.path)
             pos = rel_path.find('/')
             package = rel_path[pos + 1:]
             new_src_path = os.path.join(new_src, package)
@@ -190,7 +189,7 @@ class JavaJarTarget(Target):
         new_target_idx = 0
         classes_var = '%s_classes' % (self._var_name())
 
-        java_config = configparse.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         source_version = java_config['source_version']
         target_version = java_config['target_version']
         javac_cmd = 'javac'
@@ -292,7 +291,7 @@ class JavaJarTarget(Target):
                     cmd_list.append(cmd_var_id)
                     cmd_idx += 1
 
-            rel_path = relative_path(class_path, target_base_dir)
+            rel_path = os.path.relpath(class_path, target_base_dir)
             class_path_name = rel_path.replace('/', '_')
             jar_var = '%s_%s_jar' % (self._var_name(), class_path_name)
             jar_target = '%s.jar' % self._target_file_path()

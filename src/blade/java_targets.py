@@ -18,7 +18,7 @@ from distutils.version import LooseVersion
 import blade
 import blade_util
 import build_rules
-import configparse
+import config
 import console
 import maven
 
@@ -38,7 +38,7 @@ class MavenJar(Target):
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
 
-    def scons_rules(self):
+    def blade_rules(self):
         maven_cache = maven.MavenCache.instance(blade.blade.get_build_path())
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
@@ -49,6 +49,12 @@ class MavenJar(Target):
                     self.data['id'], self.data['classifier'])
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
+
+    def scons_rules(self):
+        return self.blade_rules()
+
+    def ninja_rules(self):
+        return self.blade_rules()
 
 
 class JavaTargetMixIn(object):
@@ -63,6 +69,26 @@ class JavaTargetMixIn(object):
                 self.deps.append(dkey)
             if dkey not in self.expanded_deps:
                 self.expanded_deps.append(dkey)
+
+    def _expand_deps_java_generation(self):
+        q = Queue.Queue()
+        for k in self.deps:
+            q.put(k)
+
+        keys = set()
+        while not q.empty():
+            k = q.get()
+            if k not in keys:
+                keys.add(k)
+                dep = self.target_database[k]
+                if dep.type in ('cc_library', 'cc_binary',
+                                'cc_test', 'cc_plugin'):
+                    continue
+                else:
+                    if not dep.data.get('generate_java', False):
+                        dep.data['generate_java'] = True
+                        for dkey in dep.deps:
+                            q.put(dkey)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -160,31 +186,38 @@ class JavaTargetMixIn(object):
         """Return path of sources dir. """
         return self._target_file_path() + '.sources'
 
-    def __extract_dep_jars(self, dkey, dep_jar_vars, dep_jars):
+    def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
+        """Extract jar file built by the target with the specified dkey.
+
+        dep_jars: a list of jars built by blade targets. Each item is
+                  either a scons var or a file path depending on the build system.
+        maven_jars: a list of jars managed by maven repository.
+        """
         dep = self.target_database[dkey]
-        jar = dep._get_target_var('jar')
+        if config.get_item('global_config', 'native_builder') == 'ninja':
+            jar = dep._get_target_file('jar')
+        else:
+            jar = dep._get_target_var('jar')
         if jar:
-            dep_jar_vars.append(jar)
+            dep_jars.append(jar)
         else:
             jar = dep.data.get('binary_jar')
             if jar:
-                dep_jars.append(jar)
+                assert dep.type == 'maven_jar'
+                maven_jars.append(jar)
 
     def __get_deps(self, deps):
-        """
-        Return a tuple of (scons vars, jars)
-        """
-        dep_jar_vars = []
-        dep_jars = []
+        """Return a tuple of (target jars, maven jars). """
+        dep_jars, maven_jars = [], []
         for d in deps:
-            self.__extract_dep_jars(d, dep_jar_vars, dep_jars)
-        return dep_jar_vars, dep_jars
+            self.__extract_dep_jars(d, dep_jars, maven_jars)
+        return dep_jars, maven_jars
 
     def __get_exported_deps(self, deps):
         """
-        Recursively get exported dependencies and return a tuple of (scons vars, jars)
+        Recursively get exported dependencies and return a tuple of (target jars, maven jars)
         """
-        dep_jar_vars, dep_jars = [], []
+        dep_jars, maven_jars = [], []
         q = Queue.Queue(0)
         for key in deps:
             q.put(key)
@@ -197,10 +230,10 @@ class JavaTargetMixIn(object):
                 dep = self.target_database[key]
                 exported_deps = dep.data.get('exported_deps', [])
                 for edkey in exported_deps:
-                    self.__extract_dep_jars(edkey, dep_jar_vars, dep_jars)
+                    self.__extract_dep_jars(edkey, dep_jars, maven_jars)
                     q.put(edkey)
 
-        return list(set(dep_jar_vars)), list(set(dep_jars))
+        return list(set(dep_jars)), list(set(maven_jars))
 
     def __get_maven_transitive_deps(self, deps):
         """
@@ -226,7 +259,9 @@ class JavaTargetMixIn(object):
         maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
         maven_repo = '.m2/repository/'
         for dep_jar in dep_jars:
-            if maven_repo not in dep_jar:
+            if maven_repo not in dep_jar or not os.path.exists(dep_jar):
+                console.debug('%s: %s not found in local maven repository' % (
+                              self.fullname, dep_jar))
                 continue
             parts = dep_jar[dep_jar.find(maven_repo) + len(maven_repo):].split('/')
             if len(parts) < 4:
@@ -236,16 +271,16 @@ class JavaTargetMixIn(object):
             key = (group, artifact)
             id = ':'.join((group, artifact, version))
             if key in maven_jar_dict:
-                old_value = maven_jar_dict[key]
-                if version == old_value[0]:
-                    # jar must be different because dep_jars is a set
-                    old_value[1].add(dep_jar)
+                old_version, old_jars = maven_jar_dict[key]
+                if version == old_version:
+                    # jar name must be different because dep_jars is a set
+                    old_jars.add(dep_jar)
                     continue
-                old_id = ':'.join((group, artifact, old_value[0]))
+                old_id = ':'.join((group, artifact, old_version))
                 if old_id in maven_dep_ids:
                     conflicted_jars.add(dep_jar)
-                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_value[0]):
-                    conflicted_jars |= old_value[1]
+                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_version):
+                    conflicted_jars |= old_jars
                     maven_jar_dict[key] = (version, set([dep_jar]))
                 else:
                     conflicted_jars.add(dep_jar)
@@ -253,29 +288,29 @@ class JavaTargetMixIn(object):
                 console.debug('%s: Maven dependency version conflict '
                               '%s:%s:{%s, %s} during %s. Use %s' % (
                               self.fullname, key[0], key[1],
-                              version, old_value[0], scope, value[0]))
+                              version, old_version, scope, value[0]))
             else:
                 maven_jar_dict[key] = (version, set([dep_jar]))
 
         dep_jars -= conflicted_jars
-        return sorted(list(dep_jars))
+        return sorted(dep_jars)
 
     def _get_compile_deps(self):
-        dep_jar_vars, dep_jars = self.__get_deps(self.deps)
-        exported_dep_jar_vars, exported_dep_jars = self.__get_exported_deps(self.deps)
-        dep_jars += self.__get_maven_transitive_deps(self.deps)
-        dep_jar_vars = sorted(list(set(dep_jar_vars + exported_dep_jar_vars)))
-        dep_jars = self._detect_maven_conflicted_deps('compile',
-            dep_jars + exported_dep_jars)
-        return dep_jar_vars, dep_jars
+        dep_jars, maven_jars = self.__get_deps(self.deps)
+        exported_dep_jars, exported_maven_jars = self.__get_exported_deps(self.deps)
+        maven_jars += self.__get_maven_transitive_deps(self.deps)
+        dep_jars = sorted(set(dep_jars + exported_dep_jars))
+        maven_jars = self._detect_maven_conflicted_deps('compile',
+                                                        maven_jars + exported_maven_jars)
+        return dep_jars, maven_jars
 
     def _get_test_deps(self):
-        dep_jar_vars, dep_jars = self.__get_deps(self.expanded_deps)
-        dep_jars += self.__get_maven_transitive_deps(self.expanded_deps)
-        dep_jar_vars = sorted(list(set(dep_jar_vars)))
-        dep_jars = self._process_pack_exclusions(dep_jars)
-        dep_jars = self._detect_maven_conflicted_deps('test', dep_jars)
-        return dep_jar_vars, dep_jars
+        dep_jars, maven_jars = self.__get_deps(self.expanded_deps)
+        maven_jars += self.__get_maven_transitive_deps(self.expanded_deps)
+        dep_jars = sorted(set(dep_jars))
+        maven_jars = self._process_pack_exclusions(maven_jars)
+        maven_jars = self._detect_maven_conflicted_deps('test', maven_jars)
+        return dep_jars, maven_jars
 
     def _get_pack_deps(self):
         """
@@ -285,18 +320,17 @@ class JavaTargetMixIn(object):
         provided_deps = self.data.get('provided_deps', [])
         for provided_dep in provided_deps:
             deps.discard(provided_dep)
-        dep_jar_vars, dep_jars = self.__get_deps(deps)
+        dep_jars, maven_jars = self.__get_deps(deps)
 
         for dep in deps:
             dep = self.target_database[dep]
-            jar_vars, jars = dep._get_java_pack_deps()
-            dep_jar_vars += jar_vars
-            dep_jars += jars
+            pack_dep_jars, pack_maven_jars = dep._get_java_pack_deps()
+            dep_jars += pack_dep_jars
+            maven_jars += pack_maven_jars
 
-        dep_jar_vars, dep_jars = set(dep_jar_vars), set(dep_jars)
-        dep_jars = self._process_pack_exclusions(dep_jars)
-
-        return sorted(list(dep_jar_vars)), sorted(list(dep_jars))
+        dep_jars, maven_jars = set(dep_jars), set(maven_jars)
+        maven_jars = self._process_pack_exclusions(maven_jars)
+        return sorted(dep_jars), sorted(maven_jars)
 
     def _get_java_package_name(self):
         """
@@ -311,7 +345,7 @@ class JavaTargetMixIn(object):
             package = self._get_source_package_name(self._source_file_path(src))
             if package:
                 packages.add(package)
-        return sorted(list(packages))
+        return sorted(packages)
 
     def _get_source_package_name(self, file_name):
         """Get the java package name from source file if it is specified. """
@@ -408,7 +442,7 @@ class JavaTargetMixIn(object):
         return resource
 
     def _generate_java_versions(self):
-        java_config = configparse.blade_config.get_config('java_config')
+        java_config = config.get_section('java_config')
         version = java_config['version']
         source_version = java_config.get('source_version', version)
         target_version = java_config.get('target_version', version)
@@ -427,8 +461,7 @@ class JavaTargetMixIn(object):
     def _generate_java_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if source_encoding is None:
-            config = configparse.blade_config.get_config('java_config')
-            source_encoding = config['source_encoding']
+            source_encoding = config.get_item('java_config', 'source_encoding')
         if source_encoding:
             self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
                 self._env_name(), source_encoding))
@@ -479,7 +512,7 @@ class JavaTargetMixIn(object):
         self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
         return var_name
 
-    def _generate_sources(self):
+    def _generate_sources(self, ninja=False):
         """
         Generate java sources in the build directory for the subsequent
         code coverage. The layout is based on the package parsed from sources.
@@ -493,8 +526,11 @@ class JavaTargetMixIn(object):
             package = self._get_source_package_name(src)
             dst = os.path.join(sources_dir, package.replace('.', '/'),
                                os.path.basename(source))
-            self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
-                             (env_name, dst, src))
+            if ninja:
+                self.ninja_build(dst, 'copy', inputs=src)
+            else:
+                self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
+                                 (env_name, dst, src))
 
     def _generate_regular_resources(self, resources,
                                     resources_var, resources_path_var):
@@ -544,8 +580,9 @@ class JavaTargetMixIn(object):
         self._generate_regular_resources(resources, resources_var_name,
                                          resources_path_var_name)
         self._generate_location_resources(locations, resources_var_name)
-        self._write_rule('%s.Clean(%s, "%s")' % (
-            env_name, resources_var_name, resources_dir))
+        if self.blade.get_command() == 'clean':
+            self._write_rule('%s.Clean(%s, "%s")' % (
+                             env_name, resources_var_name, resources_dir))
         return resources_var_name, resources_path_var_name
 
     def _generate_generated_java_jar(self, var_name, srcs):
@@ -562,7 +599,9 @@ class JavaTargetMixIn(object):
         # BladeJavaJar builder puts the generated classes
         # into .class directory during jar building
         classes_dir = self._get_classes_dir()
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
+        if self.blade.get_command() == 'clean':
+            self._write_rule('%s.Clean(%s, "%s")' % (
+                             env_name, var_name, classes_dir))
         return var_name
 
     def _generate_fat_jar(self, dep_jar_vars, dep_jars):
@@ -576,6 +615,80 @@ class JavaTargetMixIn(object):
             self._target_file_path() + '.fat.jar',
             ','.join(jar_vars), dep_jars))
         return var_name
+
+    def ninja_generate_resources(self):
+        resources = self.data['resources']
+        locations = self.data['location_resources']
+        if not resources and not locations:
+            return []
+        inputs, outputs = [], []
+        resources_dir = self._target_file_path() + '.resources'
+        resources = self._process_regular_resources(resources)
+        for src, dst in resources:
+            inputs.append(src)
+            outputs.append(os.path.join(resources_dir, dst))
+        targets = self.blade.get_build_targets()
+        for key, type, dst in locations:
+            path = targets[key]._get_target_file(type)
+            if not path:
+                console.warning('%s: Location %s %s is missing. Ignored.' %
+                                (self.fullname, key, type))
+                continue
+            if not dst:
+                dst = os.path.basename(path)
+            inputs.append(path)
+            outputs.append(os.path.join(resources_dir, dst))
+        if inputs:
+            self.ninja_build(outputs, 'javaresource', inputs=inputs)
+        return outputs
+
+    def ninja_generate_fat_jar(self):
+        self.ninja_generate_jar()
+        dep_jars, maven_jars = self._get_pack_deps()
+        maven_jars = self._detect_maven_conflicted_deps('package', maven_jars)
+        return self.ninja_build_fat_jar(dep_jars, maven_jars)
+
+    def _java_implicit_dependencies(self, dep_jars, maven_jars):
+        return dep_jars + [jar for jar in maven_jars if '-SNAPSHOT' in jar]
+
+    def ninja_build_jar(self, output=None, inputs=None,
+                        source_encoding=None, javacflags=None,
+                        scala=False, scalacflags=None):
+        if not output:
+            output = self._target_file_path() + '.jar'
+        if not inputs:
+            inputs = [self._source_file_path(s) for s in self.srcs]
+        if scala:
+            rule = 'scalac'
+            vars = {}
+            if scalacflags:
+                vars['scalacflags'] = ' '.join(scalacflags)
+        else:
+            rule = 'javac'
+            vars = {'classes_dir' : self._get_classes_dir()}
+            if javacflags:
+                vars['javacflags'] = ' '.join(javacflags)
+        dep_jars, maven_jars = self._get_compile_deps()
+        implicit_deps = self._java_implicit_dependencies(dep_jars, maven_jars)
+        jars = dep_jars + maven_jars
+        if jars:
+            vars['classpath'] = ':'.join(jars)
+        if source_encoding:
+            vars['source_encoding'] = source_encoding
+        self.ninja_build(output, rule, inputs=inputs,
+                         implicit_deps=implicit_deps, variables=vars)
+        return output
+
+    def ninja_build_fat_jar(self, dep_jars, maven_jars):
+        jar = self._get_target_file('jar')
+        if jar:
+            inputs = [jar]
+        else:
+            inputs = []
+        inputs += dep_jars + maven_jars
+        output = self._target_file_path() + '.fat.jar'
+        self.ninja_build(output, 'fatjar', inputs=inputs)
+        return output
 
 
 class JavaTarget(Target, JavaTargetMixIn):
@@ -625,11 +738,13 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._generate_java_source_encoding()
         warnings = self.data.get('warnings')
         if warnings is None:
-            config = configparse.blade_config.get_config('java_config')
-            warnings = config['warnings']
+            warnings = config.get_item('java_config', 'warnings')
         if warnings:
             self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
                 self._env_name(), warnings))
+
+    def _expand_deps_generation(self):
+        self._expand_deps_java_generation()
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
@@ -656,6 +771,37 @@ class JavaTarget(Target, JavaTargetMixIn):
             self._add_target_var('jar', var_name)
             return var_name
         return ''
+
+    def javac_flags(self):
+        global_config = config.get_section('global_config')
+        java_config = config.get_section('java_config')
+        debug_info_level = global_config['debug_info_level']
+        debug_info_options = java_config['debug_info_levels'][debug_info_level]
+        warnings = self.data.get('warnings')
+        if not warnings:
+            warnings = java_config['warnings']
+        return debug_info_options + warnings
+
+    def ninja_generate_jar(self):
+        self._generate_sources(True)
+        srcs = [self._source_file_path(s) for s in self.srcs]
+        resources = self.ninja_generate_resources()
+        jar = self._target_file_path() + '.jar'
+        if srcs and resources:
+            classes_jar = self._target_file_path() + '__classes__.jar'
+            javacflags = self.javac_flags()
+            self.ninja_build_jar(classes_jar, inputs=srcs, javacflags=javacflags)
+            self.ninja_build(jar, 'javajar', inputs=[classes_jar] + resources)
+        elif srcs:
+            javacflags = self.javac_flags()
+            self.ninja_build_jar(jar, inputs=srcs, javacflags=javacflags)
+        elif resources:
+            self.ninja_build(jar, 'javajar', inputs=resources)
+        else:
+            jar = ''
+        if jar:
+            self._add_target_file('jar', jar)
+        return jar
 
 
 class JavaLibrary(JavaTarget):
@@ -692,6 +838,15 @@ class JavaLibrary(JavaTarget):
 
         if jar_var:
             self._add_default_target_var('jar', jar_var)
+
+    def ninja_rules(self):
+        if self.type == 'prebuilt_java_library':
+            jar = os.path.join(self.blade.get_root_dir(),
+                               self.data['binary_jar'])
+        else:
+            jar = self.ninja_generate_jar()
+        if jar:
+            self._add_default_target_file('jar', jar)
 
 
 class JavaBinary(JavaTarget):
@@ -734,6 +889,28 @@ class JavaBinary(JavaTarget):
             var_name, self._env_name(), self._target_file_path(), onejar))
         self._add_default_target_var('bin', var_name)
 
+    def ninja_generate_one_jar(self, dep_jars, maven_jars):
+        jar = self._get_target_file('jar')
+        if jar:
+            inputs = [jar]
+        else:
+            inputs = []
+        inputs += dep_jars + maven_jars
+        output = self._target_file_path() + '.one.jar'
+        vars = { 'mainclass' : self.data['main_class'] }
+        self.ninja_build(output, 'onejar', inputs=inputs, variables=vars)
+        self._add_target_file('onejar', output)
+        return output
+
+    def ninja_rules(self):
+        self.ninja_generate_jar()
+        dep_jars, maven_jars = self._get_pack_deps()
+        maven_jars = self._detect_maven_conflicted_deps('package', maven_jars)
+        onejar = self.ninja_generate_one_jar(dep_jars, maven_jars)
+        output = self._target_file_path()
+        self.ninja_build(output, 'javabinary', inputs=onejar)
+        self._add_default_target_file('bin', output)
+
 
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
@@ -752,13 +929,16 @@ class JavaFatLibrary(JavaTarget):
         fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
         self._add_default_target_var('fatjar', fatjar_var)
 
+    def ninja_rules(self):
+        jar = self.ninja_generate_fat_jar()
+        self._add_default_target_file('fatjar', jar)
+
 
 class JavaTest(JavaBinary):
     """JavaTest"""
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, main_class, exclusions,
                  testdata, target_under_test, kwargs):
-        java_test_config = configparse.blade_config.get_config('java_test_config')
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
@@ -792,6 +972,30 @@ class JavaTest(JavaBinary):
                 var_name, self._env_name(), self._target_file_path(),
                 self.data['main_class'], jar_var,
                 ','.join(dep_jar_vars), dep_jars))
+
+    def ninja_java_test_vars(self):
+        vars = {
+            'mainclass' : self.data['main_class'],
+        }
+        target_under_test = self.data.get('target_under_test')
+        if target_under_test:
+            target = self.target_database[target_under_test]
+            packages = target._get_java_package_name()
+            if packages:
+                vars['javatargetundertestpkg'] = ':'.join(packages)
+        return vars
+
+    def ninja_rules(self):
+        if not self.srcs:
+            console.warning('%s: Empty java test sources.' % self.fullname)
+            return
+        vars = self.ninja_java_test_vars()
+        jar = self.ninja_generate_jar()
+        output = self._target_file_path()
+        dep_jars, maven_jars = self._get_test_deps()
+        self.ninja_build(output, 'javatest',
+                         inputs=[jar] + dep_jars + maven_jars,
+                         variables=vars)
 
 
 def maven_jar(name, id, classifier='', transitive=True):

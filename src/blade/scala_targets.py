@@ -11,7 +11,7 @@ Implement scala_library, scala_fat_library and scala_test
 
 import blade
 import build_rules
-import configparse
+import config
 import console
 
 from target import Target
@@ -58,8 +58,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
             self.data['warnings'] = warnings
 
     def _generate_scala_target_platform(self):
-        config = configparse.blade_config.get_config('scala_config')
-        target_platform = config['target_platform']
+        target_platform = config.get_item('scala_config', 'target_platform')
         if target_platform:
             self._write_rule('%s.Append(SCALACFLAGS=["-target:%s"])' % (
                 self._env_name(), target_platform))
@@ -67,8 +66,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _generate_scala_source_encoding(self):
         source_encoding = self.data.get('source_encoding')
         if not source_encoding:
-            config = configparse.blade_config.get_config('scala_config')
-            source_encoding = config['source_encoding']
+            source_encoding = config.get_item('scala_config', 'source_encoding')
         if source_encoding:
             self._write_rule('%s.Append(SCALACFLAGS=["-encoding %s"])' % (
                 self._env_name(), source_encoding))
@@ -76,8 +74,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def _generate_scala_warnings(self):
         warnings = self.data.get('warnings')
         if not warnings:
-            config = configparse.blade_config.get_config('scala_config')
-            warnings = config['warnings']
+            warnings = config.get_item('scala_config', 'warnings')
             if not warnings:
                 warnings = '-nowarn'
         self._write_rule('%s.Append(SCALACFLAGS=["%s"])' % (
@@ -89,6 +86,9 @@ class ScalaTarget(Target, JavaTargetMixIn):
         self._generate_scala_target_platform()
         self._generate_scala_source_encoding()
         self._generate_scala_warnings()
+
+    def _expand_deps_generation(self):
+        self._expand_deps_java_generation()
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
@@ -111,6 +111,42 @@ class ScalaTarget(Target, JavaTargetMixIn):
         self._add_target_var('jar', var_name)
         return var_name
 
+    def scalac_flags(self):
+        flags = []
+        scala_config = config.get_section('scala_config')
+        target_platform = scala_config['target_platform']
+        if target_platform:
+            flags.append('-target:%s' % target_platform)
+        warnings = self.data.get('warnings')
+        if warnings:
+            flags.append(warnings)
+        global_warnings = scala_config['warnings']
+        if global_warnings:
+            flags.append(global_warnings)
+        return flags
+
+    def ninja_generate_jar(self):
+        srcs = [self._source_file_path(s) for s in self.srcs]
+        resources = self.ninja_generate_resources()
+        jar = self._target_file_path() + '.jar'
+        if srcs and resources:
+            classes_jar = self._target_file_path() + '__classes__.jar'
+            scalacflags = self.scalac_flags()
+            self.ninja_build_jar(classes_jar, inputs=srcs,
+                                 scala=True, scalacflags=scalacflags)
+            self.ninja_build(jar, 'javajar', inputs=[classes_jar] + resources)
+        elif srcs:
+            scalacflags = self.scalac_flags()
+            self.ninja_build_jar(jar, inputs=srcs,
+                                 scala=True, scalacflags=scalacflags)
+        elif resources:
+            self.ninja_build(jar, 'javajar', inputs=resources)
+        else:
+            jar = ''
+        if jar:
+            self._add_target_file('jar', jar)
+        return jar
+
 
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
@@ -130,6 +166,11 @@ class ScalaLibrary(ScalaTarget):
         if jar_var:
             self._add_default_target_var('jar', jar_var)
 
+    def ninja_rules(self):
+        jar = self.ninja_generate_jar()
+        if jar:
+            self._add_default_target_file('jar', jar)
+
 
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
@@ -148,6 +189,10 @@ class ScalaFatLibrary(ScalaTarget):
         fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
         self._add_default_target_var('fatjar', fatjar_var)
 
+    def ninja_rules(self):
+        jar = self.ninja_generate_fat_jar()
+        self._add_default_target_file('fatjar', jar)
+
 
 class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
@@ -157,8 +202,7 @@ class ScalaTest(ScalaFatLibrary):
                                  warnings, [], kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
-        config = configparse.blade_config.get_config('scala_test_config')
-        scalatest_libs = config['scalatest_libs']
+        scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
         else:
@@ -178,6 +222,16 @@ class ScalaTest(ScalaFatLibrary):
                              'source=[%s] + [%s] + %s)' % (
                     var_name, self._env_name(), self._target_file_path(),
                     jar_var, ','.join(dep_jar_vars), dep_jars))
+
+    def ninja_rules(self):
+        if not self.srcs:
+            console.warning('%s: Empty scala test sources.' % self.fullname)
+            return
+        jar = self.ninja_generate_jar()
+        output = self._target_file_path()
+        dep_jars, maven_jars = self._get_test_deps()
+        self.ninja_build(output, 'scalatest',
+                         inputs=[jar] + dep_jars + maven_jars)
 
 
 def scala_library(name,

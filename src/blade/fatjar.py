@@ -13,8 +13,12 @@ into a single fatjar file.
 
 import os
 import sys
+import time
 import zipfile
+import blade_util
+import console
 
+console_logging = False
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -42,6 +46,14 @@ def _is_fat_jar_excluded(name):
     return name == _JAR_MANIFEST or _is_signature_file(name)
 
 
+def _manifest_scm(build_dir):
+    revision, url = blade_util.load_scm(build_dir)
+    return [
+        'SCM-Url: %s' % url,
+        'SCM-Revision: %s' % revision,
+    ]
+
+
 def generate_fat_jar(target, jars):
     """Generate a fat jar containing the contents of all the jar dependencies. """
     target_dir = os.path.dirname(target)
@@ -50,35 +62,50 @@ def generate_fat_jar(target, jars):
 
     target_fat_jar = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
     # Record paths written in the fat jar to avoid duplicate writing
-    zip_path_dict = {}
-    zip_path_conflicts, zip_path_logs = 0, []
+    path_jar_dict = {}
+    conflict_logs = []
 
     for dep_jar in jars:
         jar = zipfile.ZipFile(dep_jar, 'r')
         name_list = jar.namelist()
         for name in name_list:
             if name.endswith('/') or not _is_fat_jar_excluded(name):
-                if name not in zip_path_dict:
+                if name not in path_jar_dict:
                     target_fat_jar.writestr(name, jar.read(name))
-                    zip_path_dict[name] = os.path.basename(dep_jar)
+                    path_jar_dict[name] = os.path.basename(dep_jar)
                 else:
-                    if not name.endswith('/'):  # Not a directory
-                        zip_path_conflicts += 1
-                        zip_path_logs.append('%s: duplicate path %s found in {%s, %s}' % (
-                                             target, name, zip_path_dict[name],
-                                             os.path.basename(dep_jar)))
-
+                    if name.endswith('/'):
+                        continue
+                    message = ('%s: duplicated path %s found in {%s, %s}' % (
+                        target, name, path_jar_dict[name],
+                        os.path.basename(dep_jar)))
+                    # Always log all conflicts for diagnosis
+                    if console_logging:
+                        console.debug(message)
+                    if '/.m2/repository/' not in dep_jar:
+                        # There are too many conflicts between maven jars,
+                        # so we have to ignore them, only count source code conflicts
+                        conflict_logs.append(message)
         jar.close()
 
-    if zip_path_conflicts:
-        log = '%s: Found %d conflicts when packaging.' % (target, zip_path_conflicts)
-        print >>sys.stdout, log
-        print >>sys.stderr, '\n'.join(zip_path_logs)
+    if conflict_logs:
+        log = '%s: Found %d conflicts when packaging.' % (target, len(conflict_logs))
+        if console_logging:
+            console.warning(log)
+        else:
+            print >>sys.stdout, log
+            print >>sys.stderr, '\n'.join(conflict_logs)
 
     # TODO(wentingli): Create manifest from dependency jars later if needed
-    contents = 'Manifest-Version: 1.0\nCreated-By: Python.Zipfile (Blade)\n'
-    contents += '\n'
-    target_fat_jar.writestr(_JAR_MANIFEST, contents)
+    contents = [
+        'Manifest-Version: 1.0',
+        'Created-By: Python.Zipfile (Blade)',
+        'Built-By: %s' % os.getenv('USER'),
+        'Build-Time: %s' % time.asctime(),
+    ]
+    contents += _manifest_scm(target.split(os.sep)[0])
+    contents.append('\n')
+    target_fat_jar.writestr(_JAR_MANIFEST, '\n'.join(contents))
     target_fat_jar.close()
 
 

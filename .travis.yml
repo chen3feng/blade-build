@@ -1,0 +1,17 @@
+language: python
+
+before_install: true
+
+addons:
+  apt:
+    sources:
+    - kubuntu-backports
+    - ubuntu-toolchain-r-test
+    packages:
+    - ninja-build
+    
+script:
+  - cpp --version
+  - gcc -v
+  - g++ -v
+  - src/test/runalltests.sh

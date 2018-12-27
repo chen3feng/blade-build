@@ -17,10 +17,15 @@ endif
 
 syn case match
 
+syn keyword bladeTarget build_target
+syn keyword bladeArg bits
+syn keyword bladeArg arch
+syn keyword bladeArg is_debug
 syn keyword bladeTarget global_config
 syn keyword bladeArg build_path_template
 syn keyword bladeArg duplicated_source_action
 syn keyword bladeArg test_timeout
+syn keyword bladeArg native_builder
 syn keyword bladeTarget cc_test_config
 syn keyword bladeArg dynamic_link
 syn keyword bladeArg heap_check
@@ -79,11 +84,15 @@ syn keyword bladeArg protoc_java
 syn keyword bladeArg protobuf_libs
 syn keyword bladeArg protobuf_path
 syn keyword bladeArg protobuf_incs
+syn keyword bladeArg protobuf_java_incs
 syn keyword bladeArg protobuf_php_path
 syn keyword bladeArg protoc_php_plugin
 syn keyword bladeArg protobuf_java_libs
+syn keyword bladeArg protobuf_python_libs
 syn keyword bladeArg protoc_go_plugin
 syn keyword bladeArg protobuf_go_path
+syn keyword bladeArg protoc_direct_dependencies
+syn keyword bladeArg well_known_protos
 syn keyword bladeTarget cc_config
 syn keyword bladeArg extra_incs
 syn keyword bladeArg cppflags
@@ -100,8 +109,10 @@ syn keyword bladeArg optimize
 syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
 syn keyword bladeArg securecc
+syn keyword bladeArg header_inclusion_dependencies
 syn keyword bladeTarget cc_library_config
 syn keyword bladeArg generate_dynamic
+syn keyword bladeArg prebuilt_libpath_pattern
 syn keyword bladeTarget protoc_plugin
 syn keyword bladeArg name
 syn keyword bladeArg path

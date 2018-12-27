@@ -20,7 +20,7 @@ import subprocess
 import time
 
 import binary_runner
-import configparse
+import config
 import console
 
 from blade_util import environ_add_path
@@ -67,7 +67,7 @@ class TestRunner(binary_runner.BinaryRunner):
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
         self.inctest_md5_file = '.blade.test.stamp'
-        self.tests_detail_file = './blade_tests_detail'
+        self.tests_detail_file = 'blade_tests_detail'
         self.inctest_run_list = []
         self.last_test_stamp = {}
         self.last_test_stamp['md5'] = {}
@@ -261,9 +261,9 @@ class TestRunner(binary_runner.BinaryRunner):
         return coverage_data
 
     def _generate_java_coverage_report(self):
-        config = configparse.blade_config.get_config('java_test_config')
-        jacoco_home = config['jacoco_home']
-        coverage_reporter = config['coverage_reporter']
+        java_test_config = config.get_section('java_test_config')
+        jacoco_home = java_test_config['jacoco_home']
+        coverage_reporter = java_test_config['coverage_reporter']
         if not jacoco_home or not coverage_reporter:
             console.warning('Missing jacoco home or coverage report generator '
                             'in global configuration. '
@@ -391,8 +391,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
             test_env['HEAPCHECK'] = target.data.get('heap_check', '')
-            config = configparse.blade_config.get_config('cc_test_config')
-            pprof_path = config['pprof_path']
+            pprof_path = config.get_item('cc_test_config', 'pprof_path')
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
             if self.coverage:
@@ -404,7 +403,11 @@ class TestRunner(binary_runner.BinaryRunner):
         scheduler = TestScheduler(tests_run_list,
                                   concurrent_jobs,
                                   self.tests_run_map)
-        scheduler.schedule_jobs()
+        try:
+            scheduler.schedule_jobs()
+        except KeyboardInterrupt:
+            console.warning('KeyboardInterrupt, all tests stopped')
+            console.flush()
 
         if self.coverage:
             self._generate_coverage_report()

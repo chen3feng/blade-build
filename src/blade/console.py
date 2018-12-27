@@ -28,7 +28,7 @@ _verbose = False
 
 # Global color enabled or not
 color_enabled = (sys.stdout.isatty() and
-                 os.environ['TERM'] not in ('emacs', 'dumb'))
+                 os.environ.get('TERM') not in ('emacs', 'dumb'))
 
 
 # See http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -42,6 +42,7 @@ _colors['purple'] = '\033[1;35m'
 _colors['cyan']   = '\033[1;36m'
 _colors['white']  = '\033[1;37m'
 _colors['gray']   = '\033[1;38m'
+_colors['dimpurple'] = '\033[2;35m'
 _colors['end']    = '\033[0m'
 
 # cursor movement
@@ -118,7 +119,7 @@ def info(msg, prefix=True):
     log(msg)
     if color_enabled:
         msg = _colors['cyan'] + msg + _colors['end']
-    print >>sys.stderr, msg
+    print >>sys.stdout, msg
 
 
 def debug(msg):
@@ -130,3 +131,10 @@ def log(msg):
     """Dump message into log file. """
     if _log:
         print >>_log, msg
+
+def flush():
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if _log:
+        _log.flush()
+
