@@ -163,7 +163,7 @@ class TestScheduler(object):
                              shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
-        result = self.__get_result(p.returncode)
+        result = self._get_result(p.returncode)
         msg = 'Output of %s:\n%s\n%s finished: %s\n' % (
                 test_name, stdout, test_name, result)
         if console.verbosity_le('quiet') and p.returncode != 0:
