@@ -40,7 +40,9 @@ import SCons.Scanner.Prog
 
 import blade_util
 import console
+import toolchain
 import scm_info
+
 
 from console import colors
 
