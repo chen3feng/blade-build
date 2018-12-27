@@ -25,9 +25,15 @@ from blade_util import var_to_list, stable_unique
 from target import Target
 
 
-if "check_output" not in dir( subprocess ):
+if "check_output" not in dir(subprocess):
     from blade_util import check_output
     subprocess.check_output = check_output
+
+
+def _is_hdr(filename):
+    _, ext = os.path.splitext(filename)
+    ext = ext[1:]  # Remove leading '.'
+    return ext in ('h', 'hh', 'hpp', 'hxx', 'inc', 'tcc')
 
 
 class CcTarget(Target):
@@ -58,6 +64,7 @@ class CcTarget(Target):
 
         """
         srcs = var_to_list(srcs)
+        srcs = [src for src in srcs if not _is_hdr(src)]
         deps = var_to_list(deps)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
@@ -1154,6 +1161,7 @@ def cc_library(name,
                defs=[],
                incs=[],
                export_incs=[],
+               hdrs=[],
                optimize=[],
                always_optimize=False,
                pre_build=False,
