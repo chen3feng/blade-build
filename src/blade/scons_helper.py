@@ -1643,9 +1643,8 @@ def generate_version_file(top_env, blade_root_dir, build_dir,
     compiler = 'GCC %s' % gcc_version
     print >>version_cpp, 'extern const char kCompiler[] = "%s";' % compiler
 
-    print >>version_cpp, 'extern const char URL[] = "%s";' % scm_info.git_url()
-    print >>version_cpp, 'extern const char revision[] = "%s";' %  scm_info.git_revision()
-    print >>version_cpp, 'extern const char branch[] = "%s";' % scm_info.git_branch()
+    print >>version_cpp, 'extern const char KURL[] = "%s";' % scm_info.git_url()
+    print >>version_cpp, 'extern const char KBranch[] = "%s";' % scm_info.git_branch()
     print >>version_cpp, '}}'
 
     version_cpp.close()
