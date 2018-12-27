@@ -18,7 +18,6 @@ import zipfile
 import blade_util
 import console
 
-console_logging = False
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -80,8 +79,7 @@ def generate_fat_jar(target, jars):
                         target, name, path_jar_dict[name],
                         os.path.basename(dep_jar)))
                     # Always log all conflicts for diagnosis
-                    if console_logging:
-                        console.debug(message)
+                    console.debug(message)
                     if '/.m2/repository/' not in dep_jar:
                         # There are too many conflicts between maven jars,
                         # so we have to ignore them, only count source code conflicts
@@ -90,11 +88,7 @@ def generate_fat_jar(target, jars):
 
     if conflict_logs:
         log = '%s: Found %d conflicts when packaging.' % (target, len(conflict_logs))
-        if console_logging:
-            console.warning(log)
-        else:
-            print >>sys.stdout, log
-            print >>sys.stderr, '\n'.join(conflict_logs)
+        console.warning(log)
 
     # TODO(wentingli): Create manifest from dependency jars later if needed
     contents = [

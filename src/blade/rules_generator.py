@@ -112,10 +112,6 @@ import scons_helper
 
 """)
 
-        if getattr(self.options, 'verbose', False):
-            self._add_rule('scons_helper.option_verbose = True')
-            self._add_rule('console.set_verbose(True)')
-
         self._add_rule((
                 """if not os.path.exists('%s'):
     os.mkdir('%s')""") % (self.build_dir, self.build_dir))
@@ -138,8 +134,8 @@ import scons_helper
 
     def generate_compliation_verbose(self):
         """Generates color and verbose message. """
-        self._add_rule('scons_helper.setup_compliation_verbose(top_env, color_enabled=%s, verbose=%s)' %
-                (console.color_enabled, getattr(self.options, 'verbose', False)))
+        self._add_rule('scons_helper.setup_compliation_verbosity(top_env, color_enabled=%s, verbosity="%s")' %
+                (console.color_enabled, self.options.verbosity))
 
     def _generate_fast_link_builders(self):
         """Generates fast link builders if it is specified in blade bash. """
@@ -245,10 +241,10 @@ import scons_helper
         cc = toolchain_dir + os.environ.get('CC', 'gcc')
         cxx = toolchain_dir + os.environ.get('CXX', 'g++')
         ld = toolchain_dir + os.environ.get('LD', 'g++')
-        console.info('CPP=%s' % cpp)
-        console.info('CC=%s' % cc)
-        console.info('CXX=%s' % cxx)
-        console.info('LD=%s' % ld)
+        console.debug('CPP=%s' % cpp)
+        console.debug('CC=%s' % cc)
+        console.debug('CXX=%s' % cxx)
+        console.debug('LD=%s' % ld)
 
         self.ccflags_manager.set_cc(cc)
 

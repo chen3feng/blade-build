@@ -221,10 +221,6 @@ class CmdArguments(object):
             help='Continue as much as possible after an error')
 
         parser.add_argument(
-            '--verbose', dest='verbose', action='store_true',
-            default=False, help='Show all details')
-
-        parser.add_argument(
             '--no-test', dest='no_test', action='store_true',
             default=False, help='Do not build the test targets')
 
@@ -346,7 +342,12 @@ class CmdArguments(object):
                 '--no-load-local-config', dest='load_local_config',
                 action='store_false',
                 help='Do not load BLADE_ROOT.local')
-
+            parser.add_argument(
+                '--verbose', dest='verbosity', action='store_const', const='verbose',
+                default='normal', help='Show all details')
+            parser.add_argument(
+                '--quiet', dest='verbosity', action='store_const', const='quiet',
+                help='Only show warnings and errors')
 
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""
