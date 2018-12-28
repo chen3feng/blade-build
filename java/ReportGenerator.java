@@ -12,6 +12,7 @@
 package com.tencent.gdt.blade;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import org.jacoco.report.IReportVisitor;
 import org.jacoco.report.ISourceFileLocator;
 import org.jacoco.report.MultiSourceFileLocator;
 import org.jacoco.report.html.HTMLFormatter;
+import org.jacoco.report.xml.XMLFormatter;
 
 /**
  * The ReportGenerator class creates a HTML report based on classes files
@@ -103,7 +105,18 @@ public class ReportGenerator {
     HTMLFormatter htmlFormatter = new HTMLFormatter();
     IReportVisitor visitor = htmlFormatter.createVisitor(
         new FileMultiReportOutput(reportDirectory));
+    generateReport(bundleCoverage, visitor);
+    final String xmlReport = System.getenv("JACOCO_XML_REPORT");
+    if (xmlReport != null) {
+      XMLFormatter xmlFormatter = new XMLFormatter();
+      visitor = xmlFormatter.createVisitor(new FileOutputStream(
+          reportDirectory.getPath() + "/jacoco_coverage_report.xml"));
+      generateReport(bundleCoverage, visitor);
+    }
+  }
 
+  private void generateReport(IBundleCoverage bundleCoverage,
+                              IReportVisitor visitor) throws IOException {
     visitor.visitInfo(execFileLoader.getSessionInfoStore().getInfos(),
                       execFileLoader.getExecutionDataStore().getContents());
 
