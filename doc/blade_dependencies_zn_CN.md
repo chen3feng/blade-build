@@ -9,5 +9,4 @@ Blade 编译项目时可能需要到：
 
 * swig   v2.0+ (required for swig_library)
 * flex v2.5+ (required for lex_yacc)
-* bison v2.1 or later   (required for lex_yacc)
-
+* bison v2.1+ (required for lex_yacc)
