@@ -24,5 +24,6 @@ lex_yacc_library(
 
 属性：
 
-  recursive=True 生成可重入的C scanner.
-  也支持大部分cc_library的属性
+  recursive=True 生成可重入的C scanner。
+  
+  也支持大部分cc_library的属性。
