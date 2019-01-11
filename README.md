@@ -13,7 +13,7 @@ A easy-to-use, fast modern building system for trunk monorepo development
  * 支持扩展
  
 1.1.2版是最后一个1.x版本，我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
-* 后端支持[ninja]，大幅度提高构建性能
+* 后端支持[ninja](https://ninja-build.org/)，大幅度提高构建性能
 * 全面支持Python构建
 * 完善对扩展的支持
 * 支持kotlin，rust构建
