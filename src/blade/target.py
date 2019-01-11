@@ -72,7 +72,6 @@ class Target(object):
         self._init_visibility(visibility)
         self.build_rules = []
         self.data['generated_hdrs'] = []
-        self.__cached_generate_header_files = None
 
     def _clone_env(self):
         """Clone target's environment. """
@@ -607,18 +606,9 @@ class Target(object):
         """
         return self.data['targets'].values()
 
-    def __generate_header_files(self):
-        for dkey in self.deps:
-            dep = self.target_database[dkey]
-            if dep._generate_header_files():
-                return True
-        return False
-
     def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        if self.__cached_generate_header_files is None:
-            self.__cached_generate_header_files = self.__generate_header_files()
-        return self.__cached_generate_header_files
+        """Whether this target generates header files during building. """
+        return False
 
     def _write_rule(self, rule):
         """_write_rule.
