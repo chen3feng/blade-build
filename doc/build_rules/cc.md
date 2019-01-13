@@ -8,7 +8,7 @@ CC 目标均支持的属性为：
 | warning | 是否屏蔽warning  | warning='no' | 默认不屏蔽 warning='yes' , 默认不用写，已开启 |
 | defs | 用户定义的宏加入编译中 | defs=['_MT'] | A=1 |
 | incs | 增加编译源文件时的头文件查找路径 | incs=['poppy/myinc'] | 一般用于第三方库，用户代码建议使用全路径include，不要使用该属性 |
-| optimize | 用户定义的optimize flags | optimize=['O3'] | 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library |
+| optimize | 用户定义的optimize flags | optimize=['O3'] | 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library, 在Debug构建模式下被忽略 |
 
 ## cc_library
 
