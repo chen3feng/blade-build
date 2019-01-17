@@ -96,7 +96,14 @@ class CcTarget(Target):
         self._check_incorrect_no_warning()
 
     def _incs_to_fullpath(self, incs):
-        return [os.path.normpath(os.path.join(self.path, inc)) for inc in incs]
+        res = []
+        for inc in incs:
+            if inc.startswith('//'):
+                full_path = inc[2:]
+            else:
+                full_path = os.path.normpath(os.path.join(self.path, inc))
+            res.append(full_path)
+        return res
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
@@ -189,7 +196,6 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_path(self, prefer_dynamic=False):
         """
-
         Return source and target path of the prebuilt cc library.
         When both .so and .a exist, return .so if prefer_dynamic is True.
         Otherwise return the existing one.
@@ -204,9 +210,10 @@ class CcTarget(Target):
             if os.path.exists(lib):
                 source = lib
                 break
-        if not source:
-            console.error_exit('%s: Can not find either %s or %s' % (
-                               self.fullname, libs[0], libs[1]))
+        if not source and not a_src_path.startswith(self.build_path):
+            # Consider src_path which startswith build_path as generated
+            console.error('%s: Can not find either %s or %s' % (
+                          self.fullname, libs[0], libs[1]))
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
@@ -227,8 +234,13 @@ class CcTarget(Target):
                                                    profile=profile)
         else:
             libpath = CcTarget._default_prebuilt_libpath
-        return [os.path.join(self.path, libpath, 'lib%s.%s' % (self.name, s))
-                for s in ['a', 'so']]
+        if libpath.startswith('//'):
+            libpath = libpath[2:]
+            return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
+                for s in ('a', 'so')]
+        else:
+            return [os.path.join(self.path, libpath, 'lib%s.%s' % (self.name, s))
+                for s in ('a', 'so')]
 
     def _prebuilt_cc_library_dynamic_soname(self, so):
         """Get the soname of prebuilt shared library. """
@@ -432,12 +444,16 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_rules(self, var_name, target, source):
         """Generate scons rules for prebuilt cc library. """
+        if source.startswith('//'):
+            source = source[2:]
+        else:
+            source = os.path.realpath(source)
         if source.endswith('.a'):
-            self._write_rule('%s = top_env.File("%s")' % (var_name, os.path.realpath(source)))
+            self._write_rule('%s = top_env.File("%s")' % (var_name, source))
         else:
             self._write_rule('%s = top_env.Command("%s", "%s", '
                              'Copy("$TARGET", "$SOURCE"))' % (
-                             var_name, target, os.path.realpath(source)))
+                             var_name, target, source))
 
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,
