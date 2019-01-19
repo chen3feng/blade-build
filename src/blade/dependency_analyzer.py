@@ -70,7 +70,7 @@ def _check_dep_visibility(target, dep, targets):
     if dep not in targets:
         console.error_exit('Target %s:%s depends on %s:%s, '
                            'but it is missing, exit...' % (
-                           target_id[0], target_id[1], dep[0], dep[1]))
+                           target[0], target[1], dep[0], dep[1]))
     # Targets are visible inside the same BUILD file by default
     if target[0] == dep[0]:
         return
