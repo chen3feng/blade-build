@@ -22,7 +22,6 @@ import py_compile
 import shutil
 import signal
 import socket
-import stat
 import string
 import subprocess
 import sys
@@ -30,8 +29,8 @@ import tempfile
 import time
 import tarfile
 import zipfile
-import glob
 
+# pylint: disable=E0401
 import SCons
 import SCons.Action
 import SCons.Builder
@@ -62,6 +61,10 @@ linking_tmp_dir = ''
 
 # build time stamp
 build_time = time.time()
+
+
+proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
+proto_import_public_re = re.compile(r'^import\s+public\s+"(\S+)"\s*;\s*$', re.M)
 
 
 def set_blade_error_log(path):
@@ -544,7 +547,6 @@ def generate_fat_jar(target, source, env):
     dep_jars = [str(dep) for dep in source]
 
     # Create a new process for fatjar packaging to avoid GIL
-    global blade_path
     cmd = 'PYTHONPATH=%s:$PYTHONPATH python -m fatjar %s %s' % (
         blade_path, target, ' '.join(dep_jars))
     p = subprocess.Popen(cmd,
@@ -830,7 +832,6 @@ def generate_shell_test(target, source, env):
 def generate_proto_go_source(target, source, env):
     """Generate go source file by invoking protobuf compiler. """
     source = source[0]
-    global proto_import_re
     import_protos = proto_import_re.findall(source.get_text_contents())
     parameters = 'import_prefix=%s/' % env['PROTOBUFGOPATH']
     if import_protos:
@@ -1176,10 +1177,6 @@ def setup_compliation_verbosity(top_env, color_enabled, verbosity):
                 JARCOMSTR = jar_message,
                 LEXCOMSTR = compile_source_message,
                 YACCCOMSTR = compile_source_message)
-
-
-proto_import_re = re.compile(r'^import\s+"(\S+)"\s*;\s*$', re.M)
-proto_import_public_re = re.compile(r'^import\s+public\s+"(\S+)"\s*;\s*$', re.M)
 
 
 def proto_scan_func(node, env, path, arg):

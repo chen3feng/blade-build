@@ -29,6 +29,8 @@ from pathlib import Path
 
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
+
+# pylint: disable=W0611,I0011
 import cc_targets
 import cu_targets
 import gen_rule_target

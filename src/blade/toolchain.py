@@ -28,7 +28,6 @@ The toolchain function is defined as follows:
 
 import os
 import sys
-import subprocess
 import shutil
 import socket
 import time

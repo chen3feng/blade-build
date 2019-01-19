@@ -82,6 +82,7 @@ class CcTarget(Target):
                         blade,
                         kwargs)
 
+        self.file_and_link = None
         self.data['warning'] = warning
         self.data['defs'] = defs
         self.data['incs'] = self._incs_to_fullpath(incs)
@@ -443,7 +444,6 @@ class CcTarget(Target):
                                            static_lib_source, static_lib_target,
                                            dynamic_lib_source, dynamic_lib_target):
         """Make a symbolic link if either static or dynamic library is so. """
-        self.file_and_link = None
         so_src, so_target = '', ''
         if static_lib_target.endswith('.so'):
             so_src = static_lib_source

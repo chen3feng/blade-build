@@ -63,6 +63,8 @@ class JavaJarTarget(Target):
         self.java_jar_after_dep_source_list = []
         self.targets_dependency_map = {}
         self.java_jar_dep_vars = {}
+        self.java_jar_dep_source_list = []
+        self.java_classpath_list = []
 
     def _java_jar_gen_class_root(self, path, name):
         """Gen class root. """
@@ -364,14 +366,12 @@ class JavaJarTarget(Target):
         for key in self.expanded_deps:
             self.cmd_var_list += targets[key].data.get('java_dep_var', [])
 
-        self.java_jar_dep_source_list = []
         for key in self.expanded_deps:
             dep_target = targets[key]
             sources = dep_target.data.get('java_sources')
             if sources:
                 self.java_jar_dep_source_list.append(sources)
 
-        self.java_classpath_list = []
         for key in self.expanded_deps:
             class_path = targets[key].data.get('jar_class_path')
             if class_path:

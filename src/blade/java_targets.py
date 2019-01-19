@@ -16,7 +16,6 @@ import Queue
 from distutils.version import LooseVersion
 
 import blade
-import blade_util
 import build_rules
 import config
 import console
@@ -351,7 +350,7 @@ class JavaTargetMixIn(object):
         """Get the java package name from source file if it is specified. """
         if not os.path.isfile(file_name):
             return ''
-        package_pattern = '^\s*package\s+([\w.]+)'
+        package_pattern = r'^\s*package\s+([\w.]+)'
         content = open(file_name).read()
         m = re.search(package_pattern, content, re.MULTILINE)
         if m:

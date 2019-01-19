@@ -209,12 +209,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _get_java_package_name(self, content):
         """Get the java package name from proto file if it is specified. """
-        java_package_pattern = '^\s*option\s+java_package\s*=\s*["\']([\w.]+)'
+        java_package_pattern = r'^\s*option\s+java_package\s*=\s*["\']([\w.]+)'
         m = re.search(java_package_pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
 
-        package_pattern = '^\s*package\s+([\w.]+)'
+        package_pattern = r'^\s*package\s+([\w.]+)'
         m = re.search(package_pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
@@ -235,7 +235,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
-        pattern = '^\s*option\s+java_outer_classname\s*=\s*[\'"](\w+)["\']'
+        pattern = r'^\s*option\s+java_outer_classname\s*=\s*[\'"](\w+)["\']'
         m = re.search(pattern, content, re.MULTILINE)
         if m:
             return m.group(1)

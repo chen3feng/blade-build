@@ -23,7 +23,6 @@ import binary_runner
 import config
 import console
 
-from blade_util import environ_add_path
 from blade_util import md5sum
 from test_scheduler import TestScheduler
 

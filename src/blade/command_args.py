@@ -12,8 +12,6 @@
 """
 
 
-import os
-import platform
 import shlex
 from argparse import ArgumentParser
 
@@ -206,7 +204,7 @@ class CmdArguments(object):
             help='Generate scons script for debug purpose. '
                  'DEPRECATED, use --stop_after=generate instead')
 
-        """Add extra native builder options arguments. """
+        # Add extra native builder options arguments.
         parser.add_argument(
             '--native-builder-options', dest='native_builder_options', type=str,
             help='Specifies extra native builder options, for debug purpose')

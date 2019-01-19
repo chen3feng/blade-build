@@ -17,7 +17,6 @@
 
 import os
 import time
-import subprocess
 
 import blade_util
 import config

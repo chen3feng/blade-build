@@ -137,8 +137,8 @@ class FBThriftLibrary(CcTarget):
         # Build java source according to its option
         env_name = self._env_name()
 
-        self.options = self.blade.get_options()
-        self.direct_targets = self.blade.get_direct_targets()
+        options = self.blade.get_options()
+        direct_targets = self.blade.get_direct_targets()
 
         self._setup_cc_flags()
 

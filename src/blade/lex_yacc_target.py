@@ -8,7 +8,6 @@
 """
 
 
-import os
 import console
 import blade
 

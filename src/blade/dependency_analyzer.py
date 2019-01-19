@@ -86,14 +86,14 @@ def _check_dep_visibility(target, dep, targets):
 
 
 def _unique_deps(new_deps_list):
-   # Append new_deps_piece to new_deps_list, be aware of de-duplication
-   result = []
-   deps = set()
-   for dep in reversed(new_deps_list):
-       if dep not in deps:
-           result.append(dep)
-           deps.add(dep)
-   return list(reversed(result))
+    # Append new_deps_piece to new_deps_list, be aware of de-duplication
+    result = []
+    deps = set()
+    for dep in reversed(new_deps_list):
+        if dep not in deps:
+            result.append(dep)
+            deps.add(dep)
+    return list(reversed(result))
 
 
 def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
