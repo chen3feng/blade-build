@@ -334,7 +334,7 @@ def lock_workspace():
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
-                    'There is already an active building in current source tree.')
+                'There is already an active building in current source tree.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
@@ -522,7 +522,7 @@ def main(blade_path):
         if exit_code == 0:
             console.info('success')
         console.info('cost time is %ss' % datetime.timedelta(seconds=cost_time))
-    except SystemExit, e:
+    except SystemExit as e:
         exit_code = e.code
     except KeyboardInterrupt:
         console.error_exit('keyboard interrupted', -signal.SIGINT)

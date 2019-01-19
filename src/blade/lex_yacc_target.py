@@ -140,9 +140,9 @@ class LexYaccLibrary(CcTarget):
         lex_vars, yacc_vars = {}, {}
         lex_flags, yacc_flags = self._setup_lex_yacc_flags()
         if lex_flags:
-            lex_vars = { 'lexflags' : ' '.join(lex_flags) }
+            lex_vars = {'lexflags' : ' '.join(lex_flags)}
         if yacc_flags:
-            yacc_vars = { 'yaccflags' : ' '.join(yacc_flags) }
+            yacc_vars = {'yaccflags' : ' '.join(yacc_flags)}
         return lex_vars, yacc_vars
 
     def ninja_lex_yacc_rules(self, source, rule, implicit_deps=None, vars=None):

@@ -129,7 +129,7 @@ class ShellTest(Target):
         if inputs:
             output = '%s.testdata' % self._target_file_path()
             self.ninja_build(output, 'shelltestdata', inputs=inputs,
-                             variables={ 'testdata' : ' '.join(testdata) })
+                             variables={'testdata' : ' '.join(testdata)})
 
 
 def sh_test(name,

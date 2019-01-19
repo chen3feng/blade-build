@@ -196,7 +196,7 @@ class CmdArguments(object):
         """Add build related action arguments. """
         parser.add_argument(
             '--native-builder', dest='native_builder',
-            type=str, choices = ['scons', 'ninja'], default='',
+            type=str, choices=['scons', 'ninja'], default='',
             help='Specify the underly native builder')
         parser.add_argument(
             '--generate-scons-only', dest='stop_after',

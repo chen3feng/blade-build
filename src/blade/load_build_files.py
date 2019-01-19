@@ -30,7 +30,7 @@ from pathlib import Path
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 
-# pylint: disable=W0611,I0011
+# pylint: disable=W0611
 import cc_targets
 import cu_targets
 import gen_rule_target
@@ -292,4 +292,3 @@ def load_targets(target_ids, blade_root_dir, blade):
             blade.svn_root_dirs.append(root_dir)
 
     return direct_targets, all_command_targets, related_targets
-

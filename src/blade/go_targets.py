@@ -131,7 +131,7 @@ class GoTarget(Target):
         output = self._target_file_path()
         self.ninja_build(output, self.data['go_rule'],
                          implicit_deps=implicit_deps,
-                         variables={ 'package' : self.data['go_package'] })
+                         variables={'package' : self.data['go_package']})
         label = self.data.get('go_label')
         if label:
             self._add_target_file(label, output)

@@ -510,7 +510,7 @@ class Target(object):
         self.data['default_target'] = scons_var
         self._add_target_var(target_type, scons_var)
 
-    def _get_target_var(self, target_type = ''):
+    def _get_target_var(self, target_type=''):
         """
 
         Parameters
@@ -576,7 +576,7 @@ class Target(object):
         self.data['default_target'] = path
         self._add_target_file(label, path)
 
-    def _get_target_file(self, label = ''):
+    def _get_target_file(self, label=''):
         """
 
         Parameters

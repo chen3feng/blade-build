@@ -316,7 +316,7 @@ class TestRunner(binary_runner.BinaryRunner):
         """Show tests skipped. """
         self.skipped_tests.sort()
         for key in self.skipped_tests:
-            console.info('%s:%s skipped' % (key[0], key[1]), prefix = False)
+            console.info('%s:%s skipped' % (key[0], key[1]), prefix=False)
 
     def _show_tests_detail(self):
         """Show the tests detail after scheduling them. """

@@ -896,7 +896,7 @@ class JavaBinary(JavaTarget):
             inputs = []
         inputs += dep_jars + maven_jars
         output = self._target_file_path() + '.one.jar'
-        vars = { 'mainclass' : self.data['main_class'] }
+        vars = {'mainclass' : self.data['main_class']}
         self.ninja_build(output, 'onejar', inputs=inputs, variables=vars)
         self._add_target_file('onejar', output)
         return output
@@ -1056,7 +1056,7 @@ def java_test(name,
               resources=[],
               source_encoding=None,
               warnings=None,
-              main_class = 'org.junit.runner.JUnitCore',
+              main_class='org.junit.runner.JUnitCore',
               exclusions=[],
               testdata=[],
               target_under_test='',

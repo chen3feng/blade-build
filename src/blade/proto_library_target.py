@@ -459,13 +459,13 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
         self.ninja_build(output, 'protodescriptors', inputs=inputs,
-                         variables={ 'first' : inputs[0] })
+                         variables={'first' : inputs[0]})
 
     def ninja_protoc_plugin_vars(self, flags, language):
         if language in flags:
             key = 'protoc%spluginflags' % language
             value = flags[language]
-            return { key: value }
+            return {key: value}
         return {}
 
     def ninja_protoc_direct_dependencies(self, vars):
@@ -499,7 +499,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path() + '.pylib'
         self.ninja_build(pylib, 'pythonlibrary', inputs=generated_pys,
-                         variables={ 'pythonbasedir' : self.build_path })
+                         variables={'pythonbasedir' : self.build_path})
         self._add_target_file('pylib', pylib)
 
     def ninja_proto_go_rules(self, plugin_flags):

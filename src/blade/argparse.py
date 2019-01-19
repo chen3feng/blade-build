@@ -1,5 +1,5 @@
 # Author: Steven J. Bethard <steven.bethard@gmail.com>.
-
+# pylint: skip-file
 """Command-line parsing library
 
 This module is an optparse-inspired command-line parsing library that:

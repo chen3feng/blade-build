@@ -546,4 +546,3 @@ if __name__ == '__main__':
         console.error(str(e))
     if ret:
         sys.exit(ret)
-

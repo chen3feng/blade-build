@@ -74,7 +74,7 @@ class JavaJarTarget(Target):
         """Check the target is java_jar target or not. """
         targets = self.blade.get_build_targets()
         target_type = targets[dep].type
-        return ('java_jar' in target_type and 'prebuilt' not in target_type)
+        return 'java_jar' in target_type and 'prebuilt' not in target_type
 
     def _java_jar_rules_prepare_dep(self, new_src):
         """Prepare building java jars, make class root and other work. """
@@ -266,7 +266,7 @@ class JavaJarTarget(Target):
         for class_path in pack_list:
             # need to place one dummy file into the source folder for user builder
             build_file_dst = os.path.join(class_path, 'BLADE_ROOT')
-            if not build_file_dst in self.java_jar_cmd_list:
+            if build_file_dst not in self.java_jar_cmd_list:
                 self._write_rule('%s = %s.Command("%s", "%s", [Copy("%s", "%s")])' % (
                         cmd_jar,
                         env_name,

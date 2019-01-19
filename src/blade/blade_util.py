@@ -141,7 +141,7 @@ def find_blade_root_dir(working_dir=None):
     return os.path.dirname(blade_root)
 
 
-if "check_output" not in dir( subprocess ):
+if "check_output" not in dir(subprocess):
     def check_output(*popenargs, **kwargs):
         r"""Run command with arguments and return its output as a byte string.
 

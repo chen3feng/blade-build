@@ -890,4 +890,3 @@ class NinjaRulesGenerator(RulesGenerator):
         rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()
         return rules
-

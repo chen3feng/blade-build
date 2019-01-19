@@ -39,6 +39,8 @@ color_enabled = (sys.stdout.isatty() and
 
 # See http://en.wikipedia.org/wiki/ANSI_escape_code
 # colors
+
+# pylint: disable=bad-whitespace
 _colors = {}
 _colors['red']    = '\033[1;31m'
 _colors['green']  = '\033[1;32m'
@@ -175,4 +177,3 @@ def flush():
     sys.stderr.flush()
     if _log:
         _log.flush()
-

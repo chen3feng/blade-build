@@ -209,7 +209,7 @@ class PackageTarget(Target):
         output = self._target_file_path(self.data['out'])
         if not self.data['shell']:
             self.ninja_build(output, 'package', inputs=inputs,
-                             variables={ 'entries' : ' '.join(entries) })
+                             variables={'entries' : ' '.join(entries)})
         else:
             self.ninja_package_in_shell(output, inputs, entries)
 

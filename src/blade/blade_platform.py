@@ -172,7 +172,7 @@ class BuildPlatform(object):
             include_list.append('%s/include/linux' % java_home)
             return include_list
         returncode, stdout, stderr = BuildPlatform._execute(
-                'java -version', redirect_stderr_to_stdout = True)
+                'java -version', redirect_stderr_to_stdout=True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
@@ -202,7 +202,7 @@ class BuildPlatform(object):
         return []
 
     @staticmethod
-    def _execute(cmd, redirect_stderr_to_stdout = False):
+    def _execute(cmd, redirect_stderr_to_stdout=False):
         redirect_stderr = subprocess.PIPE
         if redirect_stderr_to_stdout:
             redirect_stderr = subprocess.STDOUT
