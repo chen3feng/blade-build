@@ -309,6 +309,7 @@ class CuTest(CuBinary):
                  exclusive,
                  blade,
                  kwargs):
+        # pylint: disable=too-many-locals
         CuBinary.__init__(self,
                           name,
                           srcs,

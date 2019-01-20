@@ -442,7 +442,7 @@ def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
 
 def _pybin_add_pylib(pybin, libname, dirs, dirs_with_init_py):
     with open(libname) as pylib:
-        data = eval(pylib.read())
+        data = eval(pylib.read())  # pylint: disable=eval-used
         pylib_base_dir = data['base_dir']
         for libsrc, digest in data['srcs']:
             arcname = os.path.relpath(libsrc, pylib_base_dir)
@@ -541,7 +541,7 @@ if __name__ == '__main__':
     name = sys.argv[1]
     try:
         ret = toolchains[name](sys.argv[2:])
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         ret = 1
         console.error(str(e))
     if ret:

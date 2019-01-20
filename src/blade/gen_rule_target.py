@@ -85,6 +85,7 @@ class GenRuleTarget(Target):
         It outputs the scons rules according to user options.
 
         """
+        # pylint: disable=too-many-locals
         self._clone_env()
 
         env_name = self._env_name()

@@ -104,7 +104,7 @@ class WorkerThread(threading.Thread):
                         self.job_lock.release()
             else:
                 self._process()
-        except:
+        except:  # pylint: disable=bare-except
             traceback.print_exc()
 
 

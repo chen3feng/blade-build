@@ -20,20 +20,16 @@ from collections import deque
 import console
 
 
-"""
-Given the map of related targets, i.e., the subset of target_database
-that are dependencies of those targets speicifed in Blade command
-line, this utility class expands the 'deps' property of each target
-to be all direct and indirect dependencies of that target.
-
-After expanded the dependencies of targets, sort the topologically
-and then provide the query interface to users by blade manager.
-
-"""
-
-
 def analyze_deps(related_targets):
     """analyze the dependency relationship between targets.
+
+    Given the map of related targets, i.e., the subset of target_database
+    that are dependencies of those targets speicifed in Blade command
+    line, this utility class expands the 'deps' property of each target
+    to be all direct and indirect dependencies of that target.
+
+    After expanded the dependencies of targets, sort the topologically
+    and then provide the query interface to users by blade manager.
 
     Input: related targets after loading targets from BUILD files.
            {(target_path, target_name) : (target_data), ...}

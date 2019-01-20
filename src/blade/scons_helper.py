@@ -8,6 +8,7 @@
 #         Wenting Li <wentingli@tencent.com>
 # Date:   October 20, 2011
 
+# pylint: disable=too-many-lines
 
 """
  This is the scons rules helper module which should be
@@ -77,6 +78,7 @@ def set_blade_error_log(path):
 
 
 def generate_python_egg(target, source, env):
+    # pylint: disable=too-many-locals, too-many-statements
     setup_file = ''
     if not str(source[0]).endswith('setup.py'):
         console.warning('setup.py not existed to generate target %s, '
@@ -314,6 +316,7 @@ def process_java_resources(target, source, env):
 
 def _check_java_jar_classes(sources, classes_dir):
     """Check if all the classes are generated into classes_dir completely. """
+    # pylint: disable=too-many-nested-blocks
     sources = sorted([os.path.basename(s) for s in sources])
     sources = [s for s in sources if s[0].isupper()]
     classes = ['%s.class' % s[:-5] for s in sources]
@@ -379,8 +382,8 @@ def _generate_java_jar(target, sources, resources, env):
             cmd.append("-C '%s' '%s'" % (resources_dir,
                     os.path.relpath(resource, resources_dir)))
 
-    cmd = ' '.join(cmd)
-    return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
+    cmd_str = ' '.join(cmd)
+    return echospawn(args=[cmd_str], env=os.environ, sh=None, cmd=None, escape=None)
 
 
 def generate_java_jar(target, source, env):
@@ -1210,6 +1213,7 @@ def proto_scan_func(node, env, path, arg):
 def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
                          protobuf_path, protobuf_incs_str, protobuf_java_incs,
                          protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
+    # pylint: disable=too-many-locals
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
@@ -1350,6 +1354,7 @@ def setup_cuda_builders(top_env, nvcc_str, cuda_incs_str):
     top_env.Append(BUILDERS={"NvccBinary" : nvcc_binary_bld})
 
 def setup_java_builders(top_env, java_home, one_jar_boot_path):
+    # pylint: disable=too-many-locals
     if java_home:
         top_env.Replace(JAVA=os.path.join(java_home, 'bin/java'))
         top_env.Replace(JAVAC=os.path.join(java_home, 'bin/javac'))

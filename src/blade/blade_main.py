@@ -229,6 +229,7 @@ def _run_native_builder(cmdstr):
     try:
         p.wait()
         return p.returncode
+    # pylint: disable=bare-except
     except:  # KeyboardInterrupt
         return 1
 
@@ -523,9 +524,10 @@ def main(blade_path):
             console.info('success')
         console.info('cost time is %ss' % datetime.timedelta(seconds=cost_time))
     except SystemExit as e:
-        exit_code = e.code
+        # pylint misreport code as classobj
+        exit_code = e.code  # pylint: disable=redefined-variable-type
     except KeyboardInterrupt:
         console.error_exit('keyboard interrupted', -signal.SIGINT)
-    except:
+    except:  # pylint: disable=bare-except
         console.error_exit(traceback.format_exc())
     sys.exit(exit_code)

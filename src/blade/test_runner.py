@@ -63,6 +63,7 @@ class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
     def __init__(self, targets, options, target_database, direct_targets):
         """Init method. """
+        # pylint: disable=too-many-locals, too-many-statements
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
         self.inctest_md5_file = '.blade.test.stamp'
@@ -82,6 +83,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if os.path.exists(self.inctest_md5_file):
                 try:
                     f = open(self.inctest_md5_file)
+                    # pylint: disable=eval-used
                     self.last_test_stamp = eval(f.read())
                     f.close()
                 except (IOError, SyntaxError):
@@ -128,6 +130,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _get_test_target_md5sum(self, target):
         """Get test target md5sum. """
+        # pylint: disable=too-many-locals
         related_file_list = []
         related_file_data_list = []
         test_file_name = os.path.abspath(self._executable(target))
@@ -280,10 +283,10 @@ class TestRunner(binary_runner.BinaryRunner):
             cmd.append(report_dir)
             for data in coverage_data:
                 cmd.append(','.join(data))
-            cmd = ' '.join(cmd)
+            cmd_str = ' '.join(cmd)
             console.info('Generating java coverage report')
-            console.info(cmd)
-            if subprocess.call(cmd, shell=True):
+            console.info(cmd_str)
+            if subprocess.call(cmd_str, shell=True):
                 console.warning('Failed to generate java coverage report')
 
     def _generate_coverage_report(self):
