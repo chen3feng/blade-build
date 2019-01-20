@@ -170,7 +170,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             execfile(build_file, __current_globles, None)
         except SystemExit:
             console.error_exit('%s: fatal error' % build_file)
-        except:
+        except:  # pylint: disable=bare-except
             console.error_exit('Parse error in %s\n%s' % (
                     build_file, traceback.format_exc()))
     else:
@@ -215,6 +215,7 @@ def load_targets(target_ids, blade_root_dir, blade):
     files.  Returns a map which contains all these targets.
 
     """
+    # pylint: disable=too-many-locals
     build_rules.register_variable('build_target', build_attributes.attributes)
     target_database = blade.get_target_database()
 

@@ -36,6 +36,7 @@ blade = None
 
 class Blade(object):
     """Blade. A blade manager class. """
+    # pylint: disable=too-many-public-methods
     def __init__(self,
                  command_targets,
                  blade_path,

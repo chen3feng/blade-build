@@ -99,6 +99,7 @@ class SwigLibrary(CcTarget):
     def _swig_library_rules_py(self):
         """_swig_library_rules_py.
         """
+        # pylint: disable=too-many-locals
         env_name = self._env_name()
         var_name = self._var_name('dynamic_py')
 
@@ -234,6 +235,7 @@ class SwigLibrary(CcTarget):
                                         lib_packed,
                                         out_dir,
                                         dep_files_map):
+        # pylint: disable=too-many-locals
         env_name = self._env_name()
         var_name = self._var_name('dynamic_java')
         depend_outdir = dep_outdir
@@ -319,6 +321,7 @@ class SwigLibrary(CcTarget):
                     os.path.join(lib_dir, lib_name), self.name)
 
     def _swig_library_rules_php(self, dep_files_map):
+        # pylint: disable=too-many-locals
         env_name = self._env_name()
         var_name = self._var_name()
         obj_names_php = []

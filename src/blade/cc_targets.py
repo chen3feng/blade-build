@@ -4,6 +4,7 @@
 # Author: Michaelpeng <michaelpeng@tencent.com>
 # Date:   October 20, 2011
 
+# pylint: disable=too-many-lines
 
 """
  This is the cc_target module which is the super class
@@ -63,6 +64,7 @@ class CcTarget(Target):
         Init the cc target.
 
         """
+        # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
         srcs = [src for src in srcs if not _is_hdr(src)]
         deps = var_to_list(deps)
@@ -772,6 +774,7 @@ class CcTarget(Target):
 
     def _cc_objects_ninja(self, sources=None, generated=False, generated_headers=None):
         """Generate cc objects build rules in ninja. """
+        # pylint: disable=too-many-locals
         vars = {}
         self._setup_ninja_cc_vars(vars)
         implicit_deps = []
@@ -884,6 +887,7 @@ class CcLibrary(CcTarget):
         Init the cc library.
 
         """
+        # pylint: disable=too-many-locals
         CcTarget.__init__(self,
                           name,
                           'cc_library',
@@ -980,16 +984,11 @@ class CcLibrary(CcTarget):
             return []
         hdrs, level_two_hdrs = self._extract_cc_hdrs_from_stack(path)
         self_hdr_patterns = self._cc_self_hdr_patterns(src)
-        self_hdr_index = -1
         for i, hdr in enumerate(hdrs):
             if hdr in self_hdr_patterns:
-                self_hdr_index = i
-                break
+                return hdrs[:i] + level_two_hdrs[hdr] + hdrs[i+1:]
 
-        if self_hdr_index == -1:
-            return hdrs
-        else:
-            return hdrs[:self_hdr_index] + level_two_hdrs[hdr] + hdrs[self_hdr_index + 1:]
+        return hdrs
 
     @staticmethod
     def _parse_hdr_level(line):
@@ -1074,6 +1073,7 @@ class CcLibrary(CcTarget):
         return path, stacks
 
     def verify_header_inclusion_dependencies(self, history):
+        # pylint: disable=too-many-locals
         if not self._need_generate_hdrs():
             return True
 
@@ -1175,6 +1175,7 @@ def cc_library(name,
                secure=False,
                **kwargs):
     """cc_library target. """
+    # pylint: disable=too-many-locals
     target = CcLibrary(name,
                        srcs,
                        deps,
@@ -1231,6 +1232,7 @@ class CcBinary(CcTarget):
         Init the cc binary.
 
         """
+        # pylint: disable=too-many-locals
         CcTarget.__init__(self,
                           name,
                           'cc_binary',
@@ -1641,6 +1643,7 @@ class CcTest(CcBinary):
         Init the cc test.
 
         """
+        # pylint: disable=too-many-locals
         cc_test_config = config.get_section('cc_test_config')
         if dynamic_link is None:
             dynamic_link = cc_test_config['dynamic_link']
@@ -1711,6 +1714,7 @@ def cc_test(name,
             heap_check_debug=False,
             **kwargs):
     """cc_test target. """
+    # pylint: disable=too-many-locals
     cc_test_target = CcTest(name,
                             srcs,
                             deps,

@@ -78,6 +78,7 @@ class JavaJarTarget(Target):
 
     def _java_jar_rules_prepare_dep(self, new_src):
         """Prepare building java jars, make class root and other work. """
+        # pylint: disable=too-many-locals
         env_name = self._env_name()
 
         new_dep_source_list = []
@@ -150,6 +151,7 @@ class JavaJarTarget(Target):
                                     pack_list,
                                     classes_var_list):
         """Compile the java sources. """
+        # pylint: disable=too-many-locals, too-many-statements
         env_name = self._env_name()
         class_root = self._java_jar_gen_class_root(self.path,
                                                    self.name)
@@ -253,6 +255,7 @@ class JavaJarTarget(Target):
 
     def _java_jar_rules_make_jar(self, pack_list, classes_var_list):
         """Make the java jar files, pack the files that the target needs. """
+        # pylint: disable=too-many-locals
         env_name = self._env_name()
         target_base_dir = os.path.join(self.build_path, self.path)
 

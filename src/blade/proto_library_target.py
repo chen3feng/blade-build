@@ -84,6 +84,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         Init the proto target.
 
         """
+        # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
         self._check_proto_srcs_name(srcs)
         CcTarget.__init__(self,

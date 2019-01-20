@@ -155,7 +155,7 @@ class BuildEnvironment(object):
 
     def get_distcc_hosts_list(self):
         """Returns the hosts list. """
-        return filter(lambda x: x, self.distcc_host_list.split(' '))
+        return [x for x in self.distcc_host_list.split(' ') if x]
 
     def _add_rule(self, rule):
         """Append to buffer. """

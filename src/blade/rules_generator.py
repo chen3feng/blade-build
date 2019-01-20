@@ -233,6 +233,7 @@ import scons_helper
 
     def generate_compliation_flags(self):
         """Generates compliation flags. """
+        # pylint: disable=too-many-locals
         toolchain_dir = os.environ.get('TOOLCHAIN_DIR', '')
         if toolchain_dir and not toolchain_dir.endswith('/'):
             toolchain_dir += '/'
@@ -381,6 +382,7 @@ import scons_helper
 
 
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
+    # pylint: disable=too-many-public-methods
     def __init__(self, options, build_dir, blade_path, gcc_version,
                  python_inc, cuda_inc, build_environment, svn_roots):
         ScriptHeaderGenerator.__init__(
@@ -436,6 +438,7 @@ cxx_warnings = %s
 ''' % (' '.join(c_warnings), ' '.join(cxx_warnings)))
 
     def generate_cc_rules(self):
+        # pylint: disable=too-many-locals
         build_with_ccache = self.build_environment.ccache_installed
         cc = os.environ.get('CC', 'gcc')
         cxx = os.environ.get('CXX', 'g++')

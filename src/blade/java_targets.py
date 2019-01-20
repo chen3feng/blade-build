@@ -4,6 +4,7 @@
 # Author: CHEN Feng <phongchen@tencent.com>
 # Created: Jun 26, 2013
 
+# pylint: disable=too-many-lines
 
 """
 Implement java_library, java_binary, java_test and java_fat_library
@@ -253,6 +254,7 @@ class JavaTargetMixIn(object):
         a specific version of maven dependency is specified as a direct
         dependency of the target
         """
+        # pylint: disable=too-many-locals
         dep_jars, conflicted_jars = set(dep_jars), set()
         maven_dep_ids = self._get_maven_dep_ids()
         maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
@@ -331,7 +333,7 @@ class JavaTargetMixIn(object):
         maven_jars = self._process_pack_exclusions(maven_jars)
         return sorted(dep_jars), sorted(maven_jars)
 
-    def _get_java_package_name(self):
+    def _get_java_package_names(self):
         """
         Get java package name. Usually all the sources are within the same package.
         However, there are cases where BUILD is in the parent directory and sources
@@ -960,7 +962,7 @@ class JavaTest(JavaBinary):
         if target_under_test:
             target = self.target_database[target_under_test]
             self._write_rule('%s.Append(JAVATARGETUNDERTESTPKG=%s)' % (
-                self._env_name(), target._get_java_package_name()))
+                self._env_name(), target._get_java_package_names()))
 
     def _generate_java_test(self, dep_jar_vars, dep_jars):
         var_name = self._var_name()
@@ -979,7 +981,7 @@ class JavaTest(JavaBinary):
         target_under_test = self.data.get('target_under_test')
         if target_under_test:
             target = self.target_database[target_under_test]
-            packages = target._get_java_package_name()
+            packages = target._get_java_package_names()
             if packages:
                 vars['javatargetundertestpkg'] = ':'.join(packages)
         return vars
