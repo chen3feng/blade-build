@@ -547,7 +547,7 @@ class CcTarget(Target):
         if self._need_dynamic_library():
             self._dynamic_cc_library()
 
-    def _generated_header_files_dependencies(self):
+    def _generated_header_files_dependencies(self, scons=True):
         """Return dependencies which generate header files. """
         q = Queue.Queue(0)
         for key in self.deps:
@@ -559,13 +559,19 @@ class CcTarget(Target):
             key = q.get()
             if key not in keys:
                 keys.add(key)
-                dep = self.target_database[key]
-                if dep._generate_header_files():
-                    if dep.srcs:
-                        deps.append(dep)
+                t = self.target_database[key]
+                if t._generate_header_files() and t.data.get('generated_hdrs'):
+                    if scons:
+                        deps.append(t)
                     else:
-                        for k in dep.deps:
-                            q.put(k)
+                        deps.append(t._get_target_file())
+                elif 'genhdrs_stamp' in t.data:  # ninja only
+                    stamp = t.data['genhdrs_stamp']
+                    if stamp:
+                        deps.append(stamp)
+                else:
+                    for k in t.deps:
+                        q.put(k)
 
         return deps
 
@@ -746,16 +752,13 @@ class CcTarget(Target):
 
     def _cc_objects_generated_header_files_dependency(self):
         """Return a stamp which depends on targets which generate header files. """
-        deps = self._generated_header_files_dependencies()
+        self.data['genhdrs_stamp'] = None
+        deps = self._generated_header_files_dependencies(False)
         if not deps:
             return None
         stamp = self._target_file_path('%s__stamp__' % self.name)
-        inputs = []
-        for dep in deps:
-            dep_output = dep._get_target_file()
-            if dep_output:
-                inputs.append(dep_output)
-        self.ninja_build(stamp, 'stamp', inputs=inputs)
+        self.ninja_build(stamp, 'stamp', inputs=deps)
+        self.data['genhdrs_stamp'] = stamp
         return stamp
 
     def _securecc_object_ninja(self, obj, src, implicit_deps, vars):
