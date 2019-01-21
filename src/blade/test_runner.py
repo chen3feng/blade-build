@@ -84,27 +84,31 @@ class TestRunner(binary_runner.BinaryRunner):
         self.run_all_reason = ''
         self.skipped_tests = []
         self.coverage = getattr(options, 'coverage', False)
-        if not self.options.fulltest:
-            if os.path.exists(_TEST_HISTORY_FILE):
-                try:
-                    f = open(_TEST_HISTORY_FILE)
-                    # pylint: disable=eval-used
-                    self.test_history = eval(f.read())
-                    f.close()
-                except (IOError, SyntaxError):
-                    console.warning('error loading incremental test history, will run full test')
-                    self.run_all_reason = 'NO_HISTORY'
+
+        self._load_test_history()
+        self._update_test_history()
+
+    def _load_test_history(self):
+        if os.path.exists(_TEST_HISTORY_FILE):
+            try:
+                f = open(_TEST_HISTORY_FILE)
+                # pylint: disable=eval-used
+                self.test_history = eval(f.read())
+                f.close()
+            except (IOError, SyntaxError, NameError):
+                console.warning('error loading incremental test history, will run full test')
+                self.run_all_reason = 'NO_HISTORY'
 
         if 'items' not in self.test_history:
             self.test_history['items'] = {}
 
+    def _update_test_history(self):
         env_keys = os.environ.keys()
         env_keys = set(env_keys).difference(env_ignore_set)
         new_env = {key:os.environ[key] for key in env_keys}
         now = time.time()
-
         if not self.options.fulltest:
-            if self.options.testargs != self.test_history.get('testargs', None):
+            if self.options.args != self.test_history.get('testargs'):
                 self.run_all_reason = 'ARGUMENT'
                 console.info('all tests will run due to test arguments changed')
 
@@ -129,7 +133,14 @@ class TestRunner(binary_runner.BinaryRunner):
 
         self.test_history['env'] = new_env
         self.test_history['last_time'] = now
-        self.test_history['testargs'] = self.options.testargs
+        self.test_history['testargs'] = self.options.args
+
+    def _save_test_history(self, scheduler):
+        """update test history and save it to file. """
+        self._merge_run_results_to_history(scheduler.passed_run_results)
+        self._merge_run_results_to_history(scheduler.failed_run_results)
+        with open(_TEST_HISTORY_FILE, 'w') as f:
+            print >> f, str(self.test_history)
 
     def _get_test_target_md5sum(self, target):
         """Get test target md5sum. """
@@ -196,7 +207,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if target.key in self.direct_targets:
             return 'EXPLICIT'
 
-        history = self.test_history['items'].get(target.fullname, None)
+        history = self.test_history['items'].get(target.key)
         if not history:
             return 'NO_HISTORY'
 
@@ -208,8 +219,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if isinstance(old_md5sum, tuple):
                 if md5sums[0] != old_md5sum[0]:
                     return 'BINARY'
-                else:
-                    return 'TESTDATA'
+                return 'TESTDATA'
             return 'STALE'
         return None
 
@@ -281,15 +291,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _merge_run_results_to_history(self, run_results):
         for key, run_result in run_results.iteritems():
-            self.test_history['items'][self.targets[key].fullname] = \
-                TestHistoryItem(self.test_jobs[key], run_result)
-
-    def _update_test_history(self, scheduler):
-        """update test history and save it to file. """
-        self._merge_run_results_to_history(scheduler.passed_run_results)
-        self._merge_run_results_to_history(scheduler.failed_run_results)
-        with open(_TEST_HISTORY_FILE, 'w') as f:
-            print >> f, str(self.test_history)
+            self.test_history['items'][key] = TestHistoryItem(self.test_jobs[key], run_result)
 
     def _show_skipped_tests_detail(self):
         """Show tests skipped. """
@@ -376,6 +378,6 @@ class TestRunner(binary_runner.BinaryRunner):
             self._generate_coverage_report()
 
         self._clean_env()
-        self._update_test_history(scheduler)
+        self._save_test_history(scheduler)
         self._show_tests_result(scheduler)
         return 0 if len(scheduler.passed_run_results) == len(self.test_jobs) else 1
