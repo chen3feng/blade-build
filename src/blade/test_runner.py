@@ -27,6 +27,9 @@ import console
 from blade_util import md5sum
 from test_scheduler import TestScheduler
 
+# Used by eval when loading test history
+from test_scheduler import TestRunResult  # pylint: disable=unused-import
+
 
 _TEST_HISTORY_FILE = '.blade.test.stamp'
 _TEST_EXPIRE_TIME = 86400  # 1 day
@@ -277,7 +280,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_java_coverage_report()
 
     def _merge_run_results_to_history(self, run_results):
-        for key, run_result in run_results.items():
+        for key, run_result in run_results.iteritems():
             self.test_history['items'][self.targets[key].fullname] = \
                 TestHistoryItem(self.test_jobs[key], run_result)
 
@@ -325,8 +328,7 @@ class TestRunner(binary_runner.BinaryRunner):
         failed_run_results = scheduler.failed_run_results
         if failed_run_results:
             console.error('%d tests failed:' % len(failed_run_results))
-            for target_key, result in failed_run_results:
-                print target_key
+            for target_key, result in failed_run_results.iteritems():
                 target = self.targets[target_key]
                 print >>sys.stderr, '%s, exit code: %s' % (
                         target.fullname, result.exit_code)
