@@ -2,4 +2,4 @@
 # use pylint to check code,
 # Requirements:
 # pip install git-pylint-commit-hook
-git-pylint-commit-hook --pylintrc=.pylintrc
+git-pylint-commit-hook
