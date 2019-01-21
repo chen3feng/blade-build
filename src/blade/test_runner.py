@@ -14,6 +14,7 @@
 """
 
 
+from collections import namedtuple
 import os
 import sys
 import subprocess
@@ -25,6 +26,18 @@ import console
 
 from blade_util import md5sum
 from test_scheduler import TestScheduler
+
+# Used by eval when loading test history
+from test_scheduler import TestRunResult  # pylint: disable=unused-import
+
+
+_TEST_HISTORY_FILE = '.blade.test.stamp'
+_TEST_EXPIRE_TIME = 86400  # 1 day
+_REPORT_BANNER = '=' * 13
+
+
+TestJob = namedtuple('TestJob', ['md5', 'reason'])
+TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
 def _get_ignore_set():
@@ -66,49 +79,40 @@ class TestRunner(binary_runner.BinaryRunner):
         # pylint: disable=too-many-locals, too-many-statements
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
-        self.inctest_md5_file = '.blade.test.stamp'
-        self.tests_detail_file = 'blade_tests_detail'
-        self.inctest_run_list = []
-        self.last_test_stamp = {}
-        self.last_test_stamp['md5'] = {}
-        self.test_stamp = {}
-        self.test_stamp['md5'] = {}
-        self.valid_inctest_time_interval = 86400
-        self.tests_run_map = {}
+        self.test_jobs = {}  # dict{key : TestJob}
+        self.test_history = {}
         self.run_all_reason = ''
-        self.title = '=' * 13
         self.skipped_tests = []
         self.coverage = getattr(options, 'coverage', False)
-        if not self.options.fulltest:
-            if os.path.exists(self.inctest_md5_file):
-                try:
-                    f = open(self.inctest_md5_file)
-                    # pylint: disable=eval-used
-                    self.last_test_stamp = eval(f.read())
-                    f.close()
-                except (IOError, SyntaxError):
-                    console.warning('error loading incremental test history, will run full test')
-                    self.run_all_reason = 'NO_HISTORY'
 
-        self.test_stamp['testarg'] = md5sum(str(self.options.args))
+        self._load_test_history()
+        self._update_test_history()
+
+    def _load_test_history(self):
+        if os.path.exists(_TEST_HISTORY_FILE):
+            try:
+                f = open(_TEST_HISTORY_FILE)
+                # pylint: disable=eval-used
+                self.test_history = eval(f.read())
+                f.close()
+            except (IOError, SyntaxError, NameError):
+                console.warning('error loading incremental test history, will run full test')
+                self.run_all_reason = 'NO_HISTORY'
+
+        if 'items' not in self.test_history:
+            self.test_history['items'] = {}
+
+    def _update_test_history(self):
         env_keys = os.environ.keys()
         env_keys = set(env_keys).difference(env_ignore_set)
-        last_test_env = {}
-        for env_key in env_keys:
-            last_test_env[env_key] = os.environ[env_key]
-        self.test_stamp['env'] = last_test_env
-        self.test_stamp['inctest_time'] = time.time()
-
+        new_env = dict((key, os.environ[key]) for key in env_keys)
+        now = time.time()
         if not self.options.fulltest:
-            if self.test_stamp['testarg'] != (
-                    self.last_test_stamp.get('testarg', None)):
+            if self.options.args != self.test_history.get('testargs'):
                 self.run_all_reason = 'ARGUMENT'
                 console.info('all tests will run due to test arguments changed')
 
-            new_env = self.test_stamp['env']
-            old_env = self.last_test_stamp.get('env', {})
-            if isinstance(old_env, str):  # For old test record
-                old_env = {}
+            old_env = self.test_history.get('env', {})
             if new_env != old_env:
                 self.run_all_reason = 'ENVIRONMENT'
                 console.info('all tests will run due to test environments changed:')
@@ -118,15 +122,25 @@ class TestRunner(binary_runner.BinaryRunner):
                 if old:
                     console.info('old environments: %s' % old)
 
-            this_time = int(round(self.test_stamp['inctest_time']))
-            last_time = int(round(self.last_test_stamp.get('inctest_time', 0)))
-            interval = this_time - last_time
+            last_time = int(round(self.test_history.get('last_time', 0)))
+            interval = now - last_time
 
-            if interval >= self.valid_inctest_time_interval or interval < 0:
+            if interval >= _TEST_EXPIRE_TIME or interval < 0:
                 self.run_all_reason = 'STALE'
                 console.info('all tests will run due to all passed tests are expired now')
         else:
             self.run_all_reason = 'FULLTEST'
+
+        self.test_history['env'] = new_env
+        self.test_history['last_time'] = now
+        self.test_history['testargs'] = self.options.args
+
+    def _save_test_history(self, scheduler):
+        """update test history and save it to file. """
+        self._merge_run_results_to_history(scheduler.passed_run_results)
+        self._merge_run_results_to_history(scheduler.failed_run_results)
+        with open(_TEST_HISTORY_FILE, 'w') as f:
+            print >> f, str(self.test_history)
 
     def _get_test_target_md5sum(self, target):
         """Get test target md5sum. """
@@ -138,9 +152,8 @@ class TestRunner(binary_runner.BinaryRunner):
             related_file_list.append(test_file_name)
 
         if target.data.get('dynamic_link'):
-            target_key = (target.path, target.name)
-            for dep in self.target_database[target_key].expanded_deps:
-                dep_target = self.target_database[dep]
+            for dep in self.targets[target.key].expanded_deps:
+                dep_target = self.targets[dep]
                 if 'cc_library' in dep_target.type:
                     lib_name = 'lib%s.so' % dep_target.name
                     lib_path = os.path.join(self.build_dir,
@@ -183,58 +196,42 @@ class TestRunner(binary_runner.BinaryRunner):
 
         return md5sum(test_target_str), md5sum(test_target_data_str)
 
-    def _generate_inctest_run_list(self):
+    def _run_reason(self, target, md5sums):
+        '''Return run reason for a given test'''
+        if self.run_all_reason:
+            return self.run_all_reason
+
+        if target.data.get('always_run'):
+            return 'ALWAYS_RUN'
+
+        if target.key in self.direct_targets:
+            return 'EXPLICIT'
+
+        history = self.test_history['items'].get(target.key)
+        if not history:
+            return 'NO_HISTORY'
+
+        if history.result.exit_code != 0:
+            return 'LAST_FAILED'
+
+        old_md5sum = history.job.md5
+        if md5sums != old_md5sum:
+            if isinstance(old_md5sum, tuple):
+                if md5sums[0] != old_md5sum[0]:
+                    return 'BINARY'
+                return 'TESTDATA'
+            return 'STALE'
+        return None
+
+    def _collect_test_jobs(self):
         """Get incremental test run list. """
         for target in self.targets.values():
             if not target.type.endswith('_test'):
                 continue
-            target_key = (target.path, target.name)
-            test_file_name = os.path.abspath(self._executable(target))
-            self.test_stamp['md5'][test_file_name] = self._get_test_target_md5sum(target)
-            if self.run_all_reason:
-                self.tests_run_map[target_key] = {
-                        'runfile': test_file_name,
-                        'result': '',
-                        'reason': self.run_all_reason,
-                        'costtime': 0}
-                continue
-
-            if target_key in self.direct_targets:
-                self.inctest_run_list.append(target)
-                self.tests_run_map[target_key] = {
-                        'runfile': test_file_name,
-                        'result': '',
-                        'reason': 'EXPLICIT',
-                        'costtime': 0}
-                continue
-
-            old_md5sum = self.last_test_stamp['md5'].get(test_file_name, None)
-            new_md5sum = self.test_stamp['md5'][test_file_name]
-            if new_md5sum != old_md5sum:
-                self.inctest_run_list.append(target)
-                reason = ''
-                if isinstance(old_md5sum, tuple):
-                    if old_md5sum == (0, 0):
-                        reason = 'LAST_FAILED'
-                    else:
-                        if new_md5sum[0] != old_md5sum[0]:
-                            reason = 'BINARY'
-                        else:
-                            reason = 'TESTDATA'
-                else:
-                    reason = 'STALE'
-                self.tests_run_map[target_key] = {
-                        'runfile': test_file_name,
-                        'result': '',
-                        'reason': reason,
-                        'costtime': 0}
-
-        # Append old md5sum that not existed into new
-        old_keys = set(self.last_test_stamp['md5'].keys())
-        new_keys = set(self.test_stamp['md5'].keys())
-        diff_keys = old_keys.difference(new_keys)
-        for key in diff_keys:
-            self.test_stamp['md5'][key] = self.last_test_stamp['md5'][key]
+            new_md5sums = self._get_test_target_md5sum(target)
+            reason = self._run_reason(target, new_md5sums)
+            if reason:
+                self.test_jobs[target.key] = TestJob(md5=new_md5sums, reason=reason)
 
     def _get_java_coverage_data(self):
         """
@@ -245,7 +242,7 @@ class TestRunner(binary_runner.BinaryRunner):
             execution data: jacoco.exec collected by jacoco agent during testing
         """
         coverage_data = []
-        for key in self.tests_run_map:
+        for key in self.test_jobs:
             target = self.targets[key]
             if target.type != 'java_test':
                 continue
@@ -292,46 +289,25 @@ class TestRunner(binary_runner.BinaryRunner):
     def _generate_coverage_report(self):
         self._generate_java_coverage_report()
 
-    def _check_inctest_md5sum_file(self):
-        """check the md5sum file size, remove it when it is too large.
-           It is 2G by default.
-        """
-        if os.path.exists(self.inctest_md5_file):
-            if os.path.getsize(self.inctest_md5_file) > 2 * 1024 * 1024 * 1024:
-                console.warning('Will remove the md5sum file for incremental '
-                                'test for it is oversized')
-                os.remove(self.inctest_md5_file)
-
-    def _write_test_history(self):
-        """write md5sum to file. """
-        f = open(self.inctest_md5_file, 'w')
-        print >> f, str(self.test_stamp)
-        f.close()
-        self._check_inctest_md5sum_file()
-
-    def _write_tests_detail_map(self):
-        """write the tests detail map for further use. """
-        f = open(self.tests_detail_file, 'w')
-        print >> f, str(self.tests_run_map)
-        f.close()
+    def _merge_run_results_to_history(self, run_results):
+        for key, run_result in run_results.iteritems():
+            self.test_history['items'][key] = TestHistoryItem(self.test_jobs[key], run_result)
 
     def _show_skipped_tests_detail(self):
         """Show tests skipped. """
         self.skipped_tests.sort()
         for key in self.skipped_tests:
-            console.info('%s:%s skipped' % (key[0], key[1]), prefix=False)
+            console.info('%s skipped' % key, prefix=False)
 
-    def _show_tests_detail(self):
+    def _show_tests_detail(self, scheduler):
         """Show the tests detail after scheduling them. """
         tests = []
-        for key, v in self.tests_run_map.iteritems():
-            tests.append((key,
-                          v.get('costtime', 0),
-                          v.get('reason', 'UNKNOWN'),
-                          v.get('result', 'INTERRUPTED')))
+        for key, result in scheduler.passed_run_results.iteritems():
+            reason = self.test_jobs[key].reason
+            tests.append((key, result.cost_time, reason, result.exit_code))
         tests.sort(key=lambda x: x[1])
 
-        console.info('{0} Testing Detail {0}'.format(self.title))
+        console.info('{0} Testing Detail {0}'.format(_REPORT_BANNER))
         self._show_skipped_tests_detail()
         for key, costtime, reason, result in tests:
             console.info('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
@@ -346,44 +322,34 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _show_tests_summary(self, scheduler):
         """Show tests summary. """
-        run_tests = scheduler.num_of_run_tests
-        console.info('{0} Testing Summary {0}'.format(self.title))
+        run_tests = len(scheduler.passed_run_results) + len(scheduler.failed_run_results)
+        console.info('{0} Testing Summary {0}'.format(_REPORT_BANNER))
         self._show_skipped_tests_summary()
 
         console.info('Run %d tests' % run_tests)
-        failed_targets = scheduler.failed_targets
-        if failed_targets:
-            console.error('%d tests failed:' % len(failed_targets))
-            for target in failed_targets:
+        failed_run_results = scheduler.failed_run_results
+        if failed_run_results:
+            console.error('%d tests failed:' % len(failed_run_results))
+            for target_key, result in failed_run_results.iteritems():
+                target = self.targets[target_key]
                 print >>sys.stderr, '%s, exit code: %s' % (
-                        target.fullname, target.data['test_exit_code'])
-                test_file_name = os.path.abspath(self._executable(target))
-                # Do not skip failed test by default
-                if test_file_name in self.test_stamp['md5']:
-                    self.test_stamp['md5'][test_file_name] = (0, 0)
-            console.info('%d tests passed.' % (run_tests - len(failed_targets)))
+                        target.fullname, result.exit_code)
+            console.info('%d tests passed.' % (run_tests - len(failed_run_results)))
         else:
             console.info('All tests passed!')
 
     def _show_tests_result(self, scheduler):
         """Show test detail and summary according to the options. """
         if self.options.show_details:
-            self._write_tests_detail_map()
-            self._show_tests_detail()
+            self._show_tests_detail(scheduler)
         self._show_tests_summary(scheduler)
-        self._write_test_history()
 
     def run(self):
         """Run all the test target programs. """
-        self._generate_inctest_run_list()
+        self._collect_test_jobs()
         tests_run_list = []
-        for target in self.targets.values():
-            if not target.type.endswith('_test'):
-                continue
-            if (not self.run_all_reason) and target not in self.inctest_run_list:
-                if not target.data.get('always_run'):
-                    self.skipped_tests.append((target.path, target.name))
-                    continue
+        for target_key in self.test_jobs:
+            target = self.target_database[target_key]
             test_env = self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
@@ -401,10 +367,7 @@ class TestRunner(binary_runner.BinaryRunner):
             tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
 
         sys.stdout.flush()
-        concurrent_jobs = self.options.test_jobs
-        scheduler = TestScheduler(tests_run_list,
-                                  concurrent_jobs,
-                                  self.tests_run_map)
+        scheduler = TestScheduler(tests_run_list, self.options.test_jobs)
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
@@ -415,8 +378,6 @@ class TestRunner(binary_runner.BinaryRunner):
             self._generate_coverage_report()
 
         self._clean_env()
+        self._save_test_history(scheduler)
         self._show_tests_result(scheduler)
-        if scheduler.failed_targets:
-            return 1
-        else:
-            return 0
+        return 0 if len(scheduler.passed_run_results) == len(self.test_jobs) else 1

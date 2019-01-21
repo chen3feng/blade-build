@@ -12,6 +12,7 @@
 """
 
 
+from collections import namedtuple
 import Queue
 import signal
 import subprocess
@@ -24,6 +25,10 @@ import config
 import console
 
 
+TestRunResult = namedtuple('TestRunResult', ['exit_code', 'cost_time'])
+
+
+# dict{-signo : signame}
 _SIGNAL_MAP = dict([
     (-getattr(signal, name), name) for name in dir(signal)
     if name.startswith('SIG') and not name.startswith('SIG_')
@@ -108,38 +113,40 @@ class WorkerThread(threading.Thread):
             traceback.print_exc()
 
 
+_MAX_WORKER_THREADS = 16
+
+
 class TestScheduler(object):
     """TestScheduler. """
-    def __init__(self, tests_list, jobs, tests_run_map):
+    def __init__(self, tests_list, num_jobs):
         """init method. """
         self.tests_list = tests_list
-        self.jobs = jobs
-        self.tests_run_map = tests_run_map
-        self.tests_run_map_lock = threading.Lock()
-        self.cpu_core_num = blade_util.cpu_count()
-        self.num_of_tests = len(self.tests_list)
-        self.max_worker_threads = 16
-        self.failed_targets = []
-        self.failed_targets_lock = threading.Lock()
-        self.num_of_run_tests = 0
-        self.num_of_run_tests_lock = threading.Lock()
+        self.num_jobs = num_jobs
+
+        self.run_result_lock = threading.Lock()
+        # dict{key, {}}
+        self.passed_run_results = {}
+        self.failed_run_results = {}
+        self.num_of_ran_tests = 0
+
         self.job_queue = Queue.Queue(0)
         self.exclusive_job_queue = Queue.Queue(0)
 
     def _get_workers_num(self):
         """get the number of thread workers. """
-        max_workers = max(self.cpu_core_num, self.max_worker_threads)
-        if self.jobs <= 1:
+        cpu_count = blade_util.cpu_count()
+        max_workers = max(cpu_count, _MAX_WORKER_THREADS)
+        if self.num_jobs <= 1:
             return 1
-        elif self.jobs > max_workers:
-            self.jobs = max_workers
+        elif self.num_jobs > max_workers:
+            self.num_jobs = max_workers
 
-        return min(self.num_of_tests, self.jobs)
+        return min(len(self.tests_list), self.num_jobs)
 
     def _get_result(self, returncode):
         """translate result from returncode. """
         result = 'SUCCESS'
-        if returncode:
+        if returncode != 0:
             result = _SIGNAL_MAP.get(returncode, 'FAILED')
             result = '%s:%s' % (result, returncode)
         return result
@@ -152,7 +159,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
+        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
@@ -181,7 +188,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('[%s/%s] Running %s' % (self.num_of_run_tests, self.num_of_tests, cmd))
+        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
@@ -209,24 +216,16 @@ class TestScheduler(object):
                           (target.fullname, str(e)))
             returncode = 255
 
-        costtime = time.time() - start_time
+        cost_time = time.time() - start_time
 
-        if returncode:
-            target.data['test_exit_code'] = returncode
-            self.failed_targets_lock.acquire()
-            self.failed_targets.append(target)
-            self.failed_targets_lock.release()
+        run_result = TestRunResult(exit_code=returncode, cost_time=cost_time)
 
-        self.tests_run_map_lock.acquire()
-        run_item_map = self.tests_run_map.get(target.key, {})
-        if run_item_map:
-            run_item_map['result'] = self._get_result(returncode)
-            run_item_map['costtime'] = costtime
-        self.tests_run_map_lock.release()
-
-        self.num_of_run_tests_lock.acquire()
-        self.num_of_run_tests += 1
-        self.num_of_run_tests_lock.release()
+        with self.run_result_lock:
+            if returncode == 0:
+                self.passed_run_results[target.key] = run_result
+            else:
+                self.failed_run_results[target.key] = run_result
+            self.num_of_ran_tests += 1
 
     def print_summary(self):
         """print the summary output of tests. """
@@ -264,7 +263,7 @@ class TestScheduler(object):
 
     def schedule_jobs(self):
         """scheduler. """
-        if self.num_of_tests <= 0:
+        if not self.tests_list:
             return
 
         num_of_workers = self._get_workers_num()
