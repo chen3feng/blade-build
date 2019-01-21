@@ -105,7 +105,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _update_test_history(self):
         env_keys = os.environ.keys()
         env_keys = set(env_keys).difference(env_ignore_set)
-        new_env = {key:os.environ[key] for key in env_keys}
+        new_env = dict((key, os.environ[key]) for key in env_keys)
         now = time.time()
         if not self.options.fulltest:
             if self.options.args != self.test_history.get('testargs'):
