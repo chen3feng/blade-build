@@ -236,6 +236,8 @@ class TestRunner(binary_runner.BinaryRunner):
                         testdata_md5=testdata_md5,
                         env_md5=self.env_md5,
                         args=self.options.args)
+            else:
+                self.skipped_tests.append(target.key)
 
     def _get_java_coverage_data(self):
         """
@@ -297,13 +299,15 @@ class TestRunner(binary_runner.BinaryRunner):
         pads = (76 - len(text)) / 2
         console.notice('{0} {1} {0}'.format('=' * pads, text), prefix=False)
 
-    def _show_skipped_tests_detail(self):
+    def _show_skipped_tests(self):
         """Show tests skipped. """
-        self.skipped_tests.sort()
-        for key in self.skipped_tests:
-            console.info('%s skipped' % key, prefix=False)
+        if self.skipped_tests:
+            console.info('%d skipped tests:' % len(self.skipped_tests))
+            self.skipped_tests.sort()
+            for key in self.skipped_tests:
+                console.info('//%s:%s' % key, prefix=False)
 
-    def _show_tests_details(self, run_results, is_error=False):
+    def _show_run_results(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
         tests = []
         for key, result in run_results.iteritems():
@@ -354,15 +358,15 @@ class TestRunner(binary_runner.BinaryRunner):
         """Show test details and summary according to the options. """
         if self.options.show_details:
             self._show_banner('Testing Details')
-            self._show_skipped_tests_detail()
+            self._show_skipped_tests()
             if passed_run_results:
                 console.info('passed tests:')
-                self._show_tests_details(passed_run_results)
+                self._show_run_results(passed_run_results)
         if self.options.show_tests_slower_than is not None:
             self._show_slow_tests(passed_run_results, failed_run_results)
         if failed_run_results:  # Always show details of failed tests
             console.error('failed tests:')
-            self._show_tests_details(failed_run_results, is_error=True)
+            self._show_run_results(failed_run_results, is_error=True)
         self._show_tests_summary(passed_run_results, failed_run_results)
 
     def run(self):
