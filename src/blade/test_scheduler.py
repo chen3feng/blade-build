@@ -25,7 +25,7 @@ import config
 import console
 
 
-TestRunResult = namedtuple('TestRunResult', ['exit_code', 'cost_time'])
+TestRunResult = namedtuple('TestRunResult', ['exit_code', 'start_time', 'cost_time'])
 
 
 # dict{-signo : signame}
@@ -123,14 +123,15 @@ class TestScheduler(object):
         self.tests_list = tests_list
         self.num_jobs = num_jobs
 
+        self.job_queue = Queue.Queue(0)
+        self.exclusive_job_queue = Queue.Queue(0)
+
         self.run_result_lock = threading.Lock()
         # dict{key, {}}
         self.passed_run_results = {}
         self.failed_run_results = {}
-        self.num_of_ran_tests = 0
 
-        self.job_queue = Queue.Queue(0)
-        self.exclusive_job_queue = Queue.Queue(0)
+        self.num_of_ran_tests = 0
 
     def _get_workers_num(self):
         """get the number of thread workers. """
@@ -218,7 +219,8 @@ class TestScheduler(object):
 
         cost_time = time.time() - start_time
 
-        run_result = TestRunResult(exit_code=returncode, cost_time=cost_time)
+        run_result = TestRunResult(exit_code=returncode,
+                start_time=start_time, cost_time=cost_time)
 
         with self.run_result_lock:
             if returncode == 0:
@@ -226,10 +228,6 @@ class TestScheduler(object):
             else:
                 self.failed_run_results[target.key] = run_result
             self.num_of_ran_tests += 1
-
-    def print_summary(self):
-        """print the summary output of tests. """
-        console.info('There are %d tests scheduled to run by scheduler' % (len(self.tests_list)))
 
     def _join_thread(self, t):
         """Join thread and keep signal awareable"""
@@ -291,4 +289,5 @@ class TestScheduler(object):
             last_t.start()
             self._wait_worker_threads([last_t])
 
-        self.print_summary()
+    def get_results(self):
+        return self.passed_run_results, self.failed_run_results
