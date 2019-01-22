@@ -41,21 +41,51 @@ color_enabled = (sys.stdout.isatty() and
 # colors
 
 # pylint: disable=bad-whitespace
-_colors = {}
-_colors['red']    = '\033[1;31m'
-_colors['green']  = '\033[1;32m'
-_colors['yellow'] = '\033[1;33m'
-_colors['blue']   = '\033[1;34m'
-_colors['purple'] = '\033[1;35m'
-_colors['cyan']   = '\033[1;36m'
-_colors['white']  = '\033[1;37m'
-_colors['gray']   = '\033[1;38m'
-_colors['dimpurple'] = '\033[2;35m'
-_colors['end']    = '\033[0m'
+_COLORS = {
+    'red'    : '\033[1;31m',
+    'green'  : '\033[1;32m',
+    'yellow' : '\033[1;33m',
+    'blue'   : '\033[1;34m',
+    'purple' : '\033[1;35m',
+    'cyan'   : '\033[1;36m',
+    'white'  : '\033[1;37m',
+    'gray'   : '\033[1;38m',
+    'dimpurple' : '\033[2;35m',
+    'end'    :  '\033[0m',
+}
 
 # cursor movement
 _CLEAR_LINE = '\033[2K'
 _CURSUR_UP = '\033[A'
+
+
+def inerasable(msg):
+    """Make msg clear line when output"""
+    if color_enabled:
+        return _CLEAR_LINE + msg
+    return msg
+
+
+def erasable(msg):
+    """Make msg not cause new line when output"""
+    if color_enabled:
+        return _CLEAR_LINE + msg + _CURSUR_UP
+    return msg
+
+
+def colors(name):
+    """Return ansi console control sequence from color name"""
+    # TODO(chen3feng): rename it to `color`
+    if color_enabled:
+        return _COLORS[name]
+    return ''
+
+
+def colored(text, color):
+    """Return ansi console control sequence from color name"""
+    if color_enabled:
+        return _COLORS[color] + text + _COLORS['end']
+    return text
 
 
 def set_log_file(log_file):
@@ -97,27 +127,6 @@ def verbosity_ge(expected):
     return verbosity_compare(_verbosity, expected) >= 0
 
 
-def inerasable(msg):
-    """Make msg clear line when output"""
-    if color_enabled:
-        return _CLEAR_LINE + msg
-    return msg
-
-
-def erasable(msg):
-    """Make msg not cause new line when output"""
-    if color_enabled:
-        return _CLEAR_LINE + msg + _CURSUR_UP
-    return msg
-
-
-def colors(name):
-    """Return ansi console control sequence from color name"""
-    if color_enabled:
-        return _colors[name]
-    return ''
-
-
 def _print(msg, verbosity):
     if verbosity_ge(verbosity):
         print msg
@@ -128,9 +137,7 @@ def error(msg, prefix=True):
     if prefix:
         msg = 'Blade(error): ' + msg
     log(msg)
-    if color_enabled:
-        msg = _colors['red'] + msg + _colors['end']
-    print >>sys.stderr, msg
+    print >>sys.stderr, colored(msg, 'red')
 
 
 def error_exit(msg, code=1):
@@ -139,13 +146,22 @@ def error_exit(msg, code=1):
     sys.exit(code)
 
 
-def warning(msg):
-    """dump warning message but continue. """
-    msg = 'Blade(warning): ' + msg
+def warning(msg, prefix=True):
+    """dump warning message. """
+    if prefix:
+        msg = 'Blade(warning): ' + msg
     log(msg)
-    if color_enabled:
-        msg = _colors['yellow'] + msg + _colors['end']
+    msg = colored(msg, 'yellow')
     print >>sys.stderr, msg
+
+
+def notice(msg, prefix=True):
+    """dump notable message which is not a warning or error,
+       visible in quiet mode"""
+    if prefix:
+        msg = 'Blade(notice): ' + msg
+    log(msg)
+    _print(colored(msg, 'blue'), 'quiet')
 
 
 def info(msg, prefix=True):
@@ -153,9 +169,7 @@ def info(msg, prefix=True):
     if prefix:
         msg = 'Blade(info): ' + msg
     log(msg)
-    if color_enabled:
-        msg = _colors['cyan'] + msg + _colors['end']
-    _print(msg, 'normal')
+    _print(colored(msg, 'cyan'), 'normal')
 
 
 def debug(msg, prefix=True):

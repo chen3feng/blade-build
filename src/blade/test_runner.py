@@ -190,8 +190,8 @@ class TestRunner(binary_runner.BinaryRunner):
         return md5sum(test_target_str), md5sum(test_target_data_str)
 
     def _run_reason(self, target, binary_md5, testdata_md5):
-        '''Return run reason for a given test'''
-        if self.options.fulltest:
+        """Return run reason for a given test"""
+        if self.options.full_test:
             return 'FULL_TEST'
 
         if target.data.get('always_run'):
@@ -294,7 +294,8 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_java_coverage_report()
 
     def _show_banner(self, text):
-        console.info('{0} {1} {0}'.format('=' * 13, text))
+        pads = (76 - len(text)) / 2
+        console.notice('{0} {1} {0}'.format('=' * pads, text), prefix=False)
 
     def _show_skipped_tests_detail(self):
         """Show tests skipped. """
@@ -302,17 +303,29 @@ class TestRunner(binary_runner.BinaryRunner):
         for key in self.skipped_tests:
             console.info('%s skipped' % key, prefix=False)
 
-    def _show_tests_details(self, run_results):
+    def _show_tests_details(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
         tests = []
         for key, result in run_results.iteritems():
             reason = self.test_jobs[key].reason
             tests.append((key, result.cost_time, reason, result.exit_code))
         tests.sort(key=lambda x: x[1])
-
+        output_function = console.error if is_error else console.info
         for key, costtime, reason, result in tests:
-            console.info('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
-                         key[0], key[1], reason, result, costtime), prefix=False)
+            output_function('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
+                            key[0], key[1], reason, result, costtime), prefix=False)
+
+    def _collect_slow_tests(self, run_results):
+        return [(result.cost_time, key) for key, result in run_results.iteritems()
+                if result.cost_time > self.options.show_tests_slower_than]
+
+    def _show_slow_tests(self, passed_run_results, failed_run_results):
+        slow_tests = (self._collect_slow_tests(passed_run_results) +
+                      self._collect_slow_tests(failed_run_results))
+        if slow_tests:
+            console.warning('%d slow tests:' % len(slow_tests))
+            for cost_time, key in sorted(slow_tests):
+                console.warning('%.4gs\t//%s:%s' % (cost_time, key[0], key[1]), prefix=False)
 
     def _show_tests_summary(self, passed_run_results, failed_run_results):
         """Show tests summary. """
@@ -345,9 +358,11 @@ class TestRunner(binary_runner.BinaryRunner):
             if passed_run_results:
                 console.info('passed tests:')
                 self._show_tests_details(passed_run_results)
+        if self.options.show_tests_slower_than is not None:
+            self._show_slow_tests(passed_run_results, failed_run_results)
         if failed_run_results:  # Always show details of failed tests
-            console.info('failed tests:')
-            self._show_tests_details(failed_run_results)
+            console.error('failed tests:')
+            self._show_tests_details(failed_run_results, is_error=True)
         self._show_tests_summary(passed_run_results, failed_run_results)
 
     def run(self):
@@ -377,7 +392,7 @@ class TestRunner(binary_runner.BinaryRunner):
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
-            console.warning('KeyboardInterrupt, all tests stopped')
+            console.error('KeyboardInterrupt, all tests stopped')
             console.flush()
 
         if self.options.coverage:
@@ -388,4 +403,5 @@ class TestRunner(binary_runner.BinaryRunner):
         passed_run_results, failed_run_results = scheduler.get_results()
         self._save_test_history(passed_run_results, failed_run_results)
         self._show_tests_result(passed_run_results, failed_run_results)
+
         return 0 if len(passed_run_results) == len(self.test_jobs) else 1

@@ -24,7 +24,7 @@ _config_globals = {}
 
 
 def config_rule(func):
-    '''Decorator for functions accessible in config files'''
+    """Decorator for functions accessible in config files"""
     _config_globals[func.__name__] = func
     return func
 

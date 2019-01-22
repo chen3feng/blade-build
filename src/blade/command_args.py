@@ -288,7 +288,7 @@ class CmdArguments(object):
 
         parser.add_argument(
             '--full-test', action='store_true',
-            dest='fulltest', default=False,
+            dest='full_test', default=False,
             help='Enable full test, default is incremental test')
 
         parser.add_argument(
@@ -299,6 +299,11 @@ class CmdArguments(object):
             '--show-details', action='store_true',
             dest='show_details', default=False,
             help='Shows the test result in detail and provides a file')
+
+        parser.add_argument(
+            '--show-tests-slower-than', type=float,
+            dest='show_tests_slower_than',
+            help='Show tests which are slower than specified seconds')
 
         parser.add_argument(
             '--no-build', action='store_true',
