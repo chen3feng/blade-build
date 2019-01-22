@@ -40,36 +40,33 @@ TestJob = namedtuple('TestJob',
 TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
-def _get_ignore_set():
+def _ignored_env_set():
     """ """
-    ignore_env_vars = [
-            # shell variables
-            'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID',
-            'LS_COLORS',
-            # CI variables
-            'BUILD_DISPLAY_NAME',
-            'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
-            'BUILD_ID', 'START_USER',
-            'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
-            'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
-            'HUDSON_SERVER_COOKIE',
-            'RUN_CHANGES_DISPLAY_URL',
-            'UP_REVISION',
-            'RUN_DISPLAY_URL',
-            'JENKINS_SERVER_COOKIE',
+    ignored_env_vars = [
+        # shell variables
+        'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID',
+        'LS_COLORS',
+        # CI variables
+        'BUILD_DISPLAY_NAME',
+        'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
+        'BUILD_ID', 'START_USER',
+        'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
+        'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
+        'HUDSON_SERVER_COOKIE',
+        'RUN_CHANGES_DISPLAY_URL',
+        'UP_REVISION',
+        'RUN_DISPLAY_URL',
+        'JENKINS_SERVER_COOKIE',
 
-            # ssh variables
-            'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
-            # vim variables
-            'VIM', 'MYVIMRC', 'VIMRUNTIME']
+        # ssh variables
+        'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
+        # vim variables
+        'VIM', 'MYVIMRC', 'VIMRUNTIME']
 
     for i in range(30):
-        ignore_env_vars.append('SVN_REVISION_%d' % i)
+        ignored_env_vars.append('SVN_REVISION_%d' % i)
 
-    return frozenset(ignore_env_vars)
-
-
-_ENV_IGNORE_SET = _get_ignore_set()
+    return frozenset(ignored_env_vars)
 
 
 def _diff_env(a, b):
@@ -114,11 +111,11 @@ class TestRunner(binary_runner.BinaryRunner):
     def _update_test_history(self):
         old_env = self.test_history.get('env', {})
         env_keys = os.environ.keys()
-        env_keys = set(env_keys).difference(_ENV_IGNORE_SET)
+        env_keys = set(env_keys).difference(_ignored_env_set())
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
             console.info('Some tests will be run due to test environments changed:')
-            (new, old) = _diff_env(new_env, old_env)
+            new, old = _diff_env(new_env, old_env)
             if new:
                 console.info('new environments: %s' % new)
             if old:
