@@ -86,10 +86,15 @@ class TestRunner(binary_runner.BinaryRunner):
         # pylint: disable=too-many-locals, too-many-statements
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
         self.direct_targets = direct_targets
+
+        # Test jobs should be run
         self.test_jobs = {}  # dict{key : TestJob}
-        self.test_history = {}
         self.skipped_tests = []
-        self.coverage = getattr(options, 'coverage', False)
+
+        # Test history is the key to implement incremental test.
+        # It will be loaded from file before test, comprared with test jobs,
+        # and be updated and saved to file back after test.
+        self.test_history = {}  # {key, dict{}}
 
         self._load_test_history()
         self._update_test_history()
@@ -366,7 +371,7 @@ class TestRunner(binary_runner.BinaryRunner):
             pprof_path = config.get_item('cc_test_config', 'pprof_path')
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)
-            if self.coverage:
+            if self.options.coverage:
                 test_env['BLADE_COVERAGE'] = 'true'
             tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
 
@@ -378,7 +383,7 @@ class TestRunner(binary_runner.BinaryRunner):
             console.warning('KeyboardInterrupt, all tests stopped')
             console.flush()
 
-        if self.coverage:
+        if self.options.coverage:
             self._generate_coverage_report()
 
         self._clean_env()

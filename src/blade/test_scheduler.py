@@ -123,14 +123,15 @@ class TestScheduler(object):
         self.tests_list = tests_list
         self.num_jobs = num_jobs
 
+        self.job_queue = Queue.Queue(0)
+        self.exclusive_job_queue = Queue.Queue(0)
+
         self.run_result_lock = threading.Lock()
         # dict{key, {}}
         self.passed_run_results = {}
         self.failed_run_results = {}
-        self.num_of_ran_tests = 0
 
-        self.job_queue = Queue.Queue(0)
-        self.exclusive_job_queue = Queue.Queue(0)
+        self.num_of_ran_tests = 0
 
     def _get_workers_num(self):
         """get the number of thread workers. """
