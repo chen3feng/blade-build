@@ -524,7 +524,7 @@ def main(blade_path):
             console.info('success')
         console.info('cost time is %ss' % datetime.timedelta(seconds=cost_time))
     except SystemExit as e:
-        # pylint misreport code as classobj
+        # pylint misreport e.code as classobj
         exit_code = e.code  # pylint: disable=redefined-variable-type
     except KeyboardInterrupt:
         console.error_exit('keyboard interrupted', -signal.SIGINT)
