@@ -226,17 +226,6 @@ class CmdArguments(object):
             '-n', '--dry-run', dest='dry_run', action='store_true', default=False,
             help='Dry run (don\'t run commands but act like they succeeded)')
 
-    def __add_cache_arguments(self, parser):
-        """Add cache related arguments. """
-        parser.add_argument(
-            '--cache-dir', dest='cache_dir', type=str,
-            help='Specifies location of shared cache directory')
-
-        parser.add_argument(
-            '--cache-size', dest='cache_size', type=str,
-            help='Specifies cache size of shared cache directory in Gigabytes'
-                 '"unlimited" for unlimited. ')
-
     def __add_coverage_arguments(self, parser):
         """Add coverage arguments. """
         parser.add_argument(
@@ -321,7 +310,6 @@ class CmdArguments(object):
         for parser in parsers:
             self.__add_plat_profile_arguments(parser)
             self.__add_build_actions_arguments(parser)
-            self.__add_cache_arguments(parser)
             self.__add_generate_arguments(parser)
             self.__add_coverage_arguments(parser)
 

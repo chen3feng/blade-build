@@ -56,7 +56,6 @@ class ScriptHeaderGenerator(object):
         self.svn_roots = svn_roots
 
         self.distcc_enabled = config.get_item('distcc_config', 'enabled')
-        self.dccc_enabled = config.get_item('link_config', 'enable_dccc')
 
     def _add_rule(self, rule):
         """Append one rule to buffer. """
@@ -139,11 +138,8 @@ import scons_helper
     def _generate_fast_link_builders(self):
         """Generates fast link builders if it is specified in blade bash. """
         link_config = config.get_section('link_config')
-        enable_dccc = link_config['enable_dccc']
         if link_config['link_on_tmp']:
-            if (not enable_dccc) or (
-                    enable_dccc and not self.build_environment.dccc_env_prepared):
-                self._add_rule('scons_helper.setup_fast_link_builders(top_env)')
+            self._add_rule('scons_helper.setup_fast_link_builders(top_env)')
 
     def _generate_proto_builders(self):
         self._add_rule('time_value = Value("%s")' % time.asctime())
@@ -272,13 +268,6 @@ import scons_helper
                          prefix='ccache',
                          building_var=cxx_str,
                          condition=build_with_ccache)
-
-        build_with_dccc = (self.dccc_enabled and
-                           self.build_environment.dccc_env_prepared)
-        ld_str = self._append_prefix_to_building_var(
-                        prefix='dccc',
-                        building_var=ld,
-                        condition=build_with_dccc)
 
         cc_config = config.get_section('cc_config')
         cc_env_str = ('CC="%s", CXX="%s", SECURECXX="%s %s"' % (

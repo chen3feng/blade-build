@@ -63,7 +63,6 @@ class BladeConfig(object):
 
             'link_config': {
                 'link_on_tmp': False,
-                'enable_dccc': False
             },
 
             'java_config': {

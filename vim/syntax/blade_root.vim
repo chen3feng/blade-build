@@ -41,7 +41,6 @@ syn keyword bladeTarget distcc_config
 syn keyword bladeArg enabled
 syn keyword bladeTarget link_config
 syn keyword bladeArg link_on_tmp
-syn keyword bladeArg enable_dccc
 syn keyword bladeTarget java_config
 syn keyword bladeArg version
 syn keyword bladeArg source_version
@@ -117,7 +116,6 @@ syn keyword bladeTarget protoc_plugin
 syn keyword bladeArg name
 syn keyword bladeArg path
 syn keyword bladeArg code_generation
-
 
 if version >= 508 || !exists("did_blade_roor_syn_inits")
     if version < 508
