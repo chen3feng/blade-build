@@ -42,7 +42,7 @@ import blade_util
 import console
 import toolchain
 
-from console import colors
+from console import color
 
 # option_verbose to indicate print verbosity level
 _verbosity = 'normal'
@@ -918,9 +918,7 @@ def error_colorize(message):
                     color = 'red'
                     break
 
-        colored_message.append(console.colors(color))
-        colored_message.append(line)
-        colored_message.append(console.colors('end'))
+        colored_message.append(console.colored(line, color))
     return console.inerasable(''.join(colored_message))
 
 
@@ -1136,12 +1134,12 @@ def make_top_env(build_dir):
 
 def get_compile_source_message():
     return console.erasable('%sCompiling %s$SOURCE%s%s' % (
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
 
 
 def get_link_program_message():
     return console.erasable('%sLinking Program %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
 
 
 def setup_compliation_verbosity(top_env, color_enabled, verbosity):
@@ -1154,15 +1152,15 @@ def setup_compliation_verbosity(top_env, color_enabled, verbosity):
     compile_source_message = get_compile_source_message()
     link_program_message = get_link_program_message()
     assembling_source_message = console.erasable('%sAssembling %s$SOURCE%s%s' % (
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
     link_library_message = console.erasable('%sCreating Static Library %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
     ranlib_library_message = console.erasable('%sRanlib Library %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
     link_shared_library_message = console.erasable('%sLinking Shared Library %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
     jar_message = console.erasable('%sCreating Jar %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
 
     if console.verbosity_compare(verbosity, 'verbose') < 0:
         top_env.Append(
@@ -1215,25 +1213,25 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
                          protoc_php_plugin, protobuf_php_path, protoc_go_plugin):
     # pylint: disable=too-many-locals
     compile_proto_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_proto_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_proto_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_proto_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_proto_go_message = console.erasable('%sCompiling %s$SOURCE%s to go source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     copy_proto_go_source_message = console.erasable('%sCopying %s$SOURCE%s to go directory%s' %
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     generate_proto_descriptor_message = console.erasable('%sGenerating proto descriptor set %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
 
     proto_bld = SCons.Builder.Builder(action=MakeAction(
         "%s --proto_path=. -I. %s -I=`dirname $SOURCE` --cpp_out=%s $PROTOCFLAGS $PROTOCCPPPLUGINFLAGS $SOURCE" % (
@@ -1292,13 +1290,13 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
 
 def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
     compile_thrift_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_thrift_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_thrift_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     thrift_bld = SCons.Builder.Builder(action=MakeAction(
         '%s --gen cpp:include_prefix,pure_enums -I . %s -I `dirname $SOURCE`'
@@ -1322,9 +1320,9 @@ def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
 
 def setup_fbthrift_builders(top_env, build_dir, fbthrift1_bin, fbthrift2_bin, fbthrift_incs_str):
     compile_fbthrift_cpp_message = console.erasable('%sCompiling %s$SOURCE%s to cpp source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
     compile_fbthrift_cpp2_message = console.erasable('%sCompiling %s$SOURCE%s to cpp2 source%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     fbthrift1_bld = SCons.Builder.Builder(action=MakeAction(
         '%s --gen cpp:templates,cob_style,include_prefix,enum_strict -I . %s -I `dirname $SOURCE`'
@@ -1389,13 +1387,13 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
 
 
     resource_message = console.erasable('%sProcess Jar Resource %s$SOURCES%s%s' % ( \
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
     java_resource_bld = SCons.Builder.Builder(
         action=MakeAction(process_java_resources, resource_message))
     top_env.Append(BUILDERS={"JavaResource" : java_resource_bld})
 
     source_message = console.erasable('%sProcess Java Source %s$SOURCES%s%s' % ( \
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
     java_source_bld = SCons.Builder.Builder(
         action=MakeAction(process_java_sources, source_message))
     top_env.Append(BUILDERS={"JavaSource" : java_source_bld})
@@ -1404,25 +1402,25 @@ def setup_java_builders(top_env, java_home, one_jar_boot_path):
     _one_jar_boot_path = one_jar_boot_path
 
     one_java_message = console.erasable('%sGenerating One Jar %s$TARGET%s%s' % ( \
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
     one_jar_bld = SCons.Builder.Builder(action=MakeAction(generate_one_jar,
         one_java_message))
     top_env.Append(BUILDERS={'OneJar' : one_jar_bld})
 
     fat_java_message = console.erasable('%sCreating Fat Jar %s$TARGET%s%s' % ( \
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
     fat_jar_bld = SCons.Builder.Builder(action=MakeAction(generate_fat_jar,
         fat_java_message))
     top_env.Append(BUILDERS={'FatJar' : fat_jar_bld})
 
     java_binary_message = console.erasable('%sGenerating Java Binary %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     java_binary_bld = SCons.Builder.Builder(action=MakeAction(
         generate_java_binary, java_binary_message))
     top_env.Append(BUILDERS={"JavaBinary" : java_binary_bld})
 
     java_test_message = console.erasable('%sGenerating Java Test %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     java_test_bld = SCons.Builder.Builder(action=MakeAction(
         generate_java_test, java_test_message))
     top_env.Append(BUILDERS={"JavaTest" : java_test_bld})
@@ -1438,7 +1436,7 @@ def setup_scala_builders(top_env, scala_home):
     top_env.Append(BUILDERS={"ScalaJar" : scala_jar_bld})
 
     scala_test_message = console.erasable('%sGenerating Scala Test %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     scala_test_bld = SCons.Builder.Builder(action=MakeAction(
         generate_scala_test, scala_test_message))
     top_env.Append(BUILDERS={"ScalaTest" : scala_test_bld})
@@ -1451,19 +1449,19 @@ def setup_go_builders(top_env, go_cmd, go_home):
         top_env.Replace(GOHOME=go_home)
 
     go_library_message = console.erasable('%sGenerating Go Package %s$TARGET%s%s' %
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     go_library_builder = SCons.Builder.Builder(action=MakeAction(
         generate_go_library, go_library_message))
     top_env.Append(BUILDERS={"GoLibrary" : go_library_builder})
 
     go_binary_message = console.erasable('%sGenerating Go Executable %s$TARGET%s%s' %
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     go_binary_builder = SCons.Builder.Builder(action=MakeAction(
         generate_go_binary, go_binary_message))
     top_env.Append(BUILDERS={"GoBinary" : go_binary_builder})
 
     go_test_message = console.erasable('%sGenerating Go Test %s$TARGET%s%s' %
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     go_test_builder = SCons.Builder.Builder(action=MakeAction(
         generate_go_test, go_test_message))
     top_env.Append(BUILDERS={"GoTest" : go_test_builder})
@@ -1475,9 +1473,9 @@ def setup_lex_yacc_builders(top_env):
 
 def setup_resource_builders(top_env):
     compile_resource_index_message = console.erasable('%sGenerating resource index for %s$SOURCE_PATH/$TARGET_NAME%s%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
     compile_resource_message = console.erasable('%sCompiling %s$SOURCE%s as resource file%s' % \
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     resource_index_bld = SCons.Builder.Builder(action=MakeAction(generate_resource_index,
         compile_resource_index_message))
@@ -1489,11 +1487,11 @@ def setup_resource_builders(top_env):
 
 def setup_python_builders(top_env):
     compile_python_egg_message = console.erasable('%sGenerating Python Egg %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     compile_python_library_message = console.erasable('%sGenerating Python Library %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     compile_python_binary_message = console.erasable('%sGenerating Python Binary %s$TARGET%s%s' % \
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
 
     python_egg_bld = SCons.Builder.Builder(action=MakeAction(generate_python_egg,
         compile_python_egg_message))
@@ -1508,13 +1506,13 @@ def setup_python_builders(top_env):
 
 def setup_package_builders(top_env):
     source_message = console.erasable('%sProcess Package Source %s$SOURCES%s%s' % (
-        colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        color('cyan'), color('purple'), color('cyan'), color('end')))
     source_bld = SCons.Builder.Builder(
         action=MakeAction(process_package_source, source_message))
     top_env.Append(BUILDERS={"PackageSource" : source_bld})
 
     package_message = console.erasable('%sCreating Package %s$TARGET%s%s' % (
-        colors('green'), colors('purple'), colors('green'), colors('end')))
+        color('green'), color('purple'), color('green'), color('end')))
     package_bld = SCons.Builder.Builder(
         action=MakeAction(generate_package, package_message))
     top_env.Append(BUILDERS={"Package" : package_bld})
@@ -1522,13 +1520,13 @@ def setup_package_builders(top_env):
 
 def setup_shell_builders(top_env):
     shell_test_data_message = console.erasable('%sGenerating Shell Test Data %s$TARGET%s%s' %
-        (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+        (color('cyan'), color('purple'), color('cyan'), color('end')))
     shell_test_data_bld = SCons.Builder.Builder(action=MakeAction(
         generate_shell_test_data, shell_test_data_message))
     top_env.Append(BUILDERS={"ShellTestData" : shell_test_data_bld})
 
     shell_test_message = console.erasable('%sGenerating Shell Test %s$TARGET%s%s' %
-        (colors('green'), colors('purple'), colors('green'), colors('end')))
+        (color('green'), color('purple'), color('green'), color('end')))
     shell_test_bld = SCons.Builder.Builder(action=MakeAction(
         generate_shell_test, shell_test_message))
     top_env.Append(BUILDERS={"ShellTest" : shell_test_bld})
@@ -1544,13 +1542,13 @@ def setup_other_builders(top_env):
 
 def setup_swig_builders(top_env, build_dir):
     compile_swig_python_message = console.erasable('%sCompiling %s$SOURCE%s to python source%s' % \
-            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+            (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_swig_java_message = console.erasable('%sCompiling %s$SOURCE%s to java source%s' % \
-            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+            (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     compile_swig_php_message = console.erasable('%sCompiling %s$SOURCE%s to php source%s' % \
-            (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
+            (color('cyan'), color('purple'), color('cyan'), color('end')))
 
     # Python
     swig_py_bld = SCons.Builder.Builder(action=MakeAction(
@@ -1652,5 +1650,5 @@ extern const char kCompiler[];''')
     env_version = top_env.Clone()
     env_version.Replace(SHCXXCOMSTR=console.erasable(
         '%sUpdating version information%s' % (
-            colors('cyan'), colors('end'))))
+            color('cyan'), color('end'))))
     return env_version.SharedObject(filename)

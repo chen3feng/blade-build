@@ -181,8 +181,7 @@ class GenRuleTarget(Target):
         rule = '%s__rule__' % self._regular_variable_name(
                               self._source_file_path(self.name))
         cmd = self.ninja_command()
-        description = '%sCOMMAND //%s%s' % (
-                      console.colors('dimpurple'), self.fullname, console.colors('end'))
+        description = console.colored('COMMAND //' + self.fullname, 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
   description = %s

@@ -73,9 +73,8 @@ def erasable(msg):
     return msg
 
 
-def colors(name):
+def color(name):
     """Return ansi console control sequence from color name"""
-    # TODO(chen3feng): rename it to `color`
     if color_enabled:
         return _COLORS[name]
     return ''
