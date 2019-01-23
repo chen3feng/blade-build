@@ -82,7 +82,7 @@ def colors(name):
 
 
 def colored(text, color):
-    """Return ansi console control sequence from color name"""
+    """Return ansi color code enclosed text"""
     if color_enabled:
         return _COLORS[color] + text + _COLORS['end']
     return text
