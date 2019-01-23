@@ -287,7 +287,7 @@ class Blade(object):
             output = '%s %s:%s' % ('+-', path, name)
         else:
             output = '%s%s %s:%s' % ('|  ' * (level - 1), '+-', path, name)
-        console.info(console.colors('end') + console.colors('gray') + output)
+        console.info(console.color('end') + console.color('gray') + output)
         for dkey in build_targets[key].deps:
             self._query_dependency_tree(dkey, level + 1, build_targets)
 

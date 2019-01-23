@@ -397,8 +397,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self._add_rule('rule %s' % name)
         self._add_rule('  command = %s' % command)
         if description:
-            self._add_rule('  description = %s%s%s' % (
-                           console.colors('dimpurple'), description, console.colors('end')))
+            self._add_rule('  description = %s' % console.colored(description, 'dimpurple'))
         if depfile:
             self._add_rule('  depfile = %s' % depfile)
         if generator:
