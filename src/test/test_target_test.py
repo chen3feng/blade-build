@@ -20,7 +20,7 @@ class TestTestRunner(blade_test.TargetTest):
     def setUp(self):
         """setup method. """
         self.doSetUp('test_test_runner', 'string_test_main',
-                     fulltest=False, args='', test_jobs=1, show_details=True)
+                     full_test=False, args='', test_jobs=1, show_details=True)
 
     def testLoadBuildsNotNone(self):
         """Test direct targets and all command targets are not none. """

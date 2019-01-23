@@ -254,7 +254,7 @@ class TestScheduler(object):
                 for dt in dead_threads:
                     threads.remove(dt)
         except KeyboardInterrupt:
-            console.error('KeyboardInterrupt: Terminate workers...')
+            console.debug('KeyboardInterrupt: Terminate workers...')
             for t in threads:
                 t.terminate()
             raise
