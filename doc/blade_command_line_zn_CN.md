@@ -27,8 +27,6 @@ targets是一个列表，支持的格式：
 * -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
 * -j N,--jobs=N        N路并行编译，多CPU机器上适用
 * -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
-* --cache-dir=DIR      指定一个cache目录
-* --cache-size=SZ      指定cache大小，以G为单位
 * --verbose            完整输出所运行的每条命令行
 * –h, --help           显示帮助
 * --color=yes/no/auto  是否开启彩色
