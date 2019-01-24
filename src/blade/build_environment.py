@@ -91,7 +91,7 @@ class BuildEnvironment(object):
 
 
     def setup_build_cache(self, options):
-        if self.ccache_installed:  # Perfer ccache because it also cache warning
+        if self.ccache_installed:
             self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
             self._add_rule('top_env.Append(CCACHE_NOHASHDIR="true")')
 
