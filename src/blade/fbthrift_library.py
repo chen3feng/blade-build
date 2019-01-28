@@ -19,18 +19,18 @@
 
 """
 
+from __future__ import absolute_import
 
 import os
 
-import blade
-import config
-import console
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
 
-import build_rules
-
-from blade_util import var_to_list
-from cc_targets import CcTarget
-from fbthrift_helper import FBThriftHelper
+from blade.blade_util import var_to_list
+from blade.cc_targets import CcTarget
+from blade.fbthrift_helper import FBThriftHelper
 
 
 class FBThriftLibrary(CcTarget):

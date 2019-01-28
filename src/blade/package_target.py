@@ -11,14 +11,16 @@ into an (compressed) archive.
 
 """
 
+from __future__ import absolute_import
+
 import os
 
-import blade
-import build_rules
-import console
-from blade_util import var_to_list
-from blade_util import location_re
-from target import Target
+from blade import build_manager
+from blade import build_rules
+from blade import console
+from blade.blade_util import var_to_list
+from blade.blade_util import location_re
+from blade.target import Target
 
 
 _package_types = frozenset([

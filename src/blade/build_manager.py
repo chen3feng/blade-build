@@ -142,7 +142,7 @@ class Blade(object):
 
     def verify(self):
         """Verify specific targets after build is complete. """
-        verify_history = self.load_verify_history()
+        verify_history = self._load_verify_history()
         error = 0
         header_inclusion_dependencies = config.get_item('cc_config',
                                                         'header_inclusion_dependencies')
@@ -153,7 +153,7 @@ class Blade(object):
                 target.type == 'cc_library' and target.srcs):
                 if not target.verify_header_inclusion_dependencies(header_inclusion_history):
                     error += 1
-        self.dump_verify_history()
+        self._dump_verify_history()
         return error == 0
 
     def run(self, target):
@@ -408,13 +408,13 @@ class Blade(object):
         keywords = ['thirdparty']
         return keywords
 
-    def load_verify_history(self):
+    def _load_verify_history(self):
         if os.path.exists(self._verify_history_path):
             with open(self._verify_history_path) as f:
                 self._verify_history = json.load(f)
         return self._verify_history
 
-    def dump_verify_history(self):
+    def _dump_verify_history(self):
         with open(self._verify_history_path, 'w') as f:
             json.dump(self._verify_history, f)
 
@@ -443,3 +443,18 @@ class Blade(object):
             console.info('tunes the parallel jobs number(-j N) to be %d' % (
                 jobs_num))
         return jobs_num
+
+
+def initialize(
+        command_targets,
+        blade_path,
+        working_dir,
+        build_path,
+        blade_root_dir,
+        blade_options,
+        command):
+    global instance
+    instance = Blade(command_targets,
+                     blade_path, working_dir, build_path, blade_root_dir,
+                     blade_options, command)
+

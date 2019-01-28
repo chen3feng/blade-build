@@ -7,12 +7,13 @@
 """Define resource_library target
 """
 
+from __future__ import absolute_import
 
 import os
-import blade
 
-import build_rules
-from cc_targets import CcTarget
+from blade import build_manager
+from blade import build_rules
+from blade.cc_targets import CcTarget
 
 
 class ResourceLibrary(CcTarget):

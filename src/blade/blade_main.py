@@ -79,10 +79,10 @@ import time
 import traceback
 from string import Template
 
-from blade import blade
 from blade import build_attributes
-from blade import console
+from blade import build_manager
 from blade import config
+from blade import console
 
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
 from blade.blade_util import get_cwd
@@ -427,13 +427,13 @@ def clear_build_script():
 def run_subcommand(command, options, targets, blade_path, build_dir):
     if command == 'query' and options.depended:
         targets = ['.:...']
-    build_manager.instance = blade.Blade(targets,
-                              blade_path,
-                              _WORKING_DIR,
-                              build_dir,
-                              _BLADE_ROOT_DIR,
-                              options,
-                              command)
+    build_manager.initialize(targets,
+                             blade_path,
+                             _WORKING_DIR,
+                             build_dir,
+                             _BLADE_ROOT_DIR,
+                             options,
+                             command)
 
     # Build the targets
     build_manager.instance.load_targets()

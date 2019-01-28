@@ -20,7 +20,6 @@ from __future__ import absolute_import
 import os
 import traceback
 
-import blade.build_manager
 from blade import build_rules
 from blade import console
 from blade import build_attributes
@@ -31,23 +30,24 @@ from blade.pathlib import Path
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 
-# pylint: disable=W0611
-import blade.cc_targets
-import blade.cu_targets
-import blade.gen_rule_target
-import blade.go_targets
-import blade.java_jar_target
-import blade.java_targets
-import blade.scala_targets
-import blade.lex_yacc_target
-import blade.package_target
-import blade.proto_library_target
-import blade.py_targets
-import blade.resource_library_target
-import blade.sh_test_target
-import blade.swig_library_target
-import blade.thrift_library
-import blade.fbthrift_library
+def _load_build_rules():
+    # pylint: disable=W0611
+    import blade.cc_targets
+    import blade.cu_targets
+    import blade.gen_rule_target
+    import blade.go_targets
+    import blade.java_jar_target
+    import blade.java_targets
+    import blade.scala_targets
+    import blade.lex_yacc_target
+    import blade.package_target
+    import blade.proto_library_target
+    import blade.py_targets
+    import blade.resource_library_target
+    import blade.sh_test_target
+    import blade.swig_library_target
+    import blade.thrift_library
+    import blade.fbthrift_library
 
 
 def _find_dir_depender(dir, blade):
@@ -83,6 +83,7 @@ def enable_if(cond, true_value, false_value=None):
 
 def glob(srcs, excludes=[]):
     """A global function can be called in BUILD to specify a set of files using patterns"""
+    from blade import build_manager
     srcs = var_to_list(srcs)
     excludes = var_to_list(excludes)
     source_dir = Path(build_manager.instance.get_current_source_path())
@@ -125,11 +126,12 @@ __current_globles = None
 
 # Include a defination file in a BUILD file
 def include(name):
+    from blade import build_manager
     if name.startswith('//'):
         dir = build_manager.instance.get_root_dir()
         name = name[2:]
     else:
-        dir = builder_manager.blade.get_current_source_path()
+        dir = build_manager.instance.get_current_source_path()
     execfile(os.path.join(dir, name), __current_globles, None)
 
 
@@ -216,6 +218,8 @@ def load_targets(target_ids, blade_root_dir, blade):
     files.  Returns a map which contains all these targets.
 
     """
+    _load_build_rules()
+
     # pylint: disable=too-many-locals
     build_rules.register_variable('build_target', build_attributes.attributes)
     target_database = blade.get_target_database()

@@ -7,12 +7,12 @@
 """Define lex_yacc_library target
 """
 
+from __future__ import absolute_import
 
-import console
-import blade
-
-import build_rules
-from cc_targets import CcTarget
+from blade import build_manager
+from blade import build_rules
+from blade import console
+from blade.cc_targets import CcTarget
 
 
 class LexYaccLibrary(CcTarget):

@@ -10,21 +10,22 @@
 Implement java_library, java_binary, java_test and java_fat_library
 """
 
+from __future__ import absolute_import
 
 import os
 import re
 import Queue
 from distutils.version import LooseVersion
 
-import blade
-import build_rules
-import config
-import console
-import maven
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade import maven
 
-from blade_util import var_to_list
-from blade_util import location_re
-from target import Target
+from blade.blade_util import var_to_list
+from blade.blade_util import location_re
+from blade.target import Target
 
 
 class MavenJar(Target):

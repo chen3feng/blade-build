@@ -17,7 +17,6 @@ import console
 import build_attributes
 from blade_util import var_to_list
 from cc_targets import HEAP_CHECK_VALUES
-from proto_library_target import ProtocPlugin
 
 
 _config_globals = {}
@@ -376,6 +375,7 @@ def proto_library_config(append=None, **kwargs):
 @config_rule
 def protoc_plugin(**kwargs):
     """protoc_plugin. """
+    from proto_library_target import ProtocPlugin
     if 'name' not in kwargs:
         console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')

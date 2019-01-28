@@ -12,15 +12,15 @@ python library, python binary, python test.
 
 """
 
+from __future__ import absolute_import
 
 import os
 
-import blade
-import build_rules
-import console
-
-from blade_util import var_to_list
-from target import Target
+from blade import build_manager
+from blade import build_rules
+from blade import console
+from blade.blade_util import var_to_list
+from blade.target import Target
 
 
 class PythonEgg(Target):

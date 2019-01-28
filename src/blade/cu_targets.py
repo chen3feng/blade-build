@@ -11,14 +11,15 @@
 
 """
 
-import os
-import blade
-import config
+from __future__ import absolute_import
 
-import build_rules
-from blade_util import var_to_list
-import blade.cc_targets
-from cc_targets import CcTarget
+import os
+
+from blade import build_rules
+from blade import build_manager
+from blade import config
+from blade.blade_util import var_to_list
+from blade.cc_targets import CcTarget
 
 
 class CuTarget(CcTarget):
