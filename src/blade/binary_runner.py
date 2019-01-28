@@ -31,7 +31,7 @@ class BinaryRunner(object):
     def __init__(self, targets, options, target_database):
         """Init method. """
         self.targets = targets
-        self.build_dir = blade.blade.get_build_path()
+        self.build_dir = build_manager.instance.get_build_path()
         self.options = options
         self.run_list = ['cc_binary',
                          'cc_test',

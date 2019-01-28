@@ -584,9 +584,9 @@ def proto_library(name,
                                         generate_descriptors,
                                         plugins,
                                         source_encoding,
-                                        blade.blade,
+                                        build_manager.instance,
                                         kwargs)
-    blade.blade.register_target(proto_library_target)
+    build_manager.instance.register_target(proto_library_target)
 
 
 build_rules.register_function(proto_library)

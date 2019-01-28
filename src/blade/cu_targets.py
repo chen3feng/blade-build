@@ -17,6 +17,7 @@ import config
 
 import build_rules
 from blade_util import var_to_list
+import blade.cc_targets
 from cc_targets import CcTarget
 
 
@@ -172,9 +173,9 @@ def cu_library(name,
                        incs,
                        extra_cppflags,
                        extra_linkflags,
-                       blade.blade,
+                       build_manager.instance,
                        kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_library)
@@ -281,9 +282,9 @@ def cu_binary(name,
                       incs,
                       extra_cppflags,
                       extra_linkflags,
-                      blade.blade,
+                      build_manager.instance,
                       kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_binary)
@@ -358,9 +359,9 @@ def cu_test(name,
                     testdata,
                     always_run,
                     exclusive,
-                    blade.blade,
+                    build_manager.instance,
                     kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_test)

@@ -172,9 +172,9 @@ def resource_library(name,
                              deps,
                              optimize,
                              extra_cppflags,
-                             blade.blade,
+                             build_manager.instance,
                              kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(resource_library)

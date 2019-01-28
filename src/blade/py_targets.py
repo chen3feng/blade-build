@@ -107,9 +107,9 @@ def py_egg(name,
                        srcs,
                        deps,
                        prebuilt,
-                       blade.blade,
+                       build_manager.instance,
                        kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(py_egg)
@@ -137,7 +137,7 @@ class PythonTarget(Target):
                         srcs,
                         deps,
                         visibility,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
 
         if base:
@@ -302,7 +302,7 @@ def py_library(name,
                                visibility,
                                kwargs)
 
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(py_library)
@@ -403,7 +403,7 @@ def py_binary(name,
                           main,
                           base,
                           kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(py_binary)
@@ -450,7 +450,7 @@ def py_test(name,
                         base,
                         testdata,
                         kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(py_test)

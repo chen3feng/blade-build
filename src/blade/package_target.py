@@ -260,9 +260,9 @@ def package(name,
                                    type,
                                    out,
                                    shell,
-                                   blade.blade,
+                                   build_manager.instance,
                                    kwargs)
-    blade.blade.register_target(package_target)
+    build_manager.instance.register_target(package_target)
 
 
 build_rules.register_function(package)

@@ -213,9 +213,9 @@ def gen_rule(name,
                                     deps,
                                     outs,
                                     cmd,
-                                    blade.blade,
+                                    build_manager.instance,
                                     kwargs)
-    blade.blade.register_target(gen_rule_target)
+    build_manager.instance.register_target(gen_rule_target)
 
 
 build_rules.register_function(gen_rule)

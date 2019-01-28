@@ -428,13 +428,13 @@ def java_jar(name,
                            srcs,
                            deps,
                            prebuilt or pre_build,
-                           blade.blade,
+                           build_manager.instance,
                            kwargs)
     if pre_build:
         console.warning('//%s:%s: "pre_build" has been deprecated, '
                         'please use "prebuilt"' % (target.path,
                                                    target.name))
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(java_jar)

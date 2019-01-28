@@ -30,8 +30,8 @@ from binary_runner import BinaryRunner
 from test_runner import TestRunner
 
 
-# Global blade manager
-blade = None
+# Global build manager instance
+instance = None
 
 
 class Blade(object):

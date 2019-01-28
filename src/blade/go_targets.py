@@ -48,7 +48,7 @@ class GoTarget(Target):
                         srcs,
                         deps,
                         None,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
 
         self._set_go_package()
@@ -204,7 +204,7 @@ def go_library(name,
                srcs,
                deps=[],
                **kwargs):
-    blade.blade.register_target(GoLibrary(name,
+    build_manager.instance.register_target(GoLibrary(name,
                                           srcs,
                                           deps,
                                           kwargs))
@@ -214,7 +214,7 @@ def go_binary(name,
               srcs,
               deps=[],
               **kwargs):
-    blade.blade.register_target(GoBinary(name,
+    build_manager.instance.register_target(GoBinary(name,
                                          srcs,
                                          deps,
                                          kwargs))
@@ -225,7 +225,7 @@ def go_test(name,
             deps=[],
             testdata=[],
             **kwargs):
-    blade.blade.register_target(GoTest(name,
+    build_manager.instance.register_target(GoTest(name,
                                        srcs,
                                        deps,
                                        testdata,
@@ -257,7 +257,7 @@ def extract_go_package(path):
 def go_package(name,
                deps=[],
                testdata=[]):
-    path = blade.blade.get_current_source_path()
+    path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
         console.error_exit('Empty go sources in %s' % path)

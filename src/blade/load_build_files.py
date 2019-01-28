@@ -15,38 +15,39 @@
 
 """
 
+from __future__ import absolute_import
 
 import os
 import traceback
 
-import build_rules
-import blade
-import console
-import build_attributes
-from blade_util import var_to_list
-from pathlib import Path
+import blade.build_manager
+from blade import build_rules
+from blade import console
+from blade import build_attributes
+from blade.blade_util import var_to_list
+from blade.pathlib import Path
 
 
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 
 # pylint: disable=W0611
-import cc_targets
-import cu_targets
-import gen_rule_target
-import go_targets
-import java_jar_target
-import java_targets
-import scala_targets
-import lex_yacc_target
-import package_target
-import proto_library_target
-import py_targets
-import resource_library_target
-import sh_test_target
-import swig_library_target
-import thrift_library
-import fbthrift_library
+import blade.cc_targets
+import blade.cu_targets
+import blade.gen_rule_target
+import blade.go_targets
+import blade.java_jar_target
+import blade.java_targets
+import blade.scala_targets
+import blade.lex_yacc_target
+import blade.package_target
+import blade.proto_library_target
+import blade.py_targets
+import blade.resource_library_target
+import blade.sh_test_target
+import blade.swig_library_target
+import blade.thrift_library
+import blade.fbthrift_library
 
 
 def _find_dir_depender(dir, blade):
@@ -84,7 +85,7 @@ def glob(srcs, excludes=[]):
     """A global function can be called in BUILD to specify a set of files using patterns"""
     srcs = var_to_list(srcs)
     excludes = var_to_list(excludes)
-    source_dir = Path(blade.blade.get_current_source_path())
+    source_dir = Path(build_manager.instance.get_current_source_path())
 
     def includes_iterator():
         results = []
@@ -125,10 +126,10 @@ __current_globles = None
 # Include a defination file in a BUILD file
 def include(name):
     if name.startswith('//'):
-        dir = blade.blade.get_root_dir()
+        dir = build_manager.instance.get_root_dir()
         name = name[2:]
     else:
-        dir = blade.blade.get_current_source_path()
+        dir = builder_manager.blade.get_current_source_path()
     execfile(os.path.join(dir, name), __current_globles, None)
 
 

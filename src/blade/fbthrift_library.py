@@ -202,9 +202,9 @@ def fbthrift_library(name,
                                               deps,
                                               optimize,
                                               deprecated,
-                                              blade.blade,
+                                              build_manager.instance,
                                               kwargs)
-    blade.blade.register_target(fbthrift_library_target)
+    build_manager.instance.register_target(fbthrift_library_target)
 
 
 build_rules.register_function(fbthrift_library)

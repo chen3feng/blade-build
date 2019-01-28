@@ -19,12 +19,12 @@ function make_blade_zip()
     cd $blade_dir
 
     echo "Blade directory: ${blade_dir}"
-    src_dir='./src/blade'
+    src_dir='./src'
     dist_file_path=${blade_dir}'/blade.zip'
 
     cd $src_dir
 
-    zip blade.zip ./*.py
+    zip blade.zip __init__.py __main__.py blade/*.py
     mv ./blade.zip ${dist_file_path}
 
     cd $blade_dir

@@ -189,9 +189,9 @@ def lex_yacc_library(name,
                             allow_undefined,
                             recursive,
                             prefix,
-                            blade.blade,
+                            build_manager.instance,
                             kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(lex_yacc_library)

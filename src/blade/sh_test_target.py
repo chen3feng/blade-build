@@ -48,7 +48,7 @@ class ShellTest(Target):
                         srcs,
                         deps,
                         None,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
 
         self._process_test_data(testdata)
@@ -137,7 +137,7 @@ def sh_test(name,
             deps=[],
             testdata=[],
             **kwargs):
-    blade.blade.register_target(ShellTest(name,
+    build_manager.instance.register_target(ShellTest(name,
                                           srcs,
                                           deps,
                                           testdata,

@@ -64,6 +64,7 @@
  parallel_svm/BUILD
 """
 
+from __future__ import absolute_import
 
 import cProfile
 import datetime
@@ -78,15 +79,15 @@ import time
 import traceback
 from string import Template
 
-import blade
-import build_attributes
-import console
-import config
+from blade import blade
+from blade import build_attributes
+from blade import console
+from blade import config
 
-from blade_util import find_blade_root_dir, find_file_bottom_up
-from blade_util import get_cwd
-from blade_util import lock_file, unlock_file
-from command_args import CmdArguments
+from blade.blade_util import find_blade_root_dir, find_file_bottom_up
+from blade.blade_util import get_cwd
+from blade.blade_util import lock_file, unlock_file
+from blade.command_args import CmdArguments
 
 
 # Run target
@@ -247,7 +248,7 @@ def native_builder_options(options):
 def _scons_build(options):
     cmd = ['scons']
     cmd += native_builder_options(options)
-    cmd.append('-j%s' % (options.jobs or blade.blade.parallel_jobs_num()))
+    cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
     cmd += ['--duplicate=soft-copy', '--cache-show']
     if options.keep_going:
         cmd.append('-k')
@@ -264,7 +265,7 @@ def _ninja_build(options):
         # Unlike scons, ninja enable parallel building defaultly,
         # so only set it when user specified it explicitly.
         # cmd.append('-j%s' % options.jobs)
-    cmd.append('-j%s' % (options.jobs or blade.blade.parallel_jobs_num()))
+    cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
     if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
@@ -287,7 +288,7 @@ def build(options):
     if returncode != 0:
         console.error('building failure.')
         return returncode
-    if not blade.blade.verify():
+    if not build_manager.instance.verify():
         console.error('building failure.')
         return 1
     console.info('building done.')
@@ -299,7 +300,7 @@ def run(options):
     if ret != 0:
         return ret
     run_target = _TARGETS[0]
-    return blade.blade.run(run_target)
+    return build_manager.instance.run(run_target)
 
 
 def test(options):
@@ -307,7 +308,7 @@ def test(options):
         ret = build(options)
         if ret != 0:
             return ret
-    return blade.blade.test()
+    return build_manager.instance.test()
 
 
 def clean(options):
@@ -327,7 +328,7 @@ def clean(options):
 
 
 def query(options):
-    return blade.blade.query(_TARGETS)
+    return build_manager.instance.query(_TARGETS)
 
 
 def lock_workspace():
@@ -426,7 +427,7 @@ def clear_build_script():
 def run_subcommand(command, options, targets, blade_path, build_dir):
     if command == 'query' and options.depended:
         targets = ['.:...']
-    blade.blade = blade.Blade(targets,
+    build_manager.instance = blade.Blade(targets,
                               blade_path,
                               _WORKING_DIR,
                               build_dir,
@@ -435,13 +436,13 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
                               command)
 
     # Build the targets
-    blade.blade.load_targets()
+    build_manager.instance.load_targets()
     if options.stop_after == 'load':
         return 0
-    blade.blade.analyze_targets()
+    build_manager.instance.analyze_targets()
     if options.stop_after == 'analyze':
         return 0
-    blade.blade.generate()
+    build_manager.instance.generate()
     if options.stop_after == 'generate':
         return 0
 

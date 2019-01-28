@@ -11,7 +11,7 @@ command line in this way: python blade.zip
 
 
 import sys
-from blade_main import main
+from blade.blade_main import main
 
 
 if __name__ == '__main__':

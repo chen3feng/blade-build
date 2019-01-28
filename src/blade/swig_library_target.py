@@ -431,9 +431,9 @@ def swig_library(name,
                          java_lib_packed,
                          optimize,
                          extra_swigflags,
-                         blade.blade,
+                         build_manager.instance,
                          kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(swig_library)

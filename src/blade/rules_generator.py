@@ -790,7 +790,7 @@ build %s: cxx %s
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
             cmd.append(prefix)
-        cmd.append('python -m toolchain %s' % builder)
+        cmd.append('python -m blade.toolchain %s' % builder)
         if suffix:
             cmd.append(suffix)
         else:
