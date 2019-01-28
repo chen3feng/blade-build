@@ -112,7 +112,6 @@ class CmdArguments(object):
                 if (pos == -1 or
                     pair[:pos] not in DEBUG_LANGUAGES or pair[pos + 1:] not in DEBUG_LEVELS):
                     console.error_exit('Invalid debugging information level "%s"' % pair)
-                    continue
                 self.options.debug_info_level[pair[:pos]] = pair[pos + 1:]
         else:
             if level not in DEBUG_LEVELS:
