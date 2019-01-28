@@ -288,7 +288,7 @@ class CcFlagsManager(object):
         flags_except_warning.append('-pipe')
 
         # Debugging information setting
-        debug_info_level = global_config['debug_info_level']
+        debug_info_level = cc_config['debug_info_level']
         debug_info_options = cc_config['debug_info_levels'][debug_info_level]
         flags_except_warning += debug_info_options
 

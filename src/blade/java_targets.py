@@ -774,9 +774,8 @@ class JavaTarget(Target, JavaTargetMixIn):
         return ''
 
     def javac_flags(self):
-        global_config = config.get_section('global_config')
         java_config = config.get_section('java_config')
-        debug_info_level = global_config['debug_info_level']
+        debug_info_level = java_config['debug_info_level']
         debug_info_options = java_config['debug_info_levels'][debug_info_level]
         warnings = self.data.get('warnings')
         if not warnings:

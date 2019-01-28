@@ -97,9 +97,32 @@ class CmdArguments(object):
                 console.error_exit('-m %s is not supported by the architecture %s'
                                    % (m, compiler_arch))
 
+    def _check_debug_level_options(self):
+        level = self.options.debug_info_level
+        if not level:
+            return
+
+        DEBUG_LEVELS = ['no', 'low', 'mid', 'high']
+        DEBUG_LANGUAGES = ['cc', 'java']
+
+        if '=' in level:
+            self.options.debug_info_level = {}
+            for pair in level.split(','):
+                pos = pair.find('=')
+                if (pos == -1 or
+                    pair[:pos] not in DEBUG_LANGUAGES or pair[pos + 1:] not in DEBUG_LEVELS):
+                    console.error_exit('Invalid debugging information level "%s"' % pair)
+                    continue
+                self.options.debug_info_level[pair[:pos]] = pair[pos + 1:]
+        else:
+            if level not in DEBUG_LEVELS:
+                console.error_exit('Invalid debugging information level %s, '
+                                   'see "blade build --help" for details.' % level)
+
     def _check_clean_options(self):
         """check the clean options. """
         self._check_plat_and_profile_options()
+        self._check_debug_level_options()
 
     def _check_query_options(self):
         """check query action options. """
@@ -110,6 +133,7 @@ class CmdArguments(object):
     def _check_build_options(self):
         """check the building options. """
         self._check_plat_and_profile_options()
+        self._check_debug_level_options()
 
     def _check_build_command(self):
         """check build options. """
@@ -132,6 +156,7 @@ class CmdArguments(object):
     def _check_query_command(self):
         """check query options. """
         self._check_plat_and_profile_options()
+        self._check_debug_level_options()
         self._check_query_options()
 
     def __add_plat_profile_arguments(self, parser):
@@ -149,15 +174,23 @@ class CmdArguments(object):
                             dest='profile',
                             choices=['debug', 'release'],
                             default='release',
-                            help=('Build profile, default is release'))
+                            help='Build profile, default is release')
 
         parser.add_argument('--no-debug-info',
                             dest='debug_info_level',
                             action='store_const',
                             const='no',
-                            help=('Do not produce debugging information, this '
-                                  'make less disk space cost but hard to debug, '
-                                  'default is false'))
+                            help='Do not produce debugging information, this '
+                                 'make less disk space cost but hard to debug, '
+                                 'default is false')
+
+        parser.add_argument('--debug-info-level',
+                            dest='debug_info_level',
+                            help='Specify the level of how much debugging information to be generated. '
+                                 'This option can be used in two ways:'
+                                 '  A single level applied to all languages(C/C++, Java), level could be '
+                                 'no, low, mid or high. The default level is mid.'
+                                 '  A comma separated list of "language=level", such as cc=no,java=high')
 
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
@@ -197,7 +230,7 @@ class CmdArguments(object):
         parser.add_argument(
             '--native-builder', dest='native_builder',
             type=str, choices=['scons', 'ninja'], default='',
-            help='Specify the underly native builder')
+            help='Specify the underlying native builder')
         parser.add_argument(
             '--generate-scons-only', dest='stop_after',
             action='store_const', const='generate',
@@ -211,7 +244,7 @@ class CmdArguments(object):
 
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,
-            help=('Specifies the number of jobs (commands) to run simultaneously'))
+            help='Specifies the number of jobs (commands) to run simultaneously')
 
         parser.add_argument(
             '-k', '--keep-going', dest='keep_going',
@@ -341,7 +374,7 @@ class CmdArguments(object):
                 help='Only show warnings and errors')
 
     def _cmd_parse(self):
-        """Add command options, add options whthin this method."""
+        """Add command and corresponding options, then parse command line."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
 

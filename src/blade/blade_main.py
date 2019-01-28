@@ -407,11 +407,20 @@ def generate_scm(build_dir):
         }, f)
 
 
-def adjust_config_by_options(config, options):
-    for name in ('debug_info_level', 'native_builder'):
-        value = getattr(options, name, None)
-        if value:
-            config.global_config(**{name: value})
+def adjust_config_by_options(options):
+    if options.native_builder:
+        config.global_config(native_builder=options.native_builder)
+    debug_level = options.debug_info_level
+    if debug_level:
+        if isinstance(debug_level, str):
+            config.cc_config(debug_info_level=debug_level)
+            config.java_config(debug_info_level=debug_level)
+        else:
+            assert isinstance(debug_level, dict)
+            if 'cc' in debug_level:
+                config.cc_config(debug_info_level=debug_level['cc'])
+            if 'java' in debug_level:
+                config.java_config(debug_info_level=debug_level['java'])
 
 
 def clear_build_script():
@@ -495,7 +504,7 @@ def _main(blade_path):
         os.chdir(_BLADE_ROOT_DIR)
 
     load_config(options, _BLADE_ROOT_DIR)
-    adjust_config_by_options(config, options)
+    adjust_config_by_options(options)
 
     build_dir = setup_build_dir(options)
     setup_log(build_dir, options)
