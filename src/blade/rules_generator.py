@@ -103,10 +103,10 @@ import os
 import subprocess
 import glob
 
-import blade_util
-import build_environment
-import console
-import scons_helper
+from blade import blade_util
+from blade import build_environment
+from blade import console
+from blade import scons_helper
 
 """)
 
@@ -272,7 +272,7 @@ import scons_helper
         cc_config = config.get_section('cc_config')
         cc_env_str = ('CC="%s", CXX="%s", SECURECXX="%s %s"' % (
                       cc_str, cxx_str, cc_config['securecc'], cxx))
-        ld_env_str = 'LINK="%s"' % ld_str
+        ld_env_str = 'LINK="%s"' % ld
 
         extra_incs = cc_config['extra_incs']
         extra_incs_str = ', '.join(['"%s"' % inc for inc in extra_incs])
