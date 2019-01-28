@@ -7,13 +7,14 @@
 """Define swig_library target
 """
 
+from __future__ import absolute_import
 
 import os
-import blade
 
-import console
-import build_rules
-from cc_targets import CcTarget
+from blade import build_manager
+from blade import console
+from blade import build_rules
+from blade.cc_targets import CcTarget
 
 
 class SwigLibrary(CcTarget):
@@ -431,9 +432,9 @@ def swig_library(name,
                          java_lib_packed,
                          optimize,
                          extra_swigflags,
-                         blade.blade,
+                         build_manager.instance,
                          kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(swig_library)

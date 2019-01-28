@@ -10,17 +10,18 @@ a simple wrapper function go_package wrapping all sorts of go tar-
 gets totally.
 """
 
+from __future__ import absolute_import
+
 import os
 import subprocess
 import re
 
-import blade
-import build_rules
-import config
-import console
-
-from target import Target
-from blade_util import var_to_list
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list
+from blade.target import Target
 
 
 _package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
@@ -48,7 +49,7 @@ class GoTarget(Target):
                         srcs,
                         deps,
                         None,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
 
         self._set_go_package()
@@ -204,7 +205,7 @@ def go_library(name,
                srcs,
                deps=[],
                **kwargs):
-    blade.blade.register_target(GoLibrary(name,
+    build_manager.instance.register_target(GoLibrary(name,
                                           srcs,
                                           deps,
                                           kwargs))
@@ -214,7 +215,7 @@ def go_binary(name,
               srcs,
               deps=[],
               **kwargs):
-    blade.blade.register_target(GoBinary(name,
+    build_manager.instance.register_target(GoBinary(name,
                                          srcs,
                                          deps,
                                          kwargs))
@@ -225,7 +226,7 @@ def go_test(name,
             deps=[],
             testdata=[],
             **kwargs):
-    blade.blade.register_target(GoTest(name,
+    build_manager.instance.register_target(GoTest(name,
                                        srcs,
                                        deps,
                                        testdata,
@@ -257,7 +258,7 @@ def extract_go_package(path):
 def go_package(name,
                deps=[],
                testdata=[]):
-    path = blade.blade.get_current_source_path()
+    path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
         console.error_exit('Empty go sources in %s' % path)

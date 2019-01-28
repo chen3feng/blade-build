@@ -13,18 +13,17 @@ different languages from .thrift file.
 
 """
 
+from __future__ import absolute_import
 
 import os
 
-import blade
-import config
-import console
-
-import build_rules
-
-from blade_util import var_to_list
-from cc_targets import CcTarget
-from thrift_helper import ThriftHelper
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list
+from blade.cc_targets import CcTarget
+from blade.thrift_helper import ThriftHelper
 
 
 class ThriftLibrary(CcTarget):
@@ -239,9 +238,9 @@ def thrift_library(name,
                                           deps,
                                           optimize,
                                           deprecated,
-                                          blade.blade,
+                                          build_manager.instance,
                                           kwargs)
-    blade.blade.register_target(thrift_library_target)
+    build_manager.instance.register_target(thrift_library_target)
 
 
 build_rules.register_function(thrift_library)

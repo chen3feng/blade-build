@@ -49,7 +49,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                         srcs,
                         deps,
                         None,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
         self._process_resources(resources)
         if source_encoding:
@@ -253,7 +253,7 @@ def scala_library(name,
                           exported_deps,
                           provided_deps,
                           kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def scala_fat_library(name,
@@ -273,7 +273,7 @@ def scala_fat_library(name,
                              warnings,
                              exclusions,
                              kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def scala_test(name,
@@ -293,7 +293,7 @@ def scala_test(name,
                        warnings,
                        testdata,
                        kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(scala_library)

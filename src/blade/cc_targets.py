@@ -18,7 +18,7 @@ import subprocess
 from string import Template
 import Queue
 
-import blade
+import build_manager
 import config
 import console
 import build_rules
@@ -1197,12 +1197,12 @@ def cc_library(name,
                        extra_linkflags,
                        allow_undefined,
                        secure,
-                       blade.blade,
+                       build_manager.instance,
                        kwargs)
     if pre_build:
         console.warning("//%s:%s: 'pre_build' has been deprecated, "
                         "please use 'prebuilt'" % (target.path, target.name))
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cc_library)
@@ -1436,9 +1436,9 @@ def cc_binary(name,
                                 extra_cppflags,
                                 extra_linkflags,
                                 export_dynamic,
-                                blade.blade,
+                                build_manager.instance,
                                 kwargs)
-    blade.blade.register_target(cc_binary_target)
+    build_manager.instance.register_target(cc_binary_target)
 
 
 build_rules.register_function(cc_binary)
@@ -1594,9 +1594,9 @@ def cc_plugin(name,
                       extra_cppflags,
                       extra_linkflags,
                       allow_undefined,
-                      blade.blade,
+                      build_manager.instance,
                       kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cc_plugin)
@@ -1735,9 +1735,9 @@ def cc_test(name,
                             exclusive,
                             heap_check,
                             heap_check_debug,
-                            blade.blade,
+                            build_manager.instance,
                             kwargs)
-    blade.blade.register_target(cc_test_target)
+    build_manager.instance.register_target(cc_test_target)
 
 
 build_rules.register_function(cc_test)

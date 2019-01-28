@@ -10,27 +10,28 @@
 Implement java_library, java_binary, java_test and java_fat_library
 """
 
+from __future__ import absolute_import
 
 import os
 import re
 import Queue
 from distutils.version import LooseVersion
 
-import blade
-import build_rules
-import config
-import console
-import maven
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade import maven
 
-from blade_util import var_to_list
-from blade_util import location_re
-from target import Target
+from blade.blade_util import var_to_list
+from blade.blade_util import location_re
+from blade.target import Target
 
 
 class MavenJar(Target):
     """MavenJar"""
     def __init__(self, name, id, classifier, transitive):
-        Target.__init__(self, name, 'maven_jar', [], [], None, blade.blade, {})
+        Target.__init__(self, name, 'maven_jar', [], [], None, build_manager.instance, {})
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
@@ -39,7 +40,7 @@ class MavenJar(Target):
         return [], self.data.get('maven_deps', [])
 
     def blade_rules(self):
-        maven_cache = maven.MavenCache.instance(blade.blade.get_build_path())
+        maven_cache = maven.MavenCache.instance(build_manager.instance.get_build_path())
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
         if binary_jar:
@@ -722,7 +723,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                         srcs,
                         deps,
                         None,
-                        blade.blade,
+                        build_manager.instance,
                         kwargs)
         self._process_resources(resources)
         self.data['source_encoding'] = source_encoding
@@ -1001,7 +1002,7 @@ class JavaTest(JavaBinary):
 
 def maven_jar(name, id, classifier='', transitive=True):
     target = MavenJar(name, id, classifier, transitive)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def java_library(name,
@@ -1027,7 +1028,7 @@ def java_library(name,
                          exported_deps,
                          provided_deps,
                          kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def java_binary(name,
@@ -1049,7 +1050,7 @@ def java_binary(name,
                         main_class,
                         exclusions,
                         kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def java_test(name,
@@ -1075,7 +1076,7 @@ def java_test(name,
                       testdata,
                       target_under_test,
                       kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 def java_fat_library(name,
@@ -1095,7 +1096,7 @@ def java_fat_library(name,
                             warnings,
                             exclusions,
                             kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(maven_jar)

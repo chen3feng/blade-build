@@ -71,9 +71,14 @@ function _full_real_path()
 
 blade_path=`_full_real_path $0`
 blade_dir=$(cd $(dirname $blade_path) && pwd)
-blade_file="$blade_dir/bootstrap.py"
 
-if [ -e $blade_dir/blade_init ]; then
+if [[ -d "$blade_dir/src/blade" ]]; then
+    blade_file="$blade_dir/src"
+else
+    blade_file="$blade_dir/blade.zip"
+fi
+
+if [[ -e $blade_dir/blade_init ]]; then
     source $blade_dir/blade_init
 fi
 
@@ -109,7 +114,7 @@ if [[ -n "$no_scons" ]]; then
 fi
 
 # Check blade file
-if [[ ! -f "$blade_file" ]]; then
+if [[ ! -e "$blade_file" ]]; then
     _error_exit "Cannot find the core file $blade_file"
 fi
 

@@ -13,25 +13,25 @@
 
 """
 
+from __future__ import absolute_import
 
 import os
 import shutil
 import subprocess
 import sys
 
-import blade
-import console
-import config
-
-from blade_util import environ_add_path
+from blade import console
+from blade import config
+from blade.blade_util import environ_add_path
 
 
 class BinaryRunner(object):
     """BinaryRunner. """
     def __init__(self, targets, options, target_database):
         """Init method. """
+        from blade import build_manager
         self.targets = targets
-        self.build_dir = blade.blade.get_build_path()
+        self.build_dir = build_manager.instance.get_build_path()
         self.options = options
         self.run_list = ['cc_binary',
                          'cc_test',

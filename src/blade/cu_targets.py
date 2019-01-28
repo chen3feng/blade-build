@@ -11,13 +11,15 @@
 
 """
 
-import os
-import blade
-import config
+from __future__ import absolute_import
 
-import build_rules
-from blade_util import var_to_list
-from cc_targets import CcTarget
+import os
+
+from blade import build_rules
+from blade import build_manager
+from blade import config
+from blade.blade_util import var_to_list
+from blade.cc_targets import CcTarget
 
 
 class CuTarget(CcTarget):
@@ -172,9 +174,9 @@ def cu_library(name,
                        incs,
                        extra_cppflags,
                        extra_linkflags,
-                       blade.blade,
+                       build_manager.instance,
                        kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_library)
@@ -281,9 +283,9 @@ def cu_binary(name,
                       incs,
                       extra_cppflags,
                       extra_linkflags,
-                      blade.blade,
+                      build_manager.instance,
                       kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_binary)
@@ -358,9 +360,9 @@ def cu_test(name,
                     testdata,
                     always_run,
                     exclusive,
-                    blade.blade,
+                    build_manager.instance,
                     kwargs)
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cu_test)

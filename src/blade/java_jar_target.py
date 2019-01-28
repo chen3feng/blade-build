@@ -11,16 +11,16 @@
 
 """
 
+from __future__ import absolute_import
 
 import os
-import blade
 
-import build_rules
-import console
-import config
-
-from blade_util import var_to_list
-from target import Target
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list
+from blade.target import Target
 
 
 class JavaJarTarget(Target):
@@ -428,13 +428,13 @@ def java_jar(name,
                            srcs,
                            deps,
                            prebuilt or pre_build,
-                           blade.blade,
+                           build_manager.instance,
                            kwargs)
     if pre_build:
         console.warning('//%s:%s: "pre_build" has been deprecated, '
                         'please use "prebuilt"' % (target.path,
                                                    target.name))
-    blade.blade.register_target(target)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(java_jar)

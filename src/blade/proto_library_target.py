@@ -7,17 +7,18 @@
 """Define proto_library target
 """
 
+from __future__ import absolute_import
 
 import os
 import re
-import blade
 
-import console
-import config
-import build_rules
-import java_targets
-from blade_util import var_to_list
-from cc_targets import CcTarget
+from blade import console
+from blade import config
+from blade import build_manager
+from blade import build_rules
+from blade import java_targets
+from blade.blade_util import var_to_list
+from blade.cc_targets import CcTarget
 
 
 class ProtocPlugin(object):
@@ -584,9 +585,9 @@ def proto_library(name,
                                         generate_descriptors,
                                         plugins,
                                         source_encoding,
-                                        blade.blade,
+                                        build_manager.instance,
                                         kwargs)
-    blade.blade.register_target(proto_library_target)
+    build_manager.instance.register_target(proto_library_target)
 
 
 build_rules.register_function(proto_library)

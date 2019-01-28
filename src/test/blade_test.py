@@ -14,9 +14,8 @@ import sys
 import unittest
 
 sys.path.append('..')
-import blade.blade
+import blade.build_manager
 import blade.config
-from blade.blade import Blade
 from blade.argparse import Namespace
 
 
@@ -55,14 +54,15 @@ class TargetTest(unittest.TestCase):
         # Init global configuration manager
         blade.config.load_files('.', False)
 
-        blade.blade.blade = Blade(self.targets,
-                                  self.blade_path,
-                                  self.working_dir,
-                                  self.current_building_path,
-                                  self.current_source_dir,
-                                  self.options,
-                                  self.command)
-        self.blade = blade.blade.blade
+        blade.build_manager.initialize(
+            self.targets,
+            self.blade_path,
+            self.working_dir,
+            self.current_building_path,
+            self.current_source_dir,
+            self.options,
+            self.command)
+        self.blade = blade.build_manager.instance
         (self.direct_targets,
          self.all_command_targets) = self.blade.load_targets()
         self.blade.analyze_targets()
