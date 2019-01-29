@@ -6,28 +6,31 @@
 #          Chong Peng <michaelpeng@tencent.com>
 
 """
- Blade is a software building system built upon SCons, but restricts
- the generality and flexibility of SCons to prevent unnecessary
- error-prone complexity.  With Blade, users wrote a BUILD file and
- put it in each of the source directory.  In each BUILD file, there
- could be one or more build rules, each has a TARGET NAME, source
- files and dependent targets.  Blade supports the following types of
- build rules:
+ Blade is a software building system. With Blade, users wrote a BUILD file and
+ put it in each of the source directory.  In each BUILD file, there could be
+ one or more build rules, each has a TARGET NAME, source files and dependent
+ targets. Blade supports many types of build rules, such as:
 
 
     cc_binary         -- build an executable binary from C++ source
     cc_library        -- build a library from C++ source
     cc_plugin         -- build a plugin from C++ source
-    cc_test           -- build a unittest binary from C++ source
+    cc_test           -- build a test program from C++ source
     cc_benchmark      -- build a benchmark binary from C++ source
-    gen_rule          -- used to specify a general building rule
-    java_jar          -- build java jar from java source files
+    gen_rule          -- build targets with a specified general building rule
+    java_library      -- build a java library from java source files
+    java_binary       -- build a java executable from java source files
+    java_test         -- build a java test program from java source files
+    py_library        -- build a python library from python source files
+    py_binary         -- build a python executable from python source files
+    py_test           -- build a python test program from python source files
     lex_yacc_library  -- build a library from lex/yacc source
     proto_library     -- build a library from Protobuf source
     thrift_library    -- build a library from Thrift source
     fbthrift_library  -- build a library from Thrift source for Facebook's Thrift Cpp2
     resource_library  -- build resource library and gen header files
-    swig_library      -- build swig library for python and java
+    swig_library      -- build swig extension module for python and java
+    ...
 
  A target may depend on other target(s), where the dependency is
  transitive.  A dependent target is referred by a TARGET ID, which
@@ -258,6 +261,25 @@ def _scons_build(options):
     return _run_native_builder(cmdstr)
 
 
+def _show_slow_builds(build_start_time, show_builds_slower_than):
+    build_dir = build_manager.instance.get_build_path()
+    with open(os.path.join(build_dir, '.ninja_log')) as f:
+        head = f.readline()
+        if '# ninja log v5' not in head:
+            console.warning('Unknown ninja log version: %s' % head)
+            return
+        build_times = []
+        for line in f.readlines():
+            start_time, end_time, timestamp, target, cmdhash = line.split()
+            cost_time = (int(end_time) - int(start_time)) / 1000.0  # ms -> s
+            timestamp = int(timestamp)
+            if timestamp >= build_start_time and cost_time > show_builds_slower_than:
+                build_times.append((cost_time, target))
+        if build_times:
+            console.notice('Slow build targets:')
+            for cost_time, target in sorted(build_times):
+                console.notice('%.4gs\t%s' % (cost_time, target), prefix=False)
+
 def _ninja_build(options):
     cmd = ['ninja']
     cmd += native_builder_options(options)
@@ -274,7 +296,11 @@ def _ninja_build(options):
     if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
         # Filter out description message such as '[1/123] CC xxx.cc'
         cmdstr += r' | sed -e "/^\[[0-9]*\/[0-9]*\] /d"'
-    return _run_native_builder(cmdstr)
+    build_start_time = time.time()
+    ret = _run_native_builder(cmdstr)
+    if options.show_builds_slower_than is not None:
+        _show_slow_builds(build_start_time, options.show_builds_slower_than)
+    return ret
 
 
 def build(options):

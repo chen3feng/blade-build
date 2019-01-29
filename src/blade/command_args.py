@@ -11,13 +11,14 @@
 
 """
 
+from __future__ import absolute_import
 
 import shlex
 from argparse import ArgumentParser
 
-import console
-from blade_platform import BuildArchitecture
-from blade_platform import BuildPlatform
+from blade import console
+from blade.blade_platform import BuildArchitecture
+from blade.blade_platform import BuildPlatform
 
 
 class CmdArguments(object):
@@ -225,6 +226,10 @@ class CmdArguments(object):
         parser.add_argument(
             '-n', '--dry-run', dest='dry_run', action='store_true', default=False,
             help='Dry run (don\'t run commands but act like they succeeded)')
+
+        parser.add_argument(
+            '--show-builds-slower-than', dest='show_builds_slower_than', type=float,
+            help='Show build commands which are slower than specified seconds')
 
     def __add_coverage_arguments(self, parser):
         """Add coverage arguments. """
