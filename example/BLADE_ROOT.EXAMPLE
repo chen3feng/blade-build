@@ -52,7 +52,7 @@ thrift_library_config(
 
 cc_config(
     extra_incs=[],
-    cppflags = '-DHAVE_CONFIG_H'
+    cppflags = ['-DHAVE_CONFIG_H', '-D_GLIBCXX_USE_CXX11_ABI=0']
 )
 
 java_test_config(
