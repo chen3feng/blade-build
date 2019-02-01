@@ -24,49 +24,18 @@ class TargetTest(unittest.TestCase):
     def doSetUp(self, path, target='...', full_targets=None,
                 command='build', generate_php=True, **kwargs):
         """setup method. """
-        self.command = 'build'
+        self.command = command
         if full_targets:
             self.targets = full_targets
         else:
-            self.targets = ['%s:%s' % (path, target)]
+            self.targets = '%s:%s' % (path, target)
         self.target_path = path
         self.cur_dir = os.getcwd()
-        os.chdir('./testdata')
+        os.chdir('testdata')
         self.blade_path = '../../blade'
         self.working_dir = '.'
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
-        options = {
-                'arch': 'x86_64',
-                'm': '64',
-                'profile': 'release',
-                'generate_dynamic': True,
-                'generate_java': True,
-                'generate_php': generate_php,
-                'verbose': True
-                }
-        options.update(kwargs)
-        self.options = Namespace(**options)
-        self.direct_targets = []
-        self.all_command_targets = []
-        self.related_targets = {}
-
-        # Init global configuration manager
-        blade.config.load_files('.', False)
-
-        blade.build_manager.initialize(
-            self.targets,
-            self.blade_path,
-            self.working_dir,
-            self.current_building_path,
-            self.current_source_dir,
-            self.options,
-            self.command)
-        self.blade = blade.build_manager.instance
-        (self.direct_targets,
-         self.all_command_targets) = self.blade.load_targets()
-        self.blade.analyze_targets()
-        self.all_targets = self.blade.get_build_targets()
         self.scons_output_file = 'scons_output.txt'
 
     def tearDown(self):
@@ -79,23 +48,34 @@ class TargetTest(unittest.TestCase):
 
         os.chdir(self.cur_dir)
 
-    def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
-        self.assertEqual(self.direct_targets, [])
-        self.assertTrue(self.all_command_targets)
-
-    def dryRun(self):
+    def dryRun(self, extra_args=''):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
-        p = subprocess.Popen('scons --dry-run > %s' % self.scons_output_file,
-                             shell=True)
+        p = subprocess.Popen(
+                '../../../blade %s %s --generate-dynamic --verbose --dry-run %s > %s' % (
+                self.command, self.targets, extra_args, self.scons_output_file),
+            shell=True)
         try:
             p.wait()
-            self.scons_output = open(self.scons_output_file)
+            self.scons_output = open(self.scons_output_file).readlines()
             return p.returncode == 0
         except:
             print >>sys.stderr, 'Failed while dry running:\n%s' % sys.exc_info()
         return False
+
+    def findCommandAndLine(self, kwlist):
+        if not isinstance(kwlist, list):
+            kwlist = [kwlist]
+        for lineno, line in enumerate(self.scons_output):
+            for kw in kwlist:
+                if kw not in line:
+                    break
+            else:
+                return line, lineno
+        return '', 0
+
+    def findCommand(self, kwlist):
+        return self.findCommandAndLine(kwlist)[0]
 
     if getattr(unittest.TestCase, 'assertIn', None) is None:
         # New asserts since 2.7, add for old version
