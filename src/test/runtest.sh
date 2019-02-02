@@ -20,7 +20,7 @@ function cleanup()
     rm -rf testdata/BLADE_ROOT
 
     # Cleanup generated files
-    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.sconsign.dblite,blade_tests_detail,.Building.lock} SConstruct
+    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.sconsign.dblite,.Building.lock} SConstruct scons_output.txt
     rm -f *.pyc ../blade/*.pyc
 }
 

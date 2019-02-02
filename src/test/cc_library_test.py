@@ -26,17 +26,6 @@ class TestCcLibrary(blade_test.TargetTest):
         Scons can use the rules for dry running.
 
         """
-        self.all_targets = self.blade.analyze_targets()
-        self.rules_buf = self.blade.generate_build_rules()
-
-        cc_library_lower = (self.target_path, 'lowercase')
-        cc_library_upper = (self.target_path, 'uppercase')
-        cc_library_string = (self.target_path, 'blade_string')
-
-        self.assertIn(cc_library_lower, self.all_targets.keys())
-        self.assertIn(cc_library_upper, self.all_targets.keys())
-        self.assertIn(cc_library_string, self.all_targets.keys())
-
         self.assertTrue(self.dryRun())
 
         com_lower_line = ''
@@ -59,7 +48,7 @@ class TestCcLibrary(blade_test.TargetTest):
         self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS=64', com_string_line)
         self.assertIn('-DBLADE_STR_DEF -O2', com_string_line)
         self.assertIn('-w', com_string_line)
-        self.assertIn('-m64', com_string_line)
+        self.assertIn('-o', com_string_line)
 
         self.assertDynamicLinkFlags(string_depends_libs)
 
