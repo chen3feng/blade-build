@@ -104,8 +104,8 @@ class CmdArguments(object):
 
     def _check_query_options(self):
         """check query action options. """
-        if not self.options.deps and not self.options.depended:
-            console.error_exit('please specify --deps, --depended or both to '
+        if not self.options.deps and not self.options.dependents:
+            console.error_exit('please specify --deps, --dependents or both to '
                                'query target')
 
     def _check_build_options(self):
@@ -257,16 +257,16 @@ class CmdArguments(object):
             action='store_true', default=False,
             help='Show all targets that depended by the target being queried')
         parser.add_argument(
-            '--depended', dest='depended',
+            '--dependents', dest='dependents',
             action='store_true', default=False,
-            help='Show all targets that depend on the target being queried')
+            help='Show all targets that depends on the target being queried')
         parser.add_argument(
-            '--output-to-dot', dest='output_to_dot', type=str,
-            help='The name of file to output query results as dot(graphviz) format')
+            '--output-file', dest='output_file', type=str,
+            help='The name of file to output query results, default to stdout')
         parser.add_argument(
-            '--output-tree', dest='output_tree',
-            action='store_true', default=False,
-            help='Show the dependency tree of the specified target')
+            '--output-format', dest='output_format', type=str,
+            choices=('plain', 'tree', 'dot'), default='plain',
+            help='Specify the format of query results')
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """

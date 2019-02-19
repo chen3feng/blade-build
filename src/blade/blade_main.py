@@ -354,7 +354,7 @@ def clean(options):
 
 
 def query(options):
-    return build_manager.instance.query(_TARGETS)
+    return build_manager.instance.query()
 
 
 def lock_workspace():
@@ -451,9 +451,12 @@ def clear_build_script():
 
 
 def run_subcommand(command, options, targets, blade_path, build_dir):
-    if command == 'query' and options.depended:
-        targets = ['.:...']
+    load_targets = targets
+    if command == 'query' and options.dependents:
+        # In query dependents mode, we must load all targets in workspace to get a whole view
+        load_targets = ['.:...']
     build_manager.initialize(targets,
+                             load_targets,
                              blade_path,
                              _WORKING_DIR,
                              build_dir,
