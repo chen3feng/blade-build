@@ -14,7 +14,7 @@
 from __future__ import absolute_import
 
 import shlex
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Action
 
 from blade import console
 from blade.blade_platform import BuildArchitecture
@@ -267,6 +267,25 @@ class CmdArguments(object):
             '--output-format', dest='output_format', type=str,
             choices=('plain', 'tree', 'dot'), default='plain',
             help='Specify the format of query results')
+
+        class OutputDotFileAction(Action):
+            """Custom action to set both output format and file"""
+            def __init__(self, **kwargs):
+                super(OutputDotFileAction, self).__init__(**kwargs)
+            def __call__(self, parser, namespace, argument_values, option_string):
+                namespace.output_format = 'dot'
+                namespace.output_file = argument_values
+
+        parser.add_argument(
+            '--output-dot-file', '--output-to-dot', dest='output_file', type=str,
+            action=OutputDotFileAction,
+            help=('Short for --output_format dot --output_file OUTPUT_FILE. '
+                  '--output-to-dot is DEPRECATED'))
+
+        parser.add_argument(
+            '--depended', dest='dependents', action='store_true',
+            help='DEPRECATED, please use --dependents')
+
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """
