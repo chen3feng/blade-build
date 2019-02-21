@@ -1,8 +1,8 @@
 ```
 ██████╗ ██╗      █████╗ ██████╗ ███████╗
 ██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝
-██████╔╝██║     ███████║██║  ██║█████╗  
-██╔══██╗██║     ██╔══██║██║  ██║██╔══╝  
+██████╔╝██║     ███████║██║  ██║█████╗
+██╔══██╗██║     ██╔══██║██║  ██║██╔══╝
 ██████╔╝███████╗██║  ██║██████╔╝███████╗
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
@@ -19,7 +19,7 @@ An easy-to-use, fast and modern build system for trunk based development in larg
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
  * 支持扩展
- 
+
 1.1.2版是最后一个1.x版本，我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
 * 后端支持[ninja](https://ninja-build.org/)，大幅度提高构建性能
 * 全面支持Python构建
@@ -129,7 +129,7 @@ Documentation in en_US
 ====================
 Brief
 ----
-Blade is designed to be a modern build system. It is powerful and easy to use. It supports building multiple languages, such as c/c++, java, python, scala, protobuf and swig etc. It analyzes the target dependency automatically and integrates compiling, linking, testing(includes incremental testing and parallel testing) and static code inspectiontogether. 
+Blade is designed to be a modern build system. It is powerful and easy to use. It supports building multiple languages, such as c/c++, java, python, scala, protobuf and swig etc. It analyzes the target dependency automatically and integrates compiling, linking, testing(includes incremental testing and parallel testing) and static code inspectiontogether.
 It aims to improve the clarity and simplicity of the building rules for a project.
 
 With Blade, you can compile, link and test multiple targets by just inputting one simple command line.

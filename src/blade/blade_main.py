@@ -544,6 +544,21 @@ def _main(blade_path):
         unlock_workspace(lock_file_fd)
 
 
+def format_timedelta(seconds):
+    """
+    Format the time delta as human readable format such as '1h20m5s' or '5s' if it is short.
+    """
+    mins = seconds // 60
+    seconds %= 60
+    hours = mins // 60
+    mins %= 60
+    if hours == 0 and mins == 0:
+        return '%ss' % seconds
+    if hours == 0:
+        return '%sm%ss' % (mins, seconds)
+    return '%sh%sm%ss' % (hours, mins, seconds)
+
+
 def main(blade_path):
     exit_code = 0
     try:
@@ -552,7 +567,11 @@ def main(blade_path):
         cost_time = int(time.time() - start_time)
         if exit_code == 0:
             console.info('success')
-        console.info('cost time is %ss' % datetime.timedelta(seconds=cost_time))
+        # We used to use the datetime.timedelta class, but its result such as
+        #   Blade(info): cost time 00:05:30s
+        # cause vim to create a new file named "Blade(info): cost time 00"
+        # in vim QuickFix mode. So we use the new format now.
+        console.info('cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
         exit_code = e.code  # pylint: disable=redefined-variable-type
