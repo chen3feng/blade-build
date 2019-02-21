@@ -181,6 +181,7 @@ class BladeConfig(object):
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
+                console.info('loading config file "%s"' % filename)
                 execfile(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
