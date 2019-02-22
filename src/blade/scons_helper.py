@@ -1303,7 +1303,7 @@ def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
     thrift_bld = SCons.Builder.Builder(action = MakeAction(
-        '%s --gen cpp:include_prefix,pure_enums -I . %s -I `dirname $SOURCE`'
+        '%s --gen cpp:include_prefix -I . %s -I `dirname $SOURCE`'
         ' -out %s/`dirname $SOURCE` $SOURCE' % (
             thrift_bin, thrift_incs_str, build_dir),
         compile_thrift_cc_message))
