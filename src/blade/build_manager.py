@@ -11,8 +11,10 @@
 
 """
 
+from __future__ import print_function
 
 import os
+import sys
 import time
 import json
 
@@ -39,6 +41,7 @@ class Blade(object):
     # pylint: disable=too-many-public-methods
     def __init__(self,
                  command_targets,
+                 load_targets,
                  blade_path,
                  working_dir,
                  build_path,
@@ -49,6 +52,7 @@ class Blade(object):
 
         """
         self.__command_targets = command_targets
+        self.__load_targets = load_targets
         self.__blade_path = blade_path
         self.__working_dir = working_dir
         self.__build_path = build_path
@@ -105,11 +109,32 @@ class Blade(object):
         console.info('loading BUILDs...')
         (self.__direct_targets,
          self.__all_command_targets,
-         self.__build_targets) = load_targets(self.__command_targets,
+         self.__build_targets) = load_targets(self.__load_targets,
                                               self.__root_dir,
                                               self)
+        if self.__command_targets != self.__load_targets:
+            # In query dependents mode, we must use command targets to execute query
+            self.__all_command_targets = self._expand_command_targets()
         console.info('loading done.')
         return self.__direct_targets, self.__all_command_targets  # For test
+
+    def _expand_command_targets(self):
+        """Expand command line targets to targets list"""
+        all_targets = self.__build_targets
+        all_command_targets = []
+        for t in self.__command_targets:
+            t_path, name = t.split(':')
+            if name == '...':
+                for tkey in all_targets:
+                    if tkey[0].startswith(t_path):
+                        all_command_targets.append(tkey)
+            elif name == '*':
+                for tkey in all_targets:
+                    if tkey[0] == t_path:
+                        all_command_targets.append(tkey)
+            else:
+                all_command_targets.append((t_path, name))
+        return all_command_targets
 
     def analyze_targets(self):
         """Expand the targets. """
@@ -171,46 +196,49 @@ class Blade(object):
                                  self.__direct_targets)
         return test_runner.run()
 
-    def query(self, targets):
+    def query(self):
         """Query the targets. """
-        print_deps = self.__options.deps
-        print_depended = self.__options.depended
-        dot_file = self.__options.output_to_dot
-        print_dep_tree = self.__options.output_tree
-        result_map = self.query_helper(targets)
-        if dot_file:
-            print_mode = 0
-            if print_depended:
-                print_mode = 1
-            dot_file = os.path.join(self.__working_dir, dot_file)
-            self.output_dot(result_map, print_mode, dot_file)
+        output_file_name = self.__options.output_file
+        if output_file_name:
+            output_file_name = os.path.join(self.__working_dir, output_file_name)
+            output_file = open(output_file_name, 'w')
+            console.info('query result will be written to file "%s"' % self.__options.output_file)
         else:
-            if print_deps:
-                if print_dep_tree:
-                    self.query_dependency_tree(targets)
-                else:
-                    for key in result_map:
-                        print
-                        deps = result_map[key][0]
-                        console.info('//%s:%s depends on the following targets:' % (
-                                key[0], key[1]))
-                        for d in deps:
-                            print '%s:%s' % (d[0], d[1])
-            if print_depended:
-                for key in result_map:
-                    print
-                    depended_by = result_map[key][1]
-                    console.info('//%s:%s is depended by the following targets:' % (
-                            key[0], key[1]))
-                    for d in depended_by:
-                        print '%s:%s' % (d[0], d[1])
+            output_file = sys.stdout
+            console.info('query result:')
+
+        output_format = self.__options.output_format
+        if output_format == 'dot':
+            self.query_dependency_dot(output_file)
+        elif output_format == 'tree':
+            self.query_dependency_tree(output_file)
+        else:
+            self.query_dependency_plain(output_file)
+        if output_file_name:
+            output_file.close()
         return 0
 
+    def query_dependency_plain(self, output_file):
+        result_map = self.query_helper()
+        if self.__options.deps:
+            for key in result_map:
+                print(file=output_file)
+                deps = result_map[key][0]
+                print('//%s:%s depends on the following targets:' % (key[0], key[1]),
+                      file=output_file)
+                for d in deps:
+                    print('%s:%s' % (d[0], d[1]), file=output_file)
+        if self.__options.dependents:
+            for key in result_map:
+                print(file=output_file)
+                depended_by = result_map[key][1]
+                print('//%s:%s is depended by the following targets:' % (key[0], key[1]),
+                      file=output_file)
+                for d in depended_by:
+                    print('%s:%s' % (d[0], d[1]), file=output_file)
+
     def print_dot_node(self, output_file, node):
-        print >>output_file, '"%s:%s" [label = "%s:%s"]' % (node[0],
-                                                            node[1],
-                                                            node[0],
-                                                            node[1])
+        print('"%s:%s" [label = "%s:%s"]' % (node[0], node[1], node[0], node[1]), file=output_file)
 
     def print_dot_deps(self, output_file, node, target_set):
         targets = self.__build_targets
@@ -218,41 +246,33 @@ class Blade(object):
         for i in deps:
             if not i in target_set:
                 continue
-            print >>output_file, '"%s:%s" -> "%s:%s"' % (node[0],
-                                                         node[1],
-                                                         i[0],
-                                                         i[1])
+            print('"%s:%s" -> "%s:%s"' % (node[0], node[1], i[0], i[1]), file=output_file)
 
-    def output_dot(self, result_map, print_mode, dot_file):
-        f = open(dot_file, 'w')
+    def __print_dot_graph(self, result_map, name, print_mode, output_file):
+        # print_mode = 0: deps, 1: dependents
         targets = result_map.keys()
         nodes = set(targets)
         for key in targets:
             nodes |= set(result_map[key][print_mode])
-        print >>f, 'digraph blade {'
+        print('digraph %s {' % name, file=output_file)
         for i in nodes:
-            self.print_dot_node(f, i)
+            self.print_dot_node(output_file, i)
         for i in nodes:
-            self.print_dot_deps(f, i, nodes)
-        print >>f, '}'
-        f.close()
+            self.print_dot_deps(output_file, i, nodes)
+        print('}', file=output_file)
+        pass
 
-    def query_helper(self, targets):
+    def query_dependency_dot(self, output_file):
+        result_map = self.query_helper()
+        if self.__options.deps:
+            self.__print_dot_graph(result_map, 'deps', 0, output_file)
+        if self.__options.dependents:
+            self.__print_dot_graph(result_map, 'dependents', 1, output_file)
+
+    def query_helper(self):
         """Query the targets helper method. """
         all_targets = self.__build_targets
-        query_list = []
-        for t in targets:
-            t_path, name = t.split(':')
-            if name == '...':
-                for tkey in all_targets:
-                    if tkey[0].startswith(t_path):
-                        query_list.append(tkey)
-            elif name == '*':
-                for tkey in all_targets:
-                    if tkey[0] == t_path:
-                        query_list.append(tkey)
-            else:
-                query_list.append((t_path, name))
+        query_list = self.__all_command_targets
 
         result_map = {}
         for key in query_list:
@@ -262,23 +282,16 @@ class Blade(object):
             result_map[key] = (sorted(deps), sorted(depended_by))
         return result_map
 
-    def query_dependency_tree(self, targets):
+    def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
-        query_targets = []
-        for target in targets:
-            if ':' not in target:
-                console.error_exit(
-                    'Target %s is not supported by dependency tree query. '
-                    'The target should be in the format directory:name.' % target)
-            path, name = target.split(':')
-            query_targets.append((path, name))
+        if self.__options.dependents:
+            console.error_exit('only query --deps can be output as tree format')
+        print(file=output_file)
+        for key in self.__all_command_targets:
+            self._query_dependency_tree(key, 0, self.__build_targets, output_file)
+            print(file=output_file)
 
-        for key in query_targets:
-            console.info('')
-            self._query_dependency_tree(key, 0, self.__build_targets)
-            console.info('')
-
-    def _query_dependency_tree(self, key, level, build_targets):
+    def _query_dependency_tree(self, key, level, build_targets, output_file):
         """Query the dependency tree of the specified target recursively. """
         path, name = key
         if level == 0:
@@ -287,9 +300,9 @@ class Blade(object):
             output = '%s %s:%s' % ('+-', path, name)
         else:
             output = '%s%s %s:%s' % ('|  ' * (level - 1), '+-', path, name)
-        console.info(console.color('end') + console.color('gray') + output)
+        print(output, file=output_file)
         for dkey in build_targets[key].deps:
-            self._query_dependency_tree(dkey, level + 1, build_targets)
+            self._query_dependency_tree(dkey, level + 1, build_targets, output_file)
 
     def get_build_time(self):
         return self.__build_time
@@ -340,9 +353,7 @@ class Blade(object):
 
     def register_target(self, target):
         """Register a target into blade target database.
-
         It is used to do quick looking.
-
         """
         key = target.key
         # Check whether there is already a key in database
@@ -447,6 +458,7 @@ class Blade(object):
 
 def initialize(
         command_targets,
+        load_targets,
         blade_path,
         working_dir,
         build_path,
@@ -454,7 +466,7 @@ def initialize(
         blade_options,
         command):
     global instance
-    instance = Blade(command_targets,
+    instance = Blade(command_targets, load_targets,
                      blade_path, working_dir, build_path, blade_root_dir,
                      blade_options, command)
 
