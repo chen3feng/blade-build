@@ -6,7 +6,7 @@
 ██████╔╝███████╗██║  ██║██████╔╝███████╗
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
-# Blade Build
+# Build System
 An easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
 
 ## Build status
