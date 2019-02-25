@@ -174,9 +174,10 @@ from blade import scons_helper
         if thrift_bin.startswith('//'):
             thrift_bin = thrift_bin.replace('//', self.build_dir + '/')
             thrift_bin = thrift_bin.replace(':', '/')
+        thrift_cpp_gen_params = thrift_config['thrift_cpp_gen_params']
         self._add_rule(
-            'scons_helper.setup_thrift_builders(top_env, build_dir="%s", thrift_bin="%s", thrift_incs_str="%s")' % (
-                    self.build_dir, thrift_bin, thrift_incs_str))
+            'scons_helper.setup_thrift_builders(top_env, build_dir="%s", thrift_bin="%s", thrift_incs_str="%s", thrift_cpp_gen_params="%s")' % (
+                    self.build_dir, thrift_bin, thrift_incs_str, thrift_cpp_gen_params))
 
     def _generate_fbthrift_builders(self):
         fbthrift_config = config.get_section('fbthrift_config')
