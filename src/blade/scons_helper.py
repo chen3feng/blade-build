@@ -1292,7 +1292,7 @@ def setup_proto_builders(top_env, build_dir, protoc_bin, protoc_java_bin,
     top_env.Append(SCANNERS = proto_scanner)
 
 
-def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
+def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str, thrift_cpp_gen_params):
     compile_thrift_cc_message = console.erasable('%sCompiling %s$SOURCE%s to cc source%s' % \
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
@@ -1303,9 +1303,9 @@ def setup_thrift_builders(top_env, build_dir, thrift_bin, thrift_incs_str):
         (colors('cyan'), colors('purple'), colors('cyan'), colors('end')))
 
     thrift_bld = SCons.Builder.Builder(action = MakeAction(
-        '%s --gen cpp:include_prefix -I . %s -I `dirname $SOURCE`'
+        '%s --gen cpp:%s -I . %s -I `dirname $SOURCE`'
         ' -out %s/`dirname $SOURCE` $SOURCE' % (
-            thrift_bin, thrift_incs_str, build_dir),
+            thrift_bin, thrift_cpp_gen_params, thrift_incs_str, build_dir),
         compile_thrift_cc_message))
     top_env.Append(BUILDERS = {"Thrift" : thrift_bld})
 
