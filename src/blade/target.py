@@ -604,7 +604,13 @@ class Target(object):
         All the target files built by the target itself
 
         """
-        return self.data['targets'].values()
+        results = set()
+        for _, v in self.data['targets'].iteritems():
+            if isinstance(v, list):
+                results.update(v)
+            else:
+                results.add(v)
+        return sorted(results)
 
     def _generate_header_files(self):
         """Whether this target generates header files during building. """
