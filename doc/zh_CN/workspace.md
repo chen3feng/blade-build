@@ -1,5 +1,5 @@
-工作空间的组织
-------------
+# 工作空间的组织
+
 Blade要求项目源代码有一个明确的根目录，C++ 中的 #include 的路径也需要从这个目录开始写起，这个目录成为工作空间，这样有几点好处：
 
 * 有效地避免头文件重名造成的问题。
@@ -13,13 +13,17 @@ Blade获取当前工作空间的方法是，无论当前从哪一级子目录运
 单一代码库的开发模式下，BLADE_ROOT建议统一放到代码库中，多仓库开发模式下，可能需要自己创建，方法：
  $ touch BLADE_ROOT
 
-最后一个工作空间看起来的样子如下：
- BLADE_ROOT
- common
- thirdparty
- xfs
- xcube
- torca
- your_project
- ...
-
+最后，一个工作空间看起来的样子如下：
+```
+$ ls -1a
+.
+..
+BLADE_ROOT
+common
+thirdparty
+xfs
+xcube
+torca
+your_project
+...
+```

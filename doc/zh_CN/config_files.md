@@ -1,5 +1,4 @@
-配置
-----
+# 配置
 Blade 支持三个配置文件，按以下顺序依次加载，后加载的配置会覆盖前面的配置
 
 * blade 安装目录下的 blade.conf，这是全局配置。
@@ -9,19 +8,19 @@ Blade 支持三个配置文件，按以下顺序依次加载，后加载的配�
 
 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
 
-### global_config
+# global_config
 Blade全局配置
 ```python
 global_config(
     native_builder = 'ninja',  # 后端构建系统，目前支持scons和ninja
     duplicated_source_action = 'error',  # 发现同一个源文件属于多个目标时的行为，默认为warning
     test_timeout = 600  # 600s  # 测试超时，单位秒，超过超时值依然未结束，视为测试失败
-) 
+)
 ```
 
 [ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
 
-### cc_config
+# cc_config
 所有c/c++目标的公共配置
 ```python
 cc_config(
@@ -34,7 +33,7 @@ cc_config(
 ```
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 
-### cc_test_config
+# cc_test_config
 构建和运行测试所需的配置
 ```python
 cc_test_config(
@@ -63,7 +62,7 @@ cc_config(
 * gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
 * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
 
-### proto_library_config
+# proto_library_config
 编译protobuf需要的配置
 ```python
 proto_library_config(
@@ -74,7 +73,7 @@ proto_library_config(
 )
 ```
 
-### thrift_library_config
+# thrift_library_config
 编译thrift需要的配置
 ```python
 thrift_library_config(
@@ -88,8 +87,6 @@ thrift_library_config(
 所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
 
 环境变量
-----------
-
 Blade还支持以下环境变量：
 
 * TOOLCHAIN_DIR，默认为空
