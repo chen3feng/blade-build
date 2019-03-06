@@ -15,9 +15,7 @@ Blade获取当前工作空间的方法是，无论当前从哪一级子目录运
 
 最后，一个工作空间看起来的样子如下：
 ```
-$ ls -1a
-.
-..
+$ ls -1
 BLADE_ROOT
 common
 thirdparty
