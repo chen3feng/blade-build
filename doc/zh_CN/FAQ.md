@@ -166,7 +166,8 @@ blade -c 清除不了项目生成的文件
 构建时加上 --verbose 参数，就能显示完整的命令行。
 
 ### 我修改了源文件，为何还是失败，报错位置也匹配不上(或者没有重新编译)?
-首先 alt 到 build 目录下，看看是不是把源代码（或者头文件）放在这里了，由于 Blade 分离了源码和构建结果目录，Blade 也会到构建结果目录找源码优先，而且由于 scons 的限制，还会更优先，因此产生这样的错误，目前还没有好的解决办法。
+首先 alt 到 build 目录下，看看是不是把源代码（或者头文件）放在这里了，由于 Blade 分离了源码和构建结果目录，
+Blade 也会到构建结果目录找源码优先，而且由于 scons 的限制，还会更优先，因此产生这样的错误，目前还没有好的解决办法。
 如果是源文件误放到这里，构建时会显示 Compiling build64_release/...，根据这一点能更容易定位这个问题。
 
 ### 如何发布预编译的库?
@@ -199,12 +200,14 @@ cc_library(
 
 ### unrecognized options 是什么意思？
 比如 unrecognized options {'link_all_symbols': 1}。
-不同的目标有不同的选项参数，如果传了目标所不支持的参数，就会报告这个错误。可能的原因是误用了其他目标的参数，或者拼写错误，对于后一种情况，BLADE的vim语法高亮功能可以帮你更容易看到错误。
+不同的目标有不同的选项参数，如果传了目标所不支持的参数，就会报告这个错误。可能的原因是误用了其他目标
+的参数，或者拼写错误，对于后一种情况，BLADE的vim语法高亮功能可以帮你更容易看到错误。
 
 ### Source file xxx.cc belongs to both xxx and yyy 是什么意思？
 比如 Source file cp_test_config.cc belongs to both cc_test xcube/cp/jobcontrol:job_controller_test and cc_test xcube/cp/jobcontrol:job_context_test？
 
-为了避免不必要的重复编译和可能的编译参数不同导致违反 C++ 的[http://en.wikipedia.org/wiki/One_Definition_Rule 一次定义规则]，通常每个源文件应该只属于一个目标，如果一个源文件被多个目标使用，应该写成单独的 cc_library，并在 deps 中依赖这个库。
+为了避免不必要的重复编译和可能的编译参数不同导致违反 C++ 的[一次定义规则](http://en.wikipedia.org/wiki/One_Definition_Rule)，
+通常每个源文件应该只属于一个目标，如果一个源文件被多个目标使用，应该写成单独的 cc_library，并在 deps 中依赖这个库。
 
 ### 如何开启 C++11
 编辑配置文件，加入：
@@ -227,6 +230,7 @@ mid: 中等，比low多了局部变量，函数参数
 high: 最高，包含了宏等的调试信息
 
 # 测试程序采用动态链接
+```
 cc_test_config(
     dynamic_link = True
 )

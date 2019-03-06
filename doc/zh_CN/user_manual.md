@@ -3,17 +3,17 @@ Blade用户手册
 
 [Blade是什么](what_is_blade.md)
 
-[Blade 解决的问题](blade_features.md)
+[Blade解决的问题](features.md)
 
-[Blade运行条件](blade_dependencies.md)
+[Blade运行条件](prerequisites.md)
 
-[安装](install.md)
+[如何安装](install.md)
 
 [代码的组织](workspace.md)
 
 [编写BUILD文件](build_file.md)
 
-[运行Blade](blade_command_line.md)
+[运行Blade](command_line.md)
 
 [测试支持](run_tests.md)
 
