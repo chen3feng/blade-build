@@ -1,7 +1,7 @@
 Blade用户手册
 ============
 
-[Blade是什么](what_is_blade.md)
+[Blade是什么](intro.md)
 
 [Blade解决的问题](features.md)
 
@@ -15,13 +15,13 @@ Blade用户手册
 
 [运行Blade](command_line.md)
 
-[测试支持](run_tests.md)
+[测试支持](test.md)
 
-[Blade的输出](output_files.md)
+[Blade的输出](output.md)
 
 [增量构建与构建缓存](build_cache.md)
 
-[配置文件](config_files.md)
+[配置文件](config.md)
 
 [辅助命令](aux.md)
 

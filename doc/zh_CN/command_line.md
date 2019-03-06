@@ -2,7 +2,7 @@
 
 ## 基本命令行语法
 ```bash
-blade <subcommand> [options]... [targets]...
+blade \<subcommand\> [options]... [targets]...
 ```
 
 ## 子命令
