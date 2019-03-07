@@ -1,4 +1,6 @@
 # 配置
+
+## 配置文件
 Blade 支持三个配置文件，按以下顺序依次加载，后加载的配置会覆盖前面的配置
 
 * blade 安装目录下的 blade.conf，这是全局配置。
@@ -8,7 +10,7 @@ Blade 支持三个配置文件，按以下顺序依次加载，后加载的配�
 
 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
 
-# global_config
+### global_config
 Blade全局配置
 ```python
 global_config(
@@ -18,9 +20,10 @@ global_config(
 )
 ```
 
-[ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
+[ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，
+用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
 
-# cc_config
+### cc_config
 所有c/c++目标的公共配置
 ```python
 cc_config(
@@ -33,7 +36,7 @@ cc_config(
 ```
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 
-# cc_test_config
+### cc_test_config
 构建和运行测试所需的配置
 ```python
 cc_test_config(
@@ -43,6 +46,34 @@ cc_test_config(
     gperftools_debug_libs='//thirdparty/perftools:tcmalloc_debug', # tcmalloc_debug 库，blade deps 格式
     gtest_libs='//thirdparty/gtest:gtest',  # gtest 的库，blade deps 格式
     gtest_main_libs='//thirdparty/gtest:gtest_main' # gtest_main 的库路径，blade deps 格式
+)
+```
+
+注意:
+
+* gtest 1.6开始，去掉了 make install，但是可以绕过，参见[gtest1.6.0安装方法](http://blog.csdn.net/chengwenyao18/article/details/7181514)。
+* gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
+* 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
+
+### proto_library_config
+编译protobuf需要的配置
+```python
+proto_library_config(
+    protoc='protoc',  # protoc编译器的路径
+    protobuf_libs='//thirdparty/protobuf:protobuf', # protobuf库的路径，Blade deps 格式
+    protobuf_path='thirdparty', # import 时的 proto 搜索路径，相对于 BLADE_ROOT
+    protobuf_include_path = 'thirdparty',  # 编译 pb.cc 时额外的 -I 路径
+)
+```
+
+### thrift_library_config
+编译thrift需要的配置
+```python
+thrift_library_config(
+    thrift='thrift',  # protoc编译器的路径
+    thrift_libs='//thirdparty/thrift:thrift', # thrift库的路径，Blade deps 格式
+    thrift_path='thirdparty', # thrift中include时的thrift文件的搜索路径，相对于 BLADE_ROOT
+    thrift_incs = 'thirdparty',  # 编译 thrift生成的.cpp 时额外的 -I 路径
 )
 ```
 
@@ -56,37 +87,11 @@ cc_config(
 )
 ```
 
-注意:
+所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，
+如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
 
-* gtest 1.6开始，去掉了 make install，但是可以绕过，参见[gtest1.6.0安装方法](http://blog.csdn.net/chengwenyao18/article/details/7181514)。
-* gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
-* 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
+## 环境变量
 
-# proto_library_config
-编译protobuf需要的配置
-```python
-proto_library_config(
-    protoc='protoc',  # protoc编译器的路径
-    protobuf_libs='//thirdparty/protobuf:protobuf', # protobuf库的路径，Blade deps 格式
-    protobuf_path='thirdparty', # import 时的 proto 搜索路径，相对于 BLADE_ROOT
-    protobuf_include_path = 'thirdparty',  # 编译 pb.cc 时额外的 -I 路径
-)
-```
-
-# thrift_library_config
-编译thrift需要的配置
-```python
-thrift_library_config(
-    thrift='thrift',  # protoc编译器的路径
-    thrift_libs='//thirdparty/thrift:thrift', # thrift库的路径，Blade deps 格式
-    thrift_path='thirdparty', # thrift中include时的thrift文件的搜索路径，相对于 BLADE_ROOT
-    thrift_incs = 'thirdparty',  # 编译 thrift生成的.cpp 时额外的 -I 路径
-)
-```
-
-所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
-
-环境变量
 Blade还支持以下环境变量：
 
 * TOOLCHAIN_DIR，默认为空
@@ -108,4 +113,4 @@ CPP='clang -E' CC=clang CXX=clang++ LD=clang++ blade
 
 如同所有的环境变量设置规则，放在命令行前的环境变量，只对这一次调用起作用，如果要后续起作用，用 export，要持久生效，放入 ~/.profile 中。
 
-环境变量的支持将来考虑淘汰，改为配置编译器版本的方式，因此建议暂时不要使用。
+环境变量的支持将来考虑淘汰，改为配置编译器版本的方式，因此建议仅用于临时测试不同的编译器。
