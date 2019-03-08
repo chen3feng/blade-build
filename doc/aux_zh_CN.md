@@ -1,4 +1,4 @@
-辅助命令
+辅助功能
 ------------
 ### install
 blade命令的符号链接会被安装下面的命令到~/bin 下。
@@ -12,7 +12,7 @@ blade命令的符号链接会被安装下面的命令到~/bin 下。
 ### vim集成
 我们编写了vim的blade语法文件，高亮显示blade关键字，install后就会自动生效。
 
-我们编写了 Blade 命令，使得可以在 vim 中直接执行 blade，并快速跳转到出错行（得益于 vim 的 [hquickfix](ttp://easwy.com/blog/archives/advanced-vim-skills-quickfix-mode/) 特性）。
+我们编写了 Blade 命令，使得可以在 vim 中直接执行 blade，并快速跳转到出错行（得益于 vim 的 [quickfix](http://easwy.com/blog/archives/advanced-vim-skills-quickfix-mode/) 特性）。
 
 使用时直接在 vim 的 : 模式输入（可带参数）
 
