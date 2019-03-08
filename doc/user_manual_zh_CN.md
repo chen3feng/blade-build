@@ -23,6 +23,6 @@ Blade用户手册
 
 [配置文件](config_files_zn_CN.md)
 
-[辅助命令](aux_zh_CN.md)
+[辅助功能](aux_zh_CN.md)
 
 [常见问题](FAQ_zh_CN.md)
