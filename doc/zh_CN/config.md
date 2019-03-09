@@ -1,5 +1,6 @@
-配置
-----
+# 配置
+
+## 配置文件
 Blade 支持三个配置文件，按以下顺序依次加载，后加载的配置会覆盖前面的配置
 
 * blade 安装目录下的 blade.conf，这是全局配置。
@@ -16,10 +17,11 @@ global_config(
     native_builder = 'ninja',  # 后端构建系统，目前支持scons和ninja
     duplicated_source_action = 'error',  # 发现同一个源文件属于多个目标时的行为，默认为warning
     test_timeout = 600  # 600s  # 测试超时，单位秒，超过超时值依然未结束，视为测试失败
-) 
+)
 ```
 
-[ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
+[ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，
+用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
 
 ### cc_config
 所有c/c++目标的公共配置
@@ -44,16 +46,6 @@ cc_test_config(
     gperftools_debug_libs='//thirdparty/perftools:tcmalloc_debug', # tcmalloc_debug 库，blade deps 格式
     gtest_libs='//thirdparty/gtest:gtest',  # gtest 的库，blade deps 格式
     gtest_main_libs='//thirdparty/gtest:gtest_main' # gtest_main 的库路径，blade deps 格式
-)
-```
-
-所有的 config 的列表类型的选项均支持追加模式，用法如下：
-
-```python
-cc_config(
-    append = config_items(
-        warnings = [...]
-    )
 )
 ```
 
@@ -85,10 +77,20 @@ thrift_library_config(
 )
 ```
 
-所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
+所有的 config 的列表类型的选项均支持追加模式，用法如下：
 
-环境变量
-----------
+```python
+cc_config(
+    append = config_items(
+        warnings = [...]
+    )
+)
+```
+
+所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，
+如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
+
+## 环境变量
 
 Blade还支持以下环境变量：
 
@@ -111,4 +113,4 @@ CPP='clang -E' CC=clang CXX=clang++ LD=clang++ blade
 
 如同所有的环境变量设置规则，放在命令行前的环境变量，只对这一次调用起作用，如果要后续起作用，用 export，要持久生效，放入 ~/.profile 中。
 
-环境变量的支持将来考虑淘汰，改为配置编译器版本的方式，因此建议暂时不要使用。
+环境变量的支持将来考虑淘汰，改为配置编译器版本的方式，因此建议仅用于临时测试不同的编译器。

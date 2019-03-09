@@ -47,7 +47,7 @@ False: debug版本不作优化。
 * export_incs
 类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标 | incs=['poppy/myinc'] |，和incs一样，用户代码不建议使用
 
-##### cc_binary
+## cc_binary
 定义C++可执行文件目标
 ```python
 cc_binary(
