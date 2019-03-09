@@ -1,10 +1,12 @@
-命令行参考
----------
+# 命令行参考
+
+## 基本命令行语法
 ```bash
-blade `[`action`]` `[`options`]` `[`targets`]`
+blade <subcommand> [options]... [targets]...
 ```
 
-action是一个动作，目前有
+## 子命令
+subcommand是一个子命令，目前有：
 
 * build 表示构建项目
 * test  表示构建并且跑单元测试
@@ -12,7 +14,8 @@ action是一个动作，目前有
 * query 查询目标的依赖项与被依赖项
 * run   构建并run一个单一目标
 
-targets是一个列表，支持的格式：
+## Target语法
+targets是一个空格分开的列表，支持的格式：
 
 * path:name 表示path中的某个target
 * path表示path中所有targets
@@ -20,7 +23,10 @@ targets是一个列表，支持的格式：
 * :name表示当前目录下的某个target
 默认表示当前目录
 
-参数列表：
+## 子命令选项
+不同子命令支持的选项不一样，具体请执行blade <subcommand> --help查看
+
+下面是一些常用的命令行选项
 
 * -m32,-m64            指定构建目标位数，默认为自动检测
 * -p PROFILE           指定debug/release，默认release
@@ -35,3 +41,4 @@ targets是一个列表，支持的格式：
 * --generate-php       为proto_library 和 swig_library 生成php文件
 * --gprof              支持 GNU gprof
 * --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
+
