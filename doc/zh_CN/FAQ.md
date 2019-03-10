@@ -10,7 +10,7 @@ Blade FAQ
 
 解决过程：
 
-1. blade 运行需要python 2.6 以上. 请使用python -V 查看python 版本。
+1. blade 运行需要python 2.7 以上. 请使用python -V 查看python 版本。
 - 装了python 2.7还是报错，确认 ptyhon -V 看到的是新版本，必要时配置PATH环境变量或者重新登录。
 - 使用env python, which python 等命令查看python命令到底用的是哪个。
 
@@ -172,7 +172,7 @@ Blade 也会到构建结果目录找源码优先，而且由于 scons 的限制�
 ## 如何发布预编译的库?
 有些机密的代码，希望以库的方式发布，但同时又依赖了非机密的库（比如common），如何发布呢？
 比如这样的库：
-```
+```python
 cc_library(
     name = 'secrity',
     srcs = 'secrity.cpp',
@@ -184,7 +184,7 @@ cc_library(
 ```
 这样发布：
 修改 BUILD 文件，去掉 srcs
-```
+```python
 cc_library(
     name = 'secrity',
     prebuilt = True, # srcs 改为这个
@@ -217,7 +217,8 @@ cc_config(
 ```
 
 ## 编译出来的结果占用了太多的磁盘空间
-```
+采用Blade来构建的项目往往是比较大规模的项目，因此构建后的结果往往也会占用较多的空间，如果你有这方面的问题，可以尝试用一下方式进行优化。
+```python
 # 降低调试符号占用的开销
 global_config(
     debug_info_level = 'no'
@@ -229,14 +230,25 @@ mid: 中等，比low多了局部变量，函数参数
 high: 最高，包含了宏等的调试信息
 
 # 测试程序采用动态链接
-```
+```python
 cc_test_config(
     dynamic_link = True
 )
 测试程序不会用来发布，动态链接可以减少大量的磁盘开销，如果某个具体的测试动态链接出错，可以单独为它指定dynamic_link = False。
 ```
 
-### cannot find -lstdc++
+### 生成"thin"静态库
+gnu ar支持生成‘thin’类型的静态库，和常规的静态库把.o打包进去不同，thin静态库里只记录了.o文件的路径，可以较大程度的减少空间占用。
+不过这种库是无法拿来做发布用的，还好在使用blade的场景下，静态库一般都是仅在构建系统内部使用的。
+
+做法是修改cc_library_config.arflags参数，加上`T`选项：
+```python
+cc_library_config(
+    arflags = 'rcsT'
+)
+```
+
+## cannot find -lstdc++
 需要安装libstdc++的静态版本
 ```
 yum install libstdc++-static
