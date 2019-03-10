@@ -146,7 +146,7 @@ class Blade(object):
         console.info('analyzing done.')
         return self.__build_targets  # For test
 
-    def get_build_rules_generator(self):
+    def new_build_rules_generator(self):
         if config.get_item('global_config', 'native_builder') == 'ninja':
             return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
         else:
@@ -155,8 +155,9 @@ class Blade(object):
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('generating build rules...')
-        generator = self.get_build_rules_generator()
+        generator = self.new_build_rules_generator()
         rules = generator.generate_build_script()
+        self.__all_rule_names = generator.get_all_rule_names()
         console.info('generating done.')
         return rules
 
@@ -454,6 +455,9 @@ class Blade(object):
             console.info('tunes the parallel jobs number(-j N) to be %d' % (
                 jobs_num))
         return jobs_num
+
+    def get_all_rule_names(self):
+        return self.__all_rule_names
 
 
 def initialize(

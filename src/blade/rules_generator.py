@@ -378,11 +378,16 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                 self, options, build_dir, gcc_version,
                 python_inc, cuda_inc, build_environment, svn_roots)
         self.blade_path = blade_path
+        self.__all_rule_names = set()
+
+    def get_all_rule_names(self):
+        return list(self.__all_rule_names)
 
     def generate_rule(self, name, command, description=None,
                       depfile=None, generator=False, pool=None,
                       restat=False, rspfile=None,
                       rspfile_content=None, deps=None):
+        self.__all_rule_names.add(name)
         self._add_rule('rule %s' % name)
         self._add_rule('  command = %s' % command)
         if description:
@@ -815,11 +820,10 @@ class RulesGenerator(object):
         self.blade = blade
         self.scons_platform = self.blade.get_scons_platform()
         self.build_dir = self.blade.get_build_path()
-        try:
-            os.remove('blade-bin')
-        except os.error:
-            pass
-        os.symlink(os.path.abspath(self.build_dir), 'blade-bin')
+
+    def get_all_rule_names(self):
+        """Get all build rule names"""
+        return []
 
     def generate_build_rules(self):
         """Generate build rules for underlying build system. """
@@ -862,6 +866,10 @@ class NinjaRulesGenerator(RulesGenerator):
     """Generate ninja rules to build.ninja. """
     def __init__(self, ninja_path, blade_path, blade):
         RulesGenerator.__init__(self, ninja_path, blade_path, blade)
+        self.__all_rule_names = []
+
+    def get_all_rule_names(self):  # override
+        return self.__all_rule_names
 
     def generate_build_rules(self):
         """Generate ninja rules to build.ninja. """
@@ -880,4 +888,5 @@ class NinjaRulesGenerator(RulesGenerator):
                 self.blade.svn_root_dirs)
         rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()
+        self.__all_rule_names = ninja_script_header_generator.get_all_rule_names()
         return rules
