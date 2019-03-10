@@ -51,12 +51,13 @@ class CmdArguments(object):
 
         # Check the options with different sub command
         actions = {
-                  'build': self._check_build_command,
-                  'run':   self._check_run_command,
-                  'test':  self._check_test_command,
-                  'clean': self._check_clean_command,
-                  'query': self._check_query_command
-                  }
+            'build': self._check_build_command,
+            'clean': self._check_clean_command,
+            'dump': self._check_dump_command,
+            'query': self._check_query_command,
+            'run':   self._check_run_command,
+            'test':  self._check_test_command,
+        }
         actions[command]()
 
     def _check_run_targets(self):
@@ -113,6 +114,10 @@ class CmdArguments(object):
         self._check_plat_and_profile_options()
 
     def _check_build_command(self):
+        """check build options. """
+        self._check_build_options()
+
+    def _check_dump_command(self):
         """check build options. """
         self._check_build_options()
 
@@ -364,6 +369,16 @@ class CmdArguments(object):
                 '--quiet', dest='verbosity', action='store_const', const='quiet',
                 help='Only show warnings and errors')
 
+    def _add_dump_arguments(self, parser):
+        """Add query arguments for parser. """
+        parser.add_argument(
+            '--compdb', dest='compdb', default=False, action='store_true',
+            help='Dump compilation database to file, use --compdb-path to specify the file path')
+        parser.add_argument(
+            '--compdb-path', dest='compdb_path', type=str, action='store',
+            default='compile_commands.json',
+            help=('Specifies the path to compdb, default is compile_commands.json'))
+
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
@@ -387,18 +402,24 @@ class CmdArguments(object):
 
         clean_parser = sub_parser.add_parser(
             'clean',
-            help='Remove all Blade-created output')
+            help='Remove all blade-created output')
 
         query_parser = sub_parser.add_parser(
             'query',
             help='Execute a dependency graph query')
 
-        self._add_common_arguments(build_parser, run_parser, test_parser, clean_parser, query_parser)
-        self._add_build_arguments(build_parser, run_parser, test_parser)
+        dump_parser = sub_parser.add_parser(
+            'dump',
+            help='Dump specified internal information')
+
+        self._add_common_arguments(build_parser, run_parser, test_parser,
+                                   clean_parser, query_parser, dump_parser)
+        self._add_build_arguments(build_parser, run_parser, test_parser, dump_parser)
         self._add_run_arguments(run_parser)
         self._add_test_arguments(test_parser)
         self._add_clean_arguments(clean_parser)
         self._add_query_arguments(query_parser)
+        self._add_dump_arguments(dump_parser)
 
         return arg_parser.parse_known_args()
 

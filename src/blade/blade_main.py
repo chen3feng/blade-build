@@ -357,6 +357,21 @@ def query(options):
     return build_manager.instance.query()
 
 
+def dump(options):
+    native_builder = config.get_item('global_config', 'native_builder')
+    if native_builder != 'ninja':
+        console.error_exit('dump compdb only work when native_builder is ninja')
+    if options.compdb:
+        output_file_name = os.path.join(_WORKING_DIR, options.compdb_path)
+        rules = build_manager.instance.get_all_rule_names()
+        cmd = ['ninja', '-t', 'compdb'] + rules
+        cmdstr = subprocess.list2cmdline(cmd)
+        cmdstr += ' > '
+        cmdstr += output_file_name
+        console.info('write compdb to %s' % options.compdb_path)
+        return _run_native_builder(cmdstr)
+
+
 def lock_workspace():
     lock_file_fd, ret_code = lock_file('.Building.lock')
     if lock_file_fd == -1:
@@ -393,6 +408,11 @@ def setup_build_dir(options):
     build_dir = s.substitute(bits=options.bits, profile=options.profile)
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
+    try:
+        os.remove('blade-bin')
+    except os.error:
+        pass
+    os.symlink(os.path.abspath(build_dir), 'blade-bin')
     return build_dir
 
 
@@ -478,10 +498,11 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     # Switch case due to different sub command
     action = {
         'build': build,
+        'clean': clean,
+        'dump': dump,
+        'query': query,
         'run': run,
         'test': test,
-        'clean': clean,
-        'query': query
     }[command]
     try:
         returncode = action(options)
