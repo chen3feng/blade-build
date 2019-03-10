@@ -239,5 +239,5 @@ cc_test_config(
 ### cannot find -lstdc++
 需要安装libstdc++的静态版本
 ```
-yum install glibc-static
+yum install libstdc++-static
 ```
