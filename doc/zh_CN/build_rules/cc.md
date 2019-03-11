@@ -12,6 +12,9 @@ CC 目标均支持的属性为：
 | extra_cppflags | 用户定义的额外的C/C++编译flags | extra_cppflags=['-Wno-format-literal'] | 常用flags比如`-g`，`-fPIC`等都已经内置，一般无需指定 |
 | extra_linkflags | 用户定义的额外的链接flags | extra_linkflags=['-fopenmp'] | 常用flags比如`-g`等都已经内置，一般无需指定 |
 
+* optimize之所以需要单独提出来，是因为debug模式下需要忽略，optimize影响代码的可调试性。如果某些目标，例如性能相关又一般无需调试的库，比如hash，压缩，加解密之类的，可以加上`always_optimize = True`让他们总是开启优化。
+* C/C++程序的构建分为预处理，编译（把预处理后的源文件转化为.o文件）和链接（把.o, .a链接成可执行文件或者动态库）三个阶段，不同阶段用不同的编译参数。
+
 ## cc_library
 
 用于描述C++库目标。
