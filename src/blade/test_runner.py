@@ -344,15 +344,17 @@ class TestRunner(binary_runner.BinaryRunner):
         run_tests = len(passed_run_results) + len(failed_run_results)
 
         if len(passed_run_results) == len(self.test_jobs):
-            console.info('All tests passed!')
+            console.info('All %d tests passed!' % len(passed_run_results))
             return
 
+        msg = ['total %d tests' % len(self.test_jobs)]
         if failed_run_results:
-            console.info('%d tests passed.' % len(passed_run_results))
-            console.error('%d tests failed.' % len(failed_run_results))
+            msg.append('%d passed' % len(passed_run_results))
+            msg.append('%d failed' % len(failed_run_results))
         cancelled_tests = len(self.test_jobs) - run_tests
         if cancelled_tests:
-            console.error('%d tests cancelled by Ctrl-C' % cancelled_tests)
+            msg.append('%d cancelled' % cancelled_tests)
+        console.error(', '.join(msg) + '.')
 
     def _show_tests_result(self, passed_run_results, failed_run_results):
         """Show test details and summary according to the options. """
