@@ -295,6 +295,7 @@ def _ninja_build(options):
     cmdstr = subprocess.list2cmdline(cmd)
     if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
         # Filter out description message such as '[1/123] CC xxx.cc'
+        cmdstr = 'set -o pipefail; ' + cmdstr  # ensure exit status
         cmdstr += r' | sed -e "/^\[[0-9]*\/[0-9]*\] /d"'
     build_start_time = time.time()
     ret = _run_native_builder(cmdstr)
