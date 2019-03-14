@@ -399,6 +399,7 @@ class TestRunner(binary_runner.BinaryRunner):
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
+            console.clear_progress_bar()
             console.error('KeyboardInterrupt, all tests stopped')
             console.flush()
 

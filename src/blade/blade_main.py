@@ -68,6 +68,7 @@
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import cProfile
 import datetime
@@ -75,6 +76,7 @@ import errno
 import json
 import os
 import pstats
+import re
 import signal
 import subprocess
 import sys
@@ -280,6 +282,39 @@ def _show_slow_builds(build_start_time, show_builds_slower_than):
             for cost_time, target in sorted(build_times):
                 console.notice('%.4gs\t%s' % (cost_time, target), prefix=False)
 
+
+def _show_progress(p, rf):
+    # Convert out description message such as '[1/123] CC xxx.cc' into progress bae
+    progress_re = re.compile(r'^\[(\d+)/(\d+)\]\s+')
+    try:
+        while True:
+            p.poll()
+            line = rf.readline().strip()
+            if line:
+                m = progress_re.match(line)
+                if m:
+                    console.show_progress_bar(int(m.group(1)), int(m.group(2)))
+                else:
+                    console.clear_progress_bar()
+                    console.output(line)
+            else:
+                if p.returncode is not None:
+                    break
+    finally:
+        console.clear_progress_bar()
+
+
+def _run_ninja(cmd, options):
+    cmdstr = subprocess.list2cmdline(cmd)
+    if console.verbosity_compare(options.verbosity, 'quiet') > 0:
+        return _run_native_builder(cmdstr)
+    ninja_output = 'blade-bin/ninja_output.log'
+    with open(ninja_output, 'w', buffering=1) as wf, open(ninja_output, 'r', buffering=1) as rf:
+        p = subprocess.Popen(cmdstr, shell=True, stdout=wf, stderr=subprocess.STDOUT)
+        _show_progress(p, rf)
+    return p.returncode
+
+
 def _ninja_build(options):
     cmd = ['ninja']
     cmd += native_builder_options(options)
@@ -292,13 +327,8 @@ def _ninja_build(options):
         cmd.append('-k0')
     if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
         cmd.append('-v')
-    cmdstr = subprocess.list2cmdline(cmd)
-    if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
-        # Filter out description message such as '[1/123] CC xxx.cc'
-        cmdstr = 'set -o pipefail; ' + cmdstr  # ensure exit status
-        cmdstr += r' | sed -e "/^\[[0-9]*\/[0-9]*\] /d"'
     build_start_time = time.time()
-    ret = _run_native_builder(cmdstr)
+    ret = _run_ninja(cmd, options)
     if options.show_builds_slower_than is not None:
         _show_slow_builds(build_start_time, options.show_builds_slower_than)
     return ret
@@ -543,7 +573,7 @@ def _main(blade_path):
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
         if options.verbosity != 'quiet':
-            print "Blade: Entering directory `%s'" % _BLADE_ROOT_DIR
+            print("Blade: Entering directory `%s'" % _BLADE_ROOT_DIR)
         os.chdir(_BLADE_ROOT_DIR)
 
     load_config(options, _BLADE_ROOT_DIR)

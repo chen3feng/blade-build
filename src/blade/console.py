@@ -13,23 +13,15 @@
 
 """
 
+from __future__ import print_function
 
 import os
 import sys
 
 
-# Global log file for detailed output during build
-_log = None
-
-
-# Output verbosity control, valid values:
-# verbose: verbose mode, show more details
-# normal: normal mode, show infos, warnings and errors
-# quiet: quiet mode, only show warnings and errors
-_VERBOSITIES = ('quiet', 'normal', 'verbose')
-
-
-_verbosity = 'normal'
+##############################################################################
+# Color and screen
+##############################################################################
 
 
 # Global color enabled or not
@@ -87,6 +79,15 @@ def colored(text, color):
     return text
 
 
+##############################################################################
+# Log
+##############################################################################
+
+
+# Global log file for detailed output during build
+_log = None
+
+
 def set_log_file(log_file):
     """Set the global log file. """
     global _log
@@ -96,6 +97,27 @@ def set_log_file(log_file):
 def get_log_file():
     """Return the global log file name. """
     return _log.name
+
+
+def log(msg):
+    """Dump message into log file. """
+    if _log:
+        print(msg, file=_log)
+
+
+##############################################################################
+# Verbosity
+##############################################################################
+
+
+# Output verbosity control, valid values:
+# verbose: verbose mode, show more details
+# normal: normal mode, show infos, warnings and errors
+# quiet: quiet mode, only show warnings and errors
+_VERBOSITIES = ('quiet', 'normal', 'verbose')
+
+
+_verbosity = 'normal'
 
 
 def set_verbosity(value):
@@ -126,9 +148,62 @@ def verbosity_ge(expected):
     return verbosity_compare(_verbosity, expected) >= 0
 
 
+##############################################################################
+# Progress bar
+##############################################################################
+
+_PROGRESS_BAR_WIDTH = 70
+# TODO(chen3feng): Add lock
+_need_clear_line = False  # Whether the last output is progress bar
+_last_progress = -1  # The last progress bar value, -1 means none
+
+
+def _progress_bar(progress):
+    """Progress bar drawing text"""
+    width = progress * _PROGRESS_BAR_WIDTH // 100
+    return '[' + '=' * width + '-' * (_PROGRESS_BAR_WIDTH - width) + '] ' + str(progress) + '%'
+
+
+def show_progress_bar(current, total):
+    global _need_clear_line, _last_progress
+    progress = current * 100 // total
+    if progress != _last_progress:
+        bar = _progress_bar(progress)
+        bar += '\r' if color_enabled else '\n'
+        print(bar, end='')
+        _last_progress = progress
+        _need_clear_line = True
+
+
+def clear_progress_bar():
+    global _need_clear_line, _last_progress
+    if _need_clear_line:
+        if color_enabled:
+            print(_CLEAR_LINE, end='')
+        _need_clear_line = False
+        _last_progress = -1
+        sys.stdout.flush()
+
+
+##############################################################################
+# Output
+##############################################################################
+
+
+def _do_print(msg, file=sys.stdout):
+    clear_progress_bar()
+    print(msg, file=file)
+
+
 def _print(msg, verbosity):
     if verbosity_ge(verbosity):
-        print msg
+        _do_print(msg)
+
+
+def output(msg):
+    """Output message without any decoration"""
+    _do_print(msg)
+    log(msg)
 
 
 def error(msg, prefix=True):
@@ -136,7 +211,7 @@ def error(msg, prefix=True):
     if prefix:
         msg = 'Blade(error): ' + msg
     log(msg)
-    print >>sys.stderr, colored(msg, 'red')
+    _do_print(colored(msg, 'red'), file=sys.stderr)
 
 
 def error_exit(msg, code=1):
@@ -151,7 +226,7 @@ def warning(msg, prefix=True):
         msg = 'Blade(warning): ' + msg
     log(msg)
     msg = colored(msg, 'yellow')
-    print >>sys.stderr, msg
+    _do_print(msg, file=sys.stderr)
 
 
 def notice(msg, prefix=True):
@@ -179,14 +254,9 @@ def debug(msg, prefix=True):
     _print(msg, 'verbose')
 
 
-def log(msg):
-    """Dump message into log file. """
-    if _log:
-        print >>_log, msg
-
-
 def flush():
     sys.stdout.flush()
     sys.stderr.flush()
     if _log:
         _log.flush()
+
