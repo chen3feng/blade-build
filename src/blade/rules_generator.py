@@ -133,7 +133,7 @@ from blade import scons_helper
     def generate_compliation_verbose(self):
         """Generates color and verbose message. """
         self._add_rule('scons_helper.setup_compliation_verbosity(top_env, color_enabled=%s, verbosity="%s")' %
-                (console.color_enabled, self.options.verbosity))
+                (console.color_enabled(), self.options.verbosity))
 
     def _generate_fast_link_builders(self):
         """Generates fast link builders if it is specified in blade bash. """

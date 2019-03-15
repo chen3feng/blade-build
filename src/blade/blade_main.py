@@ -458,10 +458,15 @@ def get_source_dirs():
     return blade_root_dir, working_dir
 
 
+def setup_console(options):
+    if options.color != 'auto':
+        console.enable_color(options.color == 'yes')
+    console.set_verbosity(options.verbosity)
+
+
 def setup_log(build_dir, options):
     log_file = os.path.join(build_dir, 'blade.log')
     console.set_log_file(log_file)
-    console.set_verbosity(options.verbosity)
 
 
 def generate_scm(build_dir):
@@ -567,6 +572,7 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
 def _main(blade_path):
     """The main entry of blade. """
     command, options, targets = parse_command_line()
+    setup_console(options)
 
     global _BLADE_ROOT_DIR
     global _WORKING_DIR

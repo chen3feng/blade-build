@@ -36,9 +36,8 @@ class BuildEnvironment(object):
             self.distcc_host_list = os.environ.get('DISTCC_HOSTS', '')
         if self.distcc_installed and self.distcc_host_list:
             self.distcc_env_prepared = True
-        if self.distcc_installed and not self.distcc_host_list:
-            console.warning('DISTCC_HOSTS not set but you have '
-                            'distcc installed, will just build locally')
+        if self.distcc_installed and self.distcc_host_list:
+            console.info('distcc is enabled automatically due DISTCC_HOSTS set')
         self.distcc_log_file = os.environ.get('DISTCC_LOG', '')
         if self.distcc_log_file:
             console.debug('distcc log: %s' % self.distcc_log_file)

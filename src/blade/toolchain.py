@@ -289,7 +289,7 @@ def generate_java_test_entry(args):
 def generate_fat_jar_entry(args):
     jar = args[0]
     console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
-    console.color_enabled = True
+    console.enable_color(True)
     fatjar.generate_fat_jar(jar, args[1:])
 
 

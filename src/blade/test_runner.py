@@ -381,7 +381,7 @@ class TestRunner(binary_runner.BinaryRunner):
             test_env = self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
-            if console.color_enabled:
+            if console.color_enabled():
                 test_env['GTEST_COLOR'] = 'yes'
             else:
                 test_env['GTEST_COLOR'] = 'no'
