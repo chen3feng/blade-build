@@ -297,9 +297,11 @@ def _show_progress(p, rf):
                 else:
                     console.clear_progress_bar()
                     console.output(line)
+            elif p.returncode is not None:
+                break
             else:
-                if p.returncode is not None:
-                    break
+                # Avoid cost too much cpu
+                time.sleep(0.1)
     finally:
         console.clear_progress_bar()
 

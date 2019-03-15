@@ -153,26 +153,26 @@ def verbosity_ge(expected):
 ##############################################################################
 
 # Fit to th the 80 columns terminal, left some spaces for other parts such as the percent number.
-_PROGRESS_BAR_WIDTH = 70
+_PROGRESS_BAR_WIDTH = 65
 
 # TODO(chen3feng): Add lock
 _need_clear_line = False  # Whether the last output is progress bar
 _last_progress = -1  # The last progress bar value, -1 means none
 
 
-def _progress_bar(progress):
+def _progress_bar(progress, current, total):
     """Progress bar drawing text, like this:
-    [=================================================================-----] 93%
+    [============================================================-----] 46/50
     """
     width = progress * _PROGRESS_BAR_WIDTH // 100
-    return '[' + '=' * width + '-' * (_PROGRESS_BAR_WIDTH - width) + '] ' + str(progress) + '%'
+    return '[%s%s] %s/%s' % ('=' * width, '-' * (_PROGRESS_BAR_WIDTH - width), current, total)
 
 
 def show_progress_bar(current, total):
     global _need_clear_line, _last_progress
     progress = current * 100 // total
     if progress != _last_progress:
-        bar = _progress_bar(progress)
+        bar = _progress_bar(progress, current, total)
         bar += '\r' if color_enabled else '\n'
         print(bar, end='')
         _last_progress = progress
