@@ -394,11 +394,13 @@ class TestRunner(binary_runner.BinaryRunner):
                 test_env['BLADE_COVERAGE'] = 'true'
             tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
 
+        console.notice('%d tests to run' % len(tests_run_list))
         sys.stdout.flush()
         scheduler = TestScheduler(tests_run_list, self.options.test_jobs)
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
+            console.clear_progress_bar()
             console.error('KeyboardInterrupt, all tests stopped')
             console.flush()
 

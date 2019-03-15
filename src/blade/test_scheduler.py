@@ -152,6 +152,11 @@ class TestScheduler(object):
             result = '%s:%s' % (result, returncode)
         return result
 
+    def _show_progress(self, cmd):
+        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
+        if console.verbosity_le('quiet'):
+            console.show_progress_bar(self.num_of_ran_tests, len(self.tests_list))
+
     def _run_job_redirect(self, job, job_thread):
         """run job and redirect the output. """
         target, run_dir, test_env, cmd = job
@@ -160,7 +165,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
+        self._show_progress(cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
                              cwd=run_dir,
@@ -189,7 +194,7 @@ class TestScheduler(object):
         if shell:
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.data.get('test_timeout')
-        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
+        self._show_progress(cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
