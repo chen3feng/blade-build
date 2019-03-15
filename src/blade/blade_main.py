@@ -284,7 +284,7 @@ def _show_slow_builds(build_start_time, show_builds_slower_than):
 
 
 def _show_progress(p, rf):
-    # Convert out description message such as '[1/123] CC xxx.cc' into progress bae
+    # Convert description message such as '[1/123] CC xxx.cc' into progress bar
     progress_re = re.compile(r'^\[(\d+)/(\d+)\]\s+')
     try:
         while True:

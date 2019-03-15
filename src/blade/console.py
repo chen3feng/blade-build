@@ -152,7 +152,7 @@ def verbosity_ge(expected):
 # Progress bar
 ##############################################################################
 
-# Fit to th the 80 columns terminal, left some spaces for other parts such as the percent number.
+# Fit with the 80 columns terminal, leave some spaces for other parts such as the numbers.
 _PROGRESS_BAR_WIDTH = 65
 
 # TODO(chen3feng): Add lock
