@@ -20,12 +20,18 @@ blade_version() {
     local log
     branch=$(git branch | grep '^\*')
     if echo "$branch" | grep 'detached from'; then
+        # Extract tag name
         version=$(echo "$branch" | sed -n 's/.*detached from \(.*\))$/version \1/p')
     else
         version=$(echo "$branch" | sed -n 's/\* \(.*\)$/("\1" branch)/p')
     fi
-    log=$(git log -1 --format="%ad %h" --date=short)
-    echo "$version $log"
+    # get last commit brief
+    log=$(git log -1 --format="%ad %h, by %cn" --date=short)
+
+    # Examples:
+    #   2.0.0, 2019-03-16 3b2ad0d, by CHEN Feng
+    #   ("version" branch), 2019-03-16 3b2ad0d, by CHEN Feng
+    echo "$version, $log"
 }
 
 # blade_version; exit
