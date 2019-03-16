@@ -14,7 +14,7 @@
 
 LC_ALL=C
 
-blade_version() {
+function blade_version() {
     local branch
     local version
     local log
@@ -34,10 +34,10 @@ blade_version() {
     echo "$version, $log"
 }
 
+# For debug
 # blade_version; exit
 
-function make_blade_zip()
-{
+function make_blade_zip() {
     local version
     version=$(blade_version)
     blade_dir=$(cd $(dirname $0) && pwd)
