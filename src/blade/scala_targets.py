@@ -8,15 +8,15 @@
 Implement scala_library, scala_fat_library and scala_test
 """
 
+from __future__ import absolute_import
 
-import blade
-import build_rules
-import config
-import console
-
-from target import Target
-from java_targets import JavaTargetMixIn
-from blade_util import var_to_list
+from blade import build_manager
+from blade import build_rules
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list
+from blade.java_targets import JavaTargetMixIn
+from blade.target import Target
 
 
 class ScalaTarget(Target, JavaTargetMixIn):
