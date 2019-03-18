@@ -21,7 +21,7 @@ function blade_version() {
     branch=$(git branch | grep '^\*')
     if echo "$branch" | egrep 'detached (at|from)' > /dev/null; then
         # Extract tag name
-        version=$(echo "* (HEAD detached at 1.99)" | sed -E -n 's/\* \(.* detached (at|from) (.*)\)/\2/p')
+        version=$(echo "$branch" | sed -E -n 's/\* \(.* detached (at|from) (.*)\)/\2/p')
     else
         version=$(echo "$branch" | sed -n 's/\* \(.*\)$/("\1" branch)/p')
     fi
