@@ -25,8 +25,8 @@ import sys
 
 
 # Global color enabled or not
-color_enabled = (sys.stdout.isatty() and
-                 os.environ.get('TERM') not in ('emacs', 'dumb'))
+_color_enabled = (sys.stdout.isatty() and
+                  os.environ.get('TERM') not in ('emacs', 'dumb'))
 
 
 # See http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -51,30 +51,39 @@ _CLEAR_LINE = '\033[2K'
 _CURSUR_UP = '\033[A'
 
 
+def color_enabled():
+    return _color_enabled
+
+
+def enable_color(value):
+    global _color_enabled
+    _color_enabled = value
+
+
 def inerasable(msg):
     """Make msg clear line when output"""
-    if color_enabled:
+    if _color_enabled:
         return _CLEAR_LINE + msg
     return msg
 
 
 def erasable(msg):
     """Make msg not cause new line when output"""
-    if color_enabled:
+    if _color_enabled:
         return _CLEAR_LINE + msg + _CURSUR_UP
     return msg
 
 
 def color(name):
     """Return ansi console control sequence from color name"""
-    if color_enabled:
+    if _color_enabled:
         return _COLORS[name]
     return ''
 
 
 def colored(text, color):
     """Return ansi color code enclosed text"""
-    if color_enabled:
+    if _color_enabled:
         return _COLORS[color] + text + _COLORS['end']
     return text
 
@@ -173,7 +182,7 @@ def show_progress_bar(current, total):
     progress = current * 100 // total
     if progress != _last_progress:
         bar = _progress_bar(progress, current, total)
-        bar += '\r' if color_enabled else '\n'
+        bar += '\r' if _color_enabled else '\n'
         print(bar, end='')
         _last_progress = progress
         _need_clear_line = True
@@ -182,7 +191,7 @@ def show_progress_bar(current, total):
 def clear_progress_bar():
     global _need_clear_line, _last_progress
     if _need_clear_line:
-        if color_enabled:
+        if _color_enabled:
             print(_CLEAR_LINE, end='')
         _need_clear_line = False
         _last_progress = -1

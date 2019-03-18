@@ -1032,7 +1032,7 @@ def get_link_program_message():
 
 def setup_compliation_verbosity(top_env, color_enabled, verbosity):
     """Generates color and verbose message. """
-    console.color_enabled = color_enabled
+    console.enable_color(color_enabled)
     global _verbosity
     _verbosity = verbosity
     top_env["SPAWN"] = echospawn
