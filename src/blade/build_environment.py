@@ -22,7 +22,7 @@ import console
 
 class BuildEnvironment(object):
     """Managers ccache, distcc. """
-    def __init__(self, blade_root_dir, distcc_hosts_list=None):
+    def __init__(self, blade_root_dir, distcc_host_list=None):
         # ccache
         self.blade_root_dir = blade_root_dir
         self.ccache_installed = self._check_ccache_install()
