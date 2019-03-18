@@ -12,7 +12,11 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 ## Build status
 [![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
 
-通知
+
+## Click here to read [README](README-en_US.md) in English.
+
+
+# 通知
 * Blade 发布1.1.2，包含以下特性：
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
@@ -24,10 +28,10 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 * 完善对扩展的支持
 * 支持kotlin，rust构建
 
-敬请期待
+敬请期待。
 
 
-概述
+# 概述
 Blade 是一个现代构建系统，期望的目标是强大而好用，把程序员从构建的繁琐中解放出来。
 
 Blade主要定位于linux下的大型C++项目，密切配合研发流程，比如单元测试，持续集成，覆盖率统计等。
@@ -76,7 +80,7 @@ $ blade test -pdebug common...
 ```bash
 $ blade test -m32 -pdebug common...
 ```
-特点
+# 特点
 * 自动分析头文件依赖关系，构建受影响的代码。
 * 增量编译和链接，只构建因变更受影响而需要重新构建的代码。
 * 自动计算库的间接依赖，库的作者只需要写出直接依赖，构建时自动检查所依赖的库是否需要重新构建。
@@ -105,7 +109,7 @@ $ blade test -m32 -pdebug common...
 * 头文件更新，受影响的模块没有重新构建。
 * 被依赖的库需要更新，而构建时没有被更新，比如某子目录依
 
-致谢
+# 致谢
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * 现阶段 Blade 生成 [SCons](http://www.scons.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 SCons。
@@ -122,63 +126,10 @@ $ blade test -m32 -pdebug common...
 
 欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](/AUTHORS)
 
-文档
+# 文档
+
 看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/zh_CN/user_manual.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/zh_CN/FAQ.md)，也许有你需要的信息。
 
-Documentation in en_US
-====================
-Brief
-Blade is designed to be a modern build system. It is powerful and easy to use. It supports building
-multiple languages, such as c/c++, java, python, scala, protobuf and swig etc. It analyzes the
-target dependency automatically and integrates compiling, linking, testing(includes incremental
-testing and parallel testing) and static code inspectiontogether.
-It aims to improve the clarity and simplicity of the building rules for a project.
 
-With Blade, you can compile, link and test multiple targets by just inputting one simple command line.
-For example:
-
-Build and test all targets in common directory recursively.
-```bash
-$ blade test common...
-```
-
-Build and test targets as 32 bit
-```bash
-$ blade test -m32 common...
-```
-Build and test targets as debug mode
-```bash
-$ blade test -pdebug common...
-```
-
-And you can combine the flags together:
-```bash
-$ blade test -m32 -pdebug common...
-```
-Features
-* Auto dependency analysis, includes header files and libraries.
-* Test integration: built-in support of gtest. Support incremental testing and parallel testing.
-* Simple syntax, easy to use.
-* Simple command line interface similar to svn.
-* Memory leak checking(with gperftools).
-* Bash command line completion.
-* Colorful diagnostic message displaying.
-* Vim integration, includes syntax hi-light, quickfix.
-
-Credits
-* Blade is inspired by Google's public information about their building system. Here is a reference article from Google's official blog.
-[build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
-* Blade generates [SCons](http://www.scons.org/) script internally, and it depends on SCons right now.
-* [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
-* To support python 2.6, we put argparse.py from python 2.7 into code base.
-* Some libraries open sourced by Google, such as
-[protobuf](http://code.google.com/p/protobuf/),
-[gtest](http://code.google.com/p/googletest/),
-[gperftools](http://code.google.com/p/gperftools/) are handy and powerful, we integrate these
-libraries into Blade, make them easier to use, and also enhance Blade's ability.
-
-Read our wiki to get more documents. Only Chinese version is ready now, English version is coming soon, sorry for inconvenience.
-
-Welcome to enjoy and help us to improve blade, we are expecting your contribution.
