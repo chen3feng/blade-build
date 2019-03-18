@@ -13,7 +13,7 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 [![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
 
 
-Click here to read [README](README-en_US.md) in English.
+<b>Click here to read [README](README-en_US.md) in English.</b>
 
 
 通知
