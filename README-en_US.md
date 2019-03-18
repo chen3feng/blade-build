@@ -12,9 +12,8 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 ## Build status
 [![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
 
-Documentation
-=============
-Brief
+# Brief
+
 Blade is designed to be a modern build system. It is powerful and easy to use. It supports building
 multiple languages, such as c/c++, java, python, scala, protobuf and swig etc. It analyzes the
 target dependency automatically and integrates compiling, linking, testing(includes incremental
@@ -42,7 +41,8 @@ And you can combine the flags together:
 ```bash
 $ blade test -m32 -pdebug common...
 ```
-Features
+
+# Features
 * Auto dependency analysis, includes header files and libraries.
 * Test integration: built-in support of gtest. Support incremental testing and parallel testing.
 * Simple syntax, easy to use.
@@ -52,7 +52,15 @@ Features
 * Colorful diagnostic message displaying.
 * Vim integration, includes syntax hi-light, quickfix.
 
-Credits
+
+# Documentation
+
+Sorry for Chinese only, English documentation is under construction.
+* [Full Documentation](/doc/zh_CN/user_manual.md)
+* [FAQ](/doc/zh_CN/FAQ.md)
+
+
+# Credits
 * Blade is inspired by Google's public information about their building system. Here is a reference article from Google's official blog.
 [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * Blade generates [SCons](http://www.scons.org/) script internally, and it depends on SCons right now.

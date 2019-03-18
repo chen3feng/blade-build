@@ -13,10 +13,10 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 [![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
 
 
-<b>Click here to read [README](README-en_US.md) in English.</b>
+## Click here to read [README](README-en_US.md) in English.
 
 
-通知
+# 通知
 * Blade 发布1.1.2，包含以下特性：
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
@@ -28,10 +28,10 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 * 完善对扩展的支持
 * 支持kotlin，rust构建
 
-敬请期待
+敬请期待。
 
 
-概述
+# 概述
 Blade 是一个现代构建系统，期望的目标是强大而好用，把程序员从构建的繁琐中解放出来。
 
 Blade主要定位于linux下的大型C++项目，密切配合研发流程，比如单元测试，持续集成，覆盖率统计等。
@@ -80,7 +80,7 @@ $ blade test -pdebug common...
 ```bash
 $ blade test -m32 -pdebug common...
 ```
-特点
+# 特点
 * 自动分析头文件依赖关系，构建受影响的代码。
 * 增量编译和链接，只构建因变更受影响而需要重新构建的代码。
 * 自动计算库的间接依赖，库的作者只需要写出直接依赖，构建时自动检查所依赖的库是否需要重新构建。
@@ -109,7 +109,7 @@ $ blade test -m32 -pdebug common...
 * 头文件更新，受影响的模块没有重新构建。
 * 被依赖的库需要更新，而构建时没有被更新，比如某子目录依
 
-致谢
+# 致谢
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * 现阶段 Blade 生成 [SCons](http://www.scons.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 SCons。
@@ -126,7 +126,8 @@ $ blade test -m32 -pdebug common...
 
 欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](/AUTHORS)
 
-文档
+# 文档
+
 看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/zh_CN/user_manual.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/zh_CN/FAQ.md)，也许有你需要的信息。
