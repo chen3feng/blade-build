@@ -19,9 +19,9 @@ function blade_version() {
     local version
     local log
     branch=$(git branch | grep '^\*')
-    if echo "$branch" | grep 'detached from'; then
+    if echo "$branch" | egrep 'detached (at|from)' > /dev/null; then
         # Extract tag name
-        version=$(echo "$branch" | sed -n 's/.*detached from \(.*\))$/version \1/p')
+        version=$(echo "* (HEAD detached at 1.99)" | sed -E -n 's/\* \(.* detached (at|from) (.*)\)/\2/p')
     else
         version=$(echo "$branch" | sed -n 's/\* \(.*\)$/("\1" branch)/p')
     fi
@@ -49,7 +49,7 @@ function make_blade_zip() {
 
     cd $src_dir
 
-    echo "VERSION=r'''$version'''" > blade/version.py
+    echo "VERSION = r'''$version'''" > blade/version.py
     zip blade.zip __main__.py blade/*.py
     rm blade/version.py
     mv ./blade.zip ${dist_file_path}
