@@ -12,17 +12,15 @@ fi
 version="$1"
 
 blade_dir=$(cd $(dirname $0) && pwd)
+blade_dir_name=$(basename "$blade_dir")
 cd $blade_dir
 
 ./dist_blade
 
 cd ..
-mv blade/blade.conf blade.conf.org
-cp blade/opensource.conf blade/blade.conf
-tar cjvf blade-$version.tbz blade
+output_dir=$(pwd)
+echo $output_dir
+tar cjvf blade-$version.tbz $blade_dir_name --exclude .git --exclude src --exclude extra --exclude ".*"
 
-# Restore blade.conf
-mv blade.conf.org blade/blade.conf
-
-echo 'Done'
+echo "$output_dir/blade-$version.tbz was generated"
 
