@@ -27,6 +27,7 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 * 全面支持Python构建
 * 完善对扩展的支持
 * 支持kotlin，rust构建
+* python2只支持2.7
 
 敬请期待。
 
@@ -114,7 +115,6 @@ $ blade test -m32 -pdebug common...
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * 现阶段 Blade 生成 [SCons](http://www.scons.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 SCons。
 * [Python](http://www.python.org) 是一种简单易用而又强大的语言，我们喜欢python。
-* 为了支持python 2.6及更低版本，我们把python 2.7中的argparse.py放入了源码包。
 * Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，
 又增强了 Blade，这些库包括
 [glog](http://code.google.com/p/google-glog/),

@@ -65,7 +65,6 @@ Sorry for Chinese only, English documentation is under construction.
 [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * Blade generates [SCons](http://www.scons.org/) script internally, and it depends on SCons right now.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
-* To support python 2.6, we put argparse.py from python 2.7 into code base.
 * Some libraries open sourced by Google, such as
 [protobuf](http://code.google.com/p/protobuf/),
 [gtest](http://code.google.com/p/googletest/),
