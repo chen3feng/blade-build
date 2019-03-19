@@ -83,16 +83,16 @@ if [[ -e $blade_dir/blade_init ]]; then
 fi
 
 # Check the python version at first, exit blade when python
-# version is under 2.4
+# version is under 2.7
 no_python=$(which python 2>&1 | grep 'which: no')
 if [[ -n "$no_python" ]]; then
-    _error_exit "Please install python 2.4 or above in your system"
+    _error_exit "Please install python 2.7 or above in your system"
 fi
 
 python_ver=$(python -V 2>&1 | sed 's/Python //g')
-if [[ "$python_ver" < "2.4" ]]; then
+if [[ "$python_ver" < "2.7" ]]; then
     _info "Python version in your machine: $python_ver"
-    _error_exit "Please upgrade your python version to 2.4 or above"
+    _error_exit "Please upgrade your python version to 2.7 or above"
 fi
 
 # Check scons environment
