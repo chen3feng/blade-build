@@ -41,8 +41,8 @@ class TargetTest(unittest.TestCase):
     def tearDown(self):
         """tear down method. """
         try:
-            os.remove('./SConstruct')
             os.remove(self.scons_output_file)
+            os.remove('./SConstruct')
         except OSError:
             pass
 
