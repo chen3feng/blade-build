@@ -40,40 +40,32 @@ TestJob = namedtuple('TestJob',
 TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
-def _ignored_env_set():
-    """ """
-    ignored_env_vars = [
-        # shell variables
-        'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID',
-        'LS_COLORS',
-        # CI variables
-        'BUILD_DISPLAY_NAME',
-        'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
-        'BUILD_ID', 'START_USER',
-        'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
-        'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
-        'HUDSON_SERVER_COOKIE',
-        'RUN_CHANGES_DISPLAY_URL',
-        'UP_REVISION',
-        'RUN_DISPLAY_URL',
-        'JENKINS_SERVER_COOKIE',
-
-        # ssh variables
-        'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
-        # vim variables
-        'VIM', 'MYVIMRC', 'VIMRUNTIME']
-
-    for i in range(30):
-        ignored_env_vars.append('SVN_REVISION_%d' % i)
-
-    return frozenset(ignored_env_vars)
+_TEST_IGNORED_ENV_VARS = frozenset([
+    # shell variables
+    'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID', 'LS_COLORS',
+    # CI variables
+    'BUILD_DISPLAY_NAME',
+    'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
+    'BUILD_ID', 'START_USER',
+    'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
+    'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
+    'HUDSON_SERVER_COOKIE',
+    'RUN_CHANGES_DISPLAY_URL',
+    'UP_REVISION',
+    'RUN_DISPLAY_URL',
+    'JENKINS_SERVER_COOKIE',
+    # ssh variables
+    'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
+    # vim variables
+    'VIM', 'MYVIMRC', 'VIMRUNTIME'] +
+    ['SVN_REVISION_%d' % i for i in range(30)])
 
 
 def _diff_env(a, b):
     """Return difference of two environments dict"""
     seta = set([(k, a[k]) for k in a])
     setb = set([(k, b[k]) for k in b])
-    return (dict(seta - setb), dict(setb - seta))
+    return dict(seta - setb), dict(setb - seta)
 
 
 class TestRunner(binary_runner.BinaryRunner):
@@ -89,7 +81,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self.skipped_tests = []
 
         # Test history is the key to implement incremental test.
-        # It will be loaded from file before test, comprared with test jobs,
+        # It will be loaded from file before test, compared with test jobs,
         # and be updated and saved to file back after test.
         self.test_history = {}  # {key, dict{}}
 
@@ -111,7 +103,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _update_test_history(self):
         old_env = self.test_history.get('env', {})
         env_keys = os.environ.keys()
-        env_keys = set(env_keys).difference(_ignored_env_set())
+        env_keys = set(env_keys).difference(_TEST_IGNORED_ENV_VARS)
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
             console.notice('Some tests will be run due to test environments changed:')
