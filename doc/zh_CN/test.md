@@ -40,3 +40,11 @@ cc_test(
     exclusive = True
 )
 ```
+
+
+## 测试覆盖率
+构建和运行测试时，加上--coverage参数，blade就会加入覆盖率相关的编译选项，目前仅支持C++和java。
+
+C/C++测试覆盖率，是通过gcc的[gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)实现的。测试运行完后，需要自己执行gcov或者lcov之类的第三方工具生成测试覆盖报告。
+
+java测试覆盖率，是通过jacoco库来生成的，具体请阅读[使用说明](../../java/README.md)。
