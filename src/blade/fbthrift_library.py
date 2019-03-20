@@ -30,7 +30,7 @@ from blade import console
 
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
-from blade.fbthrift_helper import FBThriftHelper
+from blade.thrift_helper import FBThriftHelper
 
 
 class FBThriftLibrary(CcTarget):
