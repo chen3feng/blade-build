@@ -114,12 +114,12 @@ class TestRunner(binary_runner.BinaryRunner):
         env_keys = set(env_keys).difference(_ignored_env_set())
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
-            console.info('Some tests will be run due to test environments changed:')
+            console.notice('Some tests will be run due to test environments changed:')
             new, old = _diff_env(new_env, old_env)
             if new:
-                console.info('new environments: %s' % new)
+                console.notice('new environments: %s' % new)
             if old:
-                console.info('old environments: %s' % old)
+                console.notice('old environments: %s' % old)
 
         self.test_history['env'] = new_env
         self.env_md5 = md5sum(str(sorted(new_env.iteritems())))
