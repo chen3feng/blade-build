@@ -16,7 +16,7 @@ import unittest
 sys.path.append('..')
 import blade.build_manager
 import blade.config
-from blade.argparse import Namespace
+from argparse import Namespace
 
 
 class TargetTest(unittest.TestCase):
