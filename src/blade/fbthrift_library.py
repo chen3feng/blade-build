@@ -12,10 +12,8 @@
 
 
 """
- A helper class to get the files generated from thrift IDL files.
-
- This works with the new thrift compiler and library from Facebook's
- own branch https://github.com/facebook/fbthrift
+The module defines fbthrift_library target to generate code in
+different languages from .thrift file.
 
 """
 
@@ -34,11 +32,7 @@ from blade.thrift_helper import FBThriftHelper
 
 
 class FBThriftLibrary(CcTarget):
-    """A scons thrift library target subclass.
-
-    This class is derived from CcTarget.
-
-    """
+    """A fbthrift library target derived from CcTarget. """
     def __init__(self,
                  name,
                  srcs,
@@ -47,11 +41,6 @@ class FBThriftLibrary(CcTarget):
                  deprecated,
                  blade,
                  kwargs):
-        """Init method.
-
-        Init the thrift target.
-
-        """
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
         CcTarget.__init__(self,
@@ -67,9 +56,6 @@ class FBThriftLibrary(CcTarget):
 
         fbthrift_config = config.get_section('fbthrift_config')
         fbthrift_libs = var_to_list(fbthrift_config['fbthrift_libs'])
-        fbthrift1_bin = fbthrift_config['fbthrift1']
-        fbthrift2_bin = fbthrift_config['fbthrift2']
-
 
         # Hardcode deps rule to thrift libraries.
         self._add_hardcode_library(fbthrift_libs)
@@ -85,11 +71,7 @@ class FBThriftLibrary(CcTarget):
                     os.path.join(self.path, src))
 
     def _check_thrift_srcs_name(self, srcs):
-        """_check_thrift_srcs_name.
-
-        Checks whether the thrift file's name ends with 'thrift'.
-
-        """
+        """Checks whether the thrift file's name ends with 'thrift'. """
         error = 0
         for src in srcs:
             base_name = os.path.basename(src)
@@ -109,32 +91,27 @@ class FBThriftLibrary(CcTarget):
         return True
 
     def _thrift_gen_cpp_files(self, src):
-        """_thrift_gen_cpp_files.
-
-        Get the c++ files generated from thrift file.
-
-        """
+        """Get the c++ files generated from thrift file. """
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp_files()]
 
     def _thrift_gen_cpp2_files(self, src):
-        """_thrift_gen_cpp2_files.
-
-        Get the c++ files generated from thrift file.
-
-        """
+        """Get the c++ files generated from thrift file. """
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp2_files()]
 
+    def _cc_objects_scons_rules(self, thrift_cpp_srcs, objs, sources):
+        for thrift_cpp in thrift_cpp_srcs:
+            obj_name = '%s_object' % self._var_name_of(thrift_cpp)
+            objs.append(obj_name)
+            self._write_rule(
+                '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], source="%s")' %
+                (obj_name, self._env_name(), thrift_cpp, thrift_cpp))
+            sources.append(thrift_cpp)
+
     def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
+        """It outputs the scons rules according to user options. """
         self._prepare_to_generate_rule()
-
-        # Build java source according to its option
         env_name = self._env_name()
 
         options = self.blade.get_options()
@@ -161,27 +138,8 @@ class FBThriftLibrary(CcTarget):
                     str(thrift_cpp2_files),
                     os.path.join(self.path, src)))
 
-            for thrift_cpp_src in thrift_cpp_src_files:
-                obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
-                obj_names.append(obj_name)
-                self._write_rule(
-                    '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
-                    'source="%s")' % (obj_name,
-                                      env_name,
-                                      thrift_cpp_src,
-                                      thrift_cpp_src))
-                sources.append(thrift_cpp_src)
-
-            for thrift_cpp_src in thrift_cpp2_src_files:
-                obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
-                obj_names.append(obj_name)
-                self._write_rule(
-                    '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
-                    'source="%s")' % (obj_name,
-                                      env_name,
-                                      thrift_cpp_src,
-                                      thrift_cpp_src))
-                sources.append(thrift_cpp_src)
+            self._cc_objects_scons_rules(thrift_cpp_src_files, obj_names, sources)
+            self._cc_objects_scons_rules(thrift_cpp2_src_files, obj_names, sources)
 
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._write_rule('%s.Depends(%s, %s)' % (
