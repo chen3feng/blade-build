@@ -360,21 +360,7 @@ class Target(object):
         return [], []
 
     def _regular_variable_name(self, var):
-        """_regular_variable_name.
-
-        Parameters
-        -----------
-        var: the variable to be modified
-
-        Returns
-        -----------
-        s: the variable modified
-
-        Description
-        -----------
-        Replace the chars that scons doesn't regconize.
-
-        """
+        """Replace the chars of var that scons doesn't recognize. """
         return var.translate(string.maketrans(',-/.+*', '______'))
 
     def _generate_variable_name(self, path, name, suffix=''):
