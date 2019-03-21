@@ -7,6 +7,8 @@
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
 # Blade Build System
+一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
+
 An easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
 
 ## Build status
@@ -17,6 +19,7 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 
 
 # 通知
+* 仓库名从typhoon-blade改名为blade-build。
 * Blade 发布1.1.2，包含以下特性：
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
