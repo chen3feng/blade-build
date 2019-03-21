@@ -11,7 +11,7 @@
 
 """
 
-
+import unittest
 import blade_test
 
 
@@ -21,12 +21,11 @@ class TestLoadBuilds(blade_test.TargetTest):
         """setup method. """
         self.doSetUp('test_loadbuilds')
 
+    @unittest.skip('TODO: query loaded targets')
     def testAllCommandTargets(self):
         """Test that all targets in the test project BUILD files
            are in the all command targets list.
         """
-        # TODO: query loaded targets
-        return
         proto_library = (self.target_path, 'rpc_meta_info_proto')
         cc_library = (self.target_path, 'poppy')
         static_resource = (self.target_path, 'static_resource')
