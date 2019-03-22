@@ -25,4 +25,6 @@ Blade用户手册
 
 [辅助命令](aux.md)
 
+[开发文档](develop.md)
+
 [常见问题](FAQ.md)
