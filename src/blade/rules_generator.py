@@ -679,15 +679,16 @@ scalacflags = -nowarn
     def generate_thrift_rules(self):
         thrift_config = config.get_section('thrift_config')
         incs = _incs_list_to_string(thrift_config['thrift_incs'])
+        gen_params = _incs_list_to_string(thrift_config['thrift_gen_params'])
         thrift = thrift_config['thrift']
         if thrift.startswith('//'):
             thrift = thrift.replace('//', self.build_dir + '/')
             thrift = thrift.replace(':', '/')
         self.generate_rule(name='thrift',
-                           command='%s --gen cpp:include_prefix,pure_enums '
+                           command='%s --gen %s '
                                    '-I . %s -I `dirname ${in}` '
                                    '-out %s/`dirname ${in}` ${in}' % (
-                                   thrift, incs, self.build_dir),
+                                   thrift, gen_params, incs, self.build_dir),
                            description='THRIFT ${in}')
 
     def generate_python_rules(self):
