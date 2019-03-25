@@ -56,7 +56,8 @@ def _manifest_scm(build_dir):
 def generate_fat_jar_metadata(jar, dependencies, conflicts):
     metadata_path = 'META-INF/blade'
     jar.writestr('%s/JAR.LIST' % metadata_path, '\n'.join(dependencies))
-    jar.writestr('%s/merge-info' % metadata_path, '\n'.join(conflicts))
+    content = ['[conflict]'] + conflicts
+    jar.writestr('%s/MERGE-INFO' % metadata_path, '\n'.join(content))
 
 
 def generate_fat_jar(target, jars):
