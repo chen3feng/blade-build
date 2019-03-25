@@ -53,6 +53,12 @@ def _manifest_scm(build_dir):
     ]
 
 
+def generate_fat_jar_metadata(jar, dependencies, conflicts):
+    metadata_path = 'META-INF/blade'
+    jar.writestr('%s/JAR.LIST' % metadata_path, '\n'.join(dependencies))
+    jar.writestr('%s/merge-info' % metadata_path, '\n'.join(conflicts))
+
+
 def generate_fat_jar(target, jars):
     """Generate a fat jar containing the contents of all the jar dependencies. """
     target_dir = os.path.dirname(target)
@@ -62,7 +68,7 @@ def generate_fat_jar(target, jars):
     target_fat_jar = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
     # Record paths written in the fat jar to avoid duplicate writing
     path_jar_dict = {}
-    conflict_logs = []
+    conflicts = []
 
     for dep_jar in jars:
         jar = zipfile.ZipFile(dep_jar, 'r')
@@ -71,26 +77,30 @@ def generate_fat_jar(target, jars):
             if name.endswith('/') or not _is_fat_jar_excluded(name):
                 if name not in path_jar_dict:
                     target_fat_jar.writestr(name, jar.read(name))
-                    path_jar_dict[name] = os.path.basename(dep_jar)
+                    path_jar_dict[name] = dep_jar
                 else:
                     if name.endswith('/'):
                         continue
-                    message = ('%s: duplicated path %s found in {%s, %s}' % (
-                        target, name, path_jar_dict[name],
-                        os.path.basename(dep_jar)))
+                    message = ('%s: duplicate path %s found in {%s, %s}' % (
+                               target, name,
+                               os.path.basename(path_jar_dict[name]),
+                               os.path.basename(dep_jar)))
                     # Always log all conflicts for diagnosis
                     console.debug(message)
                     if '/.m2/repository/' not in dep_jar:
                         # There are too many conflicts between maven jars,
                         # so we have to ignore them, only count source code conflicts
-                        conflict_logs.append(message)
+                        conflicts.append('\n'.join([
+                            'Path: %s' % name,
+                            'From: %s' % path_jar_dict[name],
+                            'Ignored: %s' % dep_jar,
+                        ]))
         jar.close()
 
-    if conflict_logs:
-        log = '%s: Found %d conflicts when packaging.' % (target, len(conflict_logs))
-        console.warning(log)
+    if conflicts:
+        console.warning('%s: Found %d conflicts when packaging.' % (target, len(conflicts)))
+    generate_fat_jar_metadata(target_fat_jar, jars, conflicts)
 
-    # TODO(wentingli): Create manifest from dependency jars later if needed
     contents = [
         'Manifest-Version: 1.0',
         'Created-By: Python.Zipfile (Blade)',
