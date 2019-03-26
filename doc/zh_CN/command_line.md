@@ -21,7 +21,9 @@ targets是一个空格分开的列表，支持的格式：
 * path表示path中所有targets
 * path/... 表示path中所有targets，并递归包括所有子目录
 * :name表示当前目录下的某个target
-默认表示当前目录
+
+如果没有指定target，则默认为当前目录下的所有目标（不包含子目录），如果当前目录下没有BUILD文件，就会失败。
+当指定...作为结尾目标时，如果其路径存在，即使展开为空，也总不会失败。
 
 ## 子命令选项
 不同子命令支持的选项不一样，具体请执行blade <subcommand> --help查看
@@ -41,4 +43,25 @@ targets是一个空格分开的列表，支持的格式：
 * --generate-php       为proto_library 和 swig_library 生成php文件
 * --gprof              支持 GNU gprof
 * --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
+
+## 示例
+```bash
+
+# 构建当前目录下的所有目标，不包含子目录
+blade build
+
+# 构建当前目录以及子目录下所有的目标
+blade build ...
+
+# 构建当前目录下名为`urllib`的目标
+blade build :urllib
+
+# 构建和测试从WORKPACE根出发，common及其所有子目录下的所有目标
+blade test //common/...
+
+blade test base/...
+
+# 构建和测试base子目录下名为`string_test`的目标
+blade test base:string_test
+```
 
