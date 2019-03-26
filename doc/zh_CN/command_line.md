@@ -33,7 +33,7 @@ targets是一个空格分开的列表，支持的格式：
 * -m32,-m64            指定构建目标位数，默认为自动检测
 * -p PROFILE           指定debug/release，默认release
 * -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
-* -j N,--jobs=N        N路并行编译，多CPU机器上适用
+* -j N,--jobs=N        N路并行构建（Blade默认开启并行构建，自己计算合适的值）
 * -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
 * --verbose            完整输出所运行的每条命令行
 * –h, --help           显示帮助
