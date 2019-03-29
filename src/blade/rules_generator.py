@@ -174,9 +174,10 @@ from blade import scons_helper
         if thrift_bin.startswith('//'):
             thrift_bin = thrift_bin.replace('//', self.build_dir + '/')
             thrift_bin = thrift_bin.replace(':', '/')
+        thrift_gen_params = thrift_config['thrift_gen_params']
         self._add_rule(
-            'scons_helper.setup_thrift_builders(top_env, build_dir="%s", thrift_bin="%s", thrift_incs_str="%s")' % (
-                    self.build_dir, thrift_bin, thrift_incs_str))
+            'scons_helper.setup_thrift_builders(top_env, build_dir="%s", thrift_bin="%s", thrift_incs_str="%s", thrift_gen_params="%s")' % (
+                    self.build_dir, thrift_bin, thrift_incs_str, thrift_gen_params))
 
     def _generate_fbthrift_builders(self):
         fbthrift_config = config.get_section('fbthrift_config')
@@ -683,15 +684,16 @@ scalacflags = -nowarn
     def generate_thrift_rules(self):
         thrift_config = config.get_section('thrift_config')
         incs = _incs_list_to_string(thrift_config['thrift_incs'])
+        gen_params = _incs_list_to_string(thrift_config['thrift_gen_params'])
         thrift = thrift_config['thrift']
         if thrift.startswith('//'):
             thrift = thrift.replace('//', self.build_dir + '/')
             thrift = thrift.replace(':', '/')
         self.generate_rule(name='thrift',
-                           command='%s --gen cpp:include_prefix,pure_enums '
+                           command='%s --gen %s '
                                    '-I . %s -I `dirname ${in}` '
                                    '-out %s/`dirname ${in}` ${in}' % (
-                                   thrift, incs, self.build_dir),
+                                   thrift, gen_params, incs, self.build_dir),
                            description='THRIFT ${in}')
 
     def generate_python_rules(self):

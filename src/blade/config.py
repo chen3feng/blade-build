@@ -106,6 +106,7 @@ class BladeConfig(object):
                 'thrift': 'thrift',
                 'thrift_libs': [],
                 'thrift_incs': [],
+                'thrift_gen_params': 'cpp:include_prefix,pure_enums'
             },
 
             'fbthrift_config': {
