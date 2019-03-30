@@ -162,7 +162,7 @@ def verbosity_ge(expected):
 ##############################################################################
 
 # Fit with the 80 columns terminal, leave some spaces for other parts such as the numbers.
-_PROGRESS_BAR_WIDTH = 65
+_PROGRESS_BAR_WIDTH = 60
 
 # TODO(chen3feng): Add lock
 _need_clear_line = False  # Whether the last output is progress bar
@@ -174,7 +174,8 @@ def _progress_bar(progress, current, total):
     [============================================================-----] 46/50
     """
     width = progress * _PROGRESS_BAR_WIDTH // 100
-    return '[%s%s] %s/%s' % ('=' * width, '-' * (_PROGRESS_BAR_WIDTH - width), current, total)
+    return '[%s%s] %s/%s %g%%' % ('=' * width, '-' * (_PROGRESS_BAR_WIDTH - width),
+                                  current, total, progress)
 
 
 def show_progress_bar(current, total):
