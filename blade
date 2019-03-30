@@ -107,4 +107,4 @@ if [[ ! -e "$blade_file" ]]; then
     _error_exit "Cannot find the core file $blade_file"
 fi
 
-python $blade_file "$@"
+python -B $blade_file "$@"
