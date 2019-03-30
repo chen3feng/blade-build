@@ -58,6 +58,13 @@ class MavenJar(Target):
         return self.blade_rules()
 
 
+_JAVA_SRC_PATH_SEGMENTS = (
+    'src/main/java',
+    'src/test/java',
+    'src/java/',
+)
+
+
 class JavaTargetMixIn(object):
     """
     This mixin includes common java methods
@@ -405,13 +412,8 @@ class JavaTargetMixIn(object):
 
     def _java_sources_paths(self, srcs):
         path = set()
-        segs = [
-            'src/main/java',
-            'src/test/java',
-            'src/java/',
-        ]
         for src in srcs:
-            for seg in segs:
+            for seg in _JAVA_SRC_PATH_SEGMENTS:
                 pos = src.find(seg)
                 if pos > 0:
                     path.add(src[:pos + len(seg)])
