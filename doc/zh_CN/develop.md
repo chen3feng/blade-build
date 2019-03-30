@@ -37,6 +37,20 @@ Blade调用后端构建工具执行实际的构建，执行完毕后，删除后
 ## 测试验证
 在源代码开发目录中，Blade优先运行开发中的代码。可以执行src/test/runalltests.sh进行全局验证。
 
+## 调试与诊断
+
+大多数子命令支持`--stop-after`选项，可选的参数有{load, analyze, generate, build}，可以控制blade在完成的阶段后就结束。比如
+```bash
+blade build --stop-after generate generate
+```
+使得blade在生成后端构建系统描述文件（比如`build.ninja`）后即结束，可以用于检查生成的文件的问题。
+
+## 性能分析
+大多数子命令支持`--profiling`选项，在blade结束后会输出性能分析报告。如果需要更详细的分析，可以把性能分析留下的blade.pstats按指示转为图。
+
+和--stop-after选项组合，可以用于分析不同阶段的性能。
+
+
 ## 打包
 代码根目录下的`dist_blade`可以用来打包成zip方便部署，和同目录下的`blade`bash脚本以及`blade.conf`放在一起即可。
 
