@@ -563,9 +563,9 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
     p = pstats.Stats(pstats_file)
     p.sort_stats('cumulative').print_stats(20)
     p.sort_stats('time').print_stats(20)
-    console.info('Binary result file %s is also generated, '
-                 'you can use gprof2dot or vprof to convert it to graph' % pstats_file)
-    console.info('gprof2dot.py -f pstats --color-nodes-by-selftime %s'
+    console.output('Binary profile file `%s` is also generated, '
+                   'you can use `gprof2dot` or `vprof` to convert it to graph, eg:' % pstats_file)
+    console.output('  gprof2dot.py -f pstats --color-nodes-by-selftime %s'
                  ' | dot -T pdf -o blade.pdf' % pstats_file)
     return exit_code[0]
 
