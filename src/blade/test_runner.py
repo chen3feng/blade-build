@@ -13,6 +13,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 
 from collections import namedtuple
 import os
@@ -20,15 +22,16 @@ import sys
 import subprocess
 import time
 
-import binary_runner
-import config
-import console
+from blade import binary_runner
+from blade import config
+from blade import console
+from blade import target
 
-from blade_util import md5sum
-from test_scheduler import TestScheduler
+from blade.blade_util import md5sum
+from blade.test_scheduler import TestScheduler
 
 # Used by eval when loading test history
-from test_scheduler import TestRunResult  # pylint: disable=unused-import
+from blade.test_scheduler import TestRunResult  # pylint: disable=unused-import
 
 
 _TEST_HISTORY_FILE = '.blade.test.stamp'
@@ -70,7 +73,7 @@ def _diff_env(a, b):
 
 class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
-    def __init__(self, targets, options, target_database, direct_targets):
+    def __init__(self, targets, options, target_database, direct_targets, skip_tests):
         """Init method. """
         # pylint: disable=too-many-locals, too-many-statements
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
@@ -78,6 +81,8 @@ class TestRunner(binary_runner.BinaryRunner):
 
         # Test jobs should be run
         self.test_jobs = {}  # dict{key : TestJob}
+
+        self.skip_tests = skip_tests  # Tests to be skipped
         self.skipped_tests = []
 
         # Test history is the key to implement incremental test.
@@ -121,7 +126,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._merge_run_results_to_history(passed_run_results)
         self._merge_run_results_to_history(failed_run_results)
         with open(_TEST_HISTORY_FILE, 'w') as f:
-            print >> f, str(self.test_history)
+            print(str(self.test_history), file=f)
 
     def _merge_run_results_to_history(self, run_results):
         for key, run_result in run_results.iteritems():
@@ -181,8 +186,28 @@ class TestRunner(binary_runner.BinaryRunner):
 
         return md5sum(test_target_str), md5sum(test_target_data_str)
 
+    def _skip_test(self, target):
+        """Whether skip this test"""
+        if not self.skip_tests:
+            return False
+        for skip_test in self.skip_tests:
+            if skip_test == target.fullname:
+                return True
+            skip_test = skip_test.split(':')
+            if skip_test[1] == '*' and skip_test[0] == target.path:
+                return True
+            if (skip_test[1] == '...' and (target.path == skip_test[0] or
+                                           target.path.startswith(skip_test[0] + os.path.sep))):
+                return True
+        return False
+
     def _run_reason(self, target, binary_md5, testdata_md5):
         """Return run reason for a given test"""
+
+        if self._skip_test(target):
+            console.info('%s is skipped by --skip-test' % target.fullname)
+            return None
+
         if self.options.full_test:
             return 'FULL_TEST'
 

@@ -334,6 +334,10 @@ class CmdArguments(object):
             dest='no_build', default=False,
             help='Run tests directly without build')
 
+        parser.add_argument(
+            '--skip-tests', dest='skip_tests', type=str, default='',
+            help='Skip tests which matches this comma seperated target list')
+
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
         parser.add_argument(

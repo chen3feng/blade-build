@@ -88,6 +88,7 @@ from blade import build_attributes
 from blade import build_manager
 from blade import config
 from blade import console
+from blade import target
 
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
 from blade.blade_util import get_cwd
@@ -101,42 +102,6 @@ _TARGETS = None
 
 _BLADE_ROOT_DIR = None
 _WORKING_DIR = None
-
-
-def _normalize_target(target, working_dir):
-    '''Normalize target from command line into canonical form.
-
-    Target canonical form: dir:name
-        dir: relative to blade_root_dir, use '.' for blade_root_dir
-        name: name  if target is dir:name
-              '*'   if target is dir
-              '...' if target is dir/...
-    '''
-    if target.startswith('//'):
-        target = target[2:]
-    elif target.startswith('/'):
-        console.error_exit('Invalid target "%s" starting from root path.' % target)
-    else:
-        if working_dir != '.':
-            target = os.path.join(working_dir, target)
-
-    if ':' in target:
-        path, name = target.rsplit(':', 1)
-    else:
-        if target.endswith('...'):
-            path = target[:-3]
-            name = '...'
-        else:
-            path = target
-            name = '*'
-    path = os.path.normpath(path)
-    return '%s:%s' % (path, name)
-
-
-def normalize_targets(targets, blade_root_dir, working_dir):
-    if not targets:
-        targets = ['.']
-    return [_normalize_target(target, working_dir) for target in targets]
 
 
 # For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
@@ -592,7 +557,9 @@ def _main(blade_path):
     setup_log(build_dir, options)
 
     global _TARGETS
-    targets = normalize_targets(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
+    if not targets:
+        targets = ['.']
+    targets = target.normalize(targets, _WORKING_DIR)
     _TARGETS = targets
     generate_scm(build_dir)
 

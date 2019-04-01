@@ -11,6 +11,7 @@
 
 """
 
+from __future__ import absolute_import
 from __future__ import print_function
 
 import os
@@ -18,18 +19,19 @@ import sys
 import time
 import json
 
-import config
-import console
+from blade import config
+from blade import console
+from blade import target
 
-from blade_util import cpu_count
-from dependency_analyzer import analyze_deps
-from load_build_files import load_targets
-from blade_platform import BuildPlatform
-from build_environment import BuildEnvironment
-from rules_generator import SconsRulesGenerator
-from rules_generator import NinjaRulesGenerator
-from binary_runner import BinaryRunner
-from test_runner import TestRunner
+from blade.blade_util import cpu_count
+from blade.dependency_analyzer import analyze_deps
+from blade.load_build_files import load_targets
+from blade.blade_platform import BuildPlatform
+from blade.build_environment import BuildEnvironment
+from blade.rules_generator import SconsRulesGenerator
+from blade.rules_generator import NinjaRulesGenerator
+from blade.binary_runner import BinaryRunner
+from blade.test_runner import TestRunner
 
 
 # Global build manager instance
@@ -191,10 +193,14 @@ class Blade(object):
 
     def test(self):
         """Run tests. """
+        skip_tests = []
+        if self.__options.skip_tests:
+            skip_tests = target.normalize(self.__options.skip_tests.split(','), self.__working_dir)
         test_runner = TestRunner(self.__build_targets,
                                  self.__options,
                                  self.__target_database,
-                                 self.__direct_targets)
+                                 self.__direct_targets,
+                                 skip_tests)
         return test_runner.run()
 
     def query(self):
