@@ -20,6 +20,41 @@ import console
 from blade_util import var_to_list
 
 
+def _normalize_one(target, working_dir):
+    """Normalize target from command line form into canonical form.
+
+    Target canonical form: dir:name
+        dir: relative to blade_root_dir, use '.' for blade_root_dir
+        name: name  if target is dir:name
+              '*'   if target is dir
+              '...' if target is dir/...
+    """
+    if target.startswith('//'):
+        target = target[2:]
+    elif target.startswith('/'):
+        console.error_exit('Invalid target "%s" starting from root path.' % target)
+    else:
+        if working_dir != '.':
+            target = os.path.join(working_dir, target)
+
+    if ':' in target:
+        path, name = target.rsplit(':', 1)
+    else:
+        if target.endswith('...'):
+            path = target[:-3]
+            name = '...'
+        else:
+            path = target
+            name = '*'
+    path = os.path.normpath(path)
+    return '%s:%s' % (path, name)
+
+
+def normalize(targets, working_dir):
+    """Normalize target list from command line form into canonical form."""
+    return [_normalize_one(target, working_dir) for target in targets]
+
+
 class Target(object):
     """Abstract target class.
 
