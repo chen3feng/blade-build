@@ -12,7 +12,7 @@
 An easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
 
 ## Build status
-[![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
+[![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
 
 ## Click here to read [README](README-en_US.md) in English.
