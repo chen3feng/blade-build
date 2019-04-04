@@ -395,8 +395,9 @@ class JavaTargetMixIn(object):
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
             if not os.path.exists(full_path):
-                console.error_exit('%s: Resource %s does not exist.' % (
-                                   self.fullname, full_path))
+                console.warning('%s: Resource %s does not exist.' % (
+                                self.fullname, full_path))
+                results.add((full_path, jar_path))  # delay error to build phase
             elif os.path.isfile(full_path):
                 results.add((full_path, jar_path))
             else:
