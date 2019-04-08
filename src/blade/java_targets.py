@@ -263,46 +263,49 @@ class JavaTargetMixIn(object):
         dependency of the target
         """
         # pylint: disable=too-many-locals
-        dep_jars, conflicted_jars = set(dep_jars), set()
-        maven_dep_ids = self._get_maven_dep_ids()
-        maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
+        maven_jar_versions = {}  # (group, artifact) -> versions
+        maven_jars = {}          # (group, artifact, version) -> jars
         maven_repo = '.m2/repository/'
-        for dep_jar in dep_jars:
-            if maven_repo not in dep_jar or not os.path.exists(dep_jar):
+        for jar in set(dep_jars):
+            if maven_repo not in jar or not os.path.exists(jar):
                 console.debug('%s: %s not found in local maven repository' % (
-                              self.fullname, dep_jar))
+                              self.fullname, jar))
                 continue
-            parts = dep_jar[dep_jar.find(maven_repo) + len(maven_repo):].split('/')
+            parts = jar[jar.find(maven_repo) + len(maven_repo):].split('/')
             if len(parts) < 4:
                 continue
-            name, version, artifact, group = (parts[-1], parts[-2],
-                                              parts[-3], '.'.join(parts[:-3]))
-            key = (group, artifact)
-            id = ':'.join((group, artifact, version))
-            if key in maven_jar_dict:
-                old_version, old_jars = maven_jar_dict[key]
-                if version == old_version:
-                    # jar name must be different because dep_jars is a set
-                    old_jars.add(dep_jar)
-                    continue
-                old_id = ':'.join((group, artifact, old_version))
-                if old_id in maven_dep_ids:
-                    conflicted_jars.add(dep_jar)
-                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_version):
-                    conflicted_jars |= old_jars
-                    maven_jar_dict[key] = (version, set([dep_jar]))
-                else:
-                    conflicted_jars.add(dep_jar)
-                value = maven_jar_dict[key]
-                console.debug('%s: Maven dependency version conflict '
-                              '%s:%s:{%s, %s} during %s. Use %s' % (
-                              self.fullname, key[0], key[1],
-                              version, old_version, scope, value[0]))
+            version, artifact, group = parts[-2], parts[-3], '.'.join(parts[:-3])
+            key = group, artifact
+            if key in maven_jar_versions:
+                if version not in maven_jar_versions[key]:
+                    maven_jar_versions[key].append(version)
             else:
-                maven_jar_dict[key] = (version, set([dep_jar]))
+                maven_jar_versions[key] = [version]
+            key = group, artifact, version
+            if key in maven_jars:
+                maven_jars[key].append(jar)
+            else:
+                maven_jars[key] = [jar]
 
-        dep_jars -= conflicted_jars
-        return sorted(dep_jars)
+        maven_dep_ids = self._get_maven_dep_ids()
+        jars = []
+        for (group, artifact), versions in maven_jar_versions.iteritems():
+            if len(versions) == 1:
+                picked_version = versions[0]
+            else:
+                picked_version = None
+                for v in versions:
+                    maven_id = ':'.join((group, artifact, v))
+                    if maven_id in maven_dep_ids:
+                        picked_version = v
+                        break
+                    if picked_version is None or LooseVersion(v) > LooseVersion(picked_version):
+                        picked_version = v
+                console.debug('%s: Maven dependency version conflict %s:%s:{%s} during %s. Use %s' % (
+                              self.fullname, group, artifact,
+                              ', '.join(versions), scope, picked_version))
+            jars += maven_jars[group, artifact, picked_version]
+        return sorted(jars)
 
     def _get_compile_deps(self):
         dep_jars, maven_jars = self.__get_deps(self.deps)
