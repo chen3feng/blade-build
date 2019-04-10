@@ -357,18 +357,23 @@ def query(options):
 
 
 def dump(options):
+    output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+    if options.dump_compdb:
+        _dump_compdb(options, output_file_name)
+    elif options.dump_targets:
+        build_manager.instance.dump_targets(output_file_name)
+
+
+def _dump_compdb(options, output_file_name):
     native_builder = config.get_item('global_config', 'native_builder')
     if native_builder != 'ninja':
         console.error_exit('dump compdb only work when native_builder is ninja')
-    if options.compdb:
-        output_file_name = os.path.join(_WORKING_DIR, options.compdb_path)
-        rules = build_manager.instance.get_all_rule_names()
-        cmd = ['ninja', '-t', 'compdb'] + rules
-        cmdstr = subprocess.list2cmdline(cmd)
-        cmdstr += ' > '
-        cmdstr += output_file_name
-        console.info('write compdb to %s' % options.compdb_path)
-        return _run_native_builder(cmdstr)
+    rules = build_manager.instance.get_all_rule_names()
+    cmd = ['ninja', '-t', 'compdb'] + rules
+    cmdstr = subprocess.list2cmdline(cmd)
+    cmdstr += ' > '
+    cmdstr += output_file_name
+    return _run_native_builder(cmdstr)
 
 
 def lock_workspace():
@@ -534,6 +539,14 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
                  ' | dot -T pdf -o blade.pdf' % pstats_file)
     return exit_code[0]
 
+def run_command_before_load(command, options, targets):
+    """Run particular commands before loading"""
+    # The 'dump' command is special, some kind of dump should be ran before loading.
+    if command == 'dump' and options.dump_config:
+        output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+        config.dump(output_file_name)
+        sys.exit(0)
+
 
 def _main(blade_path):
     """The main entry of blade. """
@@ -553,14 +566,17 @@ def _main(blade_path):
     load_config(options, _BLADE_ROOT_DIR)
     adjust_config_by_options(config, options)
 
-    build_dir = setup_build_dir(options)
-    setup_log(build_dir, options)
+    run_command_before_load(command, options, targets)
 
     global _TARGETS
     if not targets:
         targets = ['.']
     targets = target.normalize(targets, _WORKING_DIR)
     _TARGETS = targets
+
+    build_dir = setup_build_dir(options)
+    setup_log(build_dir, options)
+
     generate_scm(build_dir)
 
     lock_file_fd = lock_workspace()

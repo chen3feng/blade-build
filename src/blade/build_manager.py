@@ -311,6 +311,15 @@ class Blade(object):
         for dkey in build_targets[key].deps:
             self._query_dependency_tree(dkey, level + 1, build_targets, output_file)
 
+    def dump_targets(self, output_file_name):
+        result = []
+        with open(output_file_name, 'w') as f:
+            for target_key in self.__all_command_targets:
+                target = self.__target_database[target_key]
+                result.append(target.dump())
+            json.dump(result, fp=f, indent=2)
+            print(file=f)
+
     def get_build_time(self):
         return self.__build_time
 

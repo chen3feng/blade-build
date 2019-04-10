@@ -10,13 +10,17 @@
  the BLADE_ROOT as a configuration file.
 
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import sys
 
-import console
-import build_attributes
-from blade_util import var_to_list
-from cc_targets import HEAP_CHECK_VALUES
+from blade import console
+from blade import build_attributes
+from blade.blade_util import var_to_list
+from blade.cc_targets import HEAP_CHECK_VALUES
 
 
 _config_globals = {}
@@ -31,7 +35,7 @@ def config_rule(func):
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
     def __init__(self):
-        self.current_file_name = ''
+        self.current_file_name = ''  # For error reporting
         self.configs = {
             'global_config' : {
                 'build_path_template': 'build${bits}_${profile}',
@@ -172,13 +176,8 @@ class BladeConfig(object):
             }
         }
 
-    _globals = None
-
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
-        if BladeConfig._globals is None:
-            BladeConfig._globals = globals()
-            BladeConfig._globals['build_target'] = build_attributes.attributes
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
@@ -237,6 +236,20 @@ class BladeConfig(object):
         """get config section, returns default values if not set """
         return self.configs[section_name]
 
+    def dump(self, output_file_name):
+        with open(output_file_name, 'w') as f:
+            for section in self.configs:
+                self._dump_section(section, self.configs[section], f)
+
+    def _dump_section(self, name, values, f):
+        print('%s(' % name, file=f)
+        for k, v in values.items():
+            if isinstance(v, str):
+                print('    %s = \'%s\',' % (k, v), file=f)
+            else:
+                print('    %s = %s,' % (k, v), file=f)
+        print(')\n', file=f)
+
 
 # Global config object
 _blade_config = BladeConfig()
@@ -249,6 +262,10 @@ def load_files(blade_root_dir, load_local_config):
     _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
     if load_local_config:
         _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
+
+
+def dump(output_file_name):
+    _blade_config.dump(output_file_name)
 
 
 def get_section(section_name):

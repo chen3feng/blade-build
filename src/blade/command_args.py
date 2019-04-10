@@ -382,12 +382,19 @@ class CmdArguments(object):
     def _add_dump_arguments(self, parser):
         """Add query arguments for parser. """
         parser.add_argument(
-            '--compdb', dest='compdb', default=False, action='store_true',
-            help='Dump compilation database to file, use --compdb-path to specify the file path')
-        parser.add_argument(
-            '--compdb-path', dest='compdb_path', type=str, action='store',
-            default='compile_commands.json',
-            help=('Specifies the path to compdb, default is compile_commands.json'))
+            '--to-file', dest='dump_to_file', type=str, action='store',
+            default='/dev/stdout',
+            help=('Specifies the path of file to write the dump result'))
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            '--compdb', dest='dump_compdb', default=False, action='store_true',
+            help='Dump compilation database')
+        group.add_argument(
+            '--config', dest='dump_config', default=False, action='store_true',
+            help='Dump configuration')
+        group.add_argument(
+            '--targets', dest='dump_targets', default=False, action='store_true',
+            help='Dump attributes of targets in json format')
 
     def _cmd_parse(self):
         """Add command options, add options whthin this method."""

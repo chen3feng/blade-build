@@ -108,6 +108,19 @@ class Target(object):
         self.build_rules = []
         self.data['generated_hdrs'] = []
 
+    def dump(self):
+        """Dump to a dict"""
+        target = {
+            'type' : self.type,
+            'path' : self.path,
+            'name' : self.name,
+            'srcs' : self.srcs,
+            'deps' : self.deps,
+            'visibility' : self.visibility,
+        }
+        target.update(self.data)
+        return target
+
     def _clone_env(self):
         """Clone target's environment. """
         self._write_rule('%s = top_env.Clone()' % self._env_name())
