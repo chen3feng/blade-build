@@ -684,7 +684,7 @@ scalacflags = -nowarn
     def generate_thrift_rules(self):
         thrift_config = config.get_section('thrift_config')
         incs = _incs_list_to_string(thrift_config['thrift_incs'])
-        gen_params = _incs_list_to_string(thrift_config['thrift_gen_params'])
+        gen_params = thrift_config['thrift_gen_params']
         thrift = thrift_config['thrift']
         if thrift.startswith('//'):
             thrift = thrift.replace('//', self.build_dir + '/')
