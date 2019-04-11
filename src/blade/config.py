@@ -38,9 +38,12 @@ class BladeConfig(object):
         self.current_file_name = ''  # For error reporting
         self.configs = {
             'global_config' : {
+                '__doc__' : 'Global configuration',
                 'build_path_template': 'build${bits}_${profile}',
-                'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
+                'duplicated_source_action': 'warning',
+                'duplicated_source_action__doc__' : "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
+                'test_timeout__doc__' : 'In seconds',
                 'native_builder': 'scons',
                 'debug_info_level': 'mid',
             },
@@ -238,12 +241,20 @@ class BladeConfig(object):
 
     def dump(self, output_file_name):
         with open(output_file_name, 'w') as f:
-            for section in self.configs:
-                self._dump_section(section, self.configs[section], f)
+            for name, value in self.configs.iteritems():
+                self._dump_section(name, value, f)
 
     def _dump_section(self, name, values, f):
+        doc = '__doc__'
+        if doc in values:
+            print('%s' % values[doc], file=f)
         print('%s(' % name, file=f)
         for k, v in values.items():
+            if k.endswith('__doc__'):
+                continue
+            doc = k + '__doc__'
+            if doc in values:
+                print('    # %s' % values[doc], file=f)
             if isinstance(v, str):
                 print('    %s = \'%s\',' % (k, v), file=f)
             else:

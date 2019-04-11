@@ -384,14 +384,14 @@ class CmdArguments(object):
         parser.add_argument(
             '--to-file', dest='dump_to_file', type=str, action='store',
             default='/dev/stdout',
-            help=('Specifies the path of file to write the dump result'))
+            help='Specifies the path of file to write the dump result')
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
             '--compdb', dest='dump_compdb', default=False, action='store_true',
             help='Dump compilation database')
         group.add_argument(
             '--config', dest='dump_config', default=False, action='store_true',
-            help='Dump configuration')
+            help='Dump blade configuration')
         group.add_argument(
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
