@@ -357,18 +357,23 @@ def query(options):
 
 
 def dump(options):
+    output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+    if options.dump_compdb:
+        _dump_compdb(options, output_file_name)
+    elif options.dump_targets:
+        build_manager.instance.dump_targets(output_file_name)
+
+
+def _dump_compdb(options, output_file_name):
     native_builder = config.get_item('global_config', 'native_builder')
     if native_builder != 'ninja':
         console.error_exit('dump compdb only work when native_builder is ninja')
-    if options.compdb:
-        output_file_name = os.path.join(_WORKING_DIR, options.compdb_path)
-        rules = build_manager.instance.get_all_rule_names()
-        cmd = ['ninja', '-t', 'compdb'] + rules
-        cmdstr = subprocess.list2cmdline(cmd)
-        cmdstr += ' > '
-        cmdstr += output_file_name
-        console.info('write compdb to %s' % options.compdb_path)
-        return _run_native_builder(cmdstr)
+    rules = build_manager.instance.get_all_rule_names()
+    cmd = ['ninja', '-t', 'compdb'] + rules
+    cmdstr = subprocess.list2cmdline(cmd)
+    cmdstr += ' > '
+    cmdstr += output_file_name
+    return _run_native_builder(cmdstr)
 
 
 def lock_workspace():
@@ -475,6 +480,13 @@ def clear_build_script():
 
 
 def run_subcommand(command, options, targets, blade_path, build_dir):
+    """Run particular commands before loading"""
+    # The 'dump' command is special, some kind of dump items should be ran before loading.
+    if command == 'dump' and options.dump_config:
+        output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+        config.dump(output_file_name)
+        return 0
+
     load_targets = targets
     if command == 'query' and options.dependents:
         # In query dependents mode, we must load all targets in workspace to get a whole view
@@ -553,14 +565,15 @@ def _main(blade_path):
     load_config(options, _BLADE_ROOT_DIR)
     adjust_config_by_options(config, options)
 
-    build_dir = setup_build_dir(options)
-    setup_log(build_dir, options)
-
     global _TARGETS
     if not targets:
         targets = ['.']
     targets = target.normalize(targets, _WORKING_DIR)
     _TARGETS = targets
+
+    build_dir = setup_build_dir(options)
+    setup_log(build_dir, options)
+
     generate_scm(build_dir)
 
     lock_file_fd = lock_workspace()
@@ -576,6 +589,10 @@ def format_timedelta(seconds):
     """
     Format the time delta as human readable format such as '1h20m5s' or '5s' if it is short.
     """
+    # We used to use the datetime.timedelta class, but its result such as
+    #   Blade(info): cost time 00:05:30s
+    # cause vim to create a new file named "Blade(info): cost time 00"
+    # in vim QuickFix mode. So we use the new format now.
     mins = seconds // 60
     seconds %= 60
     hours = mins // 60
@@ -593,18 +610,17 @@ def main(blade_path):
         start_time = time.time()
         exit_code = _main(blade_path)
         cost_time = int(time.time() - start_time)
-        if exit_code == 0:
-            console.info('success')
-        # We used to use the datetime.timedelta class, but its result such as
-        #   Blade(info): cost time 00:05:30s
-        # cause vim to create a new file named "Blade(info): cost time 00"
-        # in vim QuickFix mode. So we use the new format now.
-        console.info('cost time %s' % format_timedelta(cost_time))
+        if cost_time > 1:
+            console.info('cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
         exit_code = e.code  # pylint: disable=redefined-variable-type
     except KeyboardInterrupt:
-        console.error_exit('keyboard interrupted', -signal.SIGINT)
+        console.error('keyboard interrupted', -signal.SIGINT)
+        exit_code = -signal.SIGINT
     except:  # pylint: disable=bare-except
-        console.error_exit(traceback.format_exc())
+        exit_code = 1
+        console.error(traceback.format_exc())
+    if exit_code != 0:
+        console.error('failure')
     sys.exit(exit_code)
