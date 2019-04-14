@@ -20,10 +20,10 @@ from __future__ import absolute_import
 import os
 import traceback
 
+from blade import build_attributes
 from blade import build_rules
 from blade import console
-from blade import build_attributes
-from blade.blade_util import var_to_list
+from blade.blade_util import var_to_list, exec_
 from blade.pathlib import Path
 
 
@@ -131,7 +131,7 @@ def include(name):
         name = name[2:]
     else:
         dir = build_manager.instance.get_current_source_path()
-    execfile(os.path.join(dir, name), __current_globles, None)
+    exec_(os.path.join(dir, name), __current_globles, None)
 
 
 build_rules.register_function(enable_if)
@@ -169,12 +169,12 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             # which can be loaded and executed by execfile().
             global __current_globles
             __current_globles = build_rules.get_all()
-            execfile(build_file, __current_globles, None)
+            exec_(build_file, __current_globles, None)
         except SystemExit:
             console.error_exit('%s: fatal error' % build_file)
         except:  # pylint: disable=bare-except
             console.error_exit('Parse error in %s\n%s' % (
-                    build_file, traceback.format_exc()))
+                build_file, traceback.format_exc()))
     else:
         _report_not_exist(source_dir, build_file, blade)
 

@@ -12,22 +12,29 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import subprocess
 from string import Template
-import Queue
 
-import build_manager
-import config
-import console
-import build_rules
-from blade_util import var_to_list, stable_unique
-from target import Target
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
+from blade import HEAP_CHECK_VALUES
+from blade import build_manager
+from blade import config
+from blade import console
+from blade import build_rules
+from blade.blade_util import var_to_list, stable_unique
+from blade.target import Target
 
 if "check_output" not in dir(subprocess):
-    from blade_util import check_output
+    from blade.blade_util import check_output
+
     subprocess.check_output = check_output
 
 
@@ -44,6 +51,7 @@ class CcTarget(Target):
     of cc_library, cc_binary etc.
 
     """
+
     def __init__(self,
                  name,
                  target_type,
@@ -110,8 +118,8 @@ class CcTarget(Target):
                 if replaced_deps:
                     console.warning('%s: //%s has been deprecated, '
                                     'please depends on //%s:%s' % (
-                                    self.fullname, dep.fullname,
-                                    replaced_deps[0][0], replaced_deps[0][1]))
+                                        self.fullname, dep.fullname,
+                                        replaced_deps[0][0], replaced_deps[0][1]))
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
@@ -199,7 +207,7 @@ class CcTarget(Target):
 
         """
         a_src_path, so_src_path = self._prebuilt_cc_library_pathname()
-        libs = (a_src_path, so_src_path) # Ordered by priority
+        libs = (a_src_path, so_src_path)  # Ordered by priority
         if prefer_dynamic:
             libs = (so_src_path, a_src_path)
         source = ''
@@ -209,7 +217,7 @@ class CcTarget(Target):
                 break
         if not source:
             console.error_exit('%s: Can not find either %s or %s' % (
-                               self.fullname, libs[0], libs[1]))
+                self.fullname, libs[0], libs[1]))
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
@@ -221,7 +229,7 @@ class CcTarget(Target):
         if CcTarget._default_prebuilt_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
             CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                    bits=bits, arch=arch, profile=profile)
+                bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('prebuilt_libpath_pattern')
         if pattern:
@@ -305,7 +313,7 @@ class CcTarget(Target):
 
         # Optimize flags
         if (self.blade.get_options().profile == 'release' or
-            self.data.get('always_optimize')):
+                self.data.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
             # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
             cpp_flags += ['-fno-omit-frame-pointer']
@@ -395,7 +403,7 @@ class CcTarget(Target):
         for lib in self.expanded_deps:
             dep_target = build_targets[lib]
             if (dep_target.type == 'cc_library' and
-                not dep_target.srcs):
+                    not dep_target.srcs):
                 continue
             # system lib
             if lib[0] == '#':
@@ -440,7 +448,7 @@ class CcTarget(Target):
         else:
             self._write_rule('%s = top_env.Command("%s", "%s", '
                              'Copy("$TARGET", "$SOURCE"))' % (
-                             var_name, target, os.path.realpath(source)))
+                                 var_name, target, os.path.realpath(source)))
 
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,
@@ -469,7 +477,7 @@ class CcTarget(Target):
         dynamic_src_path, dynamic_target_path = '', ''
         if self._need_dynamic_library():
             dynamic_src_path, dynamic_target_path = self._prebuilt_cc_library_path(
-                    prefer_dynamic=True)
+                prefer_dynamic=True)
             # Avoid copy twice if has only one kind of library
             if dynamic_target_path != static_target_path:
                 var_name = self._var_name('dynamic')
@@ -504,10 +512,10 @@ class CcTarget(Target):
         env_name = self._env_name()
         var_name = self._var_name()
         self._write_rule('%s = %s.Library("%s", %s)' % (
-                var_name,
-                env_name,
-                self._target_file_path(),
-                self._objs_name()))
+            var_name,
+            env_name,
+            self._target_file_path(),
+            self._objs_name()))
         self.data['static_cc_library_var'] = var_name
         self._add_default_target_var('a', var_name)
 
@@ -526,13 +534,13 @@ class CcTarget(Target):
         if self.srcs or self.expanded_deps:
             if not self.data.get('allow_undefined'):
                 self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
-                        % env_name)
+                                 % env_name)
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
-                    var_name,
-                    env_name,
-                    self._target_file_path(),
-                    self._objs_name(),
-                    lib_str))
+                var_name,
+                env_name,
+                self._target_file_path(),
+                self._objs_name(),
+                lib_str))
             self.data['dynamic_cc_library_var'] = var_name
             self._add_target_var('so', var_name)
 
@@ -549,7 +557,7 @@ class CcTarget(Target):
 
     def _generated_header_files_dependencies(self, scons=True):
         """Return dependencies which generate header files. """
-        q = Queue.Queue(0)
+        q = queue.Queue(0)
         for key in self.deps:
             q.put(key)
 
@@ -581,7 +589,7 @@ class CcTarget(Target):
         deps = self._generated_header_files_dependencies()
         for dep in deps:
             self._write_rule('%s.Depends(%s, %s)' % (
-                             env_name, var_name, dep._var_name()))
+                env_name, var_name, dep._var_name()))
 
     def _cc_objects_rules(self):
         """_cc_objects_rules.
@@ -818,7 +826,7 @@ class CcTarget(Target):
 
         self.data['objs'] = objs
         if (config.get_item('cc_config', 'header_inclusion_dependencies') and
-            hdrs_inclusion_srcs):
+                hdrs_inclusion_srcs):
             self._cc_hdrs_ninja(hdrs_inclusion_srcs, vars)
 
     def _static_cc_library_ninja(self):
@@ -864,6 +872,7 @@ class CcLibrary(CcTarget):
     rules including dynamic library rules according to user option.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -989,7 +998,7 @@ class CcLibrary(CcTarget):
         self_hdr_patterns = self._cc_self_hdr_patterns(src)
         for i, hdr in enumerate(hdrs):
             if hdr in self_hdr_patterns:
-                return hdrs[:i] + level_two_hdrs[hdr] + hdrs[i+1:]
+                return hdrs[:i] + level_two_hdrs[hdr] + hdrs[i + 1:]
 
         return hdrs
 
@@ -1034,7 +1043,7 @@ class CcLibrary(CcTarget):
         objs_dir = self._target_file_path() + '.objs'
         path = '%s.o.H' % os.path.join(objs_dir, src)
         if (not os.path.exists(path) or
-            (path in history and int(os.path.getmtime(path)) == history[path])):
+                (path in history and int(os.path.getmtime(path)) == history[path])):
             return '', []
 
         build_dir = self.build_path
@@ -1109,7 +1118,7 @@ class CcLibrary(CcTarget):
                         msg.append(prefix % source)
                     console.info('\n%s' % '\n'.join(msg))
                     console.error('%s: Missing dependency declaration in BUILD for %s.' % (
-                                  self.fullname, generated_hdr))
+                        self.fullname, generated_hdr))
 
         for preprocess in failed_preprocess_paths:
             if preprocess in history:
@@ -1215,6 +1224,7 @@ class CcBinary(CcTarget):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -1286,7 +1296,7 @@ class CcBinary(CcTarget):
         if rpath_links:
             for rpath_link in rpath_links:
                 self._write_rule('%s.Append(LINKFLAGS="-Wl,--rpath-link=%s")' %
-                        (self._env_name(), rpath_link))
+                                 (self._env_name(), rpath_link))
 
     def _cc_binary(self):
         """_cc_binary rules. """
@@ -1303,7 +1313,7 @@ class CcBinary(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
+                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
         if self.data.get('export_dynamic'):
             self._write_rule(
@@ -1321,7 +1331,7 @@ class CcBinary(CcTarget):
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
-                    env_name, var_name, ', '.join(link_all_symbols_lib_list)))
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         self._write_rpath_links()
         if self.data['embed_version']:
@@ -1370,7 +1380,7 @@ class CcBinary(CcTarget):
     def _generate_cc_binary_link_flags(self, dynamic_link):
         ldflags = []
         if (not dynamic_link and
-            self.blade.get_scons_platform().get_gcc_version() > '4.5'):
+                self.blade.get_scons_platform().get_gcc_version() > '4.5'):
             ldflags += ['-static-libgcc', '-static-libstdc++']
         if self.data.get('export_dynamic'):
             ldflags.append('-rdynamic')
@@ -1463,6 +1473,7 @@ class CcPlugin(CcTarget):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -1521,27 +1532,27 @@ class CcPlugin(CcTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
+                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
         if self.prefix is not None:
             self._write_rule(
-                    '%s.Replace(SHLIBPREFIX="%s")' % (env_name, self.prefix))
+                '%s.Replace(SHLIBPREFIX="%s")' % (env_name, self.prefix))
 
         if self.suffix is not None:
             self._write_rule(
-                    '%s.Replace(SHLIBSUFFIX="%s")' % (env_name, self.suffix))
+                '%s.Replace(SHLIBSUFFIX="%s")' % (env_name, self.suffix))
 
         if not self.data['allow_undefined']:
             self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
-                    % env_name)
+                             % env_name)
 
         if self.srcs or self.expanded_deps:
             self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
-                    var_name,
-                    env_name,
-                    self._target_file_path(),
-                    self._objs_name(),
-                    lib_str))
+                var_name,
+                env_name,
+                self._target_file_path(),
+                self._objs_name(),
+                lib_str))
             self._add_default_target_var('so', var_name)
 
         if link_all_symbols_lib_list:
@@ -1602,18 +1613,6 @@ def cc_plugin(name,
 build_rules.register_function(cc_plugin)
 
 
-# See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
-HEAP_CHECK_VALUES = set([
-    '',
-    'minimal',
-    'normal',
-    'strict',
-    'draconian',
-    'as-is',
-    'local',
-])
-
-
 class CcTest(CcBinary):
     """A scons cc target subclass.
 
@@ -1621,6 +1620,7 @@ class CcTest(CcBinary):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,

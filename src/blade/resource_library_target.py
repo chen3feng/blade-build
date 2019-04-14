@@ -23,6 +23,7 @@ class ResourceLibrary(CcTarget):
     to generate resource library rules.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -75,7 +76,7 @@ class ResourceLibrary(CcTarget):
             c_src_path = os.path.join(out_dir, c_src_name)
             v_src = self._var_name_of(src_path)
             self._write_rule('%s = %s.ResourceFile("%s", "%s")' % (
-                         v_src, env_name, c_src_path, src_path))
+                v_src, env_name, c_src_path, src_path))
             self.data['res_srcs'].append(c_src_path)
 
         self._resource_library_rules_objects()
@@ -97,18 +98,18 @@ class ResourceLibrary(CcTarget):
             if src_name not in res_objects:
                 res_objects[src_name] = (
                         '%s_%s_object' % (
-                                base_src_name,
-                                self._regular_variable_name(self.name)))
+                    base_src_name,
+                    self._regular_variable_name(self.name)))
                 target_path = os.path.join(self.build_path,
                                            path,
                                            '%s.objs' % self.name,
                                            base_src_name)
                 self._write_rule(
-                        '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"]'
-                        ', source="%s")' % (res_objects[src_name],
-                                              env_name,
-                                              target_path,
-                                              src))
+                    '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"]'
+                    ', source="%s")' % (res_objects[src_name],
+                                        env_name,
+                                        target_path,
+                                        src))
             objs.append(res_objects[src_name])
         self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
 
@@ -131,8 +132,8 @@ class ResourceLibrary(CcTarget):
         self._write_rule('%s["SOURCE_PATH"] = "%s"' % (env_name, self.path))
         self._write_rule('%s["TARGET_NAME"] = "%s"' % (env_name, res_index_name))
         self._write_rule('%s = %s.ResourceIndex(["%s", "%s"], %s)' % (
-                     v_index, env_name, res_index_source_path, res_index_header_path,
-                     src_list))
+            v_index, env_name, res_index_source_path, res_index_header_path,
+            src_list))
         self.data['generated_hdrs'].append(res_index_header_path)
 
         return (out_dir, res_index_name)
@@ -147,8 +148,8 @@ class ResourceLibrary(CcTarget):
                  self._target_file_path('%s.c' % self.name)]
         self.ninja_build(index, 'resource_index', inputs=resources,
                          variables={
-                             'name' : self._regular_variable_name(self.name),
-                             'path' : self.path
+                             'name': self._regular_variable_name(self.name),
+                             'path': self.path
                          })
         self.data['generated_hdrs'].append(index[0])
         sources = ['%s.c' % self.name]

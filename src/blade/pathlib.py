@@ -15,11 +15,11 @@ from contextlib import contextmanager
 from errno import EINVAL, ENOENT
 from operator import attrgetter
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
+
 try:
     from urllib import quote as urlquote, quote as urlquote_from_bytes
 except ImportError:
     from urllib.parse import quote as urlquote, quote_from_bytes as urlquote_from_bytes
-
 
 try:
     intern = intern
@@ -42,11 +42,10 @@ else:
         supports_symlinks = False
         _getfinalpathname = None
 
-
 __all__ = [
     "PurePath", "PurePosixPath", "PureWindowsPath",
     "Path", "PosixPath", "WindowsPath",
-    ]
+]
 
 #
 # Internals
@@ -55,10 +54,12 @@ __all__ = [
 _py2 = sys.version_info < (3,)
 _py2_fs_encoding = 'ascii'
 
+
 def _py2_fsencode(parts):
     # py2 => minimal unicode support
     return [part.encode(_py2_fs_encoding) if isinstance(part, unicode)
             else part for part in parts]
+
 
 def _is_wildcard_pattern(pat):
     # Whether this pattern needs actual matching using fnmatch, or can
@@ -139,16 +140,16 @@ class _WindowsFlavour(_Flavour):
     is_supported = (nt is not None)
 
     drive_letters = (
-        set(chr(x) for x in range(ord('a'), ord('z') + 1)) |
-        set(chr(x) for x in range(ord('A'), ord('Z') + 1))
+            set(chr(x) for x in range(ord('a'), ord('z') + 1)) |
+            set(chr(x) for x in range(ord('A'), ord('Z') + 1))
     )
     ext_namespace_prefix = '\\\\?\\'
 
     reserved_names = (
-        set(['CON', 'PRN', 'AUX', 'NUL']) |
-        set(['COM%d' % i for i in range(1, 10)]) |
-        set(['LPT%d' % i for i in range(1, 10)])
-        )
+            set(['CON', 'PRN', 'AUX', 'NUL']) |
+            set(['COM%d' % i for i in range(1, 10)]) |
+            set(['LPT%d' % i for i in range(1, 10)])
+    )
 
     # Interesting findings about extended paths:
     # - '\\?\c:\a', '//?/c:\a' and '//?/c:/a' are all supported
@@ -182,9 +183,9 @@ class _WindowsFlavour(_Flavour):
                     if index2 == -1:
                         index2 = len(part)
                     if prefix:
-                        return prefix + part[1:index2], sep, part[index2+1:]
+                        return prefix + part[1:index2], sep, part[index2 + 1:]
                     else:
-                        return part[:index2], sep, part[index2+1:]
+                        return part[:index2], sep, part[index2 + 1:]
         drv = root = ''
         if second == ':' and first in self.drive_letters:
             drv = part[:2]
@@ -282,6 +283,7 @@ class _PosixFlavour(_Flavour):
         sep = self.sep
         accessor = path._accessor
         seen = {}
+
         def _resolve(path, rest):
             if rest.startswith(sep):
                 path = ''
@@ -312,11 +314,12 @@ class _PosixFlavour(_Flavour):
                     # Not a symlink
                     path = newpath
                 else:
-                    seen[newpath] = None # not resolved symlink
+                    seen[newpath] = None  # not resolved symlink
                     path = _resolve(path, target)
-                    seen[newpath] = path # resolved symlink
+                    seen[newpath] = path  # resolved symlink
 
             return path
+
         # NOTE: according to POSIX, getcwd() cannot contain path components
         # which are symlinks.
         base = '' if path.is_absolute() else os.getcwd()
@@ -347,12 +350,14 @@ class _NormalAccessor(_Accessor):
         @functools.wraps(strfunc)
         def wrapped(pathobj, *args):
             return strfunc(str(pathobj), *args)
+
         return staticmethod(wrapped)
 
     def _wrap_binary_strfunc(strfunc):
         @functools.wraps(strfunc)
         def wrapped(pathobjA, pathobjB, *args):
             return strfunc(str(pathobjA), str(pathobjB), *args)
+
         return staticmethod(wrapped)
 
     stat = _wrap_strfunc(os.stat)
@@ -415,17 +420,20 @@ def _cached(func):
         yield func
     except AttributeError:
         cache = {}
+
         def wrapper(*args):
             try:
                 return cache[args]
             except KeyError:
                 value = cache[args] = func(*args)
                 return value
+
         wrapper.__cached__ = True
         try:
             yield wrapper
         finally:
             cache.clear()
+
 
 def _make_selector(pattern_parts):
     pat = pattern_parts[0]
@@ -439,6 +447,7 @@ def _make_selector(pattern_parts):
     else:
         cls = _PreciseSelector
     return cls(pat, child_parts)
+
 
 if hasattr(functools, "lru_cache"):
     _make_selector = functools.lru_cache()(_make_selector)
@@ -1278,6 +1287,6 @@ class Path(PurePath):
 class PosixPath(Path, PurePosixPath):
     __slots__ = ()
 
+
 class WindowsPath(Path, PureWindowsPath):
     __slots__ = ()
-

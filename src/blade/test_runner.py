@@ -16,22 +16,19 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from collections import namedtuple
 import os
-import sys
 import subprocess
+import sys
 import time
+from collections import namedtuple
 
 from blade import binary_runner
 from blade import config
 from blade import console
-from blade import target
-
 from blade.blade_util import md5sum
 from blade.test_scheduler import TestScheduler
 
 # Used by eval when loading test history
-from blade.test_scheduler import TestRunResult  # pylint: disable=unused-import
 
 
 _TEST_HISTORY_FILE = '.blade.test.stamp'

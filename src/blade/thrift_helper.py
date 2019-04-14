@@ -19,11 +19,12 @@ and library from Facebook's own branch:
     https://github.com/facebook/fbthrift
 
 """
+from __future__ import absolute_import
 
 import os
 import re
 
-import console
+from blade import console
 
 
 class ThriftParser(object):
@@ -81,7 +82,7 @@ class ThriftParser(object):
                 self.exceptions.append(name)
 
         if self.has_constants or self.structs or self.enums or \
-           self.exceptions or self.services:
+                self.exceptions or self.services:
             pass
         else:
             console.error_exit('%s is an empty thrift file.' % self.path)

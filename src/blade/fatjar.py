@@ -11,13 +11,15 @@ into a single fatjar file.
 
 """
 
+from __future__ import absolute_import
+
 import os
 import sys
 import time
 import zipfile
-import blade_util
-import console
 
+from blade import blade_util
+from blade import console
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -83,9 +85,9 @@ def generate_fat_jar(target, jars):
                     if name.endswith('/'):
                         continue
                     message = ('%s: duplicate path %s found in {%s, %s}' % (
-                               target, name,
-                               os.path.basename(path_jar_dict[name]),
-                               os.path.basename(dep_jar)))
+                        target, name,
+                        os.path.basename(path_jar_dict[name]),
+                        os.path.basename(dep_jar)))
                     # Always log all conflicts for diagnosis
                     console.debug(message)
                     if '/.m2/repository/' not in dep_jar:

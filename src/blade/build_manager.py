@@ -14,25 +14,23 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import json
 import os
 import sys
 import time
-import json
 
 from blade import config
 from blade import console
 from blade import target
-
+from blade.binary_runner import BinaryRunner
+from blade.blade_platform import BuildPlatform
 from blade.blade_util import cpu_count
+from blade.build_environment import BuildEnvironment
 from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
-from blade.blade_platform import BuildPlatform
-from blade.build_environment import BuildEnvironment
-from blade.rules_generator import SconsRulesGenerator
 from blade.rules_generator import NinjaRulesGenerator
-from blade.binary_runner import BinaryRunner
+from blade.rules_generator import SconsRulesGenerator
 from blade.test_runner import TestRunner
-
 
 # Global build manager instance
 instance = None
@@ -40,6 +38,7 @@ instance = None
 
 class Blade(object):
     """Blade. A blade manager class. """
+
     # pylint: disable=too-many-public-methods
     def __init__(self,
                  command_targets,
@@ -178,7 +177,7 @@ class Blade(object):
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if (header_inclusion_dependencies and
-                target.type == 'cc_library' and target.srcs):
+                    target.type == 'cc_library' and target.srcs):
                 if not target.verify_header_inclusion_dependencies(header_inclusion_history):
                     error += 1
         self._dump_verify_history()
@@ -375,7 +374,7 @@ class Blade(object):
         # Check whether there is already a key in database
         if key in self.__target_database:
             console.error_exit('Target %s is duplicate in //%s/BUILD' % (
-                               target.name, target.path))
+                target.name, target.path))
         self.__target_database[key] = target
 
     def _is_scons_object_type(self, target_type):
@@ -404,10 +403,10 @@ class Blade(object):
                 console.warning('not registered blade object, key %s' % str(k))
                 continue
             if (skip_test and target.type.endswith('_test')
-                and k not in self.__direct_targets):
+                    and k not in self.__direct_targets):
                 continue
             if (skip_package and target.type == 'package'
-                and k not in self.__direct_targets):
+                    and k not in self.__direct_targets):
                 continue
 
             if native_builder == 'ninja':
@@ -483,4 +482,3 @@ def initialize(
     instance = Blade(command_targets, load_targets,
                      blade_path, working_dir, build_path, blade_root_dir,
                      blade_options, command)
-

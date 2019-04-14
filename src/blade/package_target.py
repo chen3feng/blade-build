@@ -18,10 +18,9 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import var_to_list
 from blade.blade_util import location_re
+from blade.blade_util import var_to_list
 from blade.target import Target
-
 
 _package_types = frozenset([
     'tar',
@@ -41,6 +40,7 @@ class PackageTarget(Target):
     compressed using gzip or bz2 according to the package type.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -65,7 +65,7 @@ class PackageTarget(Target):
         if type not in _package_types:
             console.error_exit('%s: Invalid type %s. Types supported '
                                'by the package are %s' % (
-                               self.fullname, type, ', '.join(sorted(_package_types))))
+                                   self.fullname, type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
         self.data['sources'], self.data['locations'] = [], []
         self._process_srcs(srcs)
@@ -122,7 +122,7 @@ class PackageTarget(Target):
         src, dst = self._get_source_path(src, dst)
         if not os.path.exists(src):
             console.error_exit('%s: Package source %s does not exist.' % (
-                               self.fullname, src))
+                self.fullname, src))
         elif os.path.isfile(src):
             self.data['sources'].append((src, dst))
         else:
@@ -177,8 +177,8 @@ class PackageTarget(Target):
         self._generate_source_rules(source_vars, package_path_list, sources_dir)
         self._generate_location_reference_rules(location_vars, sources_dir)
         self._write_rule('%s = %s.Package(target="%s", source=[%s] + [%s])' % (
-                         var_name, env_name, target,
-                         ','.join(source_vars), ','.join(sorted(location_vars))))
+            var_name, env_name, target,
+            ','.join(source_vars), ','.join(sorted(location_vars))))
         package_type = self.data['type']
         self._write_rule('%s.Append(PACKAGESUFFIX="%s")' % (env_name, package_type))
 
@@ -211,7 +211,7 @@ class PackageTarget(Target):
         output = self._target_file_path(self.data['out'])
         if not self.data['shell']:
             self.ninja_build(output, 'package', inputs=inputs,
-                             variables={'entries' : ' '.join(entries)})
+                             variables={'entries': ' '.join(entries)})
         else:
             self.ninja_package_in_shell(output, inputs, entries)
 
@@ -239,8 +239,8 @@ class PackageTarget(Target):
             self.ninja_build(dst, 'copy', inputs=src)
             package_sources.append(dst)
         vars = {
-            'entries' : ' '.join(entries),
-            'packageroot' : packageroot,
+            'entries': ' '.join(entries),
+            'packageroot': packageroot,
         }
         type = self.data['type']
         rule = self.ninja_rule_from_package_type(type)

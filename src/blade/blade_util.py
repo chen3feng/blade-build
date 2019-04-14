@@ -13,6 +13,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+try:
+    basestring
+except NameError:
+    basestring = str
+
 import fcntl
 import os
 import json
@@ -22,16 +30,16 @@ import string
 import signal
 import subprocess
 
-import console
-
+from blade import console
 
 try:
     import hashlib as md5
 except ImportError:
     import md5
 
-
 location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
+
+PY3 = sys.version_info[0] == 3
 
 
 def md5sum_str(user_str):
@@ -45,9 +53,8 @@ def md5sum_str(user_str):
 
 def md5sum_file(file_name):
     """Calculate md5sum of the file. """
-    f = open(file_name)
-    digest = md5sum_str(f.read())
-    f.close()
+    with open(file_name) as f:
+        digest = md5sum_str(f.read())
     return digest
 
 
@@ -59,7 +66,7 @@ def md5sum(obj):
 def lock_file(filename):
     """lock file. """
     try:
-        fd = os.open(filename, os.O_CREAT|os.O_RDWR)
+        fd = os.open(filename, os.O_CREAT | os.O_RDWR)
         old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
         fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -131,13 +138,13 @@ def find_blade_root_dir(working_dir=None):
     named BLADE_ROOT.
 
     """
-    blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
+    blade_root = find_file_bottom_up(b'BLADE_ROOT', from_dir=working_dir)
     if not blade_root:
         console.error_exit(
-                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
-                "Blade need this file as a placeholder to locate the root source directory "
-                "(aka the directory where you #include start from).\n"
-                "You should create it manually at the first time.")
+            "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+            "Blade need this file as a placeholder to locate the root source directory "
+            "(aka the directory where you #include start from).\n"
+            "You should create it manually at the first time.")
     return os.path.dirname(blade_root)
 
 
@@ -224,3 +231,15 @@ def cpu_count():
 def regular_variable_name(var):
     """Replace the chars of var that scons doesn't recognize. """
     return var.translate(string.maketrans(',-/.+*', '______'))
+
+
+if PY3:
+    def iteritems(d, **kw):
+        return iter(d.items(**kw))
+else:
+    def iteritems(d, **kw):
+        return d.iteritems(**kw)
+
+
+def exec_(filename, globals, locals):
+    exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals)

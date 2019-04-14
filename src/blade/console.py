@@ -18,7 +18,6 @@ from __future__ import print_function
 import os
 import sys
 
-
 ##############################################################################
 # Color and screen
 ##############################################################################
@@ -28,22 +27,21 @@ import sys
 _color_enabled = (sys.stdout.isatty() and
                   os.environ.get('TERM') not in ('emacs', 'dumb'))
 
-
 # See http://en.wikipedia.org/wiki/ANSI_escape_code
 # colors
 
 # pylint: disable=bad-whitespace
 _COLORS = {
-    'red'    : '\033[1;31m',
-    'green'  : '\033[1;32m',
-    'yellow' : '\033[1;33m',
-    'blue'   : '\033[1;34m',
-    'purple' : '\033[1;35m',
-    'cyan'   : '\033[1;36m',
-    'white'  : '\033[1;37m',
-    'gray'   : '\033[1;38m',
-    'dimpurple' : '\033[2;35m',
-    'end'    :  '\033[0m',
+    'red': '\033[1;31m',
+    'green': '\033[1;32m',
+    'yellow': '\033[1;33m',
+    'blue': '\033[1;34m',
+    'purple': '\033[1;35m',
+    'cyan': '\033[1;36m',
+    'white': '\033[1;37m',
+    'gray': '\033[1;38m',
+    'dimpurple': '\033[2;35m',
+    'end': '\033[0m',
 }
 
 # cursor movement
@@ -124,7 +122,6 @@ def log(msg):
 # normal: normal mode, show infos, warnings and errors
 # quiet: quiet mode, only show warnings and errors
 _VERBOSITIES = ('quiet', 'normal', 'verbose')
-
 
 _verbosity = 'normal'
 
@@ -273,4 +270,3 @@ def flush():
     sys.stderr.flush()
     if _log:
         _log.flush()
-

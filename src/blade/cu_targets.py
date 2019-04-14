@@ -15,8 +15,8 @@ from __future__ import absolute_import
 
 import os
 
-from blade import build_rules
 from blade import build_manager
+from blade import build_rules
 from blade import config
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
@@ -27,6 +27,7 @@ class CuTarget(CcTarget):
     of cu_library, cu_binary etc.
 
     """
+
     def __init__(self,
                  name,
                  target_type,
@@ -73,7 +74,7 @@ class CuTarget(CcTarget):
 
         # Optimize flags
         if (self.blade.get_options().profile == 'release' or
-            self.data.get('always_optimize')):
+                self.data.get('always_optimize')):
             nvcc_flags += self._get_optimize_flags()
 
         # Incs
@@ -90,15 +91,15 @@ class CuTarget(CcTarget):
         for src in self.srcs:
             obj = 'obj_%s' % self._var_name_of(src)
             target_path = os.path.join(
-                    self.build_path, self.path, '%s.objs' % self.name, src)
+                self.build_path, self.path, '%s.objs' % self.name, src)
             self._write_rule(
-                    '%s = %s.NvccObject(NVCCFLAGS="-I%s %s", target="%s" + top_env["OBJSUFFIX"]'
-                    ', source="%s")' % (obj,
-                                        env_name,
-                                        incs_string,
-                                        flags_string,
-                                        target_path,
-                                        self._target_file_path(src)))
+                '%s = %s.NvccObject(NVCCFLAGS="-I%s %s", target="%s" + top_env["OBJSUFFIX"]'
+                ', source="%s")' % (obj,
+                                    env_name,
+                                    incs_string,
+                                    flags_string,
+                                    target_path,
+                                    self._target_file_path(src)))
             objs.append(obj)
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(objs)))
 
@@ -108,6 +109,7 @@ class CuLibrary(CuTarget):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -169,6 +171,7 @@ class CuBinary(CuTarget):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -202,7 +205,7 @@ class CuBinary(CuTarget):
          whole_link_flags) = self._get_static_deps_lib_list()
         if whole_link_flags:
             self._write_rule(
-                    '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
+                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
 
         if self.data.get('export_dynamic'):
             self._write_rule(
@@ -229,11 +232,11 @@ class CuBinary(CuTarget):
 
         if link_all_symbols_lib_list:
             self._write_rule('%s.Depends(%s, [%s])' % (
-                    env_name, var_name, ', '.join(link_all_symbols_lib_list)))
+                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
         # self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
         self._write_rule('%s.Requires(%s, version_obj)' % (
-                         env_name, var_name))
+            env_name, var_name))
 
     def scons_rules(self):
         """Generate scons rules according to user options. """
@@ -272,6 +275,7 @@ class CuTest(CuBinary):
     rules according to user options.
 
     """
+
     def __init__(self,
                  name,
                  srcs,

@@ -20,13 +20,14 @@ import shutil
 import subprocess
 import sys
 
-from blade import console
 from blade import config
+from blade import console
 from blade.blade_util import environ_add_path
 
 
 class BinaryRunner(object):
     """BinaryRunner. """
+
     def __init__(self, targets, options, target_database):
         """Init method. """
         from blade import build_manager
@@ -67,7 +68,7 @@ class BinaryRunner(object):
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
             console.error_exit('Ambiguous testdata of %s: %s, exit...' % (
-                               target.fullname, dest))
+                target.fullname, dest))
         for item in dest_list:
             item_norm = os.path.normpath(item)
             if len(dest_norm) >= len(item_norm):
@@ -75,9 +76,9 @@ class BinaryRunner(object):
             else:
                 long_path, short_path = item_norm, dest_norm
             if (long_path.startswith(short_path) and
-                long_path[len(short_path)] == '/'):
+                    long_path[len(short_path)] == '/'):
                 console.error_exit('%s could not exist with %s in testdata of %s' % (
-                                   dest, item, target.fullname))
+                    dest, item, target.fullname))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
@@ -99,7 +100,7 @@ class BinaryRunner(object):
                                 '%s -> %s already exists\n'
                                 'skipped, should check duplicate prebuilt '
                                 'libraries'
-                        % (dst, src, dst, os.path.realpath(dst)))
+                                % (dst, src, dst, os.path.realpath(dst)))
                 continue
             os.symlink(src, dst)
 
@@ -196,7 +197,7 @@ class BinaryRunner(object):
         target = self.targets[target_key]
         if target.type not in self.run_list:
             console.error_exit('target %s:%s is not a target that could run' % (
-                       target_key[0], target_key[1]))
+                target_key[0], target_key[1]))
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         shell = target.data.get('run_in_shell', False)

@@ -14,10 +14,11 @@
  add extra options according to different target types.
 
 """
+from __future__ import absolute_import
 
 from collections import deque
 
-import console
+from blade import console
 
 
 def analyze_deps(related_targets):
@@ -66,7 +67,7 @@ def _check_dep_visibility(target, dep, targets):
     if dep not in targets:
         console.error_exit('Target %s:%s depends on %s:%s, '
                            'but it is missing, exit...' % (
-                           target[0], target[1], dep[0], dep[1]))
+                               target[0], target[1], dep[0], dep[1]))
     # Targets are visible inside the same BUILD file by default
     if target[0] == dep[0]:
         return
@@ -78,7 +79,7 @@ def _check_dep_visibility(target, dep, targets):
     if target not in visibility:
         console.error_exit('%s:%s is not allowed to depend on %s '
                            'because of visibility.' % (
-                           target[0], target[1], d.fullname))
+                               target[0], target[1], d.fullname))
 
 
 def _unique_deps(new_deps_list):
@@ -116,7 +117,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
             for t in root_targets:
                 err_msg += '//%s:%s --> ' % (t[0], t[1])
             console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
-                       d[0], d[1], err_msg))
+                d[0], d[1], err_msg))
         _check_dep_visibility(target_id, d, targets)
         new_deps_list.append(d)
         new_deps_list += _find_all_deps(d, targets, deps_map_cache, root_targets)
@@ -130,7 +131,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
 
 def _topological_sort(pairlist):
     """Sort the targets. """
-    numpreds = {}    # elt -> # of predecessors
+    numpreds = {}  # elt -> # of predecessors
     successors = {}  # elt -> list of successors
     for second, target in pairlist.items():
         if second not in numpreds:

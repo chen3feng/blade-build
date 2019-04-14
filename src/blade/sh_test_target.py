@@ -17,8 +17,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import var_to_list
 from blade.blade_util import location_re
+from blade.blade_util import var_to_list
 from blade.target import Target
 
 
@@ -34,6 +34,7 @@ class ShellTest(Target):
     syntax.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -95,9 +96,9 @@ class ShellTest(Target):
         if sources:
             self._write_rule('%s = %s.ShellTestData(target = "%s.testdata", '
                              'source = [%s])' % (
-                             var_name, env_name,
-                             self._target_file_path(),
-                             ', '.join(sources)))
+                                 var_name, env_name,
+                                 self._target_file_path(),
+                                 ', '.join(sources)))
 
     def scons_rules(self):
         self._clone_env()
@@ -106,10 +107,9 @@ class ShellTest(Target):
 
         srcs = [self._source_file_path(s) for s in self.srcs]
         self._write_rule('%s = %s.ShellTest(target = "%s", source = %s)' % (
-                         var_name, env_name,
-                         self._target_file_path(), srcs))
+            var_name, env_name,
+            self._target_file_path(), srcs))
         self._generate_test_data_rules()
-
 
     def ninja_rules(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
@@ -131,7 +131,7 @@ class ShellTest(Target):
         if inputs:
             output = '%s.testdata' % self._target_file_path()
             self.ninja_build(output, 'shelltestdata', inputs=inputs,
-                             variables={'testdata' : ' '.join(testdata)})
+                             variables={'testdata': ' '.join(testdata)})
 
 
 def sh_test(name,
@@ -140,10 +140,10 @@ def sh_test(name,
             testdata=[],
             **kwargs):
     build_manager.instance.register_target(ShellTest(name,
-                                          srcs,
-                                          deps,
-                                          testdata,
-                                          kwargs))
+                                                     srcs,
+                                                     deps,
+                                                     testdata,
+                                                     kwargs))
 
 
 build_rules.register_function(sh_test)

@@ -28,6 +28,7 @@ from blade.thrift_helper import ThriftHelper
 
 class ThriftLibrary(CcTarget):
     """A thrift library target derived from CcTarget. """
+
     def __init__(self,
                  name,
                  srcs,
@@ -71,7 +72,7 @@ class ThriftLibrary(CcTarget):
         for src in srcs:
             if not src.endswith('.thrift'):
                 console.error_exit('%s: Invalid thrift file %s' % (
-                                   self.fullname, src))
+                    self.fullname, src))
 
     def _generate_header_files(self):
         """Whether this target generates header files during building."""
@@ -103,14 +104,14 @@ class ThriftLibrary(CcTarget):
         for src in self.srcs:
             thrift_java_src_files = self._thrift_gen_java_files(src)
             self._write_rule('%s.ThriftJava(%s, "%s")' % (
-                    self._env_name(),
-                    thrift_java_src_files,
-                    os.path.join(self.path, src)))
+                self._env_name(),
+                thrift_java_src_files,
+                os.path.join(self.path, src)))
 
             self.data['java_sources'] = (
-                     os.path.dirname(thrift_java_src_files[0]),
-                     os.path.join(self.build_path, self.path),
-                     self.name)
+                os.path.dirname(thrift_java_src_files[0]),
+                os.path.join(self.build_path, self.path),
+                self.name)
             self.data['java_sources_explict_dependency'] += thrift_java_src_files
 
     def _thrift_python_rules(self):
@@ -120,10 +121,10 @@ class ThriftLibrary(CcTarget):
             thrift_py_src_files = self._thrift_gen_py_files(src)
             py_cmd_var = self._var_name('python')
             self._write_rule('%s = %s.ThriftPython(%s, "%s")' % (
-                    py_cmd_var,
-                    self._env_name(),
-                    str(thrift_py_src_files),
-                    src_path))
+                py_cmd_var,
+                self._env_name(),
+                str(thrift_py_src_files),
+                src_path))
             self.data['python_vars'].append(py_cmd_var)
             self.data['python_sources'] += thrift_py_src_files
 
@@ -136,13 +137,13 @@ class ThriftLibrary(CcTarget):
         direct_targets = self.blade.get_direct_targets()
 
         if (getattr(options, 'generate_java', False) or
-            self.data.get('generate_java') or
-            self.key in direct_targets):
+                self.data.get('generate_java') or
+                self.key in direct_targets):
             self._thrift_java_rules()
 
         if (getattr(options, 'generate_python', False) or
-            self.data.get('generate_python') or
-            self.key in direct_targets):
+                self.data.get('generate_python') or
+                self.key in direct_targets):
             self._thrift_python_rules()
 
         self._setup_cc_flags()
@@ -155,9 +156,9 @@ class ThriftLibrary(CcTarget):
             self.data['generated_hdrs'] += [h for h in thrift_cpp_files if h.endswith('.h')]
 
             self._write_rule('%s.Thrift(%s, "%s")' % (
-                             env_name,
-                             thrift_cpp_files,
-                             os.path.join(self.path, src)))
+                env_name,
+                thrift_cpp_files,
+                os.path.join(self.path, src)))
 
             for thrift_cpp_src in thrift_cpp_src_files:
                 obj_name = '%s_object' % self._var_name_of(thrift_cpp_src)
@@ -172,7 +173,7 @@ class ThriftLibrary(CcTarget):
 
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._write_rule('%s.Depends(%s, %s)' % (
-                         env_name, self._objs_name(), sources))
+            env_name, self._objs_name(), sources))
 
         self._cc_library()
 

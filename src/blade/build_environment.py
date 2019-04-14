@@ -10,18 +10,18 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 
-import glob
-import math
 import os
 import subprocess
-import time
 
-import console
+from blade import console
 
 
 class BuildEnvironment(object):
     """Managers ccache, distcc. """
+
     def __init__(self, blade_root_dir, distcc_host_list=None):
         # ccache
         self.blade_root_dir = blade_root_dir
@@ -83,7 +83,6 @@ class BuildEnvironment(object):
             if version_line and version_line.find('distcc') != -1:
                 console.debug('distcc found')
                 return True
-
 
     def setup_build_cache(self, options):
         if self.ccache_installed:

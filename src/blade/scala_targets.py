@@ -25,6 +25,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
     This class is the base of all scala targets.
 
     """
+
     def __init__(self,
                  name,
                  type,
@@ -150,6 +151,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
 
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
+
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  exported_deps, provided_deps, kwargs):
         exported_deps = var_to_list(exported_deps)
@@ -174,6 +176,7 @@ class ScalaLibrary(ScalaTarget):
 
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
+
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  exclusions, kwargs):
         ScalaTarget.__init__(self, name, 'scala_fat_library', srcs, deps,
@@ -196,6 +199,7 @@ class ScalaFatLibrary(ScalaTarget):
 
 class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
+
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  testdata, kwargs):
         ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
@@ -220,8 +224,8 @@ class ScalaTest(ScalaFatLibrary):
         if jar_var:
             self._write_rule('%s = %s.ScalaTest(target="%s", '
                              'source=[%s] + [%s] + %s)' % (
-                    var_name, self._env_name(), self._target_file_path(),
-                    jar_var, ','.join(dep_jar_vars), dep_jars))
+                                 var_name, self._env_name(), self._target_file_path(),
+                                 jar_var, ','.join(dep_jar_vars), dep_jars))
 
     def ninja_rules(self):
         if not self.srcs:
