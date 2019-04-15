@@ -44,7 +44,7 @@ Here are some common command line options
 * --gprof supports GNU gprof
 * --coverage supports generation of coverage and currently supports GNU gcov and Java jacoco
 
-##example
+## example
 ```bash
 
 # Build all targets in the current directory, not including subdirectories
