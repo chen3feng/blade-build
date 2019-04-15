@@ -51,7 +51,7 @@ cc_test_config(
 
 note:
 
-* gtest 1.6 starts, remove install install, but can be bypassed, see [gtest1.6.0 installation method] (http://blog.csdn.net/chengwenyao18/article/details/7181514).
+* gtest 1.6 starts, remove install install, but can be bypassed, see [gtest1.6.0 installation method](http://blog.csdn.net/chengwenyao18/article/details/7181514).
 * The gtest library also relies on pthreads, so gtest_libs needs to be written as ['#gtest', '#pthread']
 * Or include the source code in your source tree, such as thirdparty, you can write gtest_libs='//thirdparty/gtest:gtest'.
 

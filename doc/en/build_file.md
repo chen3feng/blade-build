@@ -46,17 +46,17 @@ The allowed format of deps:
 
 ##Building rules
 
-### [Building C/C++ Goals] (build_rules/cc.md)
-### [Building protobuf and thrift] (build_rules/idl.md)
+### [Building C/C++ Goals](build_rules/cc.md)
+### [Building protobuf and thrift](build_rules/idl.md)
 ### [Building Java](build_rules/java.md)
-### [Building Scala] (build_rules/scala.md)
-### [Building Python] (build_rules/python.md)
-### [Building Lex and Yacc] (build_rules/lexyacc.md)
-### [Build SWIG] (build_rules/swig.md)
-### [Bash test] (build_rules/shell.md)
-### [Custom Rule Construction] (build_rules/gen_rule.md)
-### [File Packaging] (build_rules/package.md)
+### [Building Scala](build_rules/scala.md)
+### [Building Python](build_rules/python.md)
+### [Building Lex and Yacc](build_rules/lexyacc.md)
+### [Build SWIG](build_rules/swig.md)
+### [Bash test](build_rules/shell.md)
+### [Custom Build Rules](build_rules/gen_rule.md)
+### [File Packaging](build_rules/package.md)
 
 ## Other features
 
-### [Custom Build Rules] (include.md)
+### [Custom Build Rules](include.md)

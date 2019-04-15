@@ -205,7 +205,7 @@ The parameters, or spelling errors, for the latter case, BLADE's vim syntax high
 ## Source file xxx.cc belongs to both xxx and yyy What does this mean?
 For example, Source file cp_test_config.cc belongs to both cc_test xcube/cp/jobcontrol:job_controller_test and cc_test xcube/cp/jobcontrol:job_context_test?
 
-In order to avoid unnecessary repetitive compilation and possible different compilation parameters, it violates C++'s [one-time definition rule] (http://en.wikipedia.org/wiki/One_Definition_Rule).
+In order to avoid unnecessary repetitive compilation and possible different compilation parameters, it violates C++'s [one-time definition rule](http://en.wikipedia.org/wiki/One_Definition_Rule).
 Usually each source file should belong to only one target. If a source file is used by multiple targets, it should be written as a separate cc_library and depend on this library in deps.
 
 ## How to open C++11

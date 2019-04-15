@@ -28,4 +28,4 @@ When used directly in the vim ':' mode input (with parameters)
 
 You can build it.
 
-The source code for this command is [here] (https://github.com/chen3feng/tools/blob/master/vimrc).
+The source code for this command is [here](https://github.com/chen3feng/tools/blob/master/vimrc).
