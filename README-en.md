@@ -9,8 +9,10 @@
 # Blade Build System
 An easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
 
+NOTE: The English Documentation is still under construction, sorry for the incompleteness.
+
 ## Build status
-[![Build Status](https://travis-ci.org/chen3feng/typhoon-blade.svg?branch=master)](https://travis-ci.org/chen3feng/typhoon-blade)
+[![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
 # Brief
 
@@ -56,8 +58,8 @@ $ blade test -m32 -pdebug common...
 # Documentation
 
 Sorry for Chinese only, English documentation is under construction.
-* [Full Documentation](/doc/zh_CN/user_manual.md)
-* [FAQ](/doc/zh_CN/FAQ.md)
+* [Full Documentation](/doc/en/index.md)
+* [FAQ](/doc/en/FAQ.md)
 
 
 # Credits
