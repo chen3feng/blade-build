@@ -86,7 +86,11 @@ java_library(name = 'C', srcs = 'C.java')
 
 - exported_deps 属性
 
-某些 java_library 由于接口方法的设计或者继承等原因，会自动引入定义在其他 java_library 中的符号，
+和C++不同，Java（以及scala等JVM上的语言）的构建规则中，deps里描述的库只提供给编译当前库的源代码时使用，不会自动透传给库的使用者。
+如果库所依赖的类型出现在类的公有方法时，如果被依赖的库只出现在deps中，由于不会被透传给其使用者，就会因找不到符号而导致编译失败，需要使用exported_deps属性。
+
+出现在exported_deps属性中的库，编译阶段会被透传给其使用者。
+
 比如上述例子中的 B.java，如果在其某个方法的参数中引入了 C.java 定义的符号，会导致依赖 B 的
 java_library 也不得不依赖 C，否则编译报错，这个时候可以将 C 作为 B 的导出依赖（exported_deps），
 这样依赖 B 的目标会自动传递依赖到 C。
@@ -99,7 +103,7 @@ java_library(name = 'B', srcs = 'B.java', exported_deps = ':C')
 
 provided_deps 用于表示那些运行环境提供的依赖，类似 maven scope 中的 provided，这些依赖用于当前
 java_library 的编译，但是当这个 java_library 直接或者间接被 java_fat_library 依赖时，provided deps
-不会被打包到 fatjar 中，应用场景比如集群环境的依赖（hadoop，spark 等），可以有效减小 fatjar 的文件大小。
+不会被打包到 fatjar 中，应用场景比如集群环境的依赖（hadoop，spark 等），可以有效减小 fatjar 的文件大小，并减少和运行环境已经提供的库冲突的风险。
 
 ## maven_jar
 
