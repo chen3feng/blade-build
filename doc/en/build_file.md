@@ -44,7 +44,7 @@ The allowed format of deps:
  * ":name" The target, path in the current BUILD file can be omitted.
  * "#name" system library. Write # with the name directly, such as #pthread, #z respectively equivalent to link -lpthread and -lz on the command line, but will be passed to other targets that depend on this library.
 
-## Building rules
+## Building rules (IN CHINESE, TO BE TRANSLATED)
 
 ### [Building C/C++ Goals](build_rules/cc.md)
 ### [Building protobuf and thrift](build_rules/idl.md)
