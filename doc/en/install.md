@@ -1,4 +1,4 @@
-#installation
+# Installation
 
 By executing the install script, blade can be installed under ~/bin. Currently, because it is still in the development stage, the change is still relatively fast.
 It is installed in a soft chain mode. After installation, the original directory that is checked out cannot be deleted.
