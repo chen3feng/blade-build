@@ -1,7 +1,7 @@
 Blade FAQ
 ========
 
-#Running environment
+# Running environment
 
 ## Why can't blade run on my platform?
 
@@ -32,7 +32,7 @@ Solution process:
  - Add ~/bin to the user profile and log in again
 
 
-#Building problem
+# Building problem
 
 ## Why do the dependencies in the deps have different target sequences, and the compilation results are different?
 
@@ -229,7 +229,7 @@ Low: low debug symbol, you can see the function name and global variables
 Mid: medium, more local variables than low, function parameters
 High: highest, contains debugging information such as macros
 
-#Test program uses dynamic links
+# Test program uses dynamic links
 ```python
 cc_test_config(
     dynamic_link = True

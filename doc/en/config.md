@@ -1,4 +1,4 @@
-#Configuration
+# Configuration
 
 ## configuration file
 Blade supports three configuration files, which are loaded in the following order. The loaded configuration will overwrite the previous configuration.
