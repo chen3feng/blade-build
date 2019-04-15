@@ -15,7 +15,7 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
 
-## Click here to read [README](README-en_US.md) in English.
+## Click here to read [README](README-en.md) in English.
 
 
 # 通知

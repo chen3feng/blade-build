@@ -56,8 +56,8 @@ $ blade test -m32 -pdebug common...
 # Documentation
 
 Sorry for Chinese only, English documentation is under construction.
-* [Full Documentation](/doc/zh_CN/user_manual.md)
-* [FAQ](/doc/zh_CN/FAQ.md)
+* [Full Documentation](/doc/en/user_manual.md)
+* [FAQ](/doc/en/FAQ.md)
 
 
 # Credits
