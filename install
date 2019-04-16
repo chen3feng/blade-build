@@ -12,7 +12,7 @@ echo ", Done."
 
 mkdir -p ~/bin
 echo -n "Installing blade auxiliary tools..."
-ln -sf $blade_dir/{genlibbuild,lsnobuild,lsrc,merge-static-libs,bladefunctions} ~/bin
+ln -sf $blade_dir/tool/{genlibbuild,lsnobuild,lsrc,merge-static-libs,bladefunctions} ~/bin
 if [ ! -f ~/.bashrc ] || ! grep "bladefunctions" ~/.bashrc 2>&1 >/dev/null; then
     echo "test -s ~/bin/bladefunctions && . ~/bin/bladefunctions || true" >> ~/.bashrc
 fi

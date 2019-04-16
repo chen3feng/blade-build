@@ -10,13 +10,17 @@
  the BLADE_ROOT as a configuration file.
 
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import sys
 
-import console
-import build_attributes
-from blade_util import var_to_list
-from cc_targets import HEAP_CHECK_VALUES
+from blade import console
+from blade import build_attributes
+from blade.blade_util import var_to_list
+from blade.cc_targets import HEAP_CHECK_VALUES
 
 
 _config_globals = {}
@@ -31,12 +35,15 @@ def config_rule(func):
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
     def __init__(self):
-        self.current_file_name = ''
+        self.current_file_name = ''  # For error reporting
         self.configs = {
             'global_config' : {
+                '__doc__' : 'Global configuration',
                 'build_path_template': 'build${bits}_${profile}',
-                'duplicated_source_action': 'warning', # Can be 'warning', 'error', 'none'
+                'duplicated_source_action': 'warning',
+                'duplicated_source_action__doc__' : "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
+                'test_timeout__doc__' : 'In seconds',
                 'native_builder': 'scons',
                 'debug_info_level': 'mid',
             },
@@ -172,16 +179,12 @@ class BladeConfig(object):
             }
         }
 
-    _globals = None
-
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
-        if BladeConfig._globals is None:
-            BladeConfig._globals = globals()
-            BladeConfig._globals['build_target'] = build_attributes.attributes
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
+                console.info('loading config file "%s"' % filename)
                 execfile(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
@@ -236,6 +239,28 @@ class BladeConfig(object):
         """get config section, returns default values if not set """
         return self.configs[section_name]
 
+    def dump(self, output_file_name):
+        with open(output_file_name, 'w') as f:
+            for name, value in self.configs.iteritems():
+                self._dump_section(name, value, f)
+
+    def _dump_section(self, name, values, f):
+        doc = '__doc__'
+        if doc in values:
+            print('%s' % values[doc], file=f)
+        print('%s(' % name, file=f)
+        for k, v in values.items():
+            if k.endswith('__doc__'):
+                continue
+            doc = k + '__doc__'
+            if doc in values:
+                print('    # %s' % values[doc], file=f)
+            if isinstance(v, str):
+                print('    %s = \'%s\',' % (k, v), file=f)
+            else:
+                print('    %s = %s,' % (k, v), file=f)
+        print(')\n', file=f)
+
 
 # Global config object
 _blade_config = BladeConfig()
@@ -248,6 +273,10 @@ def load_files(blade_root_dir, load_local_config):
     _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
     if load_local_config:
         _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
+
+
+def dump(output_file_name):
+    _blade_config.dump(output_file_name)
 
 
 def get_section(section_name):

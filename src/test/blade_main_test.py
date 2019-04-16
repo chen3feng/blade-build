@@ -21,7 +21,7 @@ from cc_library_test import TestCcLibrary
 from cc_plugin_test import TestCcPlugin
 from cc_test_test import TestCcTest
 from gen_rule_test import TestGenRule
-from java_jar_test import TestJavaJar
+from java_test import TestJava
 from lex_yacc_test import TestLexYacc
 from load_builds_test import TestLoadBuilds
 from proto_library_test import TestProtoLibrary
@@ -44,7 +44,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcPlugin),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcTest),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestGenRule),
-        unittest.defaultTestLoader.loadTestsFromTestCase(TestJavaJar),
+        unittest.defaultTestLoader.loadTestsFromTestCase(TestJava),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLexYacc),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLoadBuilds),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestProtoLibrary),

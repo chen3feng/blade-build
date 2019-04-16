@@ -112,18 +112,17 @@ class TestJava(blade_test.TargetTest):
         self.assertIn('-fno-omit-frame-pointer', com_swig_java_cxx)
         self.assertIn('-pipe -g', com_swig_java_cxx)
         self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_java_cxx)
-        return
-        whole_archive = ('--whole-archive build64_release/test_java_jar/'
-                         'librpc_meta_info_proto.a build64_release/test_java_jar/'
-                         'librpc_option_proto.a -Wl,--no-whole-archive')
-        self.assertIn(whole_archive, java_so_line)
-        self.assertGreater(jar_idx, java_com_idx)
-        self.assertGreater(jar_idx, java_so_idx)
-        self.assertNotEqual('', java_com_line)
-        self.assertNotEqual('', java_so_line)
-        self.assertNotEqual('', jar_line)
-        self.assertIn('test_java_jar/java/lib/junit.jar', java_com_line)
-        self.assertIn('com/soso/poppy/*.java', java_com_line)
+        # whole_archive = ('--whole-archive build64_release/test_java_jar/'
+        #                  'librpc_meta_info_proto.a build64_release/test_java_jar/'
+        #                  'librpc_option_proto.a -Wl,--no-whole-archive')
+        # self.assertIn(whole_archive, java_so_line)
+        # self.assertGreater(jar_idx, java_com_idx)
+        # self.assertGreater(jar_idx, java_so_idx)
+        # self.assertNotEqual('', java_com_line)
+        # self.assertNotEqual('', java_so_line)
+        # self.assertNotEqual('', jar_line)
+        # self.assertIn('test_java_jar/java/lib/junit.jar', java_com_line)
+        # self.assertIn('com/soso/poppy/*.java', java_com_line)
 
 
 if __name__ == '__main__':

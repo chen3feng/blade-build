@@ -13,6 +13,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 
 from collections import namedtuple
 import os
@@ -20,15 +22,16 @@ import sys
 import subprocess
 import time
 
-import binary_runner
-import config
-import console
+from blade import binary_runner
+from blade import config
+from blade import console
+from blade import target
 
-from blade_util import md5sum
-from test_scheduler import TestScheduler
+from blade.blade_util import md5sum
+from blade.test_scheduler import TestScheduler
 
 # Used by eval when loading test history
-from test_scheduler import TestRunResult  # pylint: disable=unused-import
+from blade.test_scheduler import TestRunResult  # pylint: disable=unused-import
 
 
 _TEST_HISTORY_FILE = '.blade.test.stamp'
@@ -40,45 +43,37 @@ TestJob = namedtuple('TestJob',
 TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
-def _ignored_env_set():
-    """ """
-    ignored_env_vars = [
-        # shell variables
-        'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID',
-        'LS_COLORS',
-        # CI variables
-        'BUILD_DISPLAY_NAME',
-        'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
-        'BUILD_ID', 'START_USER',
-        'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
-        'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
-        'HUDSON_SERVER_COOKIE',
-        'RUN_CHANGES_DISPLAY_URL',
-        'UP_REVISION',
-        'RUN_DISPLAY_URL',
-        'JENKINS_SERVER_COOKIE',
-
-        # ssh variables
-        'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
-        # vim variables
-        'VIM', 'MYVIMRC', 'VIMRUNTIME']
-
-    for i in range(30):
-        ignored_env_vars.append('SVN_REVISION_%d' % i)
-
-    return frozenset(ignored_env_vars)
+_TEST_IGNORED_ENV_VARS = frozenset([
+    # shell variables
+    'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID', 'LS_COLORS',
+    # CI variables
+    'BUILD_DISPLAY_NAME',
+    'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
+    'BUILD_ID', 'START_USER',
+    'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
+    'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
+    'HUDSON_SERVER_COOKIE',
+    'RUN_CHANGES_DISPLAY_URL',
+    'UP_REVISION',
+    'RUN_DISPLAY_URL',
+    'JENKINS_SERVER_COOKIE',
+    # ssh variables
+    'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
+    # vim variables
+    'VIM', 'MYVIMRC', 'VIMRUNTIME'] +
+    ['SVN_REVISION_%d' % i for i in range(30)])
 
 
 def _diff_env(a, b):
     """Return difference of two environments dict"""
     seta = set([(k, a[k]) for k in a])
     setb = set([(k, b[k]) for k in b])
-    return (dict(seta - setb), dict(setb - seta))
+    return dict(seta - setb), dict(setb - seta)
 
 
 class TestRunner(binary_runner.BinaryRunner):
     """TestRunner. """
-    def __init__(self, targets, options, target_database, direct_targets):
+    def __init__(self, targets, options, target_database, direct_targets, skip_tests):
         """Init method. """
         # pylint: disable=too-many-locals, too-many-statements
         binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
@@ -86,10 +81,12 @@ class TestRunner(binary_runner.BinaryRunner):
 
         # Test jobs should be run
         self.test_jobs = {}  # dict{key : TestJob}
+
+        self.skip_tests = skip_tests  # Tests to be skipped
         self.skipped_tests = []
 
         # Test history is the key to implement incremental test.
-        # It will be loaded from file before test, comprared with test jobs,
+        # It will be loaded from file before test, compared with test jobs,
         # and be updated and saved to file back after test.
         self.test_history = {}  # {key, dict{}}
 
@@ -111,15 +108,15 @@ class TestRunner(binary_runner.BinaryRunner):
     def _update_test_history(self):
         old_env = self.test_history.get('env', {})
         env_keys = os.environ.keys()
-        env_keys = set(env_keys).difference(_ignored_env_set())
+        env_keys = set(env_keys).difference(_TEST_IGNORED_ENV_VARS)
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
-            console.info('Some tests will be run due to test environments changed:')
+            console.notice('Some tests will be run due to test environments changed:')
             new, old = _diff_env(new_env, old_env)
             if new:
-                console.info('new environments: %s' % new)
+                console.notice('new environments: %s' % new)
             if old:
-                console.info('old environments: %s' % old)
+                console.notice('old environments: %s' % old)
 
         self.test_history['env'] = new_env
         self.env_md5 = md5sum(str(sorted(new_env.iteritems())))
@@ -129,7 +126,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._merge_run_results_to_history(passed_run_results)
         self._merge_run_results_to_history(failed_run_results)
         with open(_TEST_HISTORY_FILE, 'w') as f:
-            print >> f, str(self.test_history)
+            print(str(self.test_history), file=f)
 
     def _merge_run_results_to_history(self, run_results):
         for key, run_result in run_results.iteritems():
@@ -189,8 +186,28 @@ class TestRunner(binary_runner.BinaryRunner):
 
         return md5sum(test_target_str), md5sum(test_target_data_str)
 
+    def _skip_test(self, target):
+        """Whether skip this test"""
+        if not self.skip_tests:
+            return False
+        for skip_test in self.skip_tests:
+            if skip_test == target.fullname:
+                return True
+            skip_test = skip_test.split(':')
+            if skip_test[1] == '*' and skip_test[0] == target.path:
+                return True
+            if (skip_test[1] == '...' and (target.path == skip_test[0] or
+                                           target.path.startswith(skip_test[0] + os.path.sep))):
+                return True
+        return False
+
     def _run_reason(self, target, binary_md5, testdata_md5):
         """Return run reason for a given test"""
+
+        if self._skip_test(target):
+            console.info('%s is skipped by --skip-test' % target.fullname)
+            return None
+
         if self.options.full_test:
             return 'FULL_TEST'
 
@@ -344,15 +361,18 @@ class TestRunner(binary_runner.BinaryRunner):
         run_tests = len(passed_run_results) + len(failed_run_results)
 
         if len(passed_run_results) == len(self.test_jobs):
-            console.info('All tests passed!')
+            console.notice('All %d tests passed!' % len(passed_run_results))
             return
 
+        msg = ['total %d tests' % len(self.test_jobs)]
+        if passed_run_results:
+            msg.append('%d passed' % len(passed_run_results))
         if failed_run_results:
-            console.info('%d tests passed.' % len(passed_run_results))
-            console.error('%d tests failed.' % len(failed_run_results))
+            msg.append('%d failed' % len(failed_run_results))
         cancelled_tests = len(self.test_jobs) - run_tests
         if cancelled_tests:
-            console.error('%d tests cancelled by Ctrl-C' % cancelled_tests)
+            msg.append('%d cancelled' % cancelled_tests)
+        console.error(', '.join(msg) + '.')
 
     def _show_tests_result(self, passed_run_results, failed_run_results):
         """Show test details and summary according to the options. """
@@ -378,7 +398,7 @@ class TestRunner(binary_runner.BinaryRunner):
             test_env = self._prepare_env(target)
             cmd = [os.path.abspath(self._executable(target))]
             cmd += self.options.args
-            if console.color_enabled:
+            if console.color_enabled():
                 test_env['GTEST_COLOR'] = 'yes'
             else:
                 test_env['GTEST_COLOR'] = 'no'
@@ -391,11 +411,13 @@ class TestRunner(binary_runner.BinaryRunner):
                 test_env['BLADE_COVERAGE'] = 'true'
             tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
 
+        console.notice('%d tests to run' % len(tests_run_list))
         sys.stdout.flush()
         scheduler = TestScheduler(tests_run_list, self.options.test_jobs)
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:
+            console.clear_progress_bar()
             console.error('KeyboardInterrupt, all tests stopped')
             console.flush()
 

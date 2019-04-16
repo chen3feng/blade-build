@@ -20,6 +20,41 @@ import console
 from blade_util import var_to_list
 
 
+def _normalize_one(target, working_dir):
+    """Normalize target from command line form into canonical form.
+
+    Target canonical form: dir:name
+        dir: relative to blade_root_dir, use '.' for blade_root_dir
+        name: name  if target is dir:name
+              '*'   if target is dir
+              '...' if target is dir/...
+    """
+    if target.startswith('//'):
+        target = target[2:]
+    elif target.startswith('/'):
+        console.error_exit('Invalid target "%s" starting from root path.' % target)
+    else:
+        if working_dir != '.':
+            target = os.path.join(working_dir, target)
+
+    if ':' in target:
+        path, name = target.rsplit(':', 1)
+    else:
+        if target.endswith('...'):
+            path = target[:-3]
+            name = '...'
+        else:
+            path = target
+            name = '*'
+    path = os.path.normpath(path)
+    return '%s:%s' % (path, name)
+
+
+def normalize(targets, working_dir):
+    """Normalize target list from command line form into canonical form."""
+    return [_normalize_one(target, working_dir) for target in targets]
+
+
 class Target(object):
     """Abstract target class.
 
@@ -72,6 +107,19 @@ class Target(object):
         self._init_visibility(visibility)
         self.build_rules = []
         self.data['generated_hdrs'] = []
+
+    def dump(self):
+        """Dump to a dict"""
+        target = {
+            'type' : self.type,
+            'path' : self.path,
+            'name' : self.name,
+            'srcs' : self.srcs,
+            'deps' : self.deps,
+            'visibility' : self.visibility,
+        }
+        target.update(self.data)
+        return target
 
     def _clone_env(self):
         """Clone target's environment. """
@@ -360,21 +408,7 @@ class Target(object):
         return [], []
 
     def _regular_variable_name(self, var):
-        """_regular_variable_name.
-
-        Parameters
-        -----------
-        var: the variable to be modified
-
-        Returns
-        -----------
-        s: the variable modified
-
-        Description
-        -----------
-        Replace the chars that scons doesn't regconize.
-
-        """
+        """Replace the chars of var that scons doesn't recognize. """
         return var.translate(string.maketrans(',-/.+*', '______'))
 
     def _generate_variable_name(self, path, name, suffix=''):
@@ -604,7 +638,13 @@ class Target(object):
         All the target files built by the target itself
 
         """
-        return self.data['targets'].values()
+        results = set()
+        for _, v in self.data['targets'].iteritems():
+            if isinstance(v, list):
+                results.update(v)
+            else:
+                results.add(v)
+        return sorted(results)
 
     def _generate_header_files(self):
         """Whether this target generates header files during building. """

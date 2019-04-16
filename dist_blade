@@ -12,9 +12,34 @@
 #        BY  :    Michaelpeng
 #        MODIFICATION: Created
 
+LC_ALL=C
 
-function make_blade_zip()
-{
+function blade_version() {
+    local branch
+    local version
+    local log
+    branch=$(git branch | grep '^\*')
+    if echo "$branch" | egrep 'detached (at|from)' > /dev/null; then
+        # Extract tag name
+        version=$(echo "$branch" | sed -E -n 's/\* \(.* detached (at|from) (.*)\)/\2/p')
+    else
+        version=$(echo "$branch" | sed -n 's/\* \(.*\)$/("\1" branch)/p')
+    fi
+    # get last commit brief
+    log=$(git log -1 --format="%ad %h, by %cn" --date=short)
+
+    # Examples:
+    #   2.0.0, 2019-03-16 3b2ad0d, by CHEN Feng
+    #   ("version" branch), 2019-03-16 3b2ad0d, by CHEN Feng
+    echo "$version, $log"
+}
+
+# For debug
+# blade_version; exit
+
+function make_blade_zip() {
+    local version
+    version=$(blade_version)
     blade_dir=$(cd $(dirname $0) && pwd)
     cd $blade_dir
 
@@ -24,7 +49,9 @@ function make_blade_zip()
 
     cd $src_dir
 
+    echo "VERSION = r'''$version'''" > blade/version.py
     zip blade.zip __main__.py blade/*.py
+    rm blade/version.py
     mv ./blade.zip ${dist_file_path}
 
     cd $blade_dir

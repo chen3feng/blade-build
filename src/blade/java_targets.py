@@ -58,6 +58,13 @@ class MavenJar(Target):
         return self.blade_rules()
 
 
+_JAVA_SRC_PATH_SEGMENTS = (
+    'src/main/java',
+    'src/test/java',
+    'src/java/',
+)
+
+
 class JavaTargetMixIn(object):
     """
     This mixin includes common java methods
@@ -256,46 +263,49 @@ class JavaTargetMixIn(object):
         dependency of the target
         """
         # pylint: disable=too-many-locals
-        dep_jars, conflicted_jars = set(dep_jars), set()
-        maven_dep_ids = self._get_maven_dep_ids()
-        maven_jar_dict = {}  # (group, artifact) -> (version, set(jar))
+        maven_jar_versions = {}  # (group, artifact) -> versions
+        maven_jars = {}          # (group, artifact, version) -> jars
         maven_repo = '.m2/repository/'
-        for dep_jar in dep_jars:
-            if maven_repo not in dep_jar or not os.path.exists(dep_jar):
+        for jar in set(dep_jars):
+            if maven_repo not in jar or not os.path.exists(jar):
                 console.debug('%s: %s not found in local maven repository' % (
-                              self.fullname, dep_jar))
+                              self.fullname, jar))
                 continue
-            parts = dep_jar[dep_jar.find(maven_repo) + len(maven_repo):].split('/')
+            parts = jar[jar.find(maven_repo) + len(maven_repo):].split('/')
             if len(parts) < 4:
                 continue
-            name, version, artifact, group = (parts[-1], parts[-2],
-                                              parts[-3], '.'.join(parts[:-3]))
-            key = (group, artifact)
-            id = ':'.join((group, artifact, version))
-            if key in maven_jar_dict:
-                old_version, old_jars = maven_jar_dict[key]
-                if version == old_version:
-                    # jar name must be different because dep_jars is a set
-                    old_jars.add(dep_jar)
-                    continue
-                old_id = ':'.join((group, artifact, old_version))
-                if old_id in maven_dep_ids:
-                    conflicted_jars.add(dep_jar)
-                elif id in maven_dep_ids or LooseVersion(version) > LooseVersion(old_version):
-                    conflicted_jars |= old_jars
-                    maven_jar_dict[key] = (version, set([dep_jar]))
-                else:
-                    conflicted_jars.add(dep_jar)
-                value = maven_jar_dict[key]
-                console.debug('%s: Maven dependency version conflict '
-                              '%s:%s:{%s, %s} during %s. Use %s' % (
-                              self.fullname, key[0], key[1],
-                              version, old_version, scope, value[0]))
+            version, artifact, group = parts[-2], parts[-3], '.'.join(parts[:-3])
+            key = group, artifact
+            if key in maven_jar_versions:
+                if version not in maven_jar_versions[key]:
+                    maven_jar_versions[key].append(version)
             else:
-                maven_jar_dict[key] = (version, set([dep_jar]))
+                maven_jar_versions[key] = [version]
+            key = group, artifact, version
+            if key in maven_jars:
+                maven_jars[key].append(jar)
+            else:
+                maven_jars[key] = [jar]
 
-        dep_jars -= conflicted_jars
-        return sorted(dep_jars)
+        maven_dep_ids = self._get_maven_dep_ids()
+        jars = []
+        for (group, artifact), versions in maven_jar_versions.iteritems():
+            if len(versions) == 1:
+                picked_version = versions[0]
+            else:
+                picked_version = None
+                for v in versions:
+                    maven_id = ':'.join((group, artifact, v))
+                    if maven_id in maven_dep_ids:
+                        picked_version = v
+                        break
+                    if picked_version is None or LooseVersion(v) > LooseVersion(picked_version):
+                        picked_version = v
+                console.debug('%s: Maven dependency version conflict %s:%s:{%s} during %s. Use %s' % (
+                              self.fullname, group, artifact,
+                              ', '.join(versions), scope, picked_version))
+            jars += maven_jars[group, artifact, picked_version]
+        return sorted(jars)
 
     def _get_compile_deps(self):
         dep_jars, maven_jars = self.__get_deps(self.deps)
@@ -388,8 +398,9 @@ class JavaTargetMixIn(object):
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
             if not os.path.exists(full_path):
-                console.error_exit('%s: Resource %s does not exist.' % (
-                                   self.fullname, full_path))
+                console.warning('%s: Resource %s does not exist.' % (
+                                self.fullname, full_path))
+                results.add((full_path, jar_path))  # delay error to build phase
             elif os.path.isfile(full_path):
                 results.add((full_path, jar_path))
             else:
@@ -405,13 +416,8 @@ class JavaTargetMixIn(object):
 
     def _java_sources_paths(self, srcs):
         path = set()
-        segs = [
-            'src/main/java',
-            'src/test/java',
-            'src/java/',
-        ]
         for src in srcs:
-            for seg in segs:
+            for seg in _JAVA_SRC_PATH_SEGMENTS:
                 pos = src.find(seg)
                 if pos > 0:
                     path.add(src[:pos + len(seg)])
@@ -468,12 +474,6 @@ class JavaTargetMixIn(object):
             self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
                 self._env_name(), source_encoding))
 
-    def _generate_java_sources_paths(self, srcs):
-        path = self._java_sources_paths(srcs)
-        if path:
-            env_name = self._env_name()
-            self._write_rule('%s.Append(JAVASOURCEPATH=%s)' % (env_name, path))
-
     def _generate_java_classpath(self, dep_jar_vars, dep_jars):
         env_name = self._env_name()
         for dep_jar_var in dep_jar_vars:
@@ -501,19 +501,6 @@ class JavaTargetMixIn(object):
             self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
                 env_name, var_name, env_name, sorted(set(locations))))
 
-    def _generate_java_classes(self, var_name, srcs):
-        env_name = self._env_name()
-
-        self._generate_java_sources_paths(srcs)
-        dep_jar_vars, dep_jars = self._get_compile_deps()
-        self._generate_java_classpath(dep_jar_vars, dep_jars)
-        classes_dir = self._get_classes_dir()
-        self._write_rule('%s = %s.Java(target="%s", source=%s)' % (
-                var_name, env_name, classes_dir, srcs))
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
-        self._write_rule('%s.Clean(%s, "%s")' % (env_name, var_name, classes_dir))
-        return var_name
-
     def _generate_sources(self, ninja=False):
         """
         Generate java sources in the build directory for the subsequent
@@ -525,6 +512,8 @@ class JavaTargetMixIn(object):
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
             src = self._source_file_path(source)
+            if not os.path.exists(src):  # Maybe it's a generated file
+                continue
             package = self._get_source_package_name(src)
             dst = os.path.join(sources_dir, package.replace('.', '/'),
                                os.path.basename(source))
@@ -751,17 +740,10 @@ class JavaTarget(Target, JavaTargetMixIn):
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
 
-    def _generate_classes(self):
-        if not self.srcs:
-            return None
-        var_name = self._var_name('classes')
-        srcs = [self._source_file_path(src) for src in self.srcs]
-        return self._generate_java_classes(var_name, srcs)
-
     def _generate_jar(self):
         self._generate_sources()
         dep_jar_vars, dep_jars = [], []
-        srcs = [self._source_file_path(s) for s in self.srcs]
+        srcs = self._java_full_path_srcs()
         if srcs:
             dep_jar_vars, dep_jars = self._get_compile_deps()
             self._generate_java_classpath(dep_jar_vars, dep_jars)
@@ -784,9 +766,18 @@ class JavaTarget(Target, JavaTargetMixIn):
             warnings = java_config['warnings']
         return debug_info_options + warnings
 
+    def _java_full_path_srcs(self):
+        """Expand srcs to full path"""
+        srcs = []
+        for s in self.srcs:
+            sp = self._source_file_path(s)
+            # If it doesn't exist, consider it as a generated file in target dir
+            srcs.append(sp if os.path.exists(sp) else self._target_file_path(s))
+        return srcs
+
     def ninja_generate_jar(self):
         self._generate_sources(True)
-        srcs = [self._source_file_path(s) for s in self.srcs]
+        srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
         jar = self._target_file_path() + '.jar'
         if srcs and resources:

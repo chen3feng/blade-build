@@ -27,11 +27,7 @@ from blade.thrift_helper import ThriftHelper
 
 
 class ThriftLibrary(CcTarget):
-    """A scons thrift library target subclass.
-
-    This class is derived from CcTarget.
-
-    """
+    """A thrift library target derived from CcTarget. """
     def __init__(self,
                  name,
                  srcs,
@@ -40,11 +36,6 @@ class ThriftLibrary(CcTarget):
                  deprecated,
                  blade,
                  kwargs):
-        """Init method.
-
-        Init the thrift target.
-
-        """
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
         CcTarget.__init__(self,
@@ -87,44 +78,28 @@ class ThriftLibrary(CcTarget):
         return True
 
     def _thrift_gen_cpp_files(self, src):
-        """_thrift_gen_cpp_files.
-
-        Get the c++ files generated from thrift file.
-
-        """
+        """Get the c++ files generated from thrift file. """
         files = []
         for f in self.thrift_helpers[src].get_generated_cpp_files():
             files.append(self._target_file_path(f))
         return files
 
     def _thrift_gen_py_files(self, src):
-        """_thrift_gen_py_files.
-
-        Get the python files generated from thrift file.
-
-        """
+        """Get the python files generated from thrift file. """
         files = []
         for f in self.thrift_helpers[src].get_generated_py_files():
             files.append(self._target_file_path(f))
         return files
 
     def _thrift_gen_java_files(self, src):
-        """_thrift_gen_java_files.
-
-        Get the java files generated from thrift file.
-
-        """
+        """Get the java files generated from thrift file. """
         files = []
         for f in self.thrift_helpers[src].get_generated_java_files():
             files.append(self._target_file_path(f))
         return files
 
     def _thrift_java_rules(self):
-        """_thrift_java_rules.
-
-        Generate scons rules for the java files from thrift file.
-
-        """
+        """Generate scons rules for the java files from thrift file. """
         for src in self.srcs:
             thrift_java_src_files = self._thrift_gen_java_files(src)
             self._write_rule('%s.ThriftJava(%s, "%s")' % (
@@ -139,11 +114,7 @@ class ThriftLibrary(CcTarget):
             self.data['java_sources_explict_dependency'] += thrift_java_src_files
 
     def _thrift_python_rules(self):
-        """_thrift_python_rules.
-
-        Generate python files.
-
-        """
+        """Generate scons rules for the python files from thrift file. """
         for src in self.srcs:
             src_path = os.path.join(self.path, src)
             thrift_py_src_files = self._thrift_gen_py_files(src)
@@ -157,11 +128,7 @@ class ThriftLibrary(CcTarget):
             self.data['python_sources'] += thrift_py_src_files
 
     def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
+        """It outputs the scons rules according to user options. """
         self._prepare_to_generate_rule()
         env_name = self._env_name()
 

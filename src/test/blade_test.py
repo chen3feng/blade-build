@@ -16,7 +16,7 @@ import unittest
 sys.path.append('..')
 import blade.build_manager
 import blade.config
-from blade.argparse import Namespace
+from argparse import Namespace
 
 
 class TargetTest(unittest.TestCase):
@@ -41,8 +41,8 @@ class TargetTest(unittest.TestCase):
     def tearDown(self):
         """tear down method. """
         try:
-            os.remove('./SConstruct')
             os.remove(self.scons_output_file)
+            os.remove('./SConstruct')
         except OSError:
             pass
 
