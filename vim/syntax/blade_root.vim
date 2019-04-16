@@ -71,6 +71,7 @@ syn keyword bladeTarget thrift_library_config
 syn keyword bladeArg thrift
 syn keyword bladeArg thrift_libs
 syn keyword bladeArg thrift_incs
+syn keyword bladeArg thrift_gen_params
 syn keyword bladeTarget fbthrift_config
 syn keyword bladeTarget fbthrift_library_config
 syn keyword bladeArg fbthrift1
@@ -83,6 +84,7 @@ syn keyword bladeArg protoc_java
 syn keyword bladeArg protobuf_libs
 syn keyword bladeArg protobuf_path
 syn keyword bladeArg protobuf_incs
+syn keyword bladeArg protobuf_extra_cppflags
 syn keyword bladeArg protobuf_java_incs
 syn keyword bladeArg protobuf_php_path
 syn keyword bladeArg protoc_php_plugin
