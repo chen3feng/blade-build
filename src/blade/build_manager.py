@@ -453,11 +453,9 @@ class Blade(object):
             return user_jobs_num
 
         # Calculate job numbers smartly
-        jobs_num = 0
         distcc_enabled = config.get_item('distcc_config', 'enabled')
-
         if distcc_enabled and self.build_environment.distcc_env_prepared:
-            # Distcc cost doesn;t much local cpu, jobs can be quite large.
+            # Distcc doesn't cost much local cpu, jobs can be quite large.
             distcc_num = len(self.build_environment.get_distcc_hosts_list())
             jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
         else:
@@ -465,10 +463,7 @@ class Blade(object):
             # machines with cpu_core_num > 4 is usually shared by multiple users,
             # set an upper bound to avoid interfering other users
             jobs_num = min(2 * cpu_core_num, 8)
-
-        if jobs_num != user_jobs_num:
-            console.info('tunes the parallel jobs number(-j N) to be %d' % (
-                jobs_num))
+        console.info('tunes the parallel jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 
     def get_all_rule_names(self):

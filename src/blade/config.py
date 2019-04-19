@@ -69,6 +69,7 @@ class BladeConfig(object):
 
             'link_config': {
                 'link_on_tmp': False,
+                'link_jobs': None,
             },
 
             'java_config': {
@@ -404,7 +405,7 @@ def proto_library_config(append=None, **kwargs):
 @config_rule
 def protoc_plugin(**kwargs):
     """protoc_plugin. """
-    from proto_library_target import ProtocPlugin
+    from blade.proto_library_target import ProtocPlugin
     if 'name' not in kwargs:
         console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')

@@ -64,7 +64,7 @@ def lock_file(filename):
         fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return fd, 0
-    except IOError, ex_value:
+    except IOError as ex_value:
         return -1, ex_value[0]
 
 
