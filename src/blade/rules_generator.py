@@ -373,11 +373,13 @@ from blade import scons_helper
 
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     # pylint: disable=too-many-public-methods
-    def __init__(self, options, build_dir, blade_path, gcc_version,
-                 python_inc, cuda_inc, build_environment, svn_roots):
+    def __init__(self, options, build_dir, blade_path,
+                 gcc_version, python_inc, cuda_inc, blade):
         ScriptHeaderGenerator.__init__(
                 self, options, build_dir, gcc_version,
-                python_inc, cuda_inc, build_environment, svn_roots)
+                python_inc, cuda_inc,
+                blade.build_environment, blade.svn_root_dirs)
+        self.blade = blade
         self.blade_path = blade_path
         self.__all_rule_names = set()
 
@@ -496,14 +498,26 @@ build __securecc_phony__ : phony
         self.generate_rule(name='ar',
                            command='rm -f $out; ar %s $out $in' % arflags,
                            description='AR ${out}')
+        link_jobs = config.get_item('link_config', 'link_jobs')
+        if link_jobs:
+            link_jobs = min(link_jobs, self.blade.parallel_jobs_num())
+            console.info('tunes the parallel link jobs to be %s' % link_jobs)
+            pool = 'link_pool'
+            self._add_rule('''
+pool %s
+  depth = %s''' % (pool, link_jobs))
+        else:
+            pool = None
         self.generate_rule(name='link',
                            command='%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (
                                    ld, ' '.join(ldflags)),
-                           description='LINK ${out}')
+                           description='LINK ${out}',
+                           pool=pool)
         self.generate_rule(name='solink',
                            command='%s -o ${out} -shared %s ${ldflags} ${in} ${extra_ldflags}' % (
                                    ld, ' '.join(ldflags)),
-                           description='SHAREDLINK ${out}')
+                           description='SHAREDLINK ${out}',
+                           pool=pool)
 
     def generate_proto_rules(self):
         proto_config = config.get_section('proto_library_config')
@@ -886,8 +900,7 @@ class NinjaRulesGenerator(RulesGenerator):
                 gcc_version,
                 python_inc,
                 cuda_inc,
-                self.blade.build_environment,
-                self.blade.svn_root_dirs)
+                self.blade)
         rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()
         self.__all_rule_names = ninja_script_header_generator.get_all_rule_names()
