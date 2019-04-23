@@ -45,7 +45,6 @@ class BladeConfig(object):
                 'test_timeout': None,
                 'test_timeout__doc__' : 'In seconds',
                 'native_builder': 'scons',
-                'debug_info_level': 'mid',
             },
 
             'cc_test_config': {
@@ -81,6 +80,7 @@ class BladeConfig(object):
                 'warnings':['-Werror', '-Xlint:all'],
                 'source_encoding': None,
                 'java_home':'',
+                'debug_info_level': 'mid',
                 'debug_info_levels': {
                     'no': ['-g:none'],
                     'low': ['-g:source'],
@@ -161,6 +161,7 @@ class BladeConfig(object):
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
                 'securecc' : None,
+                'debug_info_level': 'mid',
                 'debug_info_levels': {
                     'no': ['-g0'],
                     'low': ['-g1'],
@@ -332,8 +333,6 @@ __DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 def global_config(append=None, **kwargs):
     """global_config section. """
     _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
-    debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
-    _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     _blade_config.update_config('global_config', append, kwargs)
 
 
@@ -352,6 +351,8 @@ def link_config(append=None, **kwargs):
 @config_rule
 def java_config(append=None, **kwargs):
     """java_config. """
+    debug_info_levels = _blade_config.get_section('java_config')['debug_info_levels'].keys()
+    _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     _blade_config.update_config('java_config', append, kwargs)
 
 
@@ -426,11 +427,13 @@ def fbthrift_library_config(append=None, **kwargs):
 
 @config_rule
 def cc_config(append=None, **kwargs):
-    """extra cc config, like extra cpp include path splited by space. """
+    """extra cc config, like extra cpp include path delimited by space. """
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, basestring) and ' ' in extra_incs:
             console.warning('%s: cc_config: extra_incs has been changed to list' %
                     _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()
+    debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
+    _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     _blade_config.update_config('cc_config', append, kwargs)
