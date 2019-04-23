@@ -6,17 +6,16 @@
 ██████╔╝███████╗██║  ██║██████╔╝███████╗
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
-# Blade Build System
-Blade是一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
-
-Blade is an easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
 
 ## Build status
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
 
 ## Click here to read [README](README-en.md) in English.
+Blade is an easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase. It supports building mulitiple programming languages.
 
+# Blade Build System
+Blade是一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
 
 
 # 通知
