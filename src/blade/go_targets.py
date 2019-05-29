@@ -13,8 +13,8 @@ gets totally.
 from __future__ import absolute_import
 
 import os
-import subprocess
 import re
+import subprocess
 
 from blade import build_manager
 from blade import build_rules
@@ -22,7 +22,6 @@ from blade import config
 from blade import console
 from blade.blade_util import var_to_list
 from blade.target import Target
-
 
 _package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
 
@@ -132,7 +131,7 @@ class GoTarget(Target):
         output = self._target_file_path()
         self.ninja_build(output, self.data['go_rule'],
                          implicit_deps=implicit_deps,
-                         variables={'package' : self.data['go_package']})
+                         variables={'package': self.data['go_package']})
         label = self.data.get('go_label')
         if label:
             self._add_target_file(label, output)
@@ -140,6 +139,7 @@ class GoTarget(Target):
 
 class GoLibrary(GoTarget):
     """GoLibrary generates build rules for a go package. """
+
     def __init__(self, name, srcs, deps, kwargs):
         GoTarget.__init__(self, name, 'go_library', srcs, deps, kwargs)
         self.data['go_rule'] = 'gopackage'
@@ -158,14 +158,15 @@ class GoLibrary(GoTarget):
         var_name = self._var_name()
         srcs = [self._source_file_path(s) for s in self.srcs]
         self._write_rule('%s = %s.GoLibrary(target = "%s", source = %s)' % (
-                         var_name, env_name,
-                         self._target_file_path(), srcs))
+            var_name, env_name,
+            self._target_file_path(), srcs))
         self._add_target_var('go', var_name)
         self._generate_go_dependencies()
 
 
 class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable. """
+
     def __init__(self, name, srcs, deps, kwargs):
         GoTarget.__init__(self, name, 'go_binary', srcs, deps, kwargs)
         self.data['go_rule'] = 'gocommand'
@@ -177,14 +178,15 @@ class GoBinary(GoTarget):
         var_name = self._var_name()
         srcs = [self._source_file_path(s) for s in self.srcs]
         self._write_rule('%s = %s.GoBinary(target = "%s", source = %s)' % (
-                         var_name, env_name,
-                         self._target_file_path(), srcs))
+            var_name, env_name,
+            self._target_file_path(), srcs))
         self._add_target_var('bin', var_name)
         self._generate_go_dependencies()
 
 
 class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary. """
+
     def __init__(self, name, srcs, deps, testdata, kwargs):
         GoTarget.__init__(self, name, 'go_test', srcs, deps, kwargs)
         self.data['go_rule'] = 'gotest'
@@ -196,8 +198,8 @@ class GoTest(GoTarget):
         var_name = self._var_name()
         srcs = [self._source_file_path(s) for s in self.srcs]
         self._write_rule('%s = %s.GoTest(target = "%s", source = %s)' % (
-                         var_name, env_name,
-                         self._target_file_path(), srcs))
+            var_name, env_name,
+            self._target_file_path(), srcs))
         self._generate_go_dependencies()
 
 
@@ -206,9 +208,9 @@ def go_library(name,
                deps=[],
                **kwargs):
     build_manager.instance.register_target(GoLibrary(name,
-                                          srcs,
-                                          deps,
-                                          kwargs))
+                                                     srcs,
+                                                     deps,
+                                                     kwargs))
 
 
 def go_binary(name,
@@ -216,9 +218,9 @@ def go_binary(name,
               deps=[],
               **kwargs):
     build_manager.instance.register_target(GoBinary(name,
-                                         srcs,
-                                         deps,
-                                         kwargs))
+                                                    srcs,
+                                                    deps,
+                                                    kwargs))
 
 
 def go_test(name,
@@ -227,10 +229,10 @@ def go_test(name,
             testdata=[],
             **kwargs):
     build_manager.instance.register_target(GoTest(name,
-                                       srcs,
-                                       deps,
-                                       testdata,
-                                       kwargs))
+                                                  srcs,
+                                                  deps,
+                                                  testdata,
+                                                  kwargs))
 
 
 def find_go_srcs(path):

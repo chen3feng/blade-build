@@ -10,13 +10,13 @@ such as bits: 32/64, profile: debug/release.
 
 """
 
-
 # Global target attributes object
 attributes = None
 
 
 class TargetAttributes(object):
     """Build target attributes. """
+
     def __init__(self, options):
         self.options = options
 

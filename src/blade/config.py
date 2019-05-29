@@ -14,14 +14,18 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 import os
 import sys
 
-from blade import console
+from blade import HEAP_CHECK_VALUES
 from blade import build_attributes
-from blade.blade_util import var_to_list
-from blade.cc_targets import HEAP_CHECK_VALUES
-
+from blade import console
+from blade.blade_util import var_to_list, iteritems, exec_
 
 _config_globals = {}
 
@@ -34,16 +38,17 @@ def config_rule(func):
 
 class BladeConfig(object):
     """BladeConfig. A configuration parser class. """
+
     def __init__(self):
         self.current_file_name = ''  # For error reporting
         self.configs = {
-            'global_config' : {
-                '__doc__' : 'Global configuration',
+            'global_config': {
+                '__doc__': 'Global configuration',
                 'build_path_template': 'build${bits}_${profile}',
                 'duplicated_source_action': 'warning',
-                'duplicated_source_action__doc__' : "Can be 'warning', 'error', 'none'",
+                'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
-                'test_timeout__doc__' : 'In seconds',
+                'test_timeout__doc__': 'In seconds',
                 'native_builder': 'scons',
                 'debug_info_level': 'mid',
             },
@@ -60,7 +65,7 @@ class BladeConfig(object):
 
             'cc_binary_config': {
                 'extra_libs': [],
-                'run_lib_paths' : [],
+                'run_lib_paths': [],
             },
 
             'distcc_config': {
@@ -78,9 +83,9 @@ class BladeConfig(object):
                 'target_version': '',
                 'maven': 'mvn',
                 'maven_central': '',
-                'warnings':['-Werror', '-Xlint:all'],
+                'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
-                'java_home':'',
+                'java_home': '',
                 'debug_info_levels': {
                     'no': ['-g:none'],
                     'low': ['-g:source'],
@@ -90,25 +95,25 @@ class BladeConfig(object):
             },
 
             'java_binary_config': {
-                'one_jar_boot_jar' : '',
+                'one_jar_boot_jar': '',
             },
             'java_test_config': {
-                'junit_libs' : [],
-                'jacoco_home' : '',
-                'coverage_reporter' : '',
+                'junit_libs': [],
+                'jacoco_home': '',
+                'coverage_reporter': '',
             },
             'scala_config': {
-                'scala_home' : '',
-                'target_platform' : '',
-                'warnings' : '',
-                'source_encoding' : None,
+                'scala_home': '',
+                'target_platform': '',
+                'warnings': '',
+                'source_encoding': None,
             },
             'scala_test_config': {
-                'scalatest_libs' : '',
+                'scalatest_libs': '',
             },
-            'go_config' : {
-                'go' : '',
-                'go_home' : os.path.expandvars('$HOME/go'),  # GOPATH
+            'go_config': {
+                'go': '',
+                'go_home': os.path.expandvars('$HOME/go'),  # GOPATH
             },
             'thrift_config': {
                 'thrift': 'thrift',
@@ -133,18 +138,18 @@ class BladeConfig(object):
                 'protobuf_java_incs': [],
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
-                'protobuf_java_libs' : [],
+                'protobuf_java_libs': [],
                 'protoc_go_plugin': '',
                 'protoc_go_subplugins': [],
                 # All the generated go source files will be placed
                 # into $GOPATH/src/protobuf_go_path
                 'protobuf_go_path': '',
-                'protobuf_python_libs' : [],
+                'protobuf_python_libs': [],
                 'protoc_direct_dependencies': False,
-                'well_known_protos' : [],
+                'well_known_protos': [],
             },
 
-            'protoc_plugin_config' : {
+            'protoc_plugin_config': {
             },
 
             'cc_config': {
@@ -160,7 +165,7 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
-                'securecc' : None,
+                'securecc': None,
                 'debug_info_levels': {
                     'no': ['-g0'],
                     'low': ['-g1'],
@@ -170,8 +175,8 @@ class BladeConfig(object):
                 'header_inclusion_dependencies': False,
             },
             'cc_library_config': {
-                'prebuilt_libpath_pattern' : 'lib${bits}_${profile}',
-                'generate_dynamic' : None,
+                'prebuilt_libpath_pattern': 'lib${bits}_${profile}',
+                'generate_dynamic': None,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
@@ -186,7 +191,7 @@ class BladeConfig(object):
             self.current_file_name = filename
             if os.path.exists(filename):
                 console.info('loading config file "%s"' % filename)
-                execfile(filename, _config_globals, None)
+                exec_(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
         finally:
@@ -201,13 +206,13 @@ class BladeConfig(object):
             self._replace_config(section_name, section, user_config)
         else:
             console.error('%s: %s: unknown config section name' % (
-                          self.current_file_name, section_name))
+                self.current_file_name, section_name))
 
     def _append_config(self, section_name, section, append):
         """Append config section items"""
         if not isinstance(append, dict):
             console.error('%s: %s: append must be a dict' %
-                    (self.current_file_name, section_name))
+                          (self.current_file_name, section_name))
         else:
             for k in append:
                 if k in section:
@@ -215,11 +220,11 @@ class BladeConfig(object):
                         section[k] += var_to_list(append[k])
                     else:
                         console.warning('%s: %s: config item %s is not a list' %
-                                (self.current_file_name, section_name, k))
+                                        (self.current_file_name, section_name, k))
 
                 else:
                     console.warning('%s: %s: unknown config item name: %s' %
-                            (self.current_file_name, section_name, k))
+                                    (self.current_file_name, section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
@@ -230,7 +235,7 @@ class BladeConfig(object):
                     user_config[k] = var_to_list(user_config[k])
             else:
                 console.warning('%s: %s: unknown config item name: %s' %
-                        (self.current_file_name, section_name, k))
+                                (self.current_file_name, section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:
             del user_config[k]
@@ -242,7 +247,7 @@ class BladeConfig(object):
 
     def dump(self, output_file_name):
         with open(output_file_name, 'w') as f:
-            for name, value in self.configs.iteritems():
+            for name, value in iteritems(self.configs):
                 self._dump_section(name, value, f)
 
     def _dump_section(self, name, values, f):
@@ -309,7 +314,7 @@ def cc_test_config(append=None, **kwargs):
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
         console.error_exit('cc_test_config: heap_check can only be in %s' %
-                HEAP_CHECK_VALUES)
+                           HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -392,7 +397,7 @@ def proto_library_config(append=None, **kwargs):
     if path:
         console.warning(('%s: proto_library_config: protobuf_include_path has '
                          'been renamed to protobuf_incs, and become a list') %
-                         _blade_config.current_file_name)
+                        _blade_config.current_file_name)
         del kwargs['protobuf_include_path']
         if isinstance(path, basestring) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()
@@ -431,6 +436,6 @@ def cc_config(append=None, **kwargs):
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, basestring) and ' ' in extra_incs:
             console.warning('%s: cc_config: extra_incs has been changed to list' %
-                    _blade_config.current_file_name)
+                            _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()
     _blade_config.update_config('cc_config', append, kwargs)

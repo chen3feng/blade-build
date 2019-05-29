@@ -11,13 +11,15 @@ from maven repository
 
 """
 
+from __future__ import absolute_import
+
 import os
 import shutil
 import subprocess
 import time
 
-import config
-import console
+from blade import config
+from blade import console
 
 
 def is_valid_id(id):
@@ -35,6 +37,7 @@ class MavenArtifact(object):
     MavenArtifact represents a jar artifact and its transitive dependencies
     separated by colon in maven cache.
     """
+
     def __init__(self, path):
         self.path = path
         self.deps = None
@@ -44,6 +47,7 @@ class MavenCache(object):
     """MavenCache. Manages maven jar files. """
 
     __instance = None
+
     @staticmethod
     def instance(log_dir):
         if not MavenCache.__instance:
@@ -110,7 +114,7 @@ class MavenCache(object):
         target_path = self._generate_jar_path(id)
         target_log = os.path.join(target_path, log)
         if (os.path.isfile(os.path.join(target_path, jar)) and
-            os.path.isfile(os.path.join(target_path, pom))):
+                os.path.isfile(os.path.join(target_path, pom))):
             if not version.endswith('-SNAPSHOT'):
                 return True
             if os.path.isfile(target_log) and not self._is_log_expired(target_log):
@@ -129,7 +133,7 @@ class MavenCache(object):
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True):
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for more details.' % (
-                            id, log_path))
+                                id, log_path))
             cmd += ' -Dtransitive=false'
             if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'),
                                shell=True):

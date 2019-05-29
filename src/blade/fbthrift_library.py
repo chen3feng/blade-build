@@ -25,7 +25,6 @@ from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
-
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 from blade.thrift_helper import FBThriftHelper
@@ -33,6 +32,7 @@ from blade.thrift_helper import FBThriftHelper
 
 class FBThriftLibrary(CcTarget):
     """A fbthrift library target derived from CcTarget. """
+
     def __init__(self,
                  name,
                  srcs,
@@ -68,7 +68,7 @@ class FBThriftLibrary(CcTarget):
         self.fbthrift_helpers = {}
         for src in srcs:
             self.fbthrift_helpers[src] = FBThriftHelper(
-                    os.path.join(self.path, src))
+                os.path.join(self.path, src))
 
     def _check_thrift_srcs_name(self, srcs):
         """Checks whether the thrift file's name ends with 'thrift'. """
@@ -129,21 +129,21 @@ class FBThriftLibrary(CcTarget):
             thrift_cpp2_src_files = [f for f in thrift_cpp2_files if f.endswith('.cpp')]
 
             self._write_rule('%s.FBThrift1(%s, "%s")' % (
-                    env_name,
-                    str(thrift_cpp_files),
-                    os.path.join(self.path, src)))
+                env_name,
+                str(thrift_cpp_files),
+                os.path.join(self.path, src)))
 
             self._write_rule('%s.FBThrift2(%s, "%s")' % (
-                    env_name,
-                    str(thrift_cpp2_files),
-                    os.path.join(self.path, src)))
+                env_name,
+                str(thrift_cpp2_files),
+                os.path.join(self.path, src)))
 
             self._cc_objects_scons_rules(thrift_cpp_src_files, obj_names, sources)
             self._cc_objects_scons_rules(thrift_cpp2_src_files, obj_names, sources)
 
         self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
         self._write_rule('%s.Depends(%s, %s)' % (
-                         env_name, self._objs_name(), sources))
+            env_name, self._objs_name(), sources))
 
         self._cc_library()
 

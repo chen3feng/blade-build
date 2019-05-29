@@ -12,12 +12,12 @@ from __future__ import absolute_import
 import os
 import re
 
-from blade import console
-from blade import config
 from blade import build_manager
 from blade import build_rules
+from blade import config
+from blade import console
 from blade import java_targets
-from blade.blade_util import var_to_list
+from blade.blade_util import var_to_list, iteritems
 from blade.cc_targets import CcTarget
 
 
@@ -41,11 +41,11 @@ class ProtocPlugin(object):
         self.path = path
         assert isinstance(code_generation, dict)
         self.code_generation = {}
-        for language, v in code_generation.iteritems():
+        for language, v in iteritems(code_generation):
             if language not in self.__languages:
                 console.error_exit('%s: Language %s is invalid. '
                                    'Protoc plugins in %s are supported by blade currently.' % (
-                                   name, language, ', '.join(self.__languages)))
+                                       name, language, ', '.join(self.__languages)))
             self.code_generation[language] = {}
             # Note that each plugin dep should be in the global target format
             # since protoc plugin is defined in the global scope
@@ -60,7 +60,7 @@ class ProtocPlugin(object):
 
     def protoc_plugin_flag(self, out):
         return '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
-               self.name, self.path, self.name, out)
+            self.name, self.path, self.name, out)
 
 
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
@@ -69,6 +69,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     This class is derived from SconsCcTarget.
 
     """
+
     def __init__(self,
                  name,
                  srcs,
@@ -121,7 +122,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             if plugin not in protoc_plugin_config:
                 console.error_exit('%s: Unknown plugin %s' % (self.fullname, plugin))
             p = protoc_plugin_config[plugin]
-            for language, v in p.code_generation.iteritems():
+            for language, v in iteritems(p.code_generation):
                 for key in v['deps']:
                     if key not in self.deps:
                         self.deps.append(key)
@@ -170,8 +171,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             dep = self.target_database[dkey]
             if dep.type != 'proto_library' and dep.type != 'gen_rule':
                 console.error_exit('%s: Invalid dep %s. Proto_library can '
-                    'only depend on proto_library or gen_rule.' %
-                    (self.fullname, dep.fullname))
+                                   'only depend on proto_library or gen_rule.' %
+                                   (self.fullname, dep.fullname))
 
     def _prepare_to_generate_rule(self):
         CcTarget._prepare_to_generate_rule(self)
@@ -233,7 +234,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         else:
             console.error_exit('%s: "go_package" is mandatory to generate golang code '
                                'in protocol buffers but is missing in %s.' % (
-                               self.fullname, path))
+                                   self.fullname, path))
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
@@ -247,9 +248,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_java_gen_file(self, src):
         """Generate the java files name of the proto library. """
-        f = open(self._source_file_path(src))
-        content = f.read()
-        f.close()
+        with open(self._source_file_path(src)) as f:
+            content = f.read()
         package_dir = self._get_java_package_name(content).replace('.', '/')
         class_name = self._proto_java_gen_class_name(src, content)
         java_name = '%s.java' % class_name
@@ -264,16 +264,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             src_path = os.path.join(self.path, src)
             package_dir, java_name = self._proto_java_gen_file(src)
             proto_java_src = self._target_file_path(
-                    os.path.join(os.path.dirname(src), package_dir, java_name))
+                os.path.join(os.path.dirname(src), package_dir, java_name))
             java_srcs.append(proto_java_src)
             java_src_var = self._var_name_of(proto_java_src)
             self._write_rule('%s = %s.ProtoJava("%s", "%s")' % (
-                    java_src_var, env_name, proto_java_src, src_path))
+                java_src_var, env_name, proto_java_src, src_path))
             java_src_vars.append(java_src_var)
             self.data['java_sources'] = (
-                    proto_java_src,
-                    os.path.join(self.build_path, self.path),
-                    self.name)
+                proto_java_src,
+                os.path.join(self.build_path, self.path),
+                self.name)
             self.data['java_sources_explict_dependency'].append(proto_java_src)
 
         self._generate_java_versions()
@@ -291,9 +291,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             src_path = os.path.join(self.path, src)
             proto_php_src = self._proto_gen_php_file(src)
             self._write_rule('%s.ProtoPhp(["%s"], "%s")' % (
-                    self._env_name(),
-                    proto_php_src,
-                    src_path))
+                self._env_name(),
+                proto_php_src,
+                src_path))
 
     def _proto_python_rules(self):
         """Generate python files. """
@@ -303,10 +303,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             proto_python_src = self._proto_gen_python_file(src)
             py_src_var = self._var_name_of(src, 'python')
             self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
-                    py_src_var,
-                    env_name,
-                    proto_python_src,
-                    src_path))
+                py_src_var,
+                env_name,
+                proto_python_src,
+                src_path))
             self.data['python_vars'].append(py_src_var)
             self.data['python_sources'].append(proto_python_src)
         py_lib_var = self._var_name('python')
@@ -333,7 +333,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             go_src = self._proto_gen_go_file(src)
             go_src_var = self._var_name_of(src, 'go_src')
             self._write_rule('%s = %s.ProtoGo("%s", "%s")' % (
-                             go_src_var, env_name, go_src, proto_src))
+                go_src_var, env_name, go_src, proto_src))
             # Copy the generated go sources to $GOPATH
             # according to the standard go directory layout
             proto_dir = os.path.dirname(src)
@@ -343,7 +343,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                                   os.path.basename(go_src))
             go_dst_var = self._var_name_of(src, 'go_dst')
             self._write_rule('%s = %s.ProtoGoSource("%s", %s)' % (
-                             go_dst_var, env_name, go_dst, go_src_var))
+                go_dst_var, env_name, go_dst, go_src_var))
             self._write_rule('%s.append(%s)' % (var_name, go_dst_var))
         self._add_target_var('go', var_name)
 
@@ -352,7 +352,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         proto_srcs = [os.path.join(self.path, src) for src in self.srcs]
         proto_descriptor_file = self._proto_gen_descriptor_file(self.name)
         self._write_rule('%s.ProtoDescriptors("%s", %s)' % (
-                self._env_name(), proto_descriptor_file, proto_srcs))
+            self._env_name(), proto_descriptor_file, proto_srcs))
 
     def _protoc_plugin_rules(self):
         """Generate scons rules for each protoc plugin. """
@@ -362,8 +362,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             p = protoc_plugin_config[plugin]
             for language in p.code_generation:
                 self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
-                                 env_name, language.upper(),
-                                 p.protoc_plugin_flag(self.build_path)))
+                    env_name, language.upper(),
+                    p.protoc_plugin_flag(self.build_path)))
 
     def protoc_plugin_flags(self):
         protoc_plugin_config = config.get_section('protoc_plugin_config')
@@ -387,7 +387,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             dependencies += config.get_item('proto_library_config', 'well_known_protos')
             env_name = self._env_name()
             self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
-                             env_name, ':'.join(dependencies)))
+                env_name, ':'.join(dependencies)))
 
     def scons_rules(self):
         """scons_rules.
@@ -406,20 +406,20 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._protoc_plugin_rules()
 
         if (getattr(options, 'generate_java', False) or
-            self.data.get('generate_java') or
-            self.data.get('generate_scala')):
+                self.data.get('generate_java') or
+                self.data.get('generate_scala')):
             self._proto_java_rules()
 
         if (getattr(options, 'generate_php', False) or
-            self.data.get('generate_php')):
+                self.data.get('generate_php')):
             self._proto_php_rules()
 
         if (getattr(options, 'generate_python', False) or
-            self.data.get('generate_python')):
+                self.data.get('generate_python')):
             self._proto_python_rules()
 
         if (getattr(options, 'generate_go', False) or
-            self.data.get('generate_go')):
+                self.data.get('generate_go')):
             self._proto_go_rules()
 
         if self.data['generate_descriptors']:
@@ -433,7 +433,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             (proto_src, proto_hdr) = self._proto_gen_files(src)
 
             self._write_rule('%s.Proto(["%s", "%s"], "%s")' % (
-                    env_name, proto_src, proto_hdr, os.path.join(self.path, src)))
+                env_name, proto_src, proto_hdr, os.path.join(self.path, src)))
             obj_name = "obj_%s" % self._var_name_of(src)
             objs.append(obj_name)
             self._write_rule(
@@ -461,7 +461,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
         self.ninja_build(output, 'protodescriptors', inputs=inputs,
-                         variables={'first' : inputs[0]})
+                         variables={'first': inputs[0]})
 
     def ninja_protoc_plugin_vars(self, flags, language):
         if language in flags:
@@ -501,7 +501,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path() + '.pylib'
         self.ninja_build(pylib, 'pythonlibrary', inputs=generated_pys,
-                         variables={'pythonbasedir' : self.build_path})
+                         variables={'pythonbasedir': self.build_path})
         self._add_target_file('pylib', pylib)
 
     def ninja_proto_go_rules(self, plugin_flags):
@@ -523,16 +523,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_proto_rules(self, options, plugin_flags):
         """Generate ninja rules for other languages if needed. """
         if (getattr(options, 'generate_java', False) or
-            self.data.get('generate_java') or
-            self.data.get('generate_scala')):
+                self.data.get('generate_java') or
+                self.data.get('generate_scala')):
             self.ninja_proto_java_rules(plugin_flags)
 
         if (getattr(options, 'generate_python', False) or
-            self.data.get('generate_python')):
+                self.data.get('generate_python')):
             self.ninja_proto_python_rules(plugin_flags)
 
         if (getattr(options, 'generate_go', False) or
-            self.data.get('generate_go')):
+                self.data.get('generate_go')):
             self.ninja_proto_go_rules(plugin_flags)
 
         if self.data['generate_descriptors']:

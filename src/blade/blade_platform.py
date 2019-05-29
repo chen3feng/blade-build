@@ -9,14 +9,15 @@
  This is the blade_platform module which deals with the environment
  variable.
 """
-
+from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import subprocess
 
-import config
-import console
-from blade_util import var_to_list
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list, iteritems
 
 
 class BuildArchitecture(object):
@@ -26,41 +27,41 @@ class BuildArchitecture(object):
     command line.
     """
     _build_architecture = {
-        'i386' : {
-            'alias' : ['x86'],
-            'bits' : '32',
+        'i386': {
+            'alias': ['x86'],
+            'bits': '32',
         },
-        'x86_64' : {
-            'alias' : ['amd64'],
-            'bits' : '64',
-            'models' : {
-                '32' : 'i386',
+        'x86_64': {
+            'alias': ['amd64'],
+            'bits': '64',
+            'models': {
+                '32': 'i386',
             }
         },
-        'arm' : {
-            'alias' : [],
-            'bits' : '32'
+        'arm': {
+            'alias': [],
+            'bits': '32'
         },
-        'aarch64' : {
-            'alias' : ['arm64'],
-            'bits' : '64',
+        'aarch64': {
+            'alias': ['arm64'],
+            'bits': '64',
         },
-        'ppc' : {
-            'alias' : ['powerpc'],
-            'bits' : '32',
+        'ppc': {
+            'alias': ['powerpc'],
+            'bits': '32',
         },
-        'ppc64' : {
-            'alias' : ['powerpc64'],
-            'bits' : '64',
-            'models' : {
-                '32' : 'ppc',
+        'ppc64': {
+            'alias': ['powerpc64'],
+            'bits': '64',
+            'models': {
+                '32': 'ppc',
             }
         },
-        'ppc64le' : {
-            'alias' : ['powerpc64le'],
-            'bits' : '64',
-            'models' : {
-                '32' : 'ppcle',
+        'ppc64le': {
+            'alias': ['powerpc64le'],
+            'bits': '64',
+            'models': {
+                '32': 'ppcle',
             }
         },
     }
@@ -69,7 +70,7 @@ class BuildArchitecture(object):
     def get_canonical_architecture(arch):
         """Get the canonical architecture from the specified arch. """
         canonical_arch = None
-        for k, v in BuildArchitecture._build_architecture.iteritems():
+        for k, v in iteritems(BuildArchitecture._build_architecture):
             if arch == k or arch in v['alias']:
                 canonical_arch = k
                 break
@@ -103,6 +104,7 @@ class BuildArchitecture(object):
 
 class BuildPlatform(object):
     """The build platform class which handles and gets the platform info. """
+
     def __init__(self):
         """Init. """
         self.gcc_version = self._get_gcc_version()
@@ -172,7 +174,7 @@ class BuildPlatform(object):
             include_list.append('%s/include/linux' % java_home)
             return include_list
         returncode, stdout, stderr = BuildPlatform._execute(
-                'java -version', redirect_stderr_to_stdout=True)
+            'java -version', redirect_stderr_to_stdout=True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
             version = version_line.split()[2]
@@ -244,6 +246,7 @@ class CcFlagsManager(object):
     """The CcFlagsManager class.
     This class manages the compile warning flags.
     """
+
     def __init__(self, options, build_dir, gcc_version):
         self.cc = ''
         self.options = options
@@ -261,7 +264,7 @@ class CcFlagsManager(object):
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
                    '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                   self.cc, obj, language, flag, obj))
+                       self.cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
@@ -299,10 +302,10 @@ class CcFlagsManager(object):
             flags_except_warning.append('-DNDEBUG')
 
         flags_except_warning += [
-                '-D_FILE_OFFSET_BITS=64',
-                '-D__STDC_CONSTANT_MACROS',
-                '-D__STDC_FORMAT_MACROS',
-                '-D__STDC_LIMIT_MACROS',
+            '-D_FILE_OFFSET_BITS=64',
+            '-D__STDC_CONSTANT_MACROS',
+            '-D__STDC_FORMAT_MACROS',
+            '-D__STDC_LIMIT_MACROS',
         ]
 
         if getattr(self.options, 'gprof', False):
@@ -320,7 +323,7 @@ class CcFlagsManager(object):
                               '-Wl,--no-whole-archive']
 
         flags_except_warning = self._filter_out_invalid_flags(
-                flags_except_warning)
+            flags_except_warning)
 
         return (flags_except_warning, linkflags)
 

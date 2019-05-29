@@ -11,13 +11,14 @@
 
 """
 
+from __future__ import absolute_import
 
 import os
 import string
 
-import config
-import console
-from blade_util import var_to_list
+from blade import config
+from blade import console
+from blade.blade_util import var_to_list, iteritems
 
 
 def _normalize_one(target, working_dir):
@@ -62,6 +63,7 @@ class Target(object):
     targets, etc.
 
     """
+
     def __init__(self,
                  name,
                  target_type,
@@ -111,12 +113,12 @@ class Target(object):
     def dump(self):
         """Dump to a dict"""
         target = {
-            'type' : self.type,
-            'path' : self.path,
-            'name' : self.name,
-            'srcs' : self.srcs,
-            'deps' : self.deps,
-            'visibility' : self.visibility,
+            'type': self.type,
+            'path': self.path,
+            'name': self.name,
+            'srcs': self.srcs,
+            'deps': self.deps,
+            'visibility': self.visibility,
         }
         target.update(self.data)
         return target
@@ -137,7 +139,7 @@ class Target(object):
     def _check_kwargs(self, kwargs):
         if kwargs:
             console.error_exit('//%s: unrecognized options %s' % (
-                               self.fullname, kwargs))
+                self.fullname, kwargs))
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets. """
@@ -161,15 +163,15 @@ class Target(object):
                 srcset.add(s)
         if dups:
             console.error_exit('%s Duplicate source file paths: %s ' % (
-                               self.fullname, dups))
+                self.fullname, dups))
 
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
                 console.error_exit('%s Invalid source file path: %s. '
-                    'can only be relative path, and must in current directory '
-                    'or subdirectories.' % (self.fullname, s))
+                                   'can only be relative path, and must in current directory '
+                                   'or subdirectories.' % (self.fullname, s))
 
             src = os.path.normpath(os.path.join(self.path, s))
             target = self.fullname, self._allow_duplicate_source()
@@ -186,7 +188,7 @@ class Target(object):
                         pass
                     else:
                         message = 'Source file %s belongs to {%s, %s}' % (
-                                  s, target_existed[0], target[0])
+                            s, target_existed[0], target[0])
                         if action == 'error':
                             console.error_exit(message)
                         elif action == 'warning':
@@ -256,7 +258,6 @@ class Target(object):
                 self.deps.append(key)
             return key, type
 
-
     def _unify_dep(self, dep):
         """Unify dep to key"""
         if dep[0] == ':':
@@ -265,7 +266,7 @@ class Target(object):
         elif dep.startswith('//'):
             # Depend on library in remote directory
             if not ':' in dep:
-                raise Exception, 'Wrong format in %s' % self.fullname
+                raise Exception('Wrong format in %s' % self.fullname)
             (path, lib) = dep[2:].rsplit(':', 1)
             dkey = (os.path.normpath(path), lib)
         elif dep.startswith('#'):
@@ -276,12 +277,12 @@ class Target(object):
         else:
             # Depend on library in relative subdirectory
             if not ':' in dep:
-                raise Exception, 'Wrong format in %s' % self.fullname
+                raise Exception('Wrong format in %s' % self.fullname)
             (path, lib) = dep.rsplit(':', 1)
             if '..' in path:
-                raise Exception, "Don't use '..' in path"
+                raise Exception("Don't use '..' in path")
             dkey = (os.path.normpath('%s/%s' % (
-                                      self.path, path)), lib)
+                self.path, path)), lib)
 
         return dkey
 
@@ -639,7 +640,7 @@ class Target(object):
 
         """
         results = set()
-        for _, v in self.data['targets'].iteritems():
+        for _, v in iteritems(self.data['targets']):
             if isinstance(v, list):
                 results.update(v)
             else:
@@ -697,7 +698,7 @@ class Target(object):
 
         if variables:
             assert isinstance(variables, dict)
-            for name, v in variables.iteritems():
+            for name, v in iteritems(variables):
                 if v:
                     self._write_rule('  %s = %s' % (name, v))
                 else:

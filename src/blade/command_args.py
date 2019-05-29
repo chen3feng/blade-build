@@ -34,6 +34,7 @@ class CmdArguments(object):
     blade {command} [options] targets
 
     """
+
     def __init__(self):
         """Init the class. """
         self.options, others = self._cmd_parse()
@@ -61,8 +62,8 @@ class CmdArguments(object):
             'clean': self._check_clean_command,
             'dump': self._check_dump_command,
             'query': self._check_query_command,
-            'run':   self._check_run_command,
-            'test':  self._check_test_command,
+            'run': self._check_run_command,
+            'test': self._check_test_command,
         }
         actions[command]()
 
@@ -281,8 +282,10 @@ class CmdArguments(object):
 
         class OutputDotFileAction(Action):
             """Custom action to set both output format and file"""
+
             def __init__(self, **kwargs):
                 super(OutputDotFileAction, self).__init__(**kwargs)
+
             def __call__(self, parser, namespace, argument_values, option_string):
                 namespace.output_format = 'dot'
                 namespace.output_file = argument_values
@@ -296,7 +299,6 @@ class CmdArguments(object):
         parser.add_argument(
             '--depended', dest='dependents', action='store_true',
             help='DEPRECATED, please use --dependents')
-
 
     def _add_clean_arguments(self, parser):
         """Add clean arguments for parser. """
@@ -404,6 +406,8 @@ class CmdArguments(object):
         sub_parser = arg_parser.add_subparsers(
             dest='command',
             help='Available subcommands')
+
+        sub_parser.required = True
 
         build_parser = sub_parser.add_parser(
             'build',

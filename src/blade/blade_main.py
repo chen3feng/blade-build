@@ -71,7 +71,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import cProfile
-import datetime
 import errno
 import json
 import os
@@ -89,16 +88,13 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import target
-
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
-from blade.blade_util import get_cwd
+from blade.blade_util import get_cwd, iteritems
 from blade.blade_util import lock_file, unlock_file
 from blade.command_args import CmdArguments
 
-
 # Run target
 _TARGETS = None
-
 
 _BLADE_ROOT_DIR = None
 _WORKING_DIR = None
@@ -148,7 +144,7 @@ def split_targets_into_scm_root(targets, working_dir):
 def _get_changed_files(targets, blade_root_dir, working_dir):
     scm_root_dirs = split_targets_into_scm_root(targets, working_dir)
     changed_files = set()
-    for scm_root, (scm, dirs) in scm_root_dirs.iteritems():
+    for scm_root, (scm, dirs) in iteritems(scm_root_dirs):
         try:
             os.chdir(scm_root)
             if scm == 'svn':
@@ -189,7 +185,7 @@ def _check_code_style(targets):
             else:
                 msg = 'Please fixing style warnings before submitting the code!'
             console.warning(msg)
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         console.error(str(e))
         return 1
     return 0
@@ -287,9 +283,9 @@ def _ninja_build(options):
     cmd = ['ninja']
     cmd += native_builder_options(options)
     # if options.jobs:
-        # Unlike scons, ninja enable parallel building defaultly,
-        # so only set it when user specified it explicitly.
-        # cmd.append('-j%s' % options.jobs)
+    # Unlike scons, ninja enable parallel building defaultly,
+    # so only set it when user specified it explicitly.
+    # cmd.append('-j%s' % options.jobs)
     cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
@@ -458,8 +454,8 @@ def generate_scm(build_dir):
     path = os.path.join(build_dir, 'scm.json')
     with open(path, 'w') as f:
         json.dump({
-            'revision' : revision,
-            'url' : url,
+            'revision': revision,
+            'url': url,
         }, f)
 
 
@@ -543,7 +539,7 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
     console.output('Binary profile file `%s` is also generated, '
                    'you can use `gprof2dot` or `vprof` to convert it to graph, eg:' % pstats_file)
     console.output('  gprof2dot.py -f pstats --color-nodes-by-selftime %s'
-                 ' | dot -T pdf -o blade.pdf' % pstats_file)
+                   ' | dot -T pdf -o blade.pdf' % pstats_file)
     return exit_code[0]
 
 
