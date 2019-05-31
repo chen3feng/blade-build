@@ -18,7 +18,6 @@ from __future__ import print_function
 
 import os
 import subprocess
-import sys
 import time
 from collections import namedtuple
 
@@ -29,8 +28,6 @@ from blade.blade_util import md5sum
 from blade.test_scheduler import TestScheduler
 
 # Used by eval when loading test history
-
-
 _TEST_HISTORY_FILE = '.blade.test.stamp'
 _TEST_EXPIRE_TIME = 86400  # 1 day
 
@@ -295,14 +292,18 @@ class TestRunner(binary_runner.BinaryRunner):
 
         coverage_data = self._get_java_coverage_data()
         if coverage_data:
-            cmd = ['java -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
-                coverage_reporter, jacoco_libs)]
+            java = 'java'
+            java_home = config.get_item('java_config', 'java_home')
+            if java_home:
+                java = os.path.join(java_home, 'bin', 'java')
+            cmd = ['%s -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
+                java, coverage_reporter, jacoco_libs)]
             cmd.append(report_dir)
             for data in coverage_data:
                 cmd.append(','.join(data))
             cmd_str = ' '.join(cmd)
             console.info('Generating java coverage report')
-            console.info(cmd_str)
+            console.debug(cmd_str)
             if subprocess.call(cmd_str, shell=True):
                 console.warning('Failed to generate java coverage report')
 
@@ -348,7 +349,6 @@ class TestRunner(binary_runner.BinaryRunner):
     def _show_tests_summary(self, passed_run_results, failed_run_results):
         """Show tests summary. """
         self._show_banner('Testing Summary')
-
         console.info('%d tests scheduled to run by scheduler.' % (len(self.test_jobs)))
         if self.skipped_tests:
             console.info('%d tests skipped when doing incremental test.' %
@@ -409,7 +409,7 @@ class TestRunner(binary_runner.BinaryRunner):
             tests_run_list.append((target, self._runfiles_dir(target), test_env, cmd))
 
         console.notice('%d tests to run' % len(tests_run_list))
-        sys.stdout.flush()
+        console.flush()
         scheduler = TestScheduler(tests_run_list, self.options.test_jobs)
         try:
             scheduler.schedule_jobs()
