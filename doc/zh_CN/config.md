@@ -28,9 +28,9 @@ global_config(
 ```python
 cc_config(
     extra_incs = ['thirdparty'],  # 额外的 -I，比如 thirdparty
-    cppflags': [],   # C/C++公用编译选项
-    cflags': [],     # C专用编译选项
-    cxxflags': [],   # C++专用编译选项
+    cppflags = [],   # C/C++公用编译选项
+    cflags = [],     # C专用编译选项
+    cxxflags = [],   # C++专用编译选项
     linkflags = [],  # 库，可执行文件，测试公用的链接选项，比如库搜索路径等
     warnings = ['-Wall', '-Wextra'...], # C/C++公用警告
     c_warnings = ['-Wall', '-Wextra'...], # C专用警告
