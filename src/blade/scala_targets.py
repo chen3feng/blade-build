@@ -200,10 +200,10 @@ class ScalaFatLibrary(ScalaTarget):
 class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 testdata, kwargs):
+    def __init__(self, name, srcs, deps, resources, source_encoding,
+                 warnings, exclusions, testdata, kwargs):
         ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
-                                 warnings, [], kwargs)
+                                 warnings, exclusions, kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
@@ -286,6 +286,7 @@ def scala_test(name,
                resources=[],
                source_encoding=None,
                warnings=None,
+               exclusions=[],
                testdata=[],
                **kwargs):
     """Define scala_test target. """
@@ -295,6 +296,7 @@ def scala_test(name,
                        resources,
                        source_encoding,
                        warnings,
+                       exclusions,
                        testdata,
                        kwargs)
     build_manager.instance.register_target(target)
