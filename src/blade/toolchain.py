@@ -134,7 +134,7 @@ def generate_securecc_object_entry(args):
 
 def generate_resource_index(targets, sources, name, path):
     header, source = targets
-    with open(header, 'w') as h, open('w', source) as c:
+    with open(header, 'w') as h, open(source, 'w') as c:
         full_name = blade_util.regular_variable_name(os.path.join(path, name))
         guard_name = 'BLADE_RESOURCE_%s_H_' % full_name.upper()
         index_name = 'RESOURCE_INDEX_%s' % full_name
