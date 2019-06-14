@@ -453,17 +453,16 @@ def _generate_java_binary(target_name, onejar_path, jvm_flags, run_args):
     onejar_name = os.path.basename(onejar_path)
     full_path = os.path.abspath(onejar_path)
     target_file = open(target_name, 'w')
-    target_file.write(
-        """#!/bin/sh
-        # Auto generated wrapper shell script by blade
-        
-        jar=`dirname "$0"`/"%s"
-        if [ ! -f "$jar" ]; then
-          jar="%s"
-        fi
-        
-        exec java %s -jar "$jar" %s $@
-        """ % (onejar_name, full_path, jvm_flags, run_args))
+    target_file.write("""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+jar=`dirname "$0"`/"%s"
+if [ ! -f "$jar" ]; then
+  jar="%s"
+fi
+
+exec java %s -jar "$jar" %s $@
+""" % (onejar_name, full_path, jvm_flags, run_args))
     os.chmod(target_name, 0o755)
     target_file.close()
 
@@ -513,18 +512,17 @@ def _generate_java_test_coverage_flag(env):
 
 def _generate_java_test(target, main_class, jars, jvm_flags, run_args, env):
     target_file = open(target, 'w')
-    target_file.write(
-        """#!/bin/sh
-        # Auto generated wrapper shell script by blade
-        
-        if [ -n "$BLADE_COVERAGE" ]
-        then
-          coverage_options="%s"
-        fi
-        
-        exec java $coverage_options -classpath %s %s %s %s $@
-        """ % (_generate_java_test_coverage_flag(env), ':'.join(jars),
-               jvm_flags, main_class, run_args))
+    target_file.write("""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+if [ -n "$BLADE_COVERAGE" ]
+then
+  coverage_options="%s"
+fi
+
+exec java $coverage_options -classpath %s %s %s %s $@
+""" % (_generate_java_test_coverage_flag(env), ':'.join(jars),
+       jvm_flags, main_class, run_args))
     os.chmod(target, 0o755)
     target_file.close()
 
@@ -597,13 +595,12 @@ def _generate_scala_test(target, jars, test_class_names, env):
     scala, java = os.path.abspath(scala), os.path.abspath(java)
     run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
     script = open(target, 'w')
-    script.write(
-        """#!/bin/sh
-        # Auto generated wrapper shell script by blade
-        
-        JAVACMD=%s exec %s -classpath %s %s $@
-        
-        """ % (java, scala, ':'.join(jars), run_args))
+    script.write("""#!/bin/sh
+# Auto generated wrapper shell script by blade
+
+JAVACMD=%s exec %s -classpath %s %s $@
+
+""" % (java, scala, ':'.join(jars), run_args))
     script.close()
     os.chmod(target, 0o755)
 
