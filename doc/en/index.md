@@ -23,7 +23,7 @@ Blade user manual
 
 [Configuration file](config.md)
 
-[Auxiliary Command](aux.md)
+[Auxiliary Command](misc.md)
 
 [Development Documentation](develop.md)
 
