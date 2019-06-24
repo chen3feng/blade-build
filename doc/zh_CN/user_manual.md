@@ -23,7 +23,7 @@ Blade用户手册
 
 [配置文件](config.md)
 
-[辅助命令](aux.md)
+[辅助命令](misc.md)
 
 [开发文档](develop.md)
 
