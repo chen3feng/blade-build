@@ -212,9 +212,12 @@ Usually each source file should belong to only one target. If a source file is u
 Edit the configuration file and add:
 ```
 cc_config(
-    cxxflags='gnu++0x'
+    cxxflags='-std=gnu++11'
 )
 ```
+See [GCC Online Documents](https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html) to see other values。Some version of GCC was released before C++11 stdndard，maybe you should use ”gnu++0x“ to instead。
+
+For higher version GCC，such as GCC 6, C++14 is already the default std value, this configuration item maybe become unnecessnary.
 
 ## Compiled results take up too much disk space
 Projects built with Blades are often relatively large-scale projects, so the results after construction often take up more space. If you have problems in this area, you can try to optimize them in the following way.
