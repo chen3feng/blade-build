@@ -37,12 +37,10 @@ class GoTarget(Target):
                  type,
                  srcs,
                  deps,
-                 extra_goflags,
                  kwargs):
         """Init the go target. """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
-        extra_goflags = ' '.join(var_to_list(extra_goflags))
 
         Target.__init__(self,
                         name,
@@ -55,7 +53,6 @@ class GoTarget(Target):
 
         self._set_go_package()
         self._init_go_environment()
-        self.data['extra_goflags'] = extra_goflags
 
     def _set_go_package(self):
         """
@@ -262,8 +259,7 @@ def extract_go_package(path):
 
 def go_package(name,
                deps=[],
-               testdata=[],
-               extra_goflags = None):
+               testdata=[]):
     path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
@@ -276,15 +272,14 @@ def go_package(name,
                 main = True
                 break
         if main:
-            go_binary(name=name, srcs=srcs, deps=deps, extra_goflags=extra_goflags)
+            go_binary(name=name, srcs=srcs, deps=deps)
         else:
-            go_library(name=name, srcs=srcs, deps=deps, extra_goflags=extra_goflags)
+            go_library(name=name, srcs=srcs, deps=deps)
     if tests:
         go_test(name='%s_test' % name,
                 srcs=tests,
                 deps=deps,
-                testdata=testdata,
-                extra_goflags=extra_goflags)
+                testdata=testdata)
 
 
 build_rules.register_function(go_library)
