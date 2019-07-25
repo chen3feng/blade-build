@@ -132,9 +132,12 @@ class GoTarget(Target):
     def ninja_rules(self):
         implicit_deps = self.ninja_go_dependencies()
         output = self._target_file_path()
+        variables = {'package': self.data['go_package']}
+        if self.data['extra_goflags']:
+            variables['extra_goflags'] = self.data['extra_goflags']
         self.ninja_build(output, self.data['go_rule'],
                          implicit_deps=implicit_deps,
-                         variables={'package': self.data['go_package']})
+                         variables=variables)
         label = self.data.get('go_label')
         if label:
             self._add_target_file(label, output)
@@ -143,8 +146,8 @@ class GoTarget(Target):
 class GoLibrary(GoTarget):
     """GoLibrary generates build rules for a go package. """
 
-    def __init__(self, name, srcs, deps, kwargs):
-        GoTarget.__init__(self, name, 'go_library', srcs, deps, kwargs)
+    def __init__(self, name, srcs, deps, extra_goflags, kwargs):
+        GoTarget.__init__(self, name, 'go_library', srcs, deps, extra_goflags, kwargs)
         self.data['go_rule'] = 'gopackage'
         self.data['go_label'] = 'gopkg'
 
@@ -170,8 +173,8 @@ class GoLibrary(GoTarget):
 class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable. """
 
-    def __init__(self, name, srcs, deps, kwargs):
-        GoTarget.__init__(self, name, 'go_binary', srcs, deps, kwargs)
+    def __init__(self, name, srcs, deps, extra_goflags, kwargs):
+        GoTarget.__init__(self, name, 'go_binary', srcs, deps, extra_goflags, kwargs)
         self.data['go_rule'] = 'gocommand'
         self.data['go_label'] = 'bin'
 
@@ -190,8 +193,8 @@ class GoBinary(GoTarget):
 class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary. """
 
-    def __init__(self, name, srcs, deps, testdata, kwargs):
-        GoTarget.__init__(self, name, 'go_test', srcs, deps, kwargs)
+    def __init__(self, name, srcs, deps, testdata, extra_goflags, kwargs):
+        GoTarget.__init__(self, name, 'go_test', srcs, deps, extra_goflags, kwargs)
         self.data['go_rule'] = 'gotest'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -209,20 +212,24 @@ class GoTest(GoTarget):
 def go_library(name,
                srcs,
                deps=[],
+               extra_goflags=None,
                **kwargs):
     build_manager.instance.register_target(GoLibrary(name,
                                                      srcs,
                                                      deps,
+                                                     extra_goflags,
                                                      kwargs))
 
 
 def go_binary(name,
               srcs,
               deps=[],
+              extra_goflags=None,
               **kwargs):
     build_manager.instance.register_target(GoBinary(name,
                                                     srcs,
                                                     deps,
+                                                    extra_goflags,
                                                     kwargs))
 
 
@@ -230,11 +237,13 @@ def go_test(name,
             srcs,
             deps=[],
             testdata=[],
+            extra_goflags=None,
             **kwargs):
     build_manager.instance.register_target(GoTest(name,
                                                   srcs,
                                                   deps,
                                                   testdata,
+                                                  extra_goflags,
                                                   kwargs))
 
 
