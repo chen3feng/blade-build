@@ -16,8 +16,7 @@
 #        BY  :    Michaelpeng
 #        MODIFICATION: Created
 
-function _info()
-{
+function _info() {
     if [ -t 1 ]; then
         echo -e "\033[1;36mBlade(info): $@\033[m" >&2
     else
@@ -25,8 +24,7 @@ function _info()
     fi
 }
 
-function _warning()
-{
+function _warning() {
     if [ -t 2 ]; then
         echo -e "\033[1;33mBlade(warning): $@\033[m" >&2
     else
@@ -34,8 +32,7 @@ function _warning()
     fi
 }
 
-function _error_exit()
-{
+function _error_exit() {
     if [ -t 2 ]; then
         echo -e "\033[1;31mBlade(error): $@\nBlade (error): Blade will exit...\033[m" >&2
     else
@@ -44,8 +41,7 @@ function _error_exit()
     exit 1
 }
 
-function _full_real_path()
-{
+function _full_real_path() {
     local o
     local f
     f="$1"
