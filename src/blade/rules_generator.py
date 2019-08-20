@@ -735,15 +735,15 @@ pool %s
             go_path = os.path.normpath(os.path.abspath(go_home))
             prefix = 'GOPATH=%s %s' % (go_path, go)
             self.generate_rule(name='gopackage',
-                               command='%s install ${package}' % prefix,
+                               command='%s install ${extra_goflags} ${package}' % prefix,
                                description='GOLANG PACKAGE ${package}',
                                pool=go_pool)
             self.generate_rule(name='gocommand',
-                               command='%s build -o ${out} ${package}' % prefix,
+                               command='%s build -o ${out} ${extra_goflags} ${package}' % prefix,
                                description='GOLANG COMMAND ${package}',
                                pool=go_pool)
             self.generate_rule(name='gotest',
-                               command='%s test -c -o ${out} ${package}' % prefix,
+                               command='%s test -c -o ${out} ${extra_goflags} ${package}' % prefix,
                                description='GOLANG TEST ${package}',
                                pool=go_pool)
 
