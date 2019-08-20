@@ -103,11 +103,10 @@ class BuildArchitecture(object):
 
 
 class BuildPlatform(object):
-    """The build platform class which handles and gets the platform info. """
+    """The build platform class handles and gets the platform information. """
 
     def __init__(self):
-        """Init. """
-        self.gcc_version = self._get_gcc_version()
+        self.cc, self.cc_version = self._get_cc_toolchain()
         self.python_inc = self._get_python_include()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
@@ -115,23 +114,43 @@ class BuildPlatform(object):
         self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
-    def _get_gcc_version():
-        """Get the gcc version. """
-        gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                           os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpversion')
-        if returncode == 0:
-            return stdout.strip()
-        return ''
+    def _get_cc_toolchain():
+        """Get the cc toolchain. """
+        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
+                          os.environ.get('CC', 'gcc'))
+        version = ''
+        if 'gcc' in cc:
+            returncode, stdout, stderr = BuildPlatform._execute(cc + ' -dumpversion')
+            if returncode == 0:
+                version = stdout.strip()
+        elif 'clang' in cc:
+            returncode, stdout, stderr = BuildPlatform._execute(cc + ' --version')
+            if returncode == 0:
+                line = stdout.splitlines()[0]
+                pos = line.find('version')
+                if pos == -1:
+                    version = line
+                else:
+                    version = line[pos + len('version') + 1:]
+        if not version:
+            console.error_exit('Failed to obtain cc toolchain.')
+        return cc, version
 
     @staticmethod
     def _get_cc_target_arch():
         """Get the cc target architecture. """
-        gcc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                           os.environ.get('CC', 'gcc'))
-        returncode, stdout, stderr = BuildPlatform._execute(gcc + ' -dumpmachine')
-        if returncode == 0:
-            return stdout.strip()
+        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
+                          os.environ.get('CC', 'gcc'))
+        if 'gcc' in cc:
+            returncode, stdout, stderr = BuildPlatform._execute(cc + ' -dumpmachine')
+            if returncode == 0:
+                return stdout.strip()
+        elif 'clang' in cc:
+            returncode, stdout, stderr = BuildPlatform._execute('llc --version')
+            if returncode == 0:
+                for line in stdout.splitlines():
+                    if 'Default target' in line:
+                        return line.split()[-1]
         return ''
 
     @staticmethod
@@ -217,9 +236,19 @@ class BuildPlatform(object):
         stdout, stderr = p.communicate()
         return p.returncode, stdout, stderr
 
-    def get_gcc_version(self):
-        """Returns gcc version. """
-        return self.gcc_version
+    def get_cc(self):
+        return self.cc
+
+    def get_cc_version(self):
+        return self.cc_version
+
+    def gcc_in_use(self):
+        """Whether gcc is used for C/C++ compilation. """
+        return 'gcc' in self.cc
+
+    def clang_in_use(self):
+        """Whether clang is used for C/C++ compilation. """
+        return 'clang' in self.cc
 
     def get_python_include(self):
         """Returns python include. """
@@ -243,19 +272,17 @@ class BuildPlatform(object):
 
 
 class CcFlagsManager(object):
-    """The CcFlagsManager class.
-    This class manages the compile warning flags.
-    """
+    """The CcFlagsManager manages the compile warning flags. """
 
-    def __init__(self, options, build_dir, gcc_version):
-        self.cc = ''
+    def __init__(self, options, build_dir, build_platform):
         self.options = options
         self.build_dir = build_dir
-        self.gcc_version = gcc_version
+        self.build_platform = build_platform
 
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter the unsupported compilation flags. """
         supported_flags, unsupported_flags = [], []
+        cc = self.build_platform.get_cc()
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
@@ -264,19 +291,14 @@ class CcFlagsManager(object):
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
                    '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
-                       self.cc, obj, language, flag, obj))
+                       cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
                 supported_flags.append(flag)
             else:
                 unsupported_flags.append(flag)
         if unsupported_flags:
-            console.warning('Unsupported C/C++ flags: %s' %
-                            ', '.join(unsupported_flags))
+            console.warning('Unsupported C/C++ flags: %s' % ', '.join(unsupported_flags))
         return supported_flags
-
-    def set_cc(self, cc):
-        """set up the compiler. """
-        self.cc = cc
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
@@ -312,8 +334,10 @@ class CcFlagsManager(object):
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
+        platform = self.build_platform
         if getattr(self.options, 'coverage', False):
-            if self.gcc_version > '4.1':
+            if ((platform.gcc_in_use() and platform.get_cc_version() > '4.1') or
+                    self.build_platform.clang_in_use()):
                 flags_except_warning.append('--coverage')
                 linkflags.append('--coverage')
             else:
@@ -322,10 +346,8 @@ class CcFlagsManager(object):
                 linkflags += ['-Wl,--whole-archive', '-lgcov',
                               '-Wl,--no-whole-archive']
 
-        flags_except_warning = self._filter_out_invalid_flags(
-            flags_except_warning)
-
-        return (flags_except_warning, linkflags)
+        flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
+        return flags_except_warning, linkflags
 
     def get_warning_flags(self):
         """Get the warning flags. """
@@ -338,4 +360,4 @@ class CcFlagsManager(object):
         filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
         filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
 
-        return (filtered_cppflags, filtered_cxxflags, filtered_cflags)
+        return filtered_cppflags, filtered_cxxflags, filtered_cflags
