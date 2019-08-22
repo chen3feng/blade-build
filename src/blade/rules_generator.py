@@ -44,16 +44,16 @@ class ScriptHeaderGenerator(object):
     for the underlying build system.
     """
 
-    def __init__(self, options, build_dir, gcc_version,
-                 python_inc, cuda_inc, build_environment, svn_roots):
+    def __init__(self, options, build_dir, build_platform, build_environment, svn_roots):
         self.rules_buf = []
         self.options = options
         self.build_dir = build_dir
-        self.gcc_version = gcc_version
-        self.python_inc = python_inc
-        self.cuda_inc = cuda_inc
+        self.cc = build_platform.get_cc()
+        self.cc_version = build_platform.get_cc_version()
+        self.python_inc = build_platform.get_python_include()
+        self.cuda_inc = build_platform.get_cuda_include()
         self.build_environment = build_environment
-        self.ccflags_manager = CcFlagsManager(options, build_dir, gcc_version)
+        self.ccflags_manager = CcFlagsManager(options, build_dir, build_platform)
         self.svn_roots = svn_roots
 
         self.distcc_enabled = config.get_item('distcc_config', 'enabled')
@@ -75,11 +75,9 @@ class ScriptHeaderGenerator(object):
 
 
 class SconsScriptHeaderGenerator(ScriptHeaderGenerator):
-    def __init__(self, options, build_dir, gcc_version,
-                 python_inc, cuda_inc, build_environment, svn_roots):
+    def __init__(self, options, build_dir, build_platform, build_environment, svn_roots):
         ScriptHeaderGenerator.__init__(
-            self, options, build_dir, gcc_version,
-            python_inc, cuda_inc, build_environment, svn_roots)
+            self, options, build_dir, build_platform, build_environment, svn_roots)
 
     def generate_version_file(self):
         """Generate version information files. """
@@ -89,7 +87,7 @@ class SconsScriptHeaderGenerator(ScriptHeaderGenerator):
             'blade_root_dir="%s", build_dir="%s", profile="%s", '
             'gcc_version="%s", svn_roots=%s)' % (
                 blade_root_dir, self.build_dir, self.options.profile,
-                self.gcc_version, sorted(self.svn_roots)))
+                self.cc_version, sorted(self.svn_roots)))
 
     def generate_imports_functions(self, blade_path):
         """Generates imports and functions. """
@@ -244,8 +242,6 @@ from blade import scons_helper
         console.debug('CXX=%s' % cxx)
         console.debug('LD=%s' % ld)
 
-        self.ccflags_manager.set_cc(cc)
-
         # To modify CC, CXX, LD according to the building environment and
         # project configuration
         build_with_distcc = (self.distcc_enabled and
@@ -374,11 +370,9 @@ from blade import scons_helper
 
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     # pylint: disable=too-many-public-methods
-    def __init__(self, options, build_dir, blade_path,
-                 gcc_version, python_inc, cuda_inc, blade):
+    def __init__(self, options, build_dir, blade_path, build_platform, blade):
         ScriptHeaderGenerator.__init__(
-            self, options, build_dir, gcc_version,
-            python_inc, cuda_inc,
+            self, options, build_dir, build_platform,
             blade.build_environment, blade.svn_root_dirs)
         self.blade = blade
         self.blade_path = blade_path
@@ -445,7 +439,6 @@ cxx_warnings = %s
             os.environ['CCACHE_NOHASHDIR'] = 'true'
             cc = 'ccache ' + cc
             cxx = 'ccache ' + cxx
-        self.ccflags_manager.set_cc(cc)
         cc_config = config.get_section('cc_config')
         cc_library_config = config.get_section('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
@@ -790,7 +783,7 @@ build %s: scm
   url = %s
   profile = %s
   compiler = %s
-''' % (scm, revision, url, self.options.profile, 'GCC ' + self.gcc_version))
+''' % (scm, revision, url, self.options.profile, '%s %s' % (self.cc, self.cc_version)))
         self._add_rule('''
 build %s: cxx %s
   cppflags = -w -O2
@@ -861,16 +854,10 @@ class SconsRulesGenerator(RulesGenerator):
 
     def __init__(self, scons_path, blade_path, blade):
         RulesGenerator.__init__(self, scons_path, blade_path, blade)
-        options = self.blade.get_options()
-        gcc_version = self.scons_platform.get_gcc_version()
-        python_inc = self.scons_platform.get_python_include()
-        cuda_inc = self.scons_platform.get_cuda_include()
         self.scons_script_header_generator = SconsScriptHeaderGenerator(
-            options,
+            self.blade.get_options(),
             self.build_dir,
-            gcc_version,
-            python_inc,
-            cuda_inc,
+            self.scons_platform,
             self.blade.build_environment,
             self.blade.svn_root_dirs)
 
@@ -893,17 +880,11 @@ class NinjaRulesGenerator(RulesGenerator):
 
     def generate_build_rules(self):
         """Generate ninja rules to build.ninja. """
-        options = self.blade.get_options()
-        gcc_version = self.scons_platform.get_gcc_version()
-        python_inc = self.scons_platform.get_python_include()
-        cuda_inc = self.scons_platform.get_cuda_include()
         ninja_script_header_generator = NinjaScriptHeaderGenerator(
-            options,
+            self.blade.get_options(),
             self.build_dir,
             self.blade_path,
-            gcc_version,
-            python_inc,
-            cuda_inc,
+            self.scons_platform,
             self.blade)
         rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()
