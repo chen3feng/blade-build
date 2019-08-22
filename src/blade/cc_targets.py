@@ -1303,7 +1303,7 @@ class CcBinary(CcTarget):
         env_name = self._env_name()
         var_name = self._var_name()
 
-        platform = self.blade.get_scons_platform()
+        platform = self.blade.get_build_platform()
         if platform.gcc_in_use() and platform.get_cc_version() > '4.5':
             link_flag_list = ['-static-libgcc', '-static-libstdc++']
             self._write_rule('%s.Append(LINKFLAGS=%s)' % (env_name, link_flag_list))
@@ -1379,7 +1379,7 @@ class CcBinary(CcTarget):
 
     def _generate_cc_binary_link_flags(self, dynamic_link):
         ldflags = []
-        platform = self.blade.get_scons_platform()
+        platform = self.blade.get_build_platform()
         if (not dynamic_link and
             platform.gcc_in_use() and platform.get_cc_version() > '4.5'):
             ldflags += ['-static-libgcc', '-static-libstdc++']

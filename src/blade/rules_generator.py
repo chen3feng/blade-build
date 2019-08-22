@@ -829,7 +829,7 @@ class RulesGenerator(object):
         self.script_path = script_path
         self.blade_path = blade_path
         self.blade = blade
-        self.scons_platform = self.blade.get_scons_platform()
+        self.build_platform = self.blade.get_build_platform()
         self.build_dir = self.blade.get_build_path()
 
     def get_all_rule_names(self):
@@ -857,7 +857,7 @@ class SconsRulesGenerator(RulesGenerator):
         self.scons_script_header_generator = SconsScriptHeaderGenerator(
             self.blade.get_options(),
             self.build_dir,
-            self.scons_platform,
+            self.build_platform,
             self.blade.build_environment,
             self.blade.svn_root_dirs)
 
@@ -884,7 +884,7 @@ class NinjaRulesGenerator(RulesGenerator):
             self.blade.get_options(),
             self.build_dir,
             self.blade_path,
-            self.scons_platform,
+            self.build_platform,
             self.blade)
         rules = ninja_script_header_generator.generate()
         rules += self.blade.gen_targets_rules()

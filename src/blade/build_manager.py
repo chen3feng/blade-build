@@ -419,8 +419,8 @@ class Blade(object):
                 rules_buf += rules
         return rules_buf
 
-    def get_scons_platform(self):
-        """Return handle of the platform class. """
+    def get_build_platform(self):
+        """Return build platform instance. """
         return self.__build_platform
 
     def get_sources_keyword_list(self):
