@@ -103,7 +103,7 @@ class BuildArchitecture(object):
 
 
 class BuildPlatform(object):
-    """The build platform class handles and gets the platform information. """
+    """The build platform handles and gets the platform information. """
 
     def __init__(self):
         self.cc, self.cc_version = self._get_cc_toolchain()
@@ -146,7 +146,8 @@ class BuildPlatform(object):
             if returncode == 0:
                 return stdout.strip()
         elif 'clang' in cc:
-            returncode, stdout, stderr = BuildPlatform._execute('llc --version')
+            llc = cc[:-len('clang')] + 'llc'
+            returncode, stdout, stderr = BuildPlatform._execute('%s --version' % llc)
             if returncode == 0:
                 for line in stdout.splitlines():
                     if 'Default target' in line:

@@ -58,8 +58,8 @@ class SwigLibrary(CcTarget):
         self.data['python_vars'] = []
         self.data['python_sources'] = []
 
-        scons_platform = self.blade.get_scons_platform()
-        self.php_inc_list = scons_platform.get_php_include()
+        build_platform = self.blade.get_build_platform()
+        self.php_inc_list = build_platform.get_php_include()
         self.options = self.blade.get_options()
 
     def _expand_deps_generation(self):
@@ -243,12 +243,11 @@ class SwigLibrary(CcTarget):
         depend_outdir = dep_outdir
         build_jar = java_build_jar
         java_lib_packed = lib_packed
-        env_name = self._env_name()
         out_dir_dummy = os.path.join(out_dir, 'dummy_file')
         obj_names_java = []
 
-        scons_platform = self.blade.get_scons_platform()
-        java_includes = scons_platform.get_java_include()
+        build_platform = self.blade.get_build_platform()
+        java_includes = build_platform.get_java_include()
         if java_includes:
             self._write_rule('%s.Append(CPPPATH=%s)' % (env_name, java_includes))
 
@@ -401,8 +400,6 @@ class SwigLibrary(CcTarget):
 
         """
         self._prepare_to_generate_rule()
-
-        dep_files_map = {}
         dep_files_map = self._swig_library_rules_py()
         if (getattr(self.options, 'generate_java', False) or
                 self.data.get('generate_java')):
