@@ -26,6 +26,8 @@ from blade import config
 from blade import console
 from blade.blade_util import md5sum
 from blade.test_scheduler import TestScheduler
+# pylint: disable=unused-import
+from blade.test_scheduler import TestRunResult  # Used by eval
 
 # Used by eval when loading test history
 _TEST_HISTORY_FILE = '.blade.test.stamp'
@@ -93,7 +95,8 @@ class TestRunner(binary_runner.BinaryRunner):
                 with open(_TEST_HISTORY_FILE) as f:
                     # pylint: disable=eval-used
                     self.test_history = eval(f.read())
-            except (IOError, SyntaxError, NameError, TypeError):
+            except (IOError, SyntaxError, NameError, TypeError) as e:
+                console.debug('Exception when loading test history: %s' % e)
                 console.warning('error loading incremental test history, will run full test')
 
         if 'items' not in self.test_history:
