@@ -51,7 +51,7 @@
    <path>:<target_name> -- to build target defined in <path>/BUILD
    <path>               -- to build all targets defined in <path>/BUILD
    <path>/...           -- to build all targets in all BUILD files in
-                           <path> and its desendant directories.
+                           <path> and its descendant directories.
 
  Note that <path> in command line targets is an operating system
  path, which might be a relative path, but <source_dir> in a BUILD
@@ -100,7 +100,7 @@ _BLADE_ROOT_DIR = None
 _WORKING_DIR = None
 
 
-# For our opensource projects (toft, thirdparty, foxy etc.), we mkdir a project
+# For our open source projects (toft, thirdparty, foxy etc.), we make a project
 # dir , add subdirs are github repos, here we need to fix out the git ROOT for
 # each build target
 def find_scm_root(target, scm):
@@ -436,21 +436,55 @@ def setup_log(build_dir, options):
     console.set_log_file(log_file)
 
 
-def generate_scm(build_dir):
-    # TODO(wentingli): Add git scm
+def generate_scm_svn():
+    url = revision = 'unknown'
     p = subprocess.Popen('svn info', shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        console.debug('Failed to generate scm: %s' % stderr)
+        console.debug('Failed to generate svn scm: %s' % stderr)
+    else:
+        for line in stdout.splitlines():
+            if line.startswith('URL: '):
+                url = line.strip().split()[-1]
+            if line.startswith('Revision: '):
+                revision = line.strip().split()[-1]
+                break
+
+    return url, revision
+
+
+def generate_scm_git():
+    url = revision = 'unknown'
+
+    def git(cmd):
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0:
+            console.debug('Failed to generate git scm: %s' % stderr)
+            return ''
+        return stdout
+
+    out = git('git rev-parse HEAD')
+    if out:
+        revision = out.strip()
+    out = git('git remote -v')
+    # $ git remote -v
+    # origin  https://github.com/chen3feng/blade-build.git (fetch)
+    # origin  https://github.com/chen3feng/blade-build.git (push)
+    if out:
+        url = out.splitlines()[0].split()[1]
+    return url, revision
+
+
+def generate_scm(build_dir):
+    if os.path.isdir('.git'):
+        url, revision = generate_scm_git()
+    elif os.path.isdir('.svn'):
+        url, revision = generate_scm_svn()
+    else:
+        console.debug('Unknown scm.')
         return
-    revision = url = 'unknown'
-    for line in stdout.splitlines():
-        if line.startswith('URL: '):
-            url = line.strip().split()[-1]
-        if line.startswith('Revision: '):
-            revision = line.strip().split()[-1]
-            break
     path = os.path.join(build_dir, 'scm.json')
     with open(path, 'w') as f:
         json.dump({
