@@ -45,11 +45,9 @@ def _is_hdr(filename):
 
 
 class CcTarget(Target):
-    """A scons cc target subclass.
-
-    This class is derived from SconsTarget and it is the base class
+    """
+    This class is derived from Target and it is the base class
     of cc_library, cc_binary etc.
-
     """
 
     def __init__(self,
@@ -866,11 +864,9 @@ class CcTarget(Target):
 
 
 class CcLibrary(CcTarget):
-    """A cc target subclass.
-
-    This class is derived from SconsTarget and it generates the library
+    """
+    This class is derived from CcTarget and it generates the library
     rules including dynamic library rules according to user option.
-
     """
 
     def __init__(self,
@@ -1218,11 +1214,9 @@ build_rules.register_function(cc_library)
 
 
 class CcBinary(CcTarget):
-    """A scons cc target subclass.
-
-    This class is derived from SconsCCTarget and it generates the cc_binary
+    """
+    This class is derived from CcTarget and it generates the cc_binary
     rules according to user options.
-
     """
 
     def __init__(self,
@@ -1468,11 +1462,9 @@ build_rules.register_function(cc_benchmark)
 
 
 class CcPlugin(CcTarget):
-    """A scons cc target subclass.
-
-    This class is derived from SconsCCTarget and it generates the cc_plugin
+    """
+    This class is derived from CcTarget and it generates the cc_plugin
     rules according to user options.
-
     """
 
     def __init__(self,
@@ -1572,7 +1564,10 @@ class CcPlugin(CcTarget):
             implicit_deps = link_all_symbols_libs
 
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
-        output = self._target_file_path('lib%s.so' % self.name)
+        if self.name.endswith('.so'):
+            output = self._target_file_path()
+        else:
+            output = self._target_file_path('lib%s.so' % self.name)
         if self.srcs or self.expanded_deps:
             self._cc_link_ninja(output, 'solink', deps=usr_libs,
                                 ldflags=ldflags, extra_ldflags=extra_ldflags,
@@ -1615,11 +1610,9 @@ build_rules.register_function(cc_plugin)
 
 
 class CcTest(CcBinary):
-    """A scons cc target subclass.
-
-    This class is derived from SconsCCTarget and it generates the cc_test
+    """
+    This class is derived from CcTarget and it generates the cc_test
     rules according to user options.
-
     """
 
     def __init__(self,
