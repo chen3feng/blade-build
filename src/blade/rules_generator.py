@@ -207,8 +207,8 @@ from blade import scons_helper
 
     def _generate_go_builders(self):
         go_config = config.get_section('go_config')
-        self._add_rule('scons_helper.setup_go_builders(top_env, "%s", "%s")' %
-                       (go_config['go'], go_config['go_home']))
+        self._add_rule('scons_helper.setup_go_builders(top_env, "%s", "%s", %r)' %
+                       (go_config['go'], go_config['go_home'], go_config['go_module_enabled']))
 
     def _generate_other_builders(self):
         self._add_rule('scons_helper.setup_other_builders(top_env)')
