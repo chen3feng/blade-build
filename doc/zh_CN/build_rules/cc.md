@@ -49,7 +49,7 @@ False: debug版本不作优化。
 主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64}_{release,debug} 这样的子目录中。不区分debug/release时可以只有两个实际的目录。
 
 * export_incs
-类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标 | incs=['poppy/myinc'] |，和incs一样，用户代码不建议使用
+类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标 | incs=['poppy/myinc'] |，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
 ## cc_binary
 定义C++可执行文件目标
