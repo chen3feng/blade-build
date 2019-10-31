@@ -76,7 +76,6 @@ class GoTarget(Target):
         else:
             self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
 
-
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:
             go = config.get_item('go_config', 'go')
