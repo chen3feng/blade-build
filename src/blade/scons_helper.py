@@ -734,8 +734,11 @@ def copy_proto_go_source(target, source, env):
 
 
 def _generate_go_package(target, source, env):
-    go, go_home = env['GOCMD'], env['GOHOME']
-    cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
+    go, go_home, go_module_enabled = env['GOCMD'], env['GOHOME'], env['GOMODULEENABLED']
+    if go_module_enabled:
+        cmd = '%s build -o %s %s' % (go, target[0], env['GOPACKAGE'])
+    else:
+        cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -755,9 +758,12 @@ def generate_go_binary(target, source, env):
 
 def generate_go_test(target, source, env):
     """Generate go test binary. """
-    go, go_home = env['GOCMD'], env['GOHOME']
-    cmd = 'GOPATH=%s %s test -c -o %s %s' % (
-        go_home, go, target[0], env['GOPACKAGE'])
+    go, go_home, go_module_enabled = env['GOCMD'], env['GOHOME'], env['GOMODULEENABLED']
+    if go_module_enabled:
+        cmd = '%s test -c -o %s %s' % (go, target[0], env['GOPACKAGE'])
+    else:
+        cmd = 'GOPATH=%s %s test -c -o %s %s' % (
+            go_home, go, target[0], env['GOPACKAGE'])
     return echospawn(args=[cmd], env=os.environ, sh=None, cmd=None, escape=None)
 
 
@@ -1317,11 +1323,13 @@ def setup_scala_builders(top_env, scala_home):
     top_env.Append(BUILDERS={"ScalaTest": scala_test_bld})
 
 
-def setup_go_builders(top_env, go_cmd, go_home):
+def setup_go_builders(top_env, go_cmd, go_home, go_module_enabled):
     if go_cmd:
         top_env.Replace(GOCMD=go_cmd)
     if go_home:
         top_env.Replace(GOHOME=go_home)
+    if go_module_enabled:
+        top_env.Replace(GOMODULEENABLED=go_module_enabled)
 
     go_library_message = console.erasable('%sGenerating Go Package %s$TARGET%s%s' %
                                           (color('green'), color('purple'), color('green'), color('end')))

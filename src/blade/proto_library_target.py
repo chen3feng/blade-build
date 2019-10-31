@@ -326,6 +326,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if not go_home:
             console.error_exit('%s: go_home is not configured in BLADE_ROOT.' % self.fullname)
         proto_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
+        go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         self._write_rule('%s.Replace(PROTOBUFGOPATH="%s")' % (env_name, proto_go_path))
         self._write_rule('%s = []' % var_name)
         for src in self.srcs:
@@ -338,9 +339,14 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             # according to the standard go directory layout
             proto_dir = os.path.dirname(src)
             proto_name = os.path.basename(src)
-            go_dst = os.path.join(go_home, 'src', proto_go_path, self.path,
-                                  proto_dir, proto_name.replace('.', '_'),
-                                  os.path.basename(go_src))
+            if go_module_enabled:
+                go_dst = os.path.join(proto_go_path, self.path,
+                                      proto_dir, proto_name.replace('.', '_'),
+                                      os.path.basename(go_src))
+            else:
+                go_dst = os.path.join(go_home, 'src', proto_go_path, self.path,
+                                      proto_dir, proto_name.replace('.', '_'),
+                                      os.path.basename(go_src))
             go_dst_var = self._var_name_of(src, 'go_dst')
             self._write_rule('%s = %s.ProtoGoSource("%s", %s)' % (
                 go_dst_var, env_name, go_dst, go_src_var))
