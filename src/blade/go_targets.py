@@ -70,7 +70,12 @@ class GoTarget(Target):
                                'should be in the same directory. Sources: %s' %
                                (self.fullname, ', '.join(self.srcs)))
         go_home = config.get_item('go_config', 'go_home')
-        self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
+        go_module_enabled = config.get_item('go_config', 'go_module_enabled')
+        if go_module_enabled:
+            self.data['go_package'] = os.path.join("./", self.path)
+        else:
+            self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
+
 
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:

@@ -735,8 +735,7 @@ def copy_proto_go_source(target, source, env):
 
 def _generate_go_package(target, source, env):
     go, go_home, go_module_enabled = env['GOCMD'], env['GOHOME'], env['GOMODULEENABLED']
-    cmd = ''
-    if go_module_enabled == True:
+    if go_module_enabled:
         cmd = '%s build -o %s %s' % (go, target[0], env['GOPACKAGE'])
     else:
         cmd = 'GOPATH=%s %s install %s' % (go_home, go, env['GOPACKAGE'])
@@ -760,8 +759,7 @@ def generate_go_binary(target, source, env):
 def generate_go_test(target, source, env):
     """Generate go test binary. """
     go, go_home, go_module_enabled = env['GOCMD'], env['GOHOME'], env['GOMODULEENABLED']
-    cmd = ''
-    if go_module_enabled == True:
+    if go_module_enabled:
         cmd = '%s test -c -o %s %s' % (go, target[0], env['GOPACKAGE'])
     else:
         cmd = 'GOPATH=%s %s test -c -o %s %s' % (

@@ -553,9 +553,13 @@ protocpythonpluginflags =
         protoc_go_plugin = proto_config['protoc_go_plugin']
         if protoc_go_plugin:
             go_home = config.get_item('go_config', 'go_home')
+            go_module_enabled = config.get_item('go_config', 'go_module_enabled')
             if not go_home:
                 console.error_exit('go_home is not configured in either BLADE_ROOT or BLADE_ROOT.local.')
-            outdir = os.path.join(go_home, 'src')
+            if go_module_enabled:
+                outdir = proto_config['protobuf_go_path']
+            else:
+                outdir = os.path.join(go_home, 'src')
             subplugins = proto_config['protoc_go_subplugins']
             if subplugins:
                 go_out = 'plugins=%s:%s' % ('+'.join(subplugins), outdir)
@@ -720,13 +724,17 @@ pythonbasedir = __pythonbasedir__
     def generate_go_rules(self):
         go_home = config.get_item('go_config', 'go_home')
         go = config.get_item('go_config', 'go')
+        go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         if go_home and go:
             go_pool = 'golang_pool'
             self._add_rule('''
 pool %s
   depth = 1''' % go_pool)
             go_path = os.path.normpath(os.path.abspath(go_home))
-            prefix = 'GOPATH=%s %s' % (go_path, go)
+            if go_module_enabled:
+                prefix = go
+            else:
+                prefix = 'GOPATH=%s %s' % (go_path, go)
             self.generate_rule(name='gopackage',
                                command='%s install ${extra_goflags} ${package}' % prefix,
                                description='GOLANG PACKAGE ${package}',
