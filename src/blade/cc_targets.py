@@ -1480,6 +1480,7 @@ class CcPlugin(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
+                 strip,
                  blade,
                  kwargs):
         """Init method.
@@ -1505,6 +1506,7 @@ class CcPlugin(CcTarget):
         self.prefix = prefix
         self.suffix = suffix
         self.data['allow_undefined'] = allow_undefined
+        self.data['strip'] = strip
 
     def scons_rules(self):
         """scons_rules.
@@ -1569,9 +1571,15 @@ class CcPlugin(CcTarget):
         else:
             output = self._target_file_path('lib%s.so' % self.name)
         if self.srcs or self.expanded_deps:
-            self._cc_link_ninja(output, 'solink', deps=usr_libs,
+            if self.data['strip']:
+                link_output = '%s.unstripped' % output
+            else:
+                link_output = output
+            self._cc_link_ninja(link_output, 'solink', deps=usr_libs,
                                 ldflags=ldflags, extra_ldflags=extra_ldflags,
                                 implicit_deps=implicit_deps)
+            if self.data['strip']:
+                self.ninja_build(output, 'strip', inputs=link_output)
             self._add_default_target_file('so', output)
 
 
@@ -1587,6 +1595,7 @@ def cc_plugin(name,
               extra_cppflags=[],
               extra_linkflags=[],
               allow_undefined=True,
+              strip=False,
               **kwargs):
     """cc_plugin target. """
     target = CcPlugin(name,
@@ -1601,6 +1610,7 @@ def cc_plugin(name,
                       extra_cppflags,
                       extra_linkflags,
                       allow_undefined,
+                      strip,
                       build_manager.instance,
                       kwargs)
     build_manager.instance.register_target(target)

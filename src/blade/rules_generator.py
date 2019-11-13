@@ -512,6 +512,9 @@ pool %s
                                ld, ' '.join(ldflags)),
                            description='SHAREDLINK ${out}',
                            pool=pool)
+        self.generate_rule(name='strip',
+                           command='strip --strip-unneeded -o ${out} ${in}',
+                           description='STRIP ${out}')
 
     def generate_proto_rules(self):
         proto_config = config.get_section('proto_library_config')
