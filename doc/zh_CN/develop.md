@@ -55,7 +55,7 @@ blade build --stop-after generate generate
 代码根目录下的`dist_blade`可以用来打包成zip方便部署，和同目录下的`blade`bash脚本以及`blade.conf`放在一起即可。
 
 ## Pull Request
-代码本地修改后，Push到你自己的github仓库，在向我们发起Pull Request即可。我们会进快进行review，但是由于工作繁忙，时间不要好保证。
+代码本地修改后，Push到你自己的github仓库，在向我们发起Pull Request即可。我们会尽快进行review，但是由于工作繁忙，时间不要好保证。
 最好检查一下代码风格，确保有必要而不冗余的注释，避免不必要的评审往复。
 
 # 其他资料
