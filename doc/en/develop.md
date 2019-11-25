@@ -60,5 +60,5 @@ It's a good idea to check the code style to make sure that there are unnecessary
 
 # other information
 There are also two other netizens' analysis of Blade's implementation principle, which is based on the earlier version of Blade. Although it is somewhat outdated, it still has reference value.
-* [On the design and implementation of C++Build in Blade](https://tsgsz.github.io/2013/11/01/2013-11-01-thinking-in-design-of-blade-cpp- Build/)
+* [On the design and implementation of C++Build in Blade](https://tsgsz.github.io/2013/11/01/2013-11-01-thinking-in-design-of-blade-cpp-build/)
 * [Where is the sharp blade in the end](http://blog.sina.com.cn/s/blog_4af176450101bg69.html)
