@@ -59,6 +59,21 @@ cc_test_config(
 * gtest 库还依赖 pthread，因此gtest_libs需要写成 ['#gtest', '#pthread']
 * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest_libs='//thirdparty/gtest:gtest'。
 
+### java_config
+Java构建相关的配置
+```python
+java_config(
+    source_version = '', # 提供与指定发行版的源代码版本兼容性
+    target_version = '', # 生成特定 VM 版本的类文件
+    version = '1.6',  # 如果以上两个为设置，都取这个设置的作为默认值
+    maven = 'mvn',  # 执行 `mvn` 命令的路径
+    maven_central = '',  # maven 仓库的URL
+    warnings = ['-Werror', '-Xlint:all'],  # 警告设置
+    source_encoding = None,  # 设置源代码的默认编码
+    java_home = '',  # 设置JAVA_HOME，默认从环境变量取
+)
+```
+
 ### proto_library_config
 编译protobuf需要的配置
 ```python
