@@ -114,7 +114,10 @@ class BladeConfig(object):
             'go_config': {
                 'go': '',
                 'go_home': os.path.expandvars('$HOME/go'),  # GOPATH
-                'go_module_enabled': False,
+                # enable go module for explicit use
+                'go_module_enabled': os.environ.get("GO111MODULE") == "on",
+                # onetree repository go module doesn't work in repository root
+                'go_module_relpath': os.environ.get("go_module_relpath"),
             },
             'thrift_config': {
                 'thrift': 'thrift',

@@ -71,7 +71,8 @@ class GoTarget(Target):
                                (self.fullname, ', '.join(self.srcs)))
         go_home = config.get_item('go_config', 'go_home')
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
-        if go_module_enabled:
+        go_module_relpath = config.get_item('go_config', 'go_module_relpath')
+        if go_module_enabled and not go_module_relpath:
             self.data['go_package'] = os.path.join("./", self.path)
         else:
             self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))

@@ -557,9 +557,10 @@ protocpythonpluginflags =
         if protoc_go_plugin:
             go_home = config.get_item('go_config', 'go_home')
             go_module_enabled = config.get_item('go_config', 'go_module_enabled')
+            go_module_relpath = config.get_item('go_config', 'go_module_relpath')
             if not go_home:
                 console.error_exit('go_home is not configured in either BLADE_ROOT or BLADE_ROOT.local.')
-            if go_module_enabled:
+            if go_module_enabled and not go_module_relpath:
                 outdir = proto_config['protobuf_go_path']
             else:
                 outdir = os.path.join(go_home, 'src')
@@ -728,14 +729,24 @@ pythonbasedir = __pythonbasedir__
         go_home = config.get_item('go_config', 'go_home')
         go = config.get_item('go_config', 'go')
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
+        go_module_relpath = config.get_item('go_config', 'go_module_relpath')
         if go_home and go:
             go_pool = 'golang_pool'
             self._add_rule('''
 pool %s
   depth = 1''' % go_pool)
             go_path = os.path.normpath(os.path.abspath(go_home))
+            out_relative = ""
             if go_module_enabled:
                 prefix = go
+                if go_module_relpath:
+                    relative_prefix = os.path.relpath(prefix, go_module_relpath)
+                    prefix = "cd {go_module_relpath} && {relative_prefix}".format(
+                        go_module_relpath=go_module_relpath,
+                        relative_prefix=relative_prefix,
+                    )
+                    # add slash to the end of the relpath
+                    out_relative = os.path.join(os.path.relpath("./", go_module_relpath), "")
             else:
                 prefix = 'GOPATH=%s %s' % (go_path, go)
             self.generate_rule(name='gopackage',
@@ -743,11 +754,11 @@ pool %s
                                description='GOLANG PACKAGE ${package}',
                                pool=go_pool)
             self.generate_rule(name='gocommand',
-                               command='%s build -o ${out} ${extra_goflags} ${package}' % prefix,
+                               command='%s build -o %s${out} ${extra_goflags} ${package}' % (prefix, out_relative),
                                description='GOLANG COMMAND ${package}',
                                pool=go_pool)
             self.generate_rule(name='gotest',
-                               command='%s test -c -o ${out} ${extra_goflags} ${package}' % prefix,
+                               command='%s test -c -o %s${out} ${extra_goflags} ${package}' % (prefix, out_relative),
                                description='GOLANG TEST ${package}',
                                pool=go_pool)
 
