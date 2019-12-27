@@ -54,7 +54,7 @@ Blade全局配置
 | 参数  | 类型 | 默认值 | 值域 | 说明 |
 |-------|-----|-------|-----|-----|
 | dynamic_link          |bool   | False               |True False | 测试程序是否默认动态链接，可以减少磁盘开销 |
-| heap_check            |string | 空                  | 参考 gperftools 的文档| 开启 gperftools 的 HEAPCHECK，空表示不开启 |
+| heap_check            |string | 空                  | [参考 gperftools 的文档](https://gperftools.github.io/gperftools/heap_checker.html) | 开启 gperftools 的 HEAPCHECK，空表示不开启 |
 | gperftools_libs       |list   | ['#tcmalloc']       | | tcmclloc 库，blade deps 格式 |
 | gperftools_debug_libs |list   | ['#tcmalloc_debug'] | | tcmalloc_debug 库，blade deps 格式 |
 | gtest_libs            |list   | ['#gtest']          | | gtest 的库，blade deps 格式 |
