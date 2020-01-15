@@ -36,20 +36,33 @@ cc_library(
 属性：
 
 * link_all_symbols=True
-如过你通过全局对象的构造函数执行一些动作（比如注册一些可以按运行期间字符串形式的名字动态创建的类），而这个全局变量本身没有被任何地方引用到。这在是没有问题的，但是如果是在库中，就有可能被整个丢弃从而达不到期望的效果。这是因为如果一个库中的符号（函数，全局变量）没有被可执行文件直接或者间接地显式使用到，通常不会被链接进去。
-如果为True，任何直接或间接依赖于此库的可执行文件将会把这个库完整地链接进去，即使库中某些符号完全没有被可执行文件引用到，从而解决上述问题。
-需要全部链接的部分最好单独拆分出来做成单独小库，而不是整个库全都全部链接，否则会无端增大可执行文件的大小。 需要注意的是，link_all_symbols是库自身的属性，不是使用库时的属性。 如还有疑问，可以进一步阅读[更多解答](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option)。
+
+  如果你通过全局对象的构造函数执行一些动作（比如注册一些可以按运行期间字符串形式的名字动态创建的类），而这个全局变量本身没有被任何地方引用到。
+  这在是没有问题的，但是如果是在库中，就有可能被整个丢弃从而达不到期望的效果。这是因为如果一个库中的符号（函数，全局变量）没有被可执行文件直接
+  或者间接地显式使用到，通常不会被链接进去。
+  
+  如果为True，任何直接或间接依赖于此库的可执行文件将会把这个库完整地链接进去，即使库中某些符号完全没有被可执行文件引用到，从而解决上述问题。
+  
+  需要全部链接的部分最好单独拆分出来做成单独小库，而不是整个库全都全部链接，否则会无端增大可执行文件的大小。
+
+  需要注意的是，link_all_symbols是库自身的属性，不是使用库时的属性。
+
+  如还有疑问，可以进一步阅读[更多解答](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option)。
 
 * always_optimize
-True: 不论debug版本还是release版本总是被优化。
-False: debug版本不作优化。
-默认为False。目前只对cc_library有效。
+
+  True: 不论debug版本还是release版本总是被优化。
+  False: debug版本不作优化。
+  默认为False。目前只对cc_library有效。
 
 * prebuilt=True
-主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64} 这样的子目录中。如果只构建一个平台的目标，可以只有一个目录。
+
+  主要应用在thirdparty中从rpm包解来的库，使用这个参数表示不从源码构建。对应的二进制文件必须存在 lib{32,64} 这样的子目录中。
+  如果只构建一个平台的目标，可以只有一个目录。
 
 * export_incs
-类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
+
+  类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
 ## cc_binary
 定义C++可执行文件目标
@@ -62,31 +75,40 @@ cc_binary(
 ```
 
 * dynamic_link=True
-cc_binary默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些[技术限制](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，glibc并不包含在内，虽然也可以强行静态链接glibc，但是有可能导致运行时出错。
-如果希望动态链接可执行文件依赖的库，可以使用此参数指定，此时被此target依赖的所有库都会自动生成对应的动态库供链接。这能有效地减少磁盘空间占用，但是程序启动时会变慢，一般仅用于非部署环境比如本地测试。需要注意的是，dynamic_link只适用于可执行文件，不适用于库。
+
+  cc_binary默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些[技术限制](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，glibc并不包含在内，虽然也可以强行静态链接glibc，但是有可能导致运行时出错。
+  
+  如果希望动态链接可执行文件依赖的库，可以使用此参数指定，此时被此target依赖的所有库都会自动生成对应的动态库供链接。这能有效地减少磁盘空间占用，但是程序启动时会变慢，一般仅用于非部署环境比如本地测试。
+  
+  需要注意的是，dynamic_link只适用于可执行文件，不适用于库。
 
 * export_dynamic=True
-常规情况下，so中只引用所依赖的so中的符号，但是对于应用特殊的场合，需要在so中引用宿主可执行文件中的符号，就需要这个选项。
-这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中的这些符号。
-详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
+
+  常规情况下，so中只引用所依赖的so中的符号，但是对于应用特殊的场合，需要在so中引用宿主可执行文件中的符号，就需要这个选项。
+  
+  这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中的这些符号。
+  
+  详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
 ## cc_test
-相当于cc_binary，再加上自动链接gtest和gtest_main
+相当于cc_binary，再加上自动链接gtest和gtest_main。
+
 还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt
+
 用blade test子命令，会在成功构建后到name.runfiles目录下自动运行，并输出总结信息。
 
 * testdata=[]
-在name.runfiles里建立symbolic link指向工程目录的文件，目前支持
-以下几种形式
 
- * 'file'
-在测试程序中使用这个名字本身的形式来访问
- * '//your_proj/path/file'
-在测试程序中用"your_proj/path/file"来访问。
- * ('//your_proj/path/file', "new_name")
-在测试程序中用"new_name"来访问
+  在name.runfiles里建立symbolic link指向工程目录的文件，目前支持以下几种形式：
+  * 'file'
+    在测试程序中使用这个名字本身的形式来访问
+  * '//your_proj/path/file'
+    在测试程序中用"your_proj/path/file"来访问。
+  * ('//your_proj/path/file', "new_name")
+    在测试程序中用"new_name"来访问
 
 可以根据需要自行选择，这些路径都也可以是目录。
+
 ```python
 cc_test(
     name = 'textfile_test',
@@ -120,7 +142,8 @@ lex_yacc_library(
 ```
 
 * recursive=True
-生成可重入的C scanner.
+
+  生成可重入的C scanner.
 
 ## cc_plugin
 
@@ -158,8 +181,8 @@ resource_library(
     ]
 )
 ```
-生成  和 libstatic_resource.a 或者 libstatic_resource.so。
-就像一样protobuf那样，编译后后生成一个库libstatic_resource.a，和一个相应的头文件static_resource.h，带路径包含进来即可使用。
+生成 static_resource.h 和 libstatic_resource.a 或者 libstatic_resource.so。
+就像一样protobuf那样，编译后后生成一个库 libstatic_resource.a，和一个相应的头文件 static_resource.h，带路径包含进来即可使用。
 
 在程序中需要包含static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.hpp"，
 用 STATIC_RESOURCE 宏来引用数据：
@@ -171,5 +194,3 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 得到的 data 在程序运行期间一直存在，只可读取，不可写入。
 
 用 static resource 在某些情况下也有一点不方便：就是不能在运行期间更新，因此是否使用，需要根据具体场景自己权衡。
-
-
