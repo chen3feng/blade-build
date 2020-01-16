@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import re
 import subprocess
 import time
 from collections import namedtuple
@@ -39,25 +40,14 @@ TestJob = namedtuple('TestJob',
 TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
-_TEST_IGNORED_ENV_VARS = frozenset([
-    # shell variables
-    'PWD', 'OLDPWD', 'SHLVL', 'LC_ALL', 'TST_HACK_BASH_SESSION_ID', 'LS_COLORS',
-    # CI variables
-    'BUILD_DISPLAY_NAME',
-    'BUILD_URL', 'BUILD_TAG', 'SVN_REVISION',
-    'BUILD_ID', 'START_USER',
-    'EXECUTOR_NUMBER', 'NODE_NAME', 'NODE_LABELS',
-    'IF_PKG', 'BUILD_NUMBER', 'HUDSON_COOKIE',
-    'HUDSON_SERVER_COOKIE',
-    'RUN_CHANGES_DISPLAY_URL',
-    'UP_REVISION',
-    'RUN_DISPLAY_URL',
-    'JENKINS_SERVER_COOKIE',
-    # ssh variables
-    'SSH_CLIENT', 'SSH2_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
-    # vim variables
-    'VIM', 'MYVIMRC', 'VIMRUNTIME'] +
-    ['SVN_REVISION_%d' % i for i in range(30)])
+def _filter_out_ignored_envs(names):
+    """Filter out any names which matches `global_config.test_ignored_envs`"""
+    ignored_names = config.get_item('global_config', 'test_ignored_envs')
+    if not ignored_names:
+        return names
+    rx = '(' + '|'.join(['(%s)' % name for name in ignored_names]) + ')$'
+    names_rx = re.compile(rx)
+    return set(name for name in names if not names_rx.match(name) )
 
 
 def _diff_env(a, b):
@@ -104,8 +94,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _update_test_history(self):
         old_env = self.test_history.get('env', {})
-        env_keys = os.environ.keys()
-        env_keys = set(env_keys).difference(_TEST_IGNORED_ENV_VARS)
+        env_keys = _filter_out_ignored_envs(os.environ.keys())
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
             console.notice('Some tests will be run due to test environments changed:')
