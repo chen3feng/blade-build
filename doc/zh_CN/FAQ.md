@@ -251,7 +251,8 @@ cc_library_config(
 ```
 
 ## cannot find -lstdc++
-需要安装libstdc++的静态版本
-```
+需要安装libstdc++的静态版本。如果包管理工具是yum的话，如下即可：
+```bash
 yum install libstdc++-static
 ```
+为了部署方便，blade 选择静态链接 libstdc++（以及libgcc），这也是 golang 等新兴语言的选择。
