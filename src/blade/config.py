@@ -50,7 +50,8 @@ class BladeConfig(object):
                 'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
                 'test_timeout__doc__': 'In seconds',
-                'test_ignored_envs__doc__': 'Ignored environments when rerun tests, support regex',
+                'test_ignored_envs__doc__':
+                    'Ignored environments when run incremental tests, support regex',
                 'test_ignored_envs': [],
                 'native_builder': 'scons',
                 'debug_info_level': 'mid',
@@ -316,7 +317,7 @@ def _check_test_ignored_envs(kwargs):
             re.compile(name)
         except re.error as e:
             console.error_exit(
-                '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' %(
+                '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' % (
                 _blade_config.current_file_name, name, e))
 
 @config_rule
