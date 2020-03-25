@@ -12,6 +12,7 @@ from __future__ import absolute_import
 from blade import build_manager
 from blade import build_rules
 from blade import console
+from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 
 
@@ -32,6 +33,8 @@ class LexYaccLibrary(CcTarget):
                  allow_undefined,
                  recursive,
                  prefix,
+                 lexflags,
+                 yaccflags,
                  blade,
                  kwargs):
         """Init method.
@@ -60,6 +63,9 @@ class LexYaccLibrary(CcTarget):
 
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix
+        self.data['lexflags'] = var_to_list(lexflags)
+        self.data['yaccflags'] = var_to_list(yaccflags)
+        self.data['prefix'] = prefix
         self.data['allow_undefined'] = allow_undefined
         self.data['link_all_symbols'] = True
 
@@ -69,7 +75,8 @@ class LexYaccLibrary(CcTarget):
 
     def _setup_lex_yacc_flags(self):
         """Set up lex/yacc flags according to the options. """
-        lex_flags, yacc_flags = [], []
+        lex_flags = list(self.data['lexflags'])
+        yacc_flags = list(self.data['yaccflags'])
         yacc_flags.append('-d')
         if self.data.get('recursive'):
             lex_flags.append('-R')
@@ -179,6 +186,8 @@ def lex_yacc_library(name,
                      allow_undefined=False,
                      recursive=False,
                      prefix=None,
+                     lexflags=[],
+                     yaccflags=[],
                      **kwargs):
     """lex_yacc_library. """
     target = LexYaccLibrary(name,
@@ -190,6 +199,8 @@ def lex_yacc_library(name,
                             allow_undefined,
                             recursive,
                             prefix,
+                            lexflags,
+                            yaccflags,
                             build_manager.instance,
                             kwargs)
     build_manager.instance.register_target(target)

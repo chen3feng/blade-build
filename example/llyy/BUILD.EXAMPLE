@@ -1,6 +1,8 @@
 lex_yacc_library(
     name = 'example_llyy',
-    srcs = ['example.ll', 'example.yy']
+    srcs = ['example.ll', 'example.yy'],
+    lexflags = ['--debug'],
+    yaccflags = ['--debug'],
 )
 
 cc_binary(
