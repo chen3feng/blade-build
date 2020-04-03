@@ -219,36 +219,37 @@ cc_config(
 更高版本的gcc，比如GCC 6, C++14已经成为默认配置，就不再需要这个选项了。
 
 ## 编译出来的结果占用了太多的磁盘空间
-采用Blade来构建的项目往往是比较大规模的项目，因此构建后的结果往往也会占用较多的空间，如果你有这方面的问题，可以尝试用一下方式进行优化。
-```python
-# 降低调试符号占用的开销
-global_config(
-    debug_info_level = 'no'
-)
-说明：
-no: 没有调试符号，程序无法gdb调试
-low: 低调试符号，可以看到函数名和全局变量
-mid: 中等，比low多了局部变量，函数参数
-high: 最高，包含了宏等的调试信息
+采用Blade来构建的项目往往是比较大规模的项目，因此构建后的结果往往也会占用较多的空间，如果你有这方面的问题，可以尝试用以下方式进行优化：
+### 降低调试符号占用的开销
+  ```python
+  global_config(
+      debug_info_level = 'no'
+  )
+  ```
+  说明：
+  - no: 没有调试符号，程序无法gdb调试
+  - low: 低调试符号，可以看到函数名和全局变量
+  - mid: 中等，比low多了局部变量，函数参数
+  - high: 最高，包含了宏等的调试信息
 
-# 测试程序采用动态链接
-```python
-cc_test_config(
-    dynamic_link = True
-)
-测试程序不会用来发布，动态链接可以减少大量的磁盘开销，如果某个具体的测试动态链接出错，可以单独为它指定dynamic_link = False。
-```
+### 测试程序采用动态链接
+  ```python
+  cc_test_config(
+      dynamic_link = True
+  )
+  ```
+  测试程序不会用来发布，动态链接可以减少大量的磁盘开销，如果某个具体的测试动态链接出错，可以单独为它指定dynamic_link = False。
 
 ### 生成"thin"静态库
-gnu ar支持生成‘thin’类型的静态库，和常规的静态库把.o打包进去不同，thin静态库里只记录了.o文件的路径，可以较大程度的减少空间占用。
-不过这种库是无法拿来做发布用的，还好在使用blade的场景下，静态库一般都是仅在构建系统内部使用的。
+  gnu ar支持生成‘thin’类型的静态库，和常规的静态库把.o打包进去不同，thin静态库里只记录了.o文件的路径，可以较大程度的减少空间占用。
+  不过这种库是无法拿来做发布用的，还好在使用blade的场景下，静态库一般都是仅在构建系统内部使用的。
 
-做法是修改cc_library_config.arflags参数，加上`T`选项：
-```python
-cc_library_config(
-    arflags = 'rcsT'
-)
-```
+  做法是修改cc_library_config.arflags参数，加上`T`选项：
+  ```python
+  cc_library_config(
+      arflags = 'rcsT'
+  )
+  ```
 
 ## cannot find -lstdc++
 需要安装libstdc++的静态版本。如果包管理工具是yum的话，如下即可：
