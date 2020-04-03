@@ -256,3 +256,6 @@ cc_library_config(
 yum install libstdc++-static
 ```
 为了部署方便，blade 选择静态链接 libstdc++（以及libgcc），这也是 golang 等新兴语言的选择。
+
+## g++: Fatal error:Killed signal terminated program cc1plus
+可能是开发机性能不足，不足以支持默认计算出来的并发构建任务数目，尝试用 `-j <小一点的数字>` 参数，比如在 8 核的机器上用 `blade build -j4`
