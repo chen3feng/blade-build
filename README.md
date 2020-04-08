@@ -7,7 +7,7 @@
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
 
-[![asciicast](https://asciinema.org/a/X6QpYZVBss86X4vcfGHARE4kX.svg)](https://asciinema.org/a/X6QpYZVBss86X4vcfGHARE4kX)
+[![asciicast](https://asciinema.org/a/mJb7POfxa6Vrz6vbq10zMSTr0.svg)](https://asciinema.org/a/mJb7POfxa6Vrz6vbq10zMSTr0)
 
 ## Build status
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
