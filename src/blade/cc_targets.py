@@ -566,11 +566,12 @@ class CcTarget(Target):
             if key not in keys:
                 keys.add(key)
                 t = self.target_database[key]
-                if t._generate_header_files() and t.data.get('generated_hdrs'):
+                generated_hdrs = t.data.get('generated_hdrs')
+                if t._generate_header_files() and generated_hdrs:
                     if scons:
                         deps.append(t)
                     else:
-                        deps.append(t._get_target_file())
+                        deps += generated_hdrs
                 elif 'genhdrs_stamp' in t.data:  # ninja only
                     stamp = t.data['genhdrs_stamp']
                     if stamp:
