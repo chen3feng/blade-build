@@ -29,10 +29,8 @@ from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 from blade.thrift_helper import FBThriftHelper
 
-
 class FBThriftLibrary(CcTarget):
     """A fbthrift library target derived from CcTarget. """
-
     def __init__(self,
                  name,
                  srcs,
@@ -85,10 +83,6 @@ class FBThriftLibrary(CcTarget):
                 error += 1
         if error > 0:
             console.error_exit('invalid thrift file names found.')
-
-    def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        return True
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """
@@ -146,6 +140,10 @@ class FBThriftLibrary(CcTarget):
             env_name, self._objs_name(), sources))
 
         self._cc_library()
+
+    def ninja_rules(self):
+        console.error('FIXME: fbthrift is still not supported by the ninja backend.')
+        # (don't forget `generated_hdrs`)
 
 
 def fbthrift_library(name,

@@ -69,10 +69,6 @@ class LexYaccLibrary(CcTarget):
         self.data['allow_undefined'] = allow_undefined
         self.data['link_all_symbols'] = True
 
-    def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        return True
-
     def _setup_lex_yacc_flags(self):
         """Set up lex/yacc flags according to the options. """
         lex_flags = list(self.data['lexflags'])

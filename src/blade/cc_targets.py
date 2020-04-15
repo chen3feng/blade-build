@@ -567,7 +567,7 @@ class CcTarget(Target):
                 keys.add(key)
                 t = self.target_database[key]
                 generated_hdrs = t.data.get('generated_hdrs')
-                if t._generate_header_files() and generated_hdrs:
+                if generated_hdrs:
                     if scons:
                         deps.append(t)
                     else:
