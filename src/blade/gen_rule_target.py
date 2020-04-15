@@ -71,11 +71,6 @@ class GenRuleTarget(Target):
         self.data['locations'].append((key, type))
         return '%s'
 
-    def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        # Be conservative: Assume gen_rule always generates header files.
-        return True
-
     def _allow_duplicate_source(self):
         return True
 

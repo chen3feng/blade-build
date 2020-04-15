@@ -74,10 +74,6 @@ class ThriftLibrary(CcTarget):
                 console.error_exit('%s: Invalid thrift file %s' % (
                     self.fullname, src))
 
-    def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        return True
-
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """
         files = []

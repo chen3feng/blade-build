@@ -178,10 +178,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         CcTarget._prepare_to_generate_rule(self)
         self._check_proto_deps()
 
-    def _generate_header_files(self):
-        """Whether this target generates header files during building."""
-        return True
-
     def _proto_gen_files(self, src):
         """_proto_gen_files. """
         proto_name = src[:-6]
