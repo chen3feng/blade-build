@@ -69,18 +69,24 @@ class LexYaccLibrary(CcTarget):
         self.data['allow_undefined'] = allow_undefined
         self.data['link_all_symbols'] = True
 
-    def _setup_lex_yacc_flags(self):
-        """Set up lex/yacc flags according to the options. """
+    def _lex_flags(self):
+        """Set up lex flags according to the options. """
         lex_flags = list(self.data['lexflags'])
-        yacc_flags = list(self.data['yaccflags'])
-        yacc_flags.append('-d')
         if self.data.get('recursive'):
             lex_flags.append('-R')
         prefix = self.data.get('prefix')
         if prefix:
             lex_flags.append('-P %s' % prefix)
+        return lex_flags
+
+    def _yacc_flags(self):
+        """Set up lex/yacc flags according to the options. """
+        yacc_flags = list(self.data['yaccflags'])
+        yacc_flags.append('-d')
+        prefix = self.data.get('prefix')
+        if prefix:
             yacc_flags.append('-p %s' % prefix)
-        return lex_flags, yacc_flags
+        return yacc_flags
 
     def _generate_lex_yacc_flags(self, lex_flags, yacc_flags):
         env_name = self._env_name()
@@ -109,7 +115,8 @@ class LexYaccLibrary(CcTarget):
         """
         self._prepare_to_generate_rule()
         env_name = self._env_name()
-        lex_flags, yacc_flags = self._setup_lex_yacc_flags()
+        lex_flags = self._lex_flags()
+        yacc_flags = self._yacc_flags()
         self._generate_lex_yacc_flags(lex_flags, yacc_flags)
 
         lex_var_name = self._var_name('lex')
@@ -140,35 +147,43 @@ class LexYaccLibrary(CcTarget):
         else:
             console.error_exit('%s: Unknown source %s' % (self.fullname, source))
 
-    def ninja_lex_yacc_vars(self):
-        lex_vars, yacc_vars = {}, {}
-        lex_flags, yacc_flags = self._setup_lex_yacc_flags()
+    def ninja_lex_vars(self):
+        lex_flags = self._lex_flags()
         if lex_flags:
-            lex_vars = {'lexflags': ' '.join(lex_flags)}
-        if yacc_flags:
-            yacc_vars = {'yaccflags': ' '.join(yacc_flags)}
-        return lex_vars, yacc_vars
+            return {'lexflags': ' '.join(lex_flags)}
+        return {}
 
-    def ninja_lex_yacc_rules(self, source, rule, implicit_deps=None, vars=None):
+    def ninja_yacc_vars(self):
+        yacc_flags = self._yacc_flags()
+        if yacc_flags:
+            return {'yaccflags': ' '.join(yacc_flags)}
+        return {}
+
+    def ninja_lex_rules(self, source, implicit_deps, vars):
         cc = self.ninja_cc_source(source)
-        output = self._target_file_path(cc)
+        cc_path = self._target_file_path(cc)
         input = self._source_file_path(source)
-        self.ninja_build(output, rule, inputs=input,
-                         implicit_deps=implicit_deps, variables=vars)
-        return cc, output
+        self.ninja_build(cc_path, 'lex', inputs=input, implicit_deps=implicit_deps, variables=vars)
+        return cc, cc_path
+
+    def ninja_yacc_rules(self, source, rule, vars):
+        cc = self.ninja_cc_source(source)
+        cc_path = self._target_file_path(cc)
+        input = self._source_file_path(source)
+        if cc_path.endswith('.c'):
+            h_path = '%s.h' % cc_path[:-2]
+        else:
+            h_path = '%s.h' % cc_path[:-3]
+        self.ninja_build(cc_path, 'yacc', inputs=input, implicit_outputs=h_path, variables=vars)
+        return cc, cc_path, h_path
 
     def ninja_rules(self):
-        lex, yacc = self.srcs
-        lex_vars, yacc_vars = self.ninja_lex_yacc_vars()
-        yacc_cc, yacc_cc_path = self.ninja_lex_yacc_rules(yacc, 'yacc', vars=yacc_vars)
-        lex_cc, lex_cc_path = self.ninja_lex_yacc_rules(lex, 'lex',
-                                                        implicit_deps=[yacc_cc_path],
-                                                        vars=lex_vars)
-        if yacc_cc.endswith('.c'):
-            yacc_hdr = '%s.h' % yacc_cc_path[:-2]
-        else:
-            yacc_hdr = '%s.h' % yacc_cc_path[:-3]
-        self.data['generated_hdrs'].append(yacc_hdr)
+        lex_file, yacc_file = self.srcs
+        yacc_cc, yacc_cc_path, yacc_h_path = self.ninja_yacc_rules(yacc_file, 'yacc',
+                                                                   vars=self.ninja_yacc_vars())
+        lex_cc, lex_cc_path = self.ninja_lex_rules(lex_file, implicit_deps=[yacc_cc_path],
+                                                   vars=self.ninja_lex_vars())
+        self.data['generated_hdrs'].append(yacc_h_path)
         self._cc_objects_ninja([lex_cc, yacc_cc], True)
         self._cc_library_ninja()
 
