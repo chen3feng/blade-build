@@ -163,7 +163,7 @@ class LexYaccLibrary(CcTarget):
         cc = self.ninja_cc_source(source)
         cc_path = self._target_file_path(cc)
         input = self._source_file_path(source)
-        self.ninja_build(cc_path, 'lex', inputs=input, implicit_deps=implicit_deps, variables=vars)
+        self.ninja_build('lex', cc_path, inputs=input, implicit_deps=implicit_deps, variables=vars)
         return cc, cc_path
 
     def ninja_yacc_rules(self, source, rule, vars):
@@ -174,7 +174,7 @@ class LexYaccLibrary(CcTarget):
             h_path = '%s.h' % cc_path[:-2]
         else:
             h_path = '%s.h' % cc_path[:-3]
-        self.ninja_build(cc_path, 'yacc', inputs=input, implicit_outputs=h_path, variables=vars)
+        self.ninja_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
         return cc, cc_path, h_path
 
     def ninja_rules(self):

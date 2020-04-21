@@ -180,8 +180,7 @@ class ThriftLibrary(CcTarget):
         sources, headers = [], []
         for src in self.srcs:
             thrift_files = self._thrift_gen_cpp_files(src)
-            self.ninja_build(thrift_files, 'thrift',
-                             inputs=self._source_file_path(src))
+            self.ninja_build('thrift', thrift_files, inputs=self._source_file_path(src))
             headers += [h for h in thrift_files if h.endswith('.h')]
             thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
             sources += [os.path.relpath(s, build_path) for s in thrift_cpp_sources]

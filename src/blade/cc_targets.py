@@ -653,8 +653,7 @@ class CcTarget(Target):
         if static_src_path.endswith('.a'):
             path = static_src_path
         else:
-            self.ninja_build(static_target_path, 'copy',
-                             inputs=static_src_path)
+            self.ninja_build('copy', static_target_path, inputs=static_src_path)
             path = static_target_path
         self._add_default_target_file('a', path)
 
@@ -664,8 +663,7 @@ class CcTarget(Target):
             if dynamic_target_path != static_target_path:
                 assert static_src_path.endswith('.a')
                 assert dynamic_src_path.endswith('.so')
-                self.ninja_build(dynamic_target_path, 'copy',
-                                 inputs=dynamic_src_path)
+                self.ninja_build('copy', dynamic_target_path, inputs=dynamic_src_path)
                 path = dynamic_target_path
             self._add_target_file('so', path)
 
@@ -764,7 +762,7 @@ class CcTarget(Target):
         if not deps:
             return None
         stamp = self._target_file_path('%s__stamp__' % self.name)
-        self.ninja_build(stamp, 'stamp', inputs=deps)
+        self.ninja_build('stamp', stamp, inputs=deps)
         self.data['genhdrs_stamp'] = stamp
         return stamp
 
@@ -777,10 +775,9 @@ class CcTarget(Target):
         if not os.path.exists(path):
             path = self._target_file_path(src)
             self._securecc_object_rules('', path, False)
-        self.ninja_build(secure_obj, 'securecccompile', inputs=path,
-                         implicit_deps=implicit_deps,
-                         variables=vars)
-        self.ninja_build(obj, 'securecc', inputs=secure_obj)
+        self.ninja_build('securecccompile', secure_obj, inputs=path,
+                         implicit_deps=implicit_deps, variables=vars)
+        self.ninja_build('securecc', obj, inputs=secure_obj)
 
     def _cc_objects_ninja(self, sources=None, generated=False, generated_headers=None):
         """Generate cc objects build rules in ninja. """
@@ -818,7 +815,7 @@ class CcTarget(Target):
                         hdrs_inclusion_srcs.append((path, obj, rule))
                     else:
                         input = self._target_file_path(src)
-                self.ninja_build(obj, rule, inputs=input,
+                self.ninja_build(rule, obj, inputs=input,
                                  implicit_deps=implicit_deps,
                                  variables=vars)
             objs.append(obj)
@@ -831,7 +828,7 @@ class CcTarget(Target):
     def _static_cc_library_ninja(self):
         output = self._target_file_path('lib%s.a' % self.name)
         objs = self.data.get('objs', [])
-        self.ninja_build(output, 'ar', inputs=objs)
+        self.ninja_build('ar', output, inputs=objs)
         self._add_default_target_file('a', output)
 
     def _dynamic_cc_library_ninja(self):
@@ -857,7 +854,7 @@ class CcTarget(Target):
             vars['ldflags'] = ' '.join(ldflags)
         if extra_ldflags:
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
-        self.ninja_build(output, rule,
+        self.ninja_build(rule, output,
                          inputs=objs + deps,
                          implicit_deps=implicit_deps,
                          order_only_deps=order_only_deps,
@@ -1134,9 +1131,7 @@ class CcLibrary(CcTarget):
         for src, obj, rule in hdrs_inclusion_srcs:
             output = '%s.H' % obj
             rule = '%shdrs' % rule
-            self.ninja_build(output, rule, inputs=src,
-                             implicit_deps=[obj],
-                             variables=vars)
+            self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
     def scons_rules(self):
         """scons_rules.
@@ -1580,7 +1575,7 @@ class CcPlugin(CcTarget):
                                 ldflags=ldflags, extra_ldflags=extra_ldflags,
                                 implicit_deps=implicit_deps)
             if self.data['strip']:
-                self.ninja_build(output, 'strip', inputs=link_output)
+                self.ninja_build('strip', output, inputs=link_output)
             self._add_default_target_file('so', output)
 
 

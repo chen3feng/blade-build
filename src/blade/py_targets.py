@@ -137,7 +137,7 @@ class PythonLibrary(PythonTarget):
         output = self._target_file_path() + '.pylib'
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self.ninja_vars()
-        self.ninja_build(output, 'pythonlibrary', inputs=inputs, variables=vars)
+        self.ninja_build('pythonlibrary', output, inputs=inputs, variables=vars)
         self._add_target_file('pylib', output)
         return output
 
@@ -297,7 +297,7 @@ class PythonBinary(PythonLibrary):
             # TODO(wentingli): Add other dependencies if needed
         vars = self.ninja_vars()
         vars['mainentry'] = self._get_entry()
-        self.ninja_build(output, 'pythonbinary', inputs=inputs, variables=vars)
+        self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)
         self._add_default_target_file('bin', output)
 
 

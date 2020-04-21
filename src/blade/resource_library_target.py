@@ -142,7 +142,7 @@ class ResourceLibrary(CcTarget):
         resources = [self._source_file_path(s) for s in self.srcs]
         index = [self._target_file_path('%s.h' % self.name),
                  self._target_file_path('%s.c' % self.name)]
-        self.ninja_build(index, 'resource_index', inputs=resources,
+        self.ninja_build('resource_index', index, inputs=resources,
                          variables={
                              'name': self._regular_variable_name(self.name),
                              'path': self.path
@@ -151,7 +151,7 @@ class ResourceLibrary(CcTarget):
         sources = ['%s.c' % self.name]
         for resource in self.srcs:
             generated_source = '%s.c' % resource
-            self.ninja_build(self._target_file_path(generated_source), 'resource',
+            self.ninja_build('resource', self._target_file_path(generated_source),
                              inputs=self._source_file_path(resource))
             sources.append(generated_source)
         self._cc_objects_ninja(sources, True)

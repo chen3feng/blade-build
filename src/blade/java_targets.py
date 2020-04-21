@@ -524,7 +524,7 @@ class JavaTargetMixIn(object):
             dst = os.path.join(sources_dir, package.replace('.', '/'),
                                os.path.basename(source))
             if ninja:
-                self.ninja_build(dst, 'copy', inputs=src)
+                self.ninja_build('copy', dst, inputs=src)
             else:
                 self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
                                  (env_name, dst, src))
@@ -636,7 +636,7 @@ class JavaTargetMixIn(object):
             inputs.append(path)
             outputs.append(os.path.join(resources_dir, dst))
         if inputs:
-            self.ninja_build(outputs, 'javaresource', inputs=inputs)
+            self.ninja_build('javaresource', outputs, inputs=inputs)
         return outputs
 
     def ninja_generate_fat_jar(self):
@@ -672,7 +672,7 @@ class JavaTargetMixIn(object):
             vars['classpath'] = ':'.join(jars)
         if source_encoding:
             vars['source_encoding'] = source_encoding
-        self.ninja_build(output, rule, inputs=inputs,
+        self.ninja_build(rule, output, inputs=inputs,
                          implicit_deps=implicit_deps, variables=vars)
         return output
 
@@ -684,7 +684,7 @@ class JavaTargetMixIn(object):
             inputs = []
         inputs += dep_jars + maven_jars
         output = self._target_file_path() + '.fat.jar'
-        self.ninja_build(output, 'fatjar', inputs=inputs)
+        self.ninja_build('fatjar', output, inputs=inputs)
         return output
 
 
@@ -791,12 +791,12 @@ class JavaTarget(Target, JavaTargetMixIn):
             classes_jar = self._target_file_path() + '__classes__.jar'
             javacflags = self.javac_flags()
             self.ninja_build_jar(classes_jar, inputs=srcs, javacflags=javacflags)
-            self.ninja_build(jar, 'javajar', inputs=[classes_jar] + resources)
+            self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
         elif srcs:
             javacflags = self.javac_flags()
             self.ninja_build_jar(jar, inputs=srcs, javacflags=javacflags)
         elif resources:
-            self.ninja_build(jar, 'javajar', inputs=resources)
+            self.ninja_build('javajar', jar, inputs=resources)
         else:
             jar = ''
         if jar:
@@ -900,7 +900,7 @@ class JavaBinary(JavaTarget):
         inputs += dep_jars + maven_jars
         output = self._target_file_path() + '.one.jar'
         vars = {'mainclass': self.data['main_class']}
-        self.ninja_build(output, 'onejar', inputs=inputs, variables=vars)
+        self.ninja_build('onejar', output, inputs=inputs, variables=vars)
         self._add_target_file('onejar', output)
         return output
 
@@ -910,7 +910,7 @@ class JavaBinary(JavaTarget):
         maven_jars = self._detect_maven_conflicted_deps('package', maven_jars)
         onejar = self.ninja_generate_one_jar(dep_jars, maven_jars)
         output = self._target_file_path()
-        self.ninja_build(output, 'javabinary', inputs=onejar)
+        self.ninja_build('javabinary', output, inputs=onejar)
         self._add_default_target_file('bin', output)
 
 
@@ -997,9 +997,7 @@ class JavaTest(JavaBinary):
         jar = self.ninja_generate_jar()
         output = self._target_file_path()
         dep_jars, maven_jars = self._get_test_deps()
-        self.ninja_build(output, 'javatest',
-                         inputs=[jar] + dep_jars + maven_jars,
-                         variables=vars)
+        self.ninja_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
 def maven_jar(name, id, classifier='', transitive=True):
