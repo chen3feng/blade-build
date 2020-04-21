@@ -70,7 +70,7 @@ class LexYaccLibrary(CcTarget):
         self.data['link_all_symbols'] = True
 
     def _lex_flags(self):
-        """Set up lex flags according to the options. """
+        """Return lex flags according to the options. """
         lex_flags = list(self.data['lexflags'])
         if self.data.get('recursive'):
             lex_flags.append('-R')
@@ -80,7 +80,7 @@ class LexYaccLibrary(CcTarget):
         return lex_flags
 
     def _yacc_flags(self):
-        """Set up lex/yacc flags according to the options. """
+        """Return yacc flags according to the options. """
         yacc_flags = list(self.data['yaccflags'])
         yacc_flags.append('-d')
         prefix = self.data.get('prefix')
