@@ -680,16 +680,14 @@ class Target(object):
         outs = var_to_list(outputs)
         if implicit_outputs:
             outs.append('|')
-            outs += implicit_outputs
-        ins = []
-        if inputs:
-            ins = var_to_list(inputs)
+            outs += var_to_list(implicit_outputs)
+        ins = var_to_list(inputs) if inputs else []
         if implicit_deps:
             ins.append('|')
-            ins += implicit_deps
+            ins += var_to_list(implicit_deps)
         if order_only_deps:
             ins.append('||')
-            ins += order_only_deps
+            ins += var_to_list(order_only_deps)
         self._write_rule('build %s: %s %s' % (' '.join(outs), rule, ' '.join(ins)))
 
         if variables:
