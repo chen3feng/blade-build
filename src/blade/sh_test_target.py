@@ -114,7 +114,7 @@ class ShellTest(Target):
     def ninja_rules(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
         output = self._target_file_path()
-        self.ninja_build(output, 'shelltest', inputs=srcs)
+        self.ninja_build('shelltest', output, inputs=srcs)
         targets = self.blade.get_build_targets()
         inputs, testdata = [], []
         for key, type, dst in self.data['locations']:
@@ -130,7 +130,7 @@ class ShellTest(Target):
                     testdata.append(dst)
         if inputs:
             output = '%s.testdata' % self._target_file_path()
-            self.ninja_build(output, 'shelltestdata', inputs=inputs,
+            self.ninja_build('shelltestdata', output, inputs=inputs,
                              variables={'testdata': ' '.join(testdata)})
 
 

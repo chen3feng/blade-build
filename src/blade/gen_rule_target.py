@@ -190,7 +190,7 @@ class GenRuleTarget(Target):
             vars['_in_1'] = inputs[0]
         if '${_out_1}' in cmd:
             vars['_out_1'] = outputs[0]
-        self.ninja_build(outputs, rule, inputs=inputs,
+        self.ninja_build(rule, outputs, inputs=inputs,
                          implicit_deps=self.implicit_dependencies(),
                          variables=vars)
         for i, out in enumerate(outputs):

@@ -133,15 +133,13 @@ class ScalaTarget(Target, JavaTargetMixIn):
         if srcs and resources:
             classes_jar = self._target_file_path() + '__classes__.jar'
             scalacflags = self.scalac_flags()
-            self.ninja_build_jar(classes_jar, inputs=srcs,
-                                 scala=True, scalacflags=scalacflags)
-            self.ninja_build(jar, 'javajar', inputs=[classes_jar] + resources)
+            self.ninja_build_jar(classes_jar, inputs=srcs, scala=True, scalacflags=scalacflags)
+            self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
         elif srcs:
             scalacflags = self.scalac_flags()
-            self.ninja_build_jar(jar, inputs=srcs,
-                                 scala=True, scalacflags=scalacflags)
+            self.ninja_build_jar(jar, inputs=srcs, scala=True, scalacflags=scalacflags)
         elif resources:
-            self.ninja_build(jar, 'javajar', inputs=resources)
+            self.ninja_build('javajar', jar, inputs=resources)
         else:
             jar = ''
         if jar:
@@ -234,8 +232,7 @@ class ScalaTest(ScalaFatLibrary):
         jar = self.ninja_generate_jar()
         output = self._target_file_path()
         dep_jars, maven_jars = self._get_test_deps()
-        self.ninja_build(output, 'scalatest',
-                         inputs=[jar] + dep_jars + maven_jars)
+        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars)
 
 
 def scala_library(name,

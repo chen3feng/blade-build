@@ -140,7 +140,7 @@ class GoTarget(Target):
         variables = {'package': self.data['go_package']}
         if self.data['extra_goflags']:
             variables['extra_goflags'] = self.data['extra_goflags']
-        self.ninja_build(output, self.data['go_rule'],
+        self.ninja_build(self.data['go_rule'], output,
                          implicit_deps=implicit_deps,
                          variables=variables)
         label = self.data.get('go_label')

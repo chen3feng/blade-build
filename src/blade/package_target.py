@@ -210,7 +210,7 @@ class PackageTarget(Target):
 
         output = self._target_file_path(self.data['out'])
         if not self.data['shell']:
-            self.ninja_build(output, 'package', inputs=inputs,
+            self.ninja_build('package', output, inputs=inputs,
                              variables={'entries': ' '.join(entries)})
         else:
             self.ninja_package_in_shell(output, inputs, entries)
@@ -236,7 +236,7 @@ class PackageTarget(Target):
         package_sources = []
         for src, dst in zip(inputs, entries):
             dst = os.path.join(packageroot, dst)
-            self.ninja_build(dst, 'copy', inputs=src)
+            self.ninja_build('copy', dst, inputs=src)
             package_sources.append(dst)
         vars = {
             'entries': ' '.join(entries),
@@ -246,7 +246,7 @@ class PackageTarget(Target):
         rule = self.ninja_rule_from_package_type(type)
         if type != 'zip':
             vars['tarflags'] = self.tar_flags(type)
-        self.ninja_build(output, rule, inputs=package_sources, variables=vars)
+        self.ninja_build(rule, output, inputs=package_sources, variables=vars)
 
 
 def package(name,

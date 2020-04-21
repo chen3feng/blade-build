@@ -673,7 +673,7 @@ class Target(object):
         """Generate ninja rules for specific target. """
         raise NotImplementedError(self.fullname)
 
-    def ninja_build(self, outputs, rule, inputs=None,
+    def ninja_build(self, rule, outputs, inputs=None,
                     implicit_deps=None, order_only_deps=None,
                     variables=None, implicit_outputs=None):
         """Generate a ninja build statement with specified parameters. """

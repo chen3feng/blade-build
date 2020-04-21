@@ -450,8 +450,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def ninja_proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
-        self.ninja_build(output, 'protodescriptors', inputs=inputs,
-                         variables={'first': inputs[0]})
+        self.ninja_build('protodescriptors', output, inputs=inputs, variables={'first': inputs[0]})
 
     def ninja_protoc_plugin_parameters(self, language):
         """Return a tuple of (plugin path, vars) used as parameters for ninja build. """
@@ -479,7 +478,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             input = self._source_file_path(src)
             package_dir, java_name = self._proto_java_gen_file(src)
             output = self._target_file_path(os.path.join(os.path.dirname(src), package_dir, java_name))
-            self.ninja_build(output, 'protojava', inputs=input,
+            self.ninja_build('protojava', output, inputs=input,
                              implicit_deps=implicit_deps, variables=vars)
             java_sources.append(output)
 
@@ -493,10 +492,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         for proto in self.srcs:
             input = self._source_file_path(proto)
             output = self._proto_gen_python_file(proto)
-            self.ninja_build(output, 'protopython', inputs=input)
+            self.ninja_build('protopython', output, inputs=input)
             generated_pys.append(output)
         pylib = self._target_file_path() + '.pylib'
-        self.ninja_build(pylib, 'pythonlibrary', inputs=generated_pys,
+        self.ninja_build('pythonlibrary', pylib, inputs=generated_pys,
                          variables={'pythonbasedir': self.build_path})
         self._add_target_file('pylib', pylib)
 
@@ -512,7 +511,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                                 (self.fullname, package, protobuf_go_path, src))
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
-            self.ninja_build(output, 'protogo', inputs=path)
+            self.ninja_build('protogo', output, inputs=path)
             generated_goes.append(output)
         self._add_target_file('gopkg', generated_goes)
 
@@ -552,7 +551,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             implicit_deps.append(plugin)
         for src in self.srcs:
             source, header = self._proto_gen_files(src)
-            self.ninja_build([source, header], 'proto',
+            self.ninja_build('proto', [source, header],
                              inputs=self._source_file_path(src),
                              implicit_deps=implicit_deps, variables=vars)
             cpp_headers.append(header)
