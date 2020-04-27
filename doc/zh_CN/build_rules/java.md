@@ -1,6 +1,6 @@
 # 构建Java目标
 
-blade 早期的开发主要是针对 C/C++/Protobuf 相关的后台服务项目，作为通用的构建系统，也逐步扩展了支持
+Blade 早期的开发主要是针对 C/C++/Protobuf 相关的后台服务项目，作为通用的构建系统，也逐步扩展了支持
 Java/Python 等的规则。第一版 Java 规则的实现（java_jar_target.py）比较简单，后由于项目需要，参考
 Maven/Buck/Bazel 的实现和 Java 语言项目构建习惯和运行场景，重写了新的 Java 构建规则（java_targets.py）
 
@@ -35,7 +35,7 @@ java_library(
 - srcs 属性与 glob 函数
 
 srcs 属性和普通规则的 srcs 属性相同，可以指明源文件的路径，遵照 java 开发习惯，比如在 Maven 中无需
-指定源文件列表，所有源文件按照标准目录布局组织放于 src/main/java 目录下，因此在 blade 中提供了 glob
+指定源文件列表，所有源文件按照 Maven [标准目录布局](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html)组织放于 src/main/java 目录下，因此在 blade 中提供了 glob
 函数用于自动获取文件列表并支持文件排除：
 
 ```python
