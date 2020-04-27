@@ -507,7 +507,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             path = self._source_file_path(src)
             package = self._get_go_package_name(path)
             if not package.startswith(protobuf_go_path):
-                console.warning('%s: go_package "%s" is not starting with "%s" in %s' %
+                console.warning('//%s: go_package "%s" is not starting with "%s" in %s' %
                                 (self.fullname, package, protobuf_go_path, src))
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])

@@ -227,7 +227,7 @@ class ScalaTest(ScalaFatLibrary):
 
     def ninja_rules(self):
         if not self.srcs:
-            console.warning('%s: Empty scala test sources.' % self.fullname)
+            console.warning('//%s: Empty scala test sources.' % self.fullname)
             return
         jar = self.ninja_generate_jar()
         output = self._target_file_path()

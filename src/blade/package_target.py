@@ -152,7 +152,7 @@ class PackageTarget(Target):
             target = targets[key]
             target_var = target._get_target_var(type)
             if not target_var:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
+                console.warning('//%s: Location %s %s is missing. Ignored.' %
                                 (self.fullname, key, type))
                 continue
 
@@ -200,7 +200,7 @@ class PackageTarget(Target):
         for key, type, dst in self.data['locations']:
             path = targets[key]._get_target_file(type)
             if not path:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
+                console.warning('//%s: Location %s %s is missing. Ignored.' %
                                 (self.fullname, key, type))
                 continue
             if not dst:

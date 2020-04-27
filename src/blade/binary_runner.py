@@ -132,7 +132,7 @@ class BinaryRunner(object):
             else:
                 src = dest = i
             if '..' in src:
-                console.warning('%s: Relative path is not allowed in testdata source. '
+                console.warning('//%s: Relative path is not allowed in testdata source. '
                                 'Ignored %s.' % (target.fullname, src))
                 continue
             if src.startswith('//'):
@@ -146,7 +146,7 @@ class BinaryRunner(object):
             dest_list.append(dest)
             dest_path = os.path.join(runfiles_dir, dest)
             if os.path.exists(dest_path):
-                console.warning('%s: %s already existed, could not prepare testdata.' %
+                console.warning('//%s: %s already existed, could not prepare testdata.' %
                                 (target.fullname, dest))
                 continue
             try:

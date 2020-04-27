@@ -114,7 +114,7 @@ class CcTarget(Target):
             if dep and dep.data.get('deprecated'):
                 replaced_deps = dep.deps
                 if replaced_deps:
-                    console.warning('%s: //%s has been deprecated, '
+                    console.warning('//%s: //%s has been deprecated, '
                                     'please depends on //%s:%s' % (
                                         self.fullname, dep.fullname,
                                         replaced_deps[0][0], replaced_deps[0][1]))
@@ -162,7 +162,8 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in CcTarget.__cxx_keyword_list:
-                console.warning('DO NOT define c++ keyword %s as macro' % macro)
+                console.warning('//%s: DO NOT define c++ keyword %s as macro' % (
+                        self.fullname, macro))
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
