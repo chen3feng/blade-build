@@ -29,6 +29,7 @@ from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 from blade.thrift_helper import FBThriftHelper
 
+
 class FBThriftLibrary(CcTarget):
     """A fbthrift library target derived from CcTarget. """
     def __init__(self,

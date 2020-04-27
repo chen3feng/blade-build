@@ -530,6 +530,7 @@ toolchains = {
     'python_binary': generate_python_binary_entry,
 }
 
+
 if __name__ == '__main__':
     name = sys.argv[1]
     try:

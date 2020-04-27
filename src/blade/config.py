@@ -308,6 +308,7 @@ def _check_kwarg_enum_value(kwargs, name, valid_values):
         console.error_exit('//%s: Invalid %s value %s, can only be in %s' % (
             _blade_config.current_file_name, name, value, valid_values))
 
+
 def _check_test_ignored_envs(kwargs):
     names = kwargs.get('test_ignored_envs')
     if not names:
@@ -319,6 +320,7 @@ def _check_test_ignored_envs(kwargs):
             console.error_exit(
                 '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' % (
                 _blade_config.current_file_name, name, e))
+
 
 @config_rule
 def config_items(**kwargs):

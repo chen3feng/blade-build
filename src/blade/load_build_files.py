@@ -30,6 +30,7 @@ from blade.pathlib import Path
 # import these modules make build functions registered into build_rules
 # TODO(chen3feng): Load build modules dynamically to enable extension.
 
+
 def _load_build_rules():
     # pylint: disable=W0611
     import blade.cc_targets
