@@ -88,7 +88,7 @@ class WorkerThread(threading.Thread):
                     self.job_name and self.job_process is not None):
                 if self.job_start_time + self.job_timeout < now:
                     self.job_is_timeout = True
-                    console.error('%s: TIMEOUT\n' % self.job_name)
+                    console.error('//%s: TIMEOUT\n' % self.job_name)
                     self.job_process.terminate()
         finally:
             self.job_lock.release()
@@ -180,7 +180,7 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
         result = self._get_result(p.returncode)
-        msg = 'Output of %s:\n%s\n%s finished: %s\n' % (
+        msg = 'Output of //%s:\n%s\n//%s finished: %s\n' % (
             test_name, stdout, test_name, result)
         if console.verbosity_le('quiet') and p.returncode != 0:
             console.error(msg, prefix=False)
@@ -203,7 +203,7 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
         result = self._get_result(p.returncode)
-        console.info('%s finished : %s\n' % (test_name, result))
+        console.info('//%s finished : %s\n' % (test_name, result))
 
         return p.returncode
 
@@ -222,8 +222,7 @@ class TestScheduler(object):
             else:
                 returncode = self._run_job(job, job_thread)
         except OSError as e:
-            console.error('%s: Create test process error: %s' %
-                          (target.fullname, str(e)))
+            console.error('//%s: Create test process error: %s' % (target.fullname, str(e)))
             returncode = 255
 
         cost_time = time.time() - start_time

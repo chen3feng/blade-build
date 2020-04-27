@@ -137,16 +137,13 @@ class JavaTargetMixIn(object):
             if maven.is_valid_id(exclusion):
                 if '*' in exclusion:
                     if not self.__is_valid_maven_id_with_wildcards(exclusion):
-                        console.warning('//%s: Invalid maven id with wildcards %s. '
-                                        'Ignored. The valid id could be: '
-                                        'group:artifact:*, group:*:*, *:*:*' %
-                                        (self.fullname, exclusion))
+                        self.warning('Invalid maven id with wildcards %s. Ignored. The valid id '
+                                     'could be: group:artifact:*, group:*:*, *:*:*' % exclusion)
                         continue
                 self.data['exclusions'].append(exclusion)
             else:
-                console.warning('//%s: Exclusions only support maven id '
-                                'group:artifact:version. Ignore %s' % (
-                                    self.fullname, exclusion))
+                self.warning('Exclusions only support maven id group:artifact:version. Ignore %s' %
+                             exclusion)
 
     def _process_pack_exclusions(self, jars):
         """Exclude jars specified by exclusions from input jars. """
@@ -182,8 +179,8 @@ class JavaTargetMixIn(object):
             elif isinstance(resource, str):
                 src, dst = resource, ''
             else:
-                console.error_exit('//%s: Invalid resource %s. Resource should '
-                                   'be either str or tuple.' % (self.fullname, resource))
+                self.error_exit('Invalid resource %s. Resource should be either a str or a tuple.' %
+                                resource)
 
             m = location_re.search(src)
             if m:
@@ -274,8 +271,7 @@ class JavaTargetMixIn(object):
         maven_repo = '.m2/repository/'
         for jar in set(dep_jars):
             if maven_repo not in jar or not os.path.exists(jar):
-                console.debug('%s: %s not found in local maven repository' % (
-                    self.fullname, jar))
+                self.debug('%s not found in local maven repository' % jar)
                 continue
             parts = jar[jar.find(maven_repo) + len(maven_repo):].split('/')
             if len(parts) < 4:
@@ -307,9 +303,8 @@ class JavaTargetMixIn(object):
                         break
                     if picked_version is None or LooseVersion(v) > LooseVersion(picked_version):
                         picked_version = v
-                console.debug('%s: Maven dependency version conflict %s:%s:{%s} during %s. Use %s' % (
-                    self.fullname, group, artifact,
-                    ', '.join(versions), scope, picked_version))
+                self.debug('Maven dependency version conflict %s:%s:{%s} during %s. Use %s' % (
+                    group, artifact, ', '.join(versions), scope, picked_version))
             jars += maven_jars[group, artifact, picked_version]
         return sorted(jars)
 
@@ -384,8 +379,7 @@ class JavaTargetMixIn(object):
         """
         full_path, res_path, jar_path = '', resource[0], resource[1]
         if '..' in res_path:
-            console.error_exit('//%s: Invalid resource %s. Relative path is not allowed.'
-                               % (self.fullname, res_path))
+            self.error_exit('Invalid resource %s. Relative path is not allowed.' % res_path)
         elif res_path.startswith('//'):
             res_path = res_path[2:]
             full_path = res_path
@@ -404,8 +398,7 @@ class JavaTargetMixIn(object):
         for resource in resources:
             full_path, jar_path = self._get_resource_path(resource)
             if not os.path.exists(full_path):
-                console.warning('//%s: Resource %s does not exist.' % (
-                    self.fullname, full_path))
+                self.warning('Resource %s does not exist.' % full_path)
                 results.add((full_path, jar_path))  # delay error to build phase
             elif os.path.isfile(full_path):
                 results.add((full_path, jar_path))
@@ -551,8 +544,7 @@ class JavaTargetMixIn(object):
             target = targets[key]
             target_var = target._get_target_var(type)
             if not target_var:
-                console.warning('//%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
                 continue
             if dst:
                 dst_path = os.path.join(resources_dir, dst)
@@ -628,8 +620,7 @@ class JavaTargetMixIn(object):
         for key, type, dst in locations:
             path = targets[key]._get_target_file(type)
             if not path:
-                console.warning('//%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
                 continue
             if not dst:
                 dst = os.path.basename(path)
@@ -991,7 +982,7 @@ class JavaTest(JavaBinary):
 
     def ninja_rules(self):
         if not self.srcs:
-            console.warning('//%s: Empty java test sources.' % self.fullname)
+            self.warning('Empty java test sources')
             return
         vars = self.ninja_java_test_vars()
         jar = self.ninja_generate_jar()

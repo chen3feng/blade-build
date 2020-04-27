@@ -147,9 +147,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 continue
             dep = self.target_database[dkey]
             if dep.type != 'proto_library' and dep.type != 'gen_rule':
-                console.error_exit('%s: Invalid dep %s. Proto_library can '
-                                   'only depend on proto_library or gen_rule.' %
-                                   (self.fullname, dep.fullname))
+                self.error_exit('Invalid dep %s. Proto_library can only depend on proto_library '
+                                'or gen_rule.' % dep.fullname)
 
     def _handle_protoc_plugins(self, plugins):
         """Handle protoc plugins and corresponding dependencies. """
@@ -158,7 +157,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protoc_plugin_deps, protoc_plugin_java_deps = set(), set()
         for plugin in plugins:
             if plugin not in protoc_plugin_config:
-                console.error_exit('%s: Unknown plugin %s' % (self.fullname, plugin))
+                console.error_exit('Unknown plugin %s' % plugin)
             p = protoc_plugin_config[plugin]
             protoc_plugins.append(p)
             for language, v in iteritems(p.code_generation):
@@ -228,9 +227,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if m:
             return m.group(1)
         else:
-            console.error_exit('%s: "go_package" is mandatory to generate golang code '
-                               'in protocol buffers but is missing in %s.' % (
-                                   self.fullname, path))
+            self.error_exit('"go_package" is mandatory to generate golang code '
+                            'in protocol buffers but is missing in %s.' % path)
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
@@ -320,7 +318,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         var_name = self._var_name('go')
         go_home = config.get_item('go_config', 'go_home')
         if not go_home:
-            console.error_exit('%s: go_home is not configured in BLADE_ROOT.' % self.fullname)
+            self.error_exit("'go_home' is not configured")
         proto_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         go_module_relpath = config.get_item('go_config', 'go_module_relpath')
@@ -507,8 +505,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             path = self._source_file_path(src)
             package = self._get_go_package_name(path)
             if not package.startswith(protobuf_go_path):
-                console.warning('//%s: go_package "%s" is not starting with "%s" in %s' %
-                                (self.fullname, package, protobuf_go_path, src))
+                self.warning('go_package "%s" is not starting with "%s" in %s' % (
+                             package, protobuf_go_path, src))
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
             self.ninja_build('protogo', output, inputs=path)

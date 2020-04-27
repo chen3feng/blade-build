@@ -191,7 +191,7 @@ class TestRunner(binary_runner.BinaryRunner):
         """Return run reason for a given test"""
 
         if self._skip_test(target):
-            console.info('%s is skipped by --skip-test' % target.fullname)
+            console.info('//%s is skipped by --skip-test' % target.fullname)
             return None
 
         if self.options.full_test:
