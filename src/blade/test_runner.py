@@ -296,7 +296,7 @@ class TestRunner(binary_runner.BinaryRunner):
             cmd_str = ' '.join(cmd)
             console.info('Generating java coverage report')
             console.debug(cmd_str)
-            if subprocess.call(cmd_str, shell=True):
+            if subprocess.call(cmd_str, shell=True) != 0:
                 console.warning('Failed to generate java coverage report')
 
     def _generate_coverage_report(self):
