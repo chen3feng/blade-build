@@ -66,9 +66,8 @@ class GoTarget(Target):
         srcs = [self._source_file_path(s) for s in self.srcs]
         dirs = set([os.path.dirname(s) for s in srcs])
         if len(dirs) != 1:
-            console.error_exit('%s: Go sources belonging to the same package '
-                               'should be in the same directory. Sources: %s' %
-                               (self.fullname, ', '.join(self.srcs)))
+            self.error_exit('Go sources belonging to the same package should be in the same '
+                            'directory. Sources: %s' % ', '.join(self.srcs))
         go_home = config.get_item('go_config', 'go_home')
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         go_module_relpath = config.get_item('go_config', 'go_module_relpath')
@@ -87,8 +86,7 @@ class GoTarget(Target):
                                  universal_newlines=True)
             stdout, stderr = p.communicate()
             if p.returncode:
-                console.error_exit('%s: Failed to initialize go environment: %s' %
-                                   (self.fullname, stderr))
+                self.error_exit('Failed to initialize go environment: %s' % stderr)
             for line in stdout.splitlines():
                 if line.startswith('GOOS='):
                     GoTarget._go_os = line.replace('GOOS=', '').strip('"')

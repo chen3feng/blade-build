@@ -406,8 +406,7 @@ class SwigLibrary(CcTarget):
             self._swig_library_rules_java(dep_files_map)
         if getattr(self.options, 'generate_php', False):
             if not self.php_inc_list:
-                console.error_exit('failed to build //%s:%s, please install php modules' % (
-                    self.path, self.name))
+                self.error_exit('Swig php wrapper need php develop environment')
             else:
                 self._swig_library_rules_php(dep_files_map)
 

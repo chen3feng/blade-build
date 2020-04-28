@@ -123,6 +123,26 @@ class Target(object):
         target.update(self.data)
         return target
 
+    def debug(self, msg):
+        """Print message with target full name prefix"""
+        console.debug('//%s: %s' % (self.fullname, msg))
+
+    def info(self, msg):
+        """Print message with target full name prefix"""
+        console.info('//%s: %s' % (self.fullname, msg))
+
+    def warning(self, msg):
+        """Print message with target full name prefix"""
+        console.warning('//%s: %s' % (self.fullname, msg))
+
+    def error(self, msg):
+        """Print message with target full name prefix"""
+        console.error('//%s: %s' % (self.fullname, msg))
+
+    def error_exit(self, msg, code=1):
+        """Print message with target full name prefix and exit"""
+        console.error_exit('//%s: %s' % (self.fullname, msg), code=code)
+
     def _clone_env(self):
         """Clone target's environment. """
         self._write_rule('%s = top_env.Clone()' % self._env_name())
@@ -133,16 +153,14 @@ class Target(object):
 
     def _check_name(self):
         if '/' in self.name:
-            console.error_exit('//%s: Invalid target name, should not contain dir part.'
-                               % self.fullname)
+            self.error_exit('Invalid target name, should not contain dir part')
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            console.error_exit('//%s: unrecognized options %s' % (
-                self.fullname, kwargs))
+            self.error_exit('unrecognized options %s' % kwargs)
 
     def _allow_duplicate_source(self):
-        """Whether the target allows duplicate source file with other targets. """
+        """Whether the target allows duplicate source file with other targets"""
         return False
 
     # Keep the relationship of all src -> target.
@@ -162,16 +180,14 @@ class Target(object):
             else:
                 srcset.add(s)
         if dups:
-            console.error_exit('%s Duplicate source file paths: %s ' % (
-                self.fullname, dups))
+            self.error_exit('Duplicate source file paths: %s ' % dups)
 
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
-                console.error_exit('%s Invalid source file path: %s. '
-                                   'can only be relative path, and must in current directory '
-                                   'or subdirectories.' % (self.fullname, s))
+                self.error_exit('Invalid source file path: %s. can only be relative path, and must '
+                                'in current directory or subdirectories.' % s)
 
             src = os.path.normpath(os.path.join(self.path, s))
             target = self.fullname, self._allow_duplicate_source()
@@ -319,10 +335,9 @@ class Target(object):
         """
         if not (t.startswith(':') or t.startswith('#') or
                 t.startswith('//') or t.startswith('./')):
-            console.error_exit('%s: Invalid %s.' % (self.fullname, t))
+            self.error_exit('Invalid format %s.' % t)
         if t.count(':') > 1:
-            console.error_exit('%s: Invalid %s, missing \',\' between?' %
-                               (self.fullname, t))
+            self.error_exit("Invalid format %s, missing ',' between labels?" % t)
 
     def _check_deps(self, deps):
         """_check_deps

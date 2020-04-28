@@ -108,8 +108,7 @@ class GenRuleTarget(Target):
             for key, type in locations:
                 target_var = targets[key]._get_target_var(type)
                 if not target_var:
-                    console.error_exit('%s: Invalid location reference %s %s' %
-                                       (self.fullname, ':'.join(key), type))
+                    self.error_exit('Invalid location reference %s %s' % ':'.join(key), type)
                 target_vars.append(target_var)
             cmd = '"%s" %% (%s)' % (cmd, ','.join(['str(%s[0])' % v for v in target_vars]))
         else:
@@ -161,8 +160,7 @@ class GenRuleTarget(Target):
             for key, label in locations:
                 path = targets[key]._get_target_file(label)
                 if not path:
-                    console.error_exit('%s: Invalid location reference %s %s' %
-                                       (self.fullname, ':'.join(key), label))
+                    self.error_exit('Invalid location reference %s %s' % (':'.join(key), label))
                 locations_paths.append(path)
             cmd = cmd % tuple(locations_paths)
         return cmd

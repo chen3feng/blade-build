@@ -227,11 +227,11 @@ class BladeConfig(object):
                     if isinstance(section[k], list):
                         section[k] += var_to_list(append[k])
                     else:
-                        console.warning('%s: %s: config item %s is not a list' %
+                        console.warning('//%s: %s: config item %s is not a list' %
                                         (self.current_file_name, section_name, k))
 
                 else:
-                    console.warning('%s: %s: unknown config item name: %s' %
+                    console.warning('//%s: %s: unknown config item name: %s' %
                                     (self.current_file_name, section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
@@ -242,7 +242,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
-                console.warning('%s: %s: unknown config item name: %s' %
+                console.warning('//%s: %s: unknown config item name: %s' %
                                 (self.current_file_name, section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:
@@ -305,8 +305,9 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        console.error_exit('%s: Invalid %s value %s, can only be in %s' % (
+        console.error_exit('//%s: Invalid %s value %s, can only be in %s' % (
             _blade_config.current_file_name, name, value, valid_values))
+
 
 def _check_test_ignored_envs(kwargs):
     names = kwargs.get('test_ignored_envs')
@@ -319,6 +320,7 @@ def _check_test_ignored_envs(kwargs):
             console.error_exit(
                 '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' % (
                 _blade_config.current_file_name, name, e))
+
 
 @config_rule
 def config_items(**kwargs):
@@ -456,7 +458,7 @@ def cc_config(append=None, **kwargs):
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, basestring) and ' ' in extra_incs:
-            console.warning('%s: cc_config: extra_incs has been changed to list' %
+            console.warning('//%s: cc_config: extra_incs has been changed to list' %
                             _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()
     _blade_config.update_config('cc_config', append, kwargs)

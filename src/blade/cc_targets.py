@@ -114,9 +114,7 @@ class CcTarget(Target):
             if dep and dep.data.get('deprecated'):
                 replaced_deps = dep.deps
                 if replaced_deps:
-                    console.warning('%s: //%s has been deprecated, '
-                                    'please depends on //%s:%s' % (
-                                        self.fullname, dep.fullname,
+                    self.warning('This is deprecated, please depends on //%s:%s' % (
                                         replaced_deps[0][0], replaced_deps[0][1]))
 
     def _prepare_to_generate_rule(self):
@@ -162,7 +160,7 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in CcTarget.__cxx_keyword_list:
-                console.warning('DO NOT define c++ keyword %s as macro' % macro)
+                self.warning('DO NOT define c++ keyword %s as macro' % macro)
 
     def _check_incorrect_no_warning(self):
         """check if warning=no is correctly used or not. """
@@ -181,8 +179,7 @@ class CcTarget(Target):
             illegal_path_list += [s for s in srcs if not keyword in s]
 
         if illegal_path_list:
-            console.warning("//%s: warning='no' should only be used "
-                            "for code in thirdparty." % self.fullname)
+            self.warning("warning='no' should only be used for code in thirdparty.")
 
     def _objs_name(self):
         """Concatenating path and name to be objs var. """
@@ -214,8 +211,7 @@ class CcTarget(Target):
                 source = lib
                 break
         if not source:
-            console.error_exit('%s: Can not find either %s or %s' % (
-                self.fullname, libs[0], libs[1]))
+            self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
@@ -1111,8 +1107,7 @@ class CcLibrary(CcTarget):
                         msg += [prefix % h for h in stack[1:]]
                         msg.append(prefix % source)
                     console.info('\n%s' % '\n'.join(msg))
-                    console.error('%s: Missing dependency declaration in BUILD for %s.' % (
-                        self.fullname, generated_hdr))
+                    self.error('Missing dependency declaration in BUILD for %s.' % generated_hdr)
 
         for preprocess in failed_preprocess_paths:
             if preprocess in history:
@@ -1682,8 +1677,7 @@ class CcTest(CcBinary):
             heap_check = cc_test_config.get('heap_check', '')
         else:
             if heap_check not in HEAP_CHECK_VALUES:
-                console.error_exit('//%s:%s: heap_check can only be in %s' % (
-                    self.path, self.name, HEAP_CHECK_VALUES))
+                self.error_exit('heap_check can only be in %s' % HEAP_CHECK_VALUES)
 
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])

@@ -45,8 +45,7 @@ class LexYaccLibrary(CcTarget):
         if (len(srcs) != 2 or
                 (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
-            console.error_exit('%s: srcs for lex_yacc_library should be '
-                               'a pair of (lex_source, yacc_source)' % self.fullname)
+            self.error_exit('srcs for lex_yacc_library must be a pair of [lex_file, yacc_file]')
 
         CcTarget.__init__(self,
                           name,
@@ -105,7 +104,7 @@ class LexYaccLibrary(CcTarget):
             rule = 'target = "%s" + top_env["CXXFILESUFFIX"], source = "%s"' % (target, source)
             self._write_rule('%s = %s.CXXFile(%s)' % (var_name, env_name, rule))
         else:
-            console.error_exit('%s: Unknown source %s' % (self.fullname, src))
+            self.error_exit('Unknown source %s' % src)
 
     def scons_rules(self):
         """scons_rules.
@@ -145,7 +144,7 @@ class LexYaccLibrary(CcTarget):
         elif source.endswith('.ll') or source.endswith('.yy'):
             return source + '.cc'
         else:
-            console.error_exit('%s: Unknown source %s' % (self.fullname, source))
+            self.error_exit('Unknown source %s' % source)
 
     def ninja_lex_vars(self):
         lex_flags = self._lex_flags()

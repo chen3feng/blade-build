@@ -51,9 +51,8 @@ class PythonTarget(Target):
 
         if base:
             if not base.startswith('//'):
-                console.error_exit('%s: Invalid base directory %s. Option base should '
-                                   'be a directory starting with \'//\' from BLADE_ROOT directory.' %
-                                   (self.fullname, base))
+                self.error_exit('Invalid base directory %s. Option base should be a directory '
+                                'starting with \'//\' from BLADE_ROOT directory.' % base)
             self.data['python_base'] = base[2:]
         self.data['python_sources'] = [self._source_file_path(s) for s in srcs]
 
@@ -163,11 +162,9 @@ class PrebuiltPythonLibrary(PythonTarget):
                               visibility,
                               kwargs)
         if base:
-            console.error_exit("%s: Prebuilt py_library doesn't support base" %
-                               self.fullname)
+            self.error_exit("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
-            console.error_exit('%s: There can only be 1 file in prebuilt py_library' %
-                               self.fullname)
+            self.error_exit('There can only be 1 file in prebuilt py_library')
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
             console.error_exit(

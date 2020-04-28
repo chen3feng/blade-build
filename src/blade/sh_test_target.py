@@ -68,8 +68,7 @@ class ShellTest(Target):
             elif isinstance(td, str):
                 src, dst = td, ''
             else:
-                console.error_exit('%s: Invalid testdata %s. Test data should '
-                                   'be either str or tuple.' % (self.fullname, td))
+                self.error_exit('Invalid testdata %s. Test data should be either str or tuple.' % td)
 
             m = location_re.search(src)
             if m:
@@ -88,8 +87,7 @@ class ShellTest(Target):
             target = targets[key]
             target_var = target._get_target_var(type)
             if not target_var:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
             else:
                 sources.append('%s, %s.Value("%s")' % (target_var, env_name, dst))
 
@@ -120,8 +118,7 @@ class ShellTest(Target):
         for key, type, dst in self.data['locations']:
             path = targets[key]._get_target_file(type)
             if not path:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
             else:
                 inputs.append(path)
                 if not dst:

@@ -63,9 +63,8 @@ class PackageTarget(Target):
                         kwargs)
 
         if type not in _package_types:
-            console.error_exit('%s: Invalid type %s. Types supported '
-                               'by the package are %s' % (
-                                   self.fullname, type, ', '.join(sorted(_package_types))))
+            self.error_exit('Invalid type %s. Types supported by the package are %s' % (
+                            type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
         self.data['sources'], self.data['locations'] = [], []
         self._process_srcs(srcs)
@@ -86,8 +85,7 @@ class PackageTarget(Target):
             elif isinstance(s, str):
                 src, dst = s, ''
             else:
-                console.error_exit('%s: Invalid src %s. src should '
-                                   'be either str or tuple.' % (self.fullname, s))
+                self.error_exit('Invalid src %s. src should be either str or tuple.' % s)
 
             m = location_re.search(src)
             if m:
@@ -105,8 +103,7 @@ class PackageTarget(Target):
         Return src full path within the workspace and mapping path in the archive.
         """
         if '..' in src or '..' in dst:
-            console.error_exit('%s: Invalid src (%s, %s). Relative path is not allowed.'
-                               % (self.fullname, src, dst))
+            self.error_exit('Invalid src (%s, %s). Relative path is not allowed.' % (src, dst))
         elif src.startswith('//'):
             src = src[2:]
             path = src
@@ -121,8 +118,7 @@ class PackageTarget(Target):
         """Add regular file or directory. """
         src, dst = self._get_source_path(src, dst)
         if not os.path.exists(src):
-            console.error_exit('%s: Package source %s does not exist.' % (
-                self.fullname, src))
+            self.error_exit('Package source %s does not exist.' % src)
         elif os.path.isfile(src):
             self.data['sources'].append((src, dst))
         else:
@@ -152,8 +148,7 @@ class PackageTarget(Target):
             target = targets[key]
             target_var = target._get_target_var(type)
             if not target_var:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
                 continue
 
             if dst:
@@ -200,8 +195,7 @@ class PackageTarget(Target):
         for key, type, dst in self.data['locations']:
             path = targets[key]._get_target_file(type)
             if not path:
-                console.warning('%s: Location %s %s is missing. Ignored.' %
-                                (self.fullname, key, type))
+                self.warning('Location %s %s is missing. Ignored.' % (key, type))
                 continue
             if not dst:
                 dst = os.path.basename(path)

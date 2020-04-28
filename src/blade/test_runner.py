@@ -191,7 +191,7 @@ class TestRunner(binary_runner.BinaryRunner):
         """Return run reason for a given test"""
 
         if self._skip_test(target):
-            console.info('%s is skipped by --skip-test' % target.fullname)
+            console.info('//%s is skipped by --skip-test' % target.fullname)
             return None
 
         if self.options.full_test:
@@ -296,7 +296,7 @@ class TestRunner(binary_runner.BinaryRunner):
             cmd_str = ' '.join(cmd)
             console.info('Generating java coverage report')
             console.debug(cmd_str)
-            if subprocess.call(cmd_str, shell=True):
+            if subprocess.call(cmd_str, shell=True) != 0:
                 console.warning('Failed to generate java coverage report')
 
     def _generate_coverage_report(self):

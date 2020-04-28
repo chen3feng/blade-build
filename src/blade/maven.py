@@ -130,13 +130,12 @@ class MavenCache(object):
                         '-Dversion=%s' % version])
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
-        if subprocess.call('%s > %s' % (cmd, log_path), shell=True):
+        cmd += ' -e -X'  # More detailed debug message
+        if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
             console.warning('Error occurred when downloading %s from central '
-                            'repository. Check %s for more details.' % (
-                                id, log_path))
+                            'repository. Check %s for details.' % (id, log_path))
             cmd += ' -Dtransitive=false'
-            if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'),
-                               shell=True):
+            if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
                 return False
             console.warning('Download standalone artifact %s successfully, but '
                             'its transitive dependencies are unavailable.' % id)
@@ -170,10 +169,10 @@ class MavenCache(object):
                         'dependency:build-classpath',
                         '-DincludeScope=runtime',
                         '-Dmdep.outputFile=%s' % classpath])
-        cmd += ' -f %s > %s' % (pom, log)
-        if subprocess.call(cmd, shell=True):
+        cmd += ' -e -X -f %s > %s' % (pom, log)
+        if subprocess.call(cmd, shell=True) != 0:
             console.warning('Error occurred when resolving %s dependencies. '
-                            'Check %s for more details.' % (id, log))
+                            'Check %s for details.' % (id, log))
             return False
         return True
 
