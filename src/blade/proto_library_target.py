@@ -86,7 +86,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
-        self._check_proto_srcs_name(srcs)
         CcTarget.__init__(self,
                           name,
                           'proto_library',
@@ -97,6 +96,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                           [], [], [], optimize, [], [],
                           blade,
                           kwargs)
+
+        self._check_proto_srcs_name(srcs)
         if srcs:
             self.data['public_protos'] = [self._source_file_path(s) for s in srcs]
 
@@ -133,7 +134,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Checks whether the proto file's name ends with 'proto'. """
         for src in srcs:
             if not src.endswith('.proto'):
-                console.error_exit('Invalid proto file name %s' % src)
+                self.error_exit('Invalid proto file name %s' % src)
 
     def _check_proto_deps(self):
         """Only proto_library or gen_rule target is allowed as deps. """
@@ -157,7 +158,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protoc_plugin_deps, protoc_plugin_java_deps = set(), set()
         for plugin in plugins:
             if plugin not in protoc_plugin_config:
-                console.error_exit('Unknown plugin %s' % plugin)
+                self.error_exit('Unknown plugin %s' % plugin)
             p = protoc_plugin_config[plugin]
             protoc_plugins.append(p)
             for language, v in iteritems(p.code_generation):
