@@ -130,7 +130,7 @@ class MavenCache(object):
                         '-Dversion=%s' % version])
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
-        cmd += ' -e -X'
+        cmd += ' -e -X'  # More detailed debug message
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True):
             console.warning('Error occurred when downloading %s from central '
                             'repository. Check %s for details.' % (
