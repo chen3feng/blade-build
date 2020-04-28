@@ -141,7 +141,7 @@ class Target(object):
 
     def error_exit(self, msg, code=1):
         """Print message with target full name prefix and exit"""
-        console.error_exit('//%s: %s' % msg, code=code)
+        console.error_exit('//%s: %s' % (self.fullname, msg), code=code)
 
     def _clone_env(self):
         """Clone target's environment. """
