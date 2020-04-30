@@ -485,7 +485,7 @@ build __securecc_phony__ : phony
                                        securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
                            description='SECURECC ${in}')
         self.generate_rule(name='securecc',
-                           command=self.generate_toolchain_command('securecc_object'),
+                           command=self._toolchain_command('securecc_object'),
                            description='SECURECC ${in}',
                            restat=True)
 
@@ -578,7 +578,7 @@ protocpythonpluginflags =
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
         self.generate_rule(name='resource_index',
-                           command=self.generate_toolchain_command('resource_index', suffix=args),
+                           command=self._toolchain_command('resource_index', suffix=args),
                            description='RESOURCE INDEX ${out}')
         self.generate_rule(name='resource',
                            command='xxd -i ${in} | '
@@ -624,7 +624,7 @@ javacflags =
 
     def generate_java_resource_rules(self):
         self.generate_rule(name='javaresource',
-                           command=self.generate_toolchain_command('java_resource'),
+                           command=self._toolchain_command('java_resource'),
                            description='JAVA RESOURCE ${in}')
 
     def generate_java_test_rules(self):
@@ -637,19 +637,17 @@ javacflags =
         self._add_rule('javatargetundertestpkg = __targetundertestpkg__')
         args = '${mainclass} ${javatargetundertestpkg} ${out} ${in}'
         self.generate_rule(name='javatest',
-                           command=self.generate_toolchain_command('java_test',
-                                                                   prefix=prefix,
-                                                                   suffix=args),
+                           command=self._toolchain_command('java_test', prefix=prefix, suffix=args),
                            description='JAVA TEST ${out}')
 
     def generate_java_binary_rules(self):
         bootjar = config.get_item('java_binary_config', 'one_jar_boot_jar')
         args = '%s ${mainclass} ${out} ${in}' % bootjar
         self.generate_rule(name='onejar',
-                           command=self.generate_toolchain_command('java_onejar', suffix=args),
+                           command=self._toolchain_command('java_onejar', suffix=args),
                            description='ONE JAR ${out}')
         self.generate_rule(name='javabinary',
-                           command=self.generate_toolchain_command('java_binary'),
+                           command=self._toolchain_command('java_binary'),
                            description='JAVA BIN ${out}')
 
     def generate_scala_rules(self, java_config):
@@ -678,7 +676,7 @@ scalacflags = -nowarn
                            description='SCALAC ${out}')
         args = '%s %s ${out} ${in}' % (java, scala)
         self.generate_rule(name='scalatest',
-                           command=self.generate_toolchain_command('scala_test', suffix=args),
+                           command=self._toolchain_command('scala_test', suffix=args),
                            description='SCALA TEST ${out}')
 
     def generate_java_scala_rules(self):
@@ -688,11 +686,11 @@ scalacflags = -nowarn
         jar = self.get_java_command(java_config, 'jar')
         args = '%s ${out} ${in}' % jar
         self.generate_rule(name='javajar',
-                           command=self.generate_toolchain_command('java_jar', suffix=args),
+                           command=self._toolchain_command('java_jar', suffix=args),
                            description='JAVA JAR ${out}')
         self.generate_java_test_rules()
         self.generate_rule(name='fatjar',
-                           command=self.generate_toolchain_command('java_fatjar'),
+                           command=self._toolchain_command('java_fatjar'),
                            description='FAT JAR ${out}')
         self.generate_java_binary_rules()
         self.generate_scala_rules(java_config)
@@ -718,11 +716,11 @@ pythonbasedir = __pythonbasedir__
 ''')
         args = '${pythonbasedir} ${out} ${in}'
         self.generate_rule(name='pythonlibrary',
-                           command=self.generate_toolchain_command('python_library', suffix=args),
+                           command=self._toolchain_command('python_library', suffix=args),
                            description='PYTHON LIBRARY ${out}')
         args = '${pythonbasedir} ${mainentry} ${out} ${in}'
         self.generate_rule(name='pythonbinary',
-                           command=self.generate_toolchain_command('python_binary', suffix=args),
+                           command=self._toolchain_command('python_binary', suffix=args),
                            description='PYTHON BINARY ${out}')
 
     def generate_go_rules(self):
@@ -764,11 +762,11 @@ pool %s
 
     def generate_shell_rules(self):
         self.generate_rule(name='shelltest',
-                           command=self.generate_toolchain_command('shell_test'),
+                           command=self._toolchain_command('shell_test'),
                            description='SHELL TEST ${out}')
         args = '${out} ${in} ${testdata}'
         self.generate_rule(name='shelltestdata',
-                           command=self.generate_toolchain_command('shell_testdata', suffix=args),
+                           command=self._toolchain_command('shell_testdata', suffix=args),
                            description='SHELL TEST DATA ${out}')
 
     def generate_lex_yacc_rules(self):
@@ -782,7 +780,7 @@ pool %s
     def generate_package_rules(self):
         args = '${out} ${in} ${entries}'
         self.generate_rule(name='package',
-                           command=self.generate_toolchain_command('package', suffix=args),
+                           command=self._toolchain_command('package', suffix=args),
                            description='PACKAGE ${out}')
         self.generate_rule(name='package_tar',
                            command='tar -c -f ${out} ${tarflags} -C ${packageroot} ${entries}',
@@ -796,7 +794,7 @@ pool %s
         revision, url = blade_util.load_scm(self.build_dir)
         args = '${out} ${revision} ${url} ${profile} "${compiler}"'
         self.generate_rule(name='scm',
-                           command=self.generate_toolchain_command('scm', suffix=args),
+                           command=self._toolchain_command('scm', suffix=args),
                            description='SCM ${out}')
         scm = os.path.join(self.build_dir, 'scm.cc')
         self._add_rule('''
@@ -812,7 +810,7 @@ build %s: cxx %s
   cxx_warnings =
 ''' % (scm + '.o', scm))
 
-    def generate_toolchain_command(self, builder, prefix='', suffix=''):
+    def _toolchain_command(self, builder, prefix='', suffix=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
             cmd.append(prefix)
