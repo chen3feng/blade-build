@@ -587,9 +587,10 @@ def proto_library(name,
                   **kwargs):
     """proto_library target.
     Args:
-        generate_descriptors(bool): Whether generate binary protobuf descriptors.
-        target_languages(list/set of string): Code for target languages to be generated, such as
-            `java`, `python`, see protoc's `--xx_out`s
+        generate_descriptors (bool): Whether generate binary protobuf descriptors.
+        target_languages (Sequence[str]): Code for target languages to be generated, such as
+            `java`, `python`, see protoc's `--xx_out`s.
+            NOTE: The `cpp` target code is always generated.
     """
     proto_library_target = ProtoLibrary(name,
                                         srcs,
