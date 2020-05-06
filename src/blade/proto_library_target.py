@@ -75,6 +75,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  optimize,
                  deprecated,
                  generate_descriptors,
+                 target_languages,
                  plugins,
                  source_encoding,
                  blade,
@@ -130,6 +131,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['python_sources'] = []
         self.data['generate_descriptors'] = generate_descriptors
 
+        # TODO(chen3feng): Change the values to a `set` rather than separated attributes
+        target_languages = set(var_to_list(target_languages))
+        if 'java' in target_languages:
+            self.data['generate_java'] = True
+        if 'python' in target_languages:
+            self.data['generate_python'] = True
+        if 'go' in target_languages:
+            self.data['generate_go'] = True
+
     def _check_proto_srcs_name(self, srcs):
         """Checks whether the proto file's name ends with 'proto'. """
         for src in srcs:
@@ -177,6 +187,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _prepare_to_generate_rule(self):
         CcTarget._prepare_to_generate_rule(self)
         self._check_proto_deps()
+
+    def _expand_deps_generation(self):
+        self._expand_deps_java_generation()
 
     def _proto_gen_files(self, src):
         """_proto_gen_files. """
@@ -568,16 +581,23 @@ def proto_library(name,
                   optimize=[],
                   deprecated=False,
                   generate_descriptors=False,
+                  target_languages=None,
                   plugins=[],
                   source_encoding='iso-8859-1',
                   **kwargs):
-    """proto_library target. """
+    """proto_library target.
+    Args:
+        generate_descriptors(bool): Whether generate binary protobuf descriptors.
+        target_languages(list/set of string): Code for target languages to be generated, such as
+            `java`, `python`, see protoc's `--xx_out`s
+    """
     proto_library_target = ProtoLibrary(name,
                                         srcs,
                                         deps,
                                         optimize,
                                         deprecated,
                                         generate_descriptors,
+                                        target_languages,
                                         plugins,
                                         source_encoding,
                                         build_manager.instance,

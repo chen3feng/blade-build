@@ -32,7 +32,7 @@ syn keyword bladeArg extra_cppflags extra_linkflags generate_descriptors glob
 syn keyword bladeArg heap_check heap_check_debug include incs link_all_symbols main_class
 syn keyword bladeArg name optimize out outs plugins prebuilt prefix provided_deps
 syn keyword bladeArg resources secure source_encoding srcs suffix
-syn keyword bladeArg target_under_test testdata transitive visibility warning warnings
+syn keyword bladeArg target_languages target_under_test testdata transitive visibility warning warnings
 
 if version >= 508 || !exists("did_blade_syn_inits")
     if version < 508

@@ -20,6 +20,17 @@ Blade支持proto_library，使得在项目中使用protobuf十分方便。
 
 proto_library被Java目标依赖时，会自动构建Java相关的结果，Python也类似。因此同一个proto_library目标可以被多种语言所使用。
 
+如果需要强制生成某种语言的目标库，可以通过 `target_languages` 参数来指定：
+```python
+proto_library(
+    name = 'rpc_meta_info_proto',
+    srcs = 'rpc_meta_info.proto',
+    deps = ':rpc_option_proto',
+    target_languages = ['java', 'python'],
+)
+```
+C++ 代码总是生成。
+
 ## thrift_library
 用于定义thrift库目标
 deps 为import所涉及的其他thrift_library
