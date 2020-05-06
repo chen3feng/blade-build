@@ -105,7 +105,14 @@ class CcTarget(Target):
         self._check_incorrect_no_warning()
 
     def _incs_to_fullpath(self, incs):
-        return [os.path.normpath(os.path.join(self.path, inc)) for inc in incs]
+        """Expand incs to full path"""
+        result = []
+        for inc in incs:
+            if inc.startswith('//'):  # Full path
+                result.append(inc[2:])
+            else:
+                result.append(os.path.normpath(os.path.join(self.path, inc)))
+        return result
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
@@ -1059,7 +1066,7 @@ class CcLibrary(CcTarget):
                     break
                 level, hdr = self._parse_hdr_level(line)
                 if level == -1:
-                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
+                    self.log('Unrecognized line %s' % line)
                     break
                 if level > current_level:
                     if skip_level != -1 and level > skip_level:
@@ -1196,8 +1203,7 @@ def cc_library(name,
                        build_manager.instance,
                        kwargs)
     if pre_build:
-        console.warning("//%s:%s: 'pre_build' has been deprecated, "
-                        "please use 'prebuilt'" % (target.path, target.name))
+        self.warning("'pre_build' has been deprecated, please use 'prebuilt'")
     build_manager.instance.register_target(target)
 
 
