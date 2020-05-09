@@ -17,3 +17,6 @@
 
 - merge-static-libs
 把一个blade库及其它直接和间接依赖的所有其他库打包成一个大的静态库
+
+- setup-shared-ccache.py
+设置单机多个用户之间共用 ccache 编译缓存的辅助工具
