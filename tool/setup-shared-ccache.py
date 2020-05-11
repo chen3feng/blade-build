@@ -21,6 +21,7 @@ def check():
             print('Exiting.')
             sys.exit(1)
 
+    # Check ccache installation
     if os.geteuid() != 0:
         print("You need to have root privileges to run this script.\n"
               "Please try again, this time using 'sudo'. Exiting.", file=sys.stderr)
