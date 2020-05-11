@@ -281,8 +281,8 @@ class CcFlagsManager(object):
         self.build_platform = build_platform
 
     def _filter_out_invalid_flags(self, flag_list, language='c'):
-        """Filter the unsupported compilation flags. """
-        supported_flags, unsupported_flags = [], []
+        """Filter out the invalid compilation flags. """
+        valid_flags, unrecognized_flags = [], []
         cc = self.build_platform.get_cc()
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
@@ -291,15 +291,16 @@ class CcFlagsManager(object):
         obj = os.path.join(self.build_dir, 'test.o')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s %s - > /dev/null 2>&1 && rm -f %s' % (
+                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1 && rm -f %s' % (
                        cc, obj, language, flag, obj))
             if subprocess.call(cmd, shell=True) == 0:
-                supported_flags.append(flag)
+                valid_flags.append(flag)
             else:
-                unsupported_flags.append(flag)
-        if unsupported_flags:
-            console.warning('Unsupported C/C++ flags: %s' % ', '.join(unsupported_flags))
-        return supported_flags
+                unrecognized_flags.append(flag)
+        if unrecognized_flags:
+            console.warning('Config: unrecognized %s flags: %s' % (
+                    language, ', '.join(unrecognized_flags)))
+        return valid_flags
 
     def get_flags_except_warning(self):
         """Get the flags that are not warning flags. """
