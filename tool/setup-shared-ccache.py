@@ -13,7 +13,14 @@ import subprocess
 _CONFIG_FILE_NAME = 'ccache.conf'
 
 
-def check_root():
+def check():
+    # Check root
+    if subprocess.call('ccache --version > /dev/null', shell=True) != 0:
+        print('Warning: ccache not found. please install it(apt, yum, dnf or from source, ...)')
+        if raw_input('Continue(yes/NO)? ').lower() != 'yes':
+            print('Exiting.')
+            sys.exit(1)
+
     if os.geteuid() != 0:
         print("You need to have root privileges to run this script.\n"
               "Please try again, this time using 'sudo'. Exiting.", file=sys.stderr)
@@ -61,7 +68,7 @@ def write_system_config(args, cache_dir):
 
 def main():
     args = parse_command_line()
-    check_root()
+    check()
     cache_dir = make_cache_dir(args)
     write_cache_config(args, cache_dir)
     write_system_config(args, cache_dir)
