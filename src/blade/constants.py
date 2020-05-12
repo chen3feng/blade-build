@@ -8,6 +8,3 @@ HEAP_CHECK_VALUES = set([
     'as-is',
     'local',
 ])
-
-
-
