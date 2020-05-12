@@ -152,6 +152,8 @@ class GenRuleTarget(Target):
         cmd = cmd.replace('$OUTS', '${out}')
         cmd = cmd.replace('$FIRST_SRC', '${_in_1}')
         cmd = cmd.replace('$FIRST_OUT', '${_out_1}')
+        cmd = cmd.replace('$SRC_DIR', self.path)
+        cmd = cmd.replace('$OUT_DIR', os.path.join(self.build_path, self.path))
         cmd = cmd.replace('$BUILD_DIR', self.build_path)
         locations = self.data['locations']
         if locations:
