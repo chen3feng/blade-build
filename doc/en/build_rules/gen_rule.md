@@ -1,30 +1,44 @@
-# 自定义规则构建
+# Custom Build Rules
 
-## gen_rule
+## gen\_rule
 
-用于定制自己的目标
-outs = []，表示输出的文件列表，需要填写这个域gen_rule才会被执行
-cmd, 字符串，表示被调用的命令行
-cmd_name，Shown in the brief mode，default is `COMMAND`
-cmd中可含有如下变量，运行时会被替换成srcs和outs中的对应值
-$SRCS
-$OUTS
-$SRC_DIR
-$OUT_DIR
-$FIRST_SRC
-$FIRST_OUT
-$BUILD_DIR -- 可被替换为 build[64,32]_[release,debug] 输出目录
+Used to customize your own construction rules, parameters:
+-outs: list, output file list
+-cmd: str, the called command line, may contain the following variables, which will be replaced with actual values before running:
+    - $SRCS, space-separated list of source file names, relative to WORKSPACE
+    - $OUTS, space-separated list of output files, relative to WORKSPACE
+    - $SRC\_DIR, the directory where the input file is located
+    - $OUT\_DIR, the directory where the output file is located
+    - $FIRST\_SRC, first input file path
+    - $FIRST\_OUT, the path of the first output file
+    - BUILD\_DIR, The root output directory, such as build[64,32]\_[release, debug]
 
+- cmd\_name: str, the name of the command, used to display in simplified mode, the default is `COMMAND`
+- generate\_hdrs: bool, indicates whether this target will generate C/C++ header files other than the file names already listed in `outs`.
+  If a C/C ++ target depends on the gen\_rule target that generates header files, then these header files need to be generated before compilation can begin.
+  gen\_rule will automatically analyze whether there are header files in `outs`, so there is no need to set it if all of the headers are listed in `outs`.
+  This option will reduce the parallelism of compilation, because if a target can be divided into mutiple stages, such as:
+    - generating source code (including header files)
+    - compiling
+    - generating library
+  When the header file list is given accurately, after the first stage is generated, other targets can be built without waiting the whole target is built.
+- heavy: bool, indicates this a "heavy" target, that is, it will consume a lot of CPU or memory, making it impossible to parallel with other tasks or too much.
+  Turning on this option will reduce build performance, but will help reduce build failures caused by insufficient resources.
+
+Example:
 ```python
 gen_rule(
     name='test_gen_target',
     cmd='echo what_a_nice_day;touch test2.c',
-    deps=[':test_gen'],                         # 可以有deps , 也可以被别的target依赖
+    deps=[':test_gen'],
     outs=['test2.c']
 )
 ````
 
-很多用户使用gen_rule动态生成代码文件然后和某个cc_library或者cc_binary一起编译，
-需要注意应该尽量在输出目录生成代码文件,如build64_debug下，并且文件的路径名要写对，
-如 outs = ['websearch2/project_example/module_1/file_2.cc'], 这样使用
-gen_rule生成的文件和库一起编译时就不会发生找不到动态生成的代码文件问题了。
+NOTE: `gen_rule` only writes `outs` files in the subdir of BUILD_DIR, but when you use `gen_rule`
+to generate source code and want to reference the generated source code in other targets, just
+consider them as if they are generated in the source tree, without the BUILD_DIR prefix.
+
+Multiple similar gen\_rule can be considered to be defined as an extension maintained in a separate
+`bld` file, and through [include] (../include.md)Functions are introduced to reduce code redundancy
+and better maintenance.

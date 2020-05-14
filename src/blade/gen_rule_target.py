@@ -32,6 +32,7 @@ class GenRuleTarget(Target):
                  cmd,
                  cmd_name,
                  generate_hdrs,
+                 heavy,
                  blade,
                  kwargs):
         """Init method.
@@ -58,6 +59,7 @@ class GenRuleTarget(Target):
         self.data['cmd_name'] = cmd_name
         if generate_hdrs is not None:
             self.data['generate_hdrs'] = generate_hdrs
+        self.data['heavy'] = heavy
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
@@ -189,8 +191,9 @@ class GenRuleTarget(Target):
             vars['_in_1'] = inputs[0]
         if '${_out_1}' in cmd:
             vars['_out_1'] = outputs[0]
-        self.ninja_build(rule, outputs, inputs=inputs,
-                         implicit_deps=self.implicit_dependencies(),
+        if self.data['heavy']:
+            vars['pool'] = 'heavy_pool'
+        self.ninja_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
                          variables=vars)
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
@@ -204,6 +207,7 @@ def gen_rule(name,
              cmd='',
              cmd_name='COMMAND',
              generate_hdrs=None,
+             heavy=False,
              **kwargs):
     """General Build Rule
     Args:
@@ -213,6 +217,7 @@ def gen_rule(name,
             according to the names in the |outs|`
             But if they are not specified in the outs, and we sure know this target will generate
             some headers, we should set this argument to True.
+        heavy: bool: Whether this target is a heavy target, which means it will cost many cpu/memory
     """
     gen_rule_target = GenRuleTarget(name=name,
                                     srcs=srcs,
@@ -221,6 +226,7 @@ def gen_rule(name,
                                     cmd=cmd,
                                     cmd_name=cmd_name,
                                     generate_hdrs=generate_hdrs,
+                                    heavy=heavy,
                                     blade=build_manager.instance,
                                     kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)
