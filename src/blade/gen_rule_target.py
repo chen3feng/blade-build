@@ -5,10 +5,8 @@
 # Date:   October 20, 2011
 
 
-"""
- This is the scons_gen_rule module which inherits the SconsTarget
- and generates related gen rule rules.
-
+"""General Build Rule
+Allow users defining their custome build rules.
 """
 
 from __future__ import absolute_import
@@ -24,11 +22,7 @@ from blade.target import Target
 
 
 class GenRuleTarget(Target):
-    """A scons gen rule target subclass.
-
-    This class is derived from Target.
-
-    """
+    """General Rule Target"""
 
     def __init__(self,
                  name,
@@ -36,6 +30,8 @@ class GenRuleTarget(Target):
                  deps,
                  outs,
                  cmd,
+                 cmd_name,
+                 generate_hdrs,
                  blade,
                  kwargs):
         """Init method.
@@ -59,6 +55,9 @@ class GenRuleTarget(Target):
         self.data['outs'] = outs
         self.data['locations'] = []
         self.data['cmd'] = location_re.sub(self._process_location_reference, cmd)
+        self.data['cmd_name'] = cmd_name
+        if generate_hdrs is not None:
+            self.data['generate_hdrs'] = generate_hdrs
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
@@ -178,7 +177,7 @@ class GenRuleTarget(Target):
         rule = '%s__rule__' % self._regular_variable_name(
             self._source_file_path(self.name))
         cmd = self.ninja_command()
-        description = console.colored('COMMAND //' + self.fullname, 'dimpurple')
+        description = console.colored('%s //%s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
   description = %s
@@ -203,15 +202,27 @@ def gen_rule(name,
              deps=[],
              outs=[],
              cmd='',
+             cmd_name='COMMAND',
+             generate_hdrs=None,
              **kwargs):
-    """scons_gen_rule. """
-    gen_rule_target = GenRuleTarget(name,
-                                    srcs,
-                                    deps,
-                                    outs,
-                                    cmd,
-                                    build_manager.instance,
-                                    kwargs)
+    """General Build Rule
+    Args:
+        generate_hdrs: Optional[bool]:
+            Specify whether this target will generate c/c++ header files.
+            Defaultly, gen_rule will calculate a generated header files list automatically
+            according to the names in the |outs|`
+            But if they are not specified in the outs, and we sure know this target will generate
+            some headers, we should set this argument to True.
+    """
+    gen_rule_target = GenRuleTarget(name=name,
+                                    srcs=srcs,
+                                    deps=deps,
+                                    outs=outs,
+                                    cmd=cmd,
+                                    cmd_name=cmd_name,
+                                    generate_hdrs=generate_hdrs,
+                                    blade=build_manager.instance,
+                                    kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)
 
 

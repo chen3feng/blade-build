@@ -5,9 +5,12 @@
 用于定制自己的目标
 outs = []，表示输出的文件列表，需要填写这个域gen_rule才会被执行
 cmd, 字符串，表示被调用的命令行
+cmd_name，Shown in the brief mode，default is `COMMAND`
 cmd中可含有如下变量，运行时会被替换成srcs和outs中的对应值
 $SRCS
 $OUTS
+$SRC_DIR
+$OUT_DIR
 $FIRST_SRC
 $FIRST_OUT
 $BUILD_DIR -- 可被替换为 build[64,32]_[release,debug] 输出目录
