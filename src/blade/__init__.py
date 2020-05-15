@@ -6,7 +6,7 @@ import console
 
 
 def current_source_dir():
-    """Get current source dir (in which the current BUILD resident) relative to WORKSPACE root"""
+    """Get current source dir (in which the current BUILD resides) relative to WORKSPACE root"""
     import blade.build_manager
     return blade.build_manager.instance.get_current_source_path()
 

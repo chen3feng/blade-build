@@ -561,11 +561,13 @@ class CcTarget(Target):
 
     def _generated_header_files_dependencies(self, scons=True):
         """Calculate the dependencies which generate header files.
+
         If a dependency will generate c/c++ header files, we must depends on it during the
         compiling stage, otherwise, the 'Missing header file' error will occurs.
-        """
-        # NOTE: Here is a optimization: If we know the detaild generated header files, depends on
-        # them explicitly rather than depends on the whole target improves the parallelism.
+
+        NOTE: Here is an optimization: If we know the detaild generated header files, depends on
+              them explicitly rather than depends on the whole target improves the parallelism.
+         """
         q = queue.Queue(0)
         for key in self.deps:
             q.put(key)

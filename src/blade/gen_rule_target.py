@@ -6,7 +6,7 @@
 
 
 """General Build Rule
-Allow users defining their custome build rules.
+Allow users defining their custom build rules.
 """
 
 from __future__ import absolute_import
