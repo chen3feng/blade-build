@@ -54,7 +54,7 @@ class TestJava(blade_test.TargetTest):
         jar_idx = 0
         index = 0
 
-        for line in self.scons_output:
+        for line in self.build_output:
             index += 1
             if 'protobuf/bin/protoc' in line:
                 if 'cpp_out' in line:

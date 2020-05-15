@@ -93,26 +93,11 @@ class GoTarget(Target):
                 elif line.startswith('GOARCH='):
                     GoTarget._go_arch = line.replace('GOARCH=', '').strip('"')
 
-    def _prepare_to_generate_rule(self):
-        self._clone_env()
-        env_name = self._env_name()
-        self._write_rule('%s.Replace(GOPACKAGE="%s")' % (
-            env_name, self.data['go_package']))
-
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
             d = build_targets[dep]
             d.data['generate_go'] = True
-
-    def _generate_go_dependencies(self):
-        env_name = self._env_name()
-        var_name = self._var_name()
-        targets = self.blade.get_build_targets()
-        for dep in self.deps:
-            var = targets[dep]._get_target_var('go')
-            if var:
-                self._write_rule('%s.Depends(%s, %s)' % (env_name, var_name, var))
 
     def ninja_go_dependencies(self):
         targets = self.blade.get_build_targets()
@@ -161,17 +146,6 @@ class GoLibrary(GoTarget):
                             '%s_%s' % (GoTarget._go_os, GoTarget._go_arch),
                             '%s.a' % self.data['go_package'])
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-        var_name = self._var_name()
-        srcs = [self._source_file_path(s) for s in self.srcs]
-        self._write_rule('%s = %s.GoLibrary(target = "%s", source = %s)' % (
-            var_name, env_name,
-            self._target_file_path(), srcs))
-        self._add_target_var('go', var_name)
-        self._generate_go_dependencies()
-
 
 class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable. """
@@ -181,17 +155,6 @@ class GoBinary(GoTarget):
         self.data['go_rule'] = 'gocommand'
         self.data['go_label'] = 'bin'
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-        var_name = self._var_name()
-        srcs = [self._source_file_path(s) for s in self.srcs]
-        self._write_rule('%s = %s.GoBinary(target = "%s", source = %s)' % (
-            var_name, env_name,
-            self._target_file_path(), srcs))
-        self._add_target_var('bin', var_name)
-        self._generate_go_dependencies()
-
 
 class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary. """
@@ -200,16 +163,6 @@ class GoTest(GoTarget):
         GoTarget.__init__(self, name, 'go_test', srcs, deps, extra_goflags, kwargs)
         self.data['go_rule'] = 'gotest'
         self.data['testdata'] = var_to_list(testdata)
-
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-        var_name = self._var_name()
-        srcs = [self._source_file_path(s) for s in self.srcs]
-        self._write_rule('%s = %s.GoTest(target = "%s", source = %s)' % (
-            var_name, env_name,
-            self._target_file_path(), srcs))
-        self._generate_go_dependencies()
 
 
 def go_library(name,

@@ -8,8 +8,7 @@
 
 """
  This is the cc_target module which is the super class
- of all of the scons cc targets, like cc_library, cc_binary.
-
+ of all of the cc targets, like cc_library, cc_binary.
 """
 
 from __future__ import absolute_import
@@ -124,20 +123,6 @@ class CcTarget(Target):
                     self.warning('This is deprecated, please depends on //%s:%s' % (
                                         replaced_deps[0][0], replaced_deps[0][1]))
 
-    def _prepare_to_generate_rule(self):
-        """Should be overridden. """
-        self._check_deprecated_deps()
-        self._clone_env()
-
-    def _clone_env(self):
-        """Select env. """
-        env_name = self._env_name()
-        warning = self.data.get('warning', '')
-        if warning == 'yes':
-            self._write_rule('%s = env_cc_warning.Clone()' % env_name)
-        else:
-            self._write_rule('%s = env_cc.Clone()' % env_name)
-
     __cxx_keyword_list = frozenset([
         'and', 'and_eq', 'alignas', 'alignof', 'asm', 'auto',
         'bitand', 'bitor', 'bool', 'break', 'case', 'catch',
@@ -187,18 +172,6 @@ class CcTarget(Target):
 
         if illegal_path_list:
             self.warning("warning='no' should only be used for code in thirdparty.")
-
-    def _objs_name(self):
-        """Concatenating path and name to be objs var. """
-        name = self.data['objs_name']
-        if name is None:
-            name = 'objs_%s' % self._generate_variable_name(self.path, self.name)
-            self.data['objs_name'] = name
-        return name
-
-    def _set_objs_name(self, name):
-        """Set objs var name to the input name. """
-        self.data['objs_name'] = name
 
     def _prebuilt_cc_library_path(self, prefer_dynamic=False):
         """
@@ -258,30 +231,6 @@ class CcTarget(Target):
         except subprocess.CalledProcessError:
             pass
         return soname
-
-    def _setup_cc_flags(self):
-        """_setup_cc_flags. """
-        env_name = self._env_name()
-        flags_from_option, incs_list = self._get_cc_flags()
-        if flags_from_option:
-            self._write_rule('%s.Append(CPPFLAGS=%s)' % (env_name, flags_from_option))
-        if incs_list:
-            self._write_rule('%s.Append(CPPPATH=%s)' % (env_name, incs_list))
-
-    def _setup_as_flags(self):
-        """_setup_as_flags. """
-        env_name = self._env_name()
-        as_flags, aspp_flags = self._get_as_flags()
-        if as_flags:
-            self._write_rule('%s.Append(ASFLAGS=%s)' % (env_name, as_flags))
-        if aspp_flags:
-            self._write_rule('%s.Append(ASPPFLAGS=%s)' % (env_name, aspp_flags))
-
-    def _setup_link_flags(self):
-        """linkflags. """
-        extra_linkflags = self.data.get('extra_linkflags')
-        if extra_linkflags:
-            self._write_rule('%s.Append(LINKFLAGS=%s)' % (self._env_name(), extra_linkflags))
 
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
@@ -445,15 +394,6 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _prebuilt_cc_library_rules(self, var_name, target, source):
-        """Generate scons rules for prebuilt cc library. """
-        if source.endswith('.a'):
-            self._write_rule('%s = top_env.File("%s")' % (var_name, os.path.realpath(source)))
-        else:
-            self._write_rule('%s = top_env.Command("%s", "%s", '
-                             'Copy("$TARGET", "$SOURCE"))' % (
-                                 var_name, target, os.path.realpath(source)))
-
     def _prebuilt_cc_library_symbolic_link(self,
                                            static_lib_source, static_lib_target,
                                            dynamic_lib_source, dynamic_lib_target):
@@ -470,26 +410,6 @@ class CcTarget(Target):
             if soname:
                 self.file_and_link = (so_target, soname)
 
-    def _prebuilt_cc_library_scons_rules(self):
-        """Prebuilt cc library scons rules. """
-        # Paths for static linking, may be a dynamic library!
-        static_src_path, static_target_path = self._prebuilt_cc_library_path()
-        var_name = self._var_name()
-        self._prebuilt_cc_library_rules(var_name, static_target_path, static_src_path)
-        self.data['static_cc_library_var'] = var_name
-
-        dynamic_src_path, dynamic_target_path = '', ''
-        if self._need_dynamic_library():
-            dynamic_src_path, dynamic_target_path = self._prebuilt_cc_library_path(
-                prefer_dynamic=True)
-            # Avoid copy twice if has only one kind of library
-            if dynamic_target_path != static_target_path:
-                var_name = self._var_name('dynamic')
-                self._prebuilt_cc_library_rules(var_name,
-                                                dynamic_target_path,
-                                                dynamic_src_path)
-            self.data['dynamic_cc_library_var'] = var_name
-
         return (static_src_path, static_target_path,
                 dynamic_src_path, dynamic_target_path)
 
@@ -501,52 +421,8 @@ class CcTarget(Target):
         if not self._prebuilt_cc_library_is_depended():
             return
 
-        if config.get_item('global_config', 'native_builder') == 'ninja':
-            paths = self._prebuilt_cc_library_ninja_rules()
-        else:
-            paths = self._prebuilt_cc_library_scons_rules()
+        paths = self._prebuilt_cc_library_ninja_rules()
         self._prebuilt_cc_library_symbolic_link(*paths)
-
-    def _static_cc_library(self):
-        """_cc_library.
-
-        It will output the cc_library rule into the buffer.
-
-        """
-        env_name = self._env_name()
-        var_name = self._var_name()
-        self._write_rule('%s = %s.Library("%s", %s)' % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            self._objs_name()))
-        self.data['static_cc_library_var'] = var_name
-        self._add_default_target_var('a', var_name)
-
-    def _dynamic_cc_library(self):
-        """_dynamic_cc_library.
-
-        It will output the dynamic_cc_library rule into the buffer.
-
-        """
-        self._setup_link_flags()
-
-        var_name = self._var_name('dynamic')
-        env_name = self._env_name()
-
-        lib_str = self._get_dynamic_deps_lib_list()
-        if self.srcs or self.expanded_deps:
-            if not self.data.get('allow_undefined'):
-                self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
-                                 % env_name)
-            self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
-                var_name,
-                env_name,
-                self._target_file_path(),
-                self._objs_name(),
-                lib_str))
-            self.data['dynamic_cc_library_var'] = var_name
-            self._add_target_var('so', var_name)
 
     def _need_dynamic_library(self):
         options = self.blade.get_options()
@@ -559,7 +435,7 @@ class CcTarget(Target):
         if self._need_dynamic_library():
             self._dynamic_cc_library()
 
-    def _generated_header_files_dependencies(self, scons=True):
+    def _generated_header_files_dependencies(self):
         """Calculate the dependencies which generate header files.
 
         If a dependency will generate c/c++ header files, we must depends on it during the
@@ -586,11 +462,7 @@ class CcTarget(Target):
                 elif 'generated_hdrs' in t.data:
                     generated_hdrs = t.data.get('generated_hdrs')
                     if generated_hdrs:
-                        if scons:
-                            # We didn't optimize it for scons
-                            result.append(t)
-                        else:
-                            result += generated_hdrs
+                        result += generated_hdrs
                 elif 'genhdrs_stamp' in t.data:  # ninja only
                     stamp = t.data['genhdrs_stamp']
                     if stamp:
@@ -600,58 +472,8 @@ class CcTarget(Target):
 
         return result
 
-    def _generate_generated_header_files_depends(self, var_name):
-        """Generate dependencies to targets that generate header files. """
-        env_name = self._env_name()
-        deps = self._generated_header_files_dependencies()
-        for dep in deps:
-            self._write_rule('%s.Depends(%s, %s)' % (
-                env_name, var_name, dep._var_name()))
-
-    def _cc_objects_rules(self):
-        """_cc_objects_rules.
-
-        Generate the cc objects rules for the srcs in srcs list.
-
-        """
-        if self.type not in ('cc_library', 'cc_binary', 'cc_test', 'cc_plugin'):
-            console.error_exit('logic error, type %s err in object rule' % self.type)
-
-        env_name = self._env_name()
-        objs_dir = self._target_file_path() + '.objs'
-
-        self._setup_cc_flags()
-
-        objs = []
-        for src in self.srcs:
-            obj = 'obj_%s' % self._var_name_of(src)
-            target_path = os.path.join(objs_dir, src)
-            source_path = self._target_file_path(src)  # Also find generated files
-            rule_args = ('target = "%s" + top_env["OBJSUFFIX"], source = "%s"' %
-                         (target_path, source_path))
-            if self.data.get('secure'):
-                rule_args += ', CXX = "$SECURECXX"'
-            self._write_rule('%s = %s.SharedObject(%s)' % (obj, env_name, rule_args))
-            if self.data.get('secure'):
-                self._securecc_object_rules(obj, source_path)
-            objs.append(obj)
-
-        if len(objs) == 1:
-            self._set_objs_name(objs[0])
-            objs_name = objs[0]
-        else:
-            objs_name = self._objs_name()
-            self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
-        self._generate_generated_header_files_depends(objs_name)
-
-        if objs and self.blade.get_command() == 'clean':
-            self._write_rule('%s.Clean([%s], "%s")' % (env_name, objs_name, objs_dir))
-
-    def _securecc_object_rules(self, obj, src, scons=True):
+    def _securecc_object_rules(self, obj, src):
         """Touch the source file if needed and generate specific object rules for securecc. """
-        if scons:
-            env_name = self._env_name()
-            self._write_rule('%s.AlwaysBuild(%s)' % (env_name, obj))
         if not os.path.exists(src):
             dir = os.path.dirname(src)
             if not os.path.isdir(dir):
@@ -776,7 +598,7 @@ class CcTarget(Target):
     def _cc_objects_generated_header_files_dependency(self):
         """Return a stamp which depends on targets which generate header files. """
         self.data['genhdrs_stamp'] = None
-        deps = self._generated_header_files_dependencies(False)
+        deps = self._generated_header_files_dependencies()
         if not deps:
             return None
         stamp = self._target_file_path('%s__stamp__' % self.name)
@@ -792,7 +614,7 @@ class CcTarget(Target):
         path = self._source_file_path(src)
         if not os.path.exists(path):
             path = self._target_file_path(src)
-            self._securecc_object_rules('', path, False)
+            self._securecc_object_rules('', path)
         self.ninja_build('securecccompile', secure_obj, inputs=path,
                          implicit_deps=implicit_deps, variables=vars)
         self.ninja_build('securecc', obj, inputs=secure_obj)
@@ -1150,20 +972,6 @@ class CcLibrary(CcTarget):
             rule = '%shdrs' % rule
             self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
-    def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
-        if self.type == 'prebuilt_cc_library':
-            self._check_deprecated_deps()
-            self._prebuilt_cc_library()
-        elif self.srcs:
-            self._prepare_to_generate_rule()
-            self._cc_objects_rules()
-            self._cc_library()
-
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
@@ -1316,92 +1124,6 @@ class CcBinary(CcTarget):
 
         return rpath_links
 
-    def _write_rpath_links(self):
-        rpath_links = self._get_rpath_links()
-        if rpath_links:
-            for rpath_link in rpath_links:
-                self._write_rule('%s.Append(LINKFLAGS="-Wl,--rpath-link=%s")' %
-                                 (self._env_name(), rpath_link))
-
-    def _cc_binary(self):
-        """_cc_binary rules. """
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        platform = self.blade.get_build_platform()
-        if platform.gcc_in_use() and platform.get_cc_version() > '4.5':
-            link_flag_list = ['-static-libgcc', '-static-libstdc++']
-            self._write_rule('%s.Append(LINKFLAGS=%s)' % (env_name, link_flag_list))
-
-        (link_all_symbols_lib_list,
-         lib_str,
-         whole_link_flags) = self._get_static_deps_lib_list()
-        if whole_link_flags:
-            self._write_rule(
-                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
-
-        if self.data.get('export_dynamic'):
-            self._write_rule(
-                '%s.Append(LINKFLAGS="-rdynamic")' % env_name)
-
-        self._setup_link_flags()
-
-        self._write_rule('%s = %s.Program("%s", %s, %s)' % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            self._objs_name(),
-            lib_str))
-        self._add_default_target_var('bin', var_name)
-
-        if link_all_symbols_lib_list:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
-
-        self._write_rpath_links()
-        if self.data['embed_version']:
-            self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-            self._write_rule('%s.Requires(%s, version_obj)' % (env_name, var_name))
-
-    def _dynamic_cc_binary(self):
-        """_dynamic_cc_binary. """
-        env_name = self._env_name()
-        var_name = self._var_name()
-        if self.data.get('export_dynamic'):
-            self._write_rule('%s.Append(LINKFLAGS="-rdynamic")' % env_name)
-
-        self._setup_link_flags()
-
-        lib_str = self._get_dynamic_deps_lib_list()
-        self._write_rule('%s = %s.Program("%s", %s, %s)' % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            self._objs_name(),
-            lib_str))
-        self._add_default_target_var('bin', var_name)
-
-        if self.data['embed_version']:
-            self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-            self._write_rule('%s.Requires(%s, version_obj)' % (env_name, var_name))
-
-        self._write_rpath_links()
-
-    def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
-        self._prepare_to_generate_rule()
-
-        self._cc_objects_rules()
-
-        if self.data['dynamic_link']:
-            self._dynamic_cc_binary()
-        else:
-            self._cc_binary()
-
     def _generate_cc_binary_link_flags(self, dynamic_link):
         ldflags = []
         platform = self.blade.get_build_platform()
@@ -1538,52 +1260,6 @@ class CcPlugin(CcTarget):
         self.suffix = suffix
         self.data['allow_undefined'] = allow_undefined
         self.data['strip'] = strip
-
-    def scons_rules(self):
-        """scons_rules.
-
-        It outputs the scons rules according to user options.
-
-        """
-        self._prepare_to_generate_rule()
-
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        self._cc_objects_rules()
-        self._setup_link_flags()
-
-        (link_all_symbols_lib_list,
-         lib_str,
-         whole_link_flags) = self._get_static_deps_lib_list()
-        if whole_link_flags:
-            self._write_rule(
-                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
-
-        if self.prefix is not None:
-            self._write_rule(
-                '%s.Replace(SHLIBPREFIX="%s")' % (env_name, self.prefix))
-
-        if self.suffix is not None:
-            self._write_rule(
-                '%s.Replace(SHLIBSUFFIX="%s")' % (env_name, self.suffix))
-
-        if not self.data['allow_undefined']:
-            self._write_rule('%s.Append(LINKFLAGS=["-Xlinker", "--no-undefined"])'
-                             % env_name)
-
-        if self.srcs or self.expanded_deps:
-            self._write_rule('%s = %s.SharedLibrary("%s", %s, %s)' % (
-                var_name,
-                env_name,
-                self._target_file_path(),
-                self._objs_name(),
-                lib_str))
-            self._add_default_target_var('so', var_name)
-
-        if link_all_symbols_lib_list:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
 
     def ninja_rules(self):
         """Generate ninja build rules for cc plugin. """

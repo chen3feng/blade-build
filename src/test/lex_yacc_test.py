@@ -30,7 +30,7 @@ class TestLexYacc(blade_test.TargetTest):
         com_ll_static_line = ''
         com_yy_static_line = ''
         lex_yacc_depends_libs = ''
-        for line in self.scons_output:
+        for line in self.build_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'bison -d -o' in line:

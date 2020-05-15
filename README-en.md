@@ -65,7 +65,7 @@ Sorry for Chinese only, English documentation is under construction.
 # Credits
 * Blade is inspired by Google's public information about their building system. Here is a reference article from Google's official blog.
 [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
-* Blade generates [SCons](http://www.scons.org/) script internally, and it depends on SCons right now.
+* Blade generates [Ninja](https://ninja-build.org/) script internally, so of cause it depends on ninja.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
 * Some libraries open sourced by Google, such as
 [protobuf](http://code.google.com/p/protobuf/),

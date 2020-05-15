@@ -34,11 +34,8 @@ _package_types = frozenset([
 
 class PackageTarget(Target):
     """
-
-    This class is derived from Target and used to generate scons
-    rules for packaging files into an archive which could be
+    This class is used to pack files into an archive which could be
     compressed using gzip or bz2 according to the package type.
-
     """
 
     def __init__(self,
@@ -129,61 +126,6 @@ class PackageTarget(Target):
                     f = os.path.join(dir, f)
                     rel_path = os.path.relpath(f, src)
                     self.data['sources'].append((f, os.path.join(dst, rel_path)))
-
-    def _generate_source_rules(self, source_vars, package_path_list, sources_dir):
-        env_name = self._env_name()
-        for i, source in enumerate(self.data['sources']):
-            src, dst = source[0], os.path.join(sources_dir, source[1])
-            var = self._var_name('source__%s' % i)
-            self._write_rule('%s = %s.PackageSource(target = "%s", source = "%s")' %
-                             (var, env_name, dst, src))
-            source_vars.append(var)
-            package_path_list.append(dst)
-
-    def _generate_location_reference_rules(self, location_vars, sources_dir):
-        env_name = self._env_name()
-        targets = self.blade.get_build_targets()
-        for i, location in enumerate(self.data['locations']):
-            key, type, dst = location
-            target = targets[key]
-            target_var = target._get_target_var(type)
-            if not target_var:
-                self.warning('Location %s %s is missing. Ignored.' % (key, type))
-                continue
-
-            if dst:
-                dst = os.path.join(sources_dir, dst)
-                var = self._var_name('location__%s' % i)
-                self._write_rule('%s = %s.PackageSource(target = "%s", source = %s)' %
-                                 (var, env_name, dst, target_var))
-                location_vars.append(var)
-            else:
-                location_vars.append(target_var)
-
-    def scons_rules(self):
-        """scons_rules. """
-        self._clone_env()
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        source_vars, location_vars, package_path_list = [], [], []
-        target = self._target_file_path(self.data['out'])
-        sources_dir = target + '.sources'
-        self._generate_source_rules(source_vars, package_path_list, sources_dir)
-        self._generate_location_reference_rules(location_vars, sources_dir)
-        self._write_rule('%s = %s.Package(target="%s", source=[%s] + [%s])' % (
-            var_name, env_name, target,
-            ','.join(source_vars), ','.join(sorted(location_vars))))
-        package_type = self.data['type']
-        self._write_rule('%s.Append(PACKAGESUFFIX="%s")' % (env_name, package_type))
-
-        if package_path_list:
-            self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
-                env_name, var_name, env_name, package_path_list))
-        locations = self.data['locations']
-        if locations:
-            self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
-                env_name, var_name, env_name, sorted(set(locations))))
 
     def ninja_rules(self):
         inputs, entries = [], []

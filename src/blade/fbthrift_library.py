@@ -95,55 +95,8 @@ class FBThriftLibrary(CcTarget):
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp2_files()]
 
-    def _cc_objects_scons_rules(self, thrift_cpp_srcs, objs, sources):
-        for thrift_cpp in thrift_cpp_srcs:
-            obj_name = '%s_object' % self._var_name_of(thrift_cpp)
-            objs.append(obj_name)
-            self._write_rule(
-                '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], source="%s")' %
-                (obj_name, self._env_name(), thrift_cpp, thrift_cpp))
-            sources.append(thrift_cpp)
-
-    def scons_rules(self):
-        """It outputs the scons rules according to user options. """
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-
-        options = self.blade.get_options()
-        direct_targets = self.blade.get_direct_targets()
-
-        self._setup_cc_flags()
-
-        sources = []
-        obj_names = []
-        for src in self.srcs:
-            thrift_cpp_files = self._thrift_gen_cpp_files(src)
-            thrift_cpp_src_files = [f for f in thrift_cpp_files if f.endswith('.cpp')]
-
-            thrift_cpp2_files = self._thrift_gen_cpp2_files(src)
-            thrift_cpp2_src_files = [f for f in thrift_cpp2_files if f.endswith('.cpp')]
-
-            self._write_rule('%s.FBThrift1(%s, "%s")' % (
-                env_name,
-                str(thrift_cpp_files),
-                os.path.join(self.path, src)))
-
-            self._write_rule('%s.FBThrift2(%s, "%s")' % (
-                env_name,
-                str(thrift_cpp2_files),
-                os.path.join(self.path, src)))
-
-            self._cc_objects_scons_rules(thrift_cpp_src_files, obj_names, sources)
-            self._cc_objects_scons_rules(thrift_cpp2_src_files, obj_names, sources)
-
-        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(obj_names)))
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name, self._objs_name(), sources))
-
-        self._cc_library()
-
     def ninja_rules(self):
-        console.error('FIXME: fbthrift is still not supported by the ninja backend.')
+        self.error('FIXME: fbthrift is still not supported by the ninja backend.')
         # (don't forget `generated_hdrs`)
 
 

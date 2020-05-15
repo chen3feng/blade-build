@@ -56,14 +56,6 @@ class PythonTarget(Target):
             self.data['python_base'] = base[2:]
         self.data['python_sources'] = [self._source_file_path(s) for s in srcs]
 
-    def _prepare_to_generate_rule(self):
-        self._clone_env()
-        env_name = self._env_name()
-        self._write_rule('%s.Replace(BUILD_DIR="%s")' % (
-            env_name, self.build_path))
-        self._write_rule('%s.Replace(BASE_DIR="%s")' % (
-            env_name, self.data.get('python_base', '')))
-
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
@@ -80,9 +72,7 @@ class PythonTarget(Target):
 
 class PythonLibrary(PythonTarget):
     """A python library target subclass.
-
-    This class is derived from SconsTarget and generates python library package.
-
+    This class generates python library package.
     """
 
     def __init__(self,
@@ -101,34 +91,6 @@ class PythonLibrary(PythonTarget):
                               base,
                               visibility,
                               kwargs)
-
-    def _scons_pylib(self):
-        env_name = self._env_name()
-        var_name = self._var_name('pylib')
-
-        sources = self.data.get('python_sources', [])
-        if not sources:
-            return ''
-        self._write_rule('%s = %s.PythonLibrary("%s", %s)' % (
-            var_name, env_name,
-            '%s.pylib' % self._target_file_path(),
-            sources))
-        self.data['python_var'] = var_name
-        dep_var_list = []
-        targets = self.blade.get_build_targets()
-        for dep in self.deps:
-            var = targets[dep].data.get('python_var')
-            if var:
-                dep_var_list.append(var)
-
-        for dep_var in dep_var_list:
-            self._write_rule('%s.Depends(%s, %s)' % (
-                env_name, var_name, dep_var))
-        return var_name
-
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._scons_pylib()
 
     def _ninja_pylib(self):
         if not self.srcs:
@@ -171,16 +133,6 @@ class PrebuiltPythonLibrary(PythonTarget):
                 '%s: Invalid file %s in srcs, prebuilt py_library only support egg and whl' %
                 (self.fullname, src))
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-        var_name = self._var_name('pylib')
-
-        self._write_rule('%s = %s.File("%s")' % (
-            var_name, env_name,
-            self._source_file_path(self.srcs[0])))
-        self.data['python_var'] = var_name
-
     def ninja_rules(self):
         self._add_target_file('pylib', self._source_file_path(self.srcs[0]))
 
@@ -217,9 +169,7 @@ build_rules.register_function(py_library)
 
 class PythonBinary(PythonLibrary):
     """A python binary target subclass.
-
-    This class is derived from SconsTarget and generates python binary package.
-
+    This class generates python binary package.
     """
 
     def __init__(self,
@@ -260,27 +210,6 @@ class PythonBinary(PythonLibrary):
         rel_path = os.path.relpath(full_path, base_path)
         return rel_path.replace('/', '.')
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        self_pylib = self._scons_pylib()
-        dep_var_list = [self_pylib] if self_pylib else []
-
-        self._write_rule('%s.Append(ENTRY="%s")' % (env_name, self._get_entry()))
-        targets = self.blade.get_build_targets()
-        for dep in self.expanded_deps:
-            python_var = targets[dep].data.get('python_var')
-            if python_var:
-                dep_var_list.append(python_var)
-
-        self._write_rule('%s = %s.PythonBinary("%s", [%s])' % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            ','.join(dep_var_list)))
-
     def ninja_rules(self):
         output = self._target_file_path()
         pylib = self._ninja_pylib()
@@ -319,9 +248,7 @@ build_rules.register_function(py_binary)
 
 class PythonTest(PythonBinary):
     """A python test target subclass.
-
-    This class is derived from SconsTarget and generates python test.
-
+    This class generates python test.
     """
 
     def __init__(self,

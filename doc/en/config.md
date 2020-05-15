@@ -14,14 +14,14 @@ Each configuration parameter of the configuration of all the multiple parameters
 Blade global configuration
 ```python
 global_config(
-    native_builder = 'ninja', # backend build system, currently supports scons and ninja
+    native_builder = 'ninja', # backend build system, only supports ninja now.
     duplicated_source_action = 'error', # When the same source file is found to belong to multiple targets, the default is warning
     test_timeout = 600 # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
 )
 ```
 
 [ninja](https://ninja-build.org/) is a meta-construction system that focuses on building speeds.
-The speed of using ninja is much faster than scons, so the follow-up is mainly based on ninja optimization, and the support for scons is gradually eliminated.
+We used to use scons as the backend, but ninja is much faster, so the we only use ninja as backend, and the support for scons is removed.
 
 ### cc_config
 Common configuration of all c/c++ targets

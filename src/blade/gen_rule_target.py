@@ -17,6 +17,7 @@ from blade import build_manager
 from blade import build_rules
 from blade import console
 from blade.blade_util import location_re
+from blade.blade_util import regular_variable_name
 from blade.blade_util import var_to_list
 from blade.target import Target
 
@@ -75,78 +76,6 @@ class GenRuleTarget(Target):
     def _allow_duplicate_source(self):
         return True
 
-    def scons_rules(self):
-        """scons_rules.
-
-        Description
-        -----------
-        It outputs the scons rules according to user options.
-
-        """
-        # pylint: disable=too-many-locals
-        self._clone_env()
-
-        env_name = self._env_name()
-        var_name = self._var_name()
-        targets = self.blade.get_build_targets()
-
-        srcs_str = ''
-        if self.srcs:
-            srcs_str = self._srcs_list(self.path, self.srcs)
-        elif self.expanded_deps:
-            srcs_str = ''
-        else:
-            srcs_str = 'time_value'
-        cmd = self.data['cmd']
-        cmd = cmd.replace('$SRCS', '$SOURCES')
-        cmd = cmd.replace('$OUTS', '$TARGETS')
-        cmd = cmd.replace('$FIRST_SRC', '$SOURCE')
-        cmd = cmd.replace('$FIRST_OUT', '$TARGET')
-        cmd = cmd.replace('$BUILD_DIR', self.build_path)
-        locations = self.data['locations']
-        if locations:
-            target_vars = []
-            for key, type in locations:
-                target_var = targets[key]._get_target_var(type)
-                if not target_var:
-                    self.error_exit('Invalid location reference %s %s' % ':'.join(key), type)
-                target_vars.append(target_var)
-            cmd = '"%s" %% (%s)' % (cmd, ','.join(['str(%s[0])' % v for v in target_vars]))
-        else:
-            cmd = '"%s"' % cmd
-        self._write_rule('%s = %s.Command([%s], [%s], '
-                         '[%s, "@ls $TARGETS > /dev/null"])' % (
-                             var_name,
-                             env_name,
-                             self._srcs_list(self.path, self.data['outs']),
-                             srcs_str,
-                             cmd))
-        for i in range(len(self.data['outs'])):
-            self._add_target_var('%s' % i, '%s[%s]' % (var_name, i))
-        self.data['generated_hdrs'] = [self._target_file_path(o) for o in self.data['outs']
-                                       if o.endswith('.h')]
-
-        # TODO(phongchen): add Target.get_all_vars
-        dep_var_list = []
-        dep_skip_list = ['system_library', 'prebuilt_cc_library']
-        for i in self.expanded_deps:
-            dep = targets[i]
-            if dep.type in dep_skip_list:
-                continue
-
-            if dep.type == 'swig_library':
-                dep_var_name = dep._var_name('dynamic_py')
-                dep_var_list.append(dep_var_name)
-                dep_var_name = dep._var_name('dynamic_java')
-                dep_var_list.append(dep_var_name)
-            else:
-                dep_var_list += dep._get_target_vars()
-
-        for dep_var_name in dep_var_list:
-            self._write_rule('%s.Depends(%s, %s)' % (env_name,
-                                                     var_name,
-                                                     dep_var_name))
-
     def ninja_command(self):
         cmd = self.data['cmd']
         cmd = cmd.replace('$SRCS', '${in}')
@@ -186,8 +115,7 @@ class GenRuleTarget(Target):
         return result
 
     def ninja_rules(self):
-        rule = '%s__rule__' % self._regular_variable_name(
-            self._source_file_path(self.name))
+        rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self.ninja_command()
         description = console.colored('%s //%s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s

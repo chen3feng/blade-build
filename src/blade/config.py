@@ -54,7 +54,7 @@ class BladeConfig(object):
                 'test_ignored_envs__doc__':
                     'Ignored environments when run incremental tests, support regex',
                 'test_ignored_envs': [],
-                'native_builder': 'scons',
+                'native_builder': 'ninja',
                 'debug_info_level': 'mid',
             },
 
