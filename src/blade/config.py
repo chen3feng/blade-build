@@ -23,10 +23,11 @@ import os
 import re
 import sys
 
-from blade import HEAP_CHECK_VALUES
 from blade import build_attributes
 from blade import console
 from blade.blade_util import var_to_list, iteritems, exec_
+from blade.constants import HEAP_CHECK_VALUES
+
 
 _config_globals = {}
 

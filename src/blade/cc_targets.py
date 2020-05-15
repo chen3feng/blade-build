@@ -24,12 +24,12 @@ try:
 except ImportError:
     import Queue as queue
 
-from blade import HEAP_CHECK_VALUES
 from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
 from blade.blade_util import var_to_list, stable_unique
+from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
 if "check_output" not in dir(subprocess):
@@ -202,11 +202,9 @@ class CcTarget(Target):
 
     def _prebuilt_cc_library_path(self, prefer_dynamic=False):
         """
-
         Return source and target path of the prebuilt cc library.
         When both .so and .a exist, return .so if prefer_dynamic is True.
         Otherwise return the existing one.
-
         """
         a_src_path, so_src_path = self._prebuilt_cc_library_pathname()
         libs = (a_src_path, so_src_path)  # Ordered by priority
@@ -218,7 +216,8 @@ class CcTarget(Target):
                 source = lib
                 break
         if not source:
-            self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
+            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
+            source = a_src_path
         target = self._target_file_path(os.path.basename(source))
         return source, target
 
@@ -239,7 +238,11 @@ class CcTarget(Target):
                                                    profile=profile)
         else:
             libpath = CcTarget._default_prebuilt_libpath
-        return [os.path.join(self.path, libpath, 'lib%s.%s' % (self.name, s))
+        if libpath.startswith('//'):
+            libpath = libpath[2:]
+        else:
+            libpath = os.path.join(self.path, libpath)
+        return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
                 for s in ['a', 'so']]
 
     def _prebuilt_cc_library_dynamic_soname(self, so):
@@ -557,33 +560,45 @@ class CcTarget(Target):
             self._dynamic_cc_library()
 
     def _generated_header_files_dependencies(self, scons=True):
-        """Return dependencies which generate header files. """
+        """Calculate the dependencies which generate header files.
+
+        If a dependency will generate c/c++ header files, we must depends on it during the
+        compiling stage, otherwise, the 'Missing header file' error will occurs.
+
+        NOTE: Here is an optimization: If we know the detaild generated header files, depends on
+              them explicitly rather than depends on the whole target improves the parallelism.
+         """
         q = queue.Queue(0)
         for key in self.deps:
             q.put(key)
 
         keys = set()
-        deps = []
+        result = []
         while not q.empty():
             key = q.get()
             if key not in keys:
                 keys.add(key)
                 t = self.target_database[key]
-                generated_hdrs = t.data.get('generated_hdrs')
-                if generated_hdrs:
-                    if scons:
-                        deps.append(t)
-                    else:
-                        deps += generated_hdrs
+                if t.data.get('generate_hdrs'):
+                    # We know it will generate header files but has no details, so we have to
+                    # depends on the whole target
+                    result.append(t._get_target_file())
+                elif 'generated_hdrs' in t.data:
+                    generated_hdrs = t.data.get('generated_hdrs')
+                    if generated_hdrs:
+                        if scons:
+                            # We didn't optimize it for scons
+                            result.append(t)
+                        else:
+                            result += generated_hdrs
                 elif 'genhdrs_stamp' in t.data:  # ninja only
                     stamp = t.data['genhdrs_stamp']
                     if stamp:
-                        deps.append(stamp)
-                else:
-                    for k in t.deps:
-                        q.put(k)
+                        result.append(stamp)
+                for k in t.deps:
+                    q.put(k)
 
-        return deps
+        return result
 
     def _generate_generated_header_files_depends(self, var_name):
         """Generate dependencies to targets that generate header files. """
@@ -1208,6 +1223,25 @@ def cc_library(name,
 
 
 build_rules.register_function(cc_library)
+
+
+def foreign_cc_library(
+        name,
+        libpath,
+        hdrs=[],
+        export_incs=[],
+        deps=[],
+        link_all_symbols=False,
+        visibility=None,
+        deprecated=False,
+        **kwargs):
+    """Similar to cc_library, but is built by a foreign build system, such as make, cmake, etc"""
+    cc_library(name=name, prebuilt=True, prebuilt_libpath_pattern=libpath,
+               hdrs=hdrs, export_incs=export_incs, deps=deps, link_all_symbols=link_all_symbols,
+               visibility=visibility, deprecated=deprecated, **kwargs)
+
+
+build_rules.register_function(foreign_cc_library)
 
 
 class CcBinary(CcTarget):
