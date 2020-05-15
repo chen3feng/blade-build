@@ -175,6 +175,16 @@ class GenRuleTarget(Target):
             implicit_deps += targets[dep]._get_target_files()
         return implicit_deps
 
+    def _expand_srcs(self):
+        result = []
+        for s in self.srcs:
+            src = self._source_file_path(s)
+            if os.path.exists(src):
+                result.append(src)
+            else:
+                result.append(self._target_file_path(s))
+        return result
+
     def ninja_rules(self):
         rule = '%s__rule__' % self._regular_variable_name(
             self._source_file_path(self.name))
@@ -185,7 +195,7 @@ class GenRuleTarget(Target):
   description = %s
 ''' % (rule, cmd, self.blade.get_root_dir(), description))
         outputs = [self._target_file_path(o) for o in self.data['outs']]
-        inputs = [self._source_file_path(s) for s in self.srcs]
+        inputs = self._expand_srcs()
         vars = {}
         if '${_in_1}' in cmd:
             vars['_in_1'] = inputs[0]
