@@ -59,10 +59,15 @@ class TargetTest(unittest.TestCase):
         try:
             p.wait()
             self.build_output = open(self.build_output_file).readlines()
+            print(p.returncode)
             return p.returncode == 0
         except:
             sys.stderr.write('Failed while dry running:\n%s\n' % sys.exc_info())
         return False
+
+    def printOutput(self):
+        """Helper method for debugging"""
+        print(''.join(self.build_output))
 
     def findCommandAndLine(self, kwlist):
         if not isinstance(kwlist, list):
@@ -73,6 +78,7 @@ class TargetTest(unittest.TestCase):
                     break
             else:
                 return line, lineno
+        self.assertFalse('%s not found' % kwlist)
         return '', 0
 
     def findCommand(self, kwlist):
@@ -105,7 +111,7 @@ class TargetTest(unittest.TestCase):
     def _assertCxxWarningFlags(self, cmdline):
         self.assertIn('-Wall -Wextra', cmdline)
         self.assertIn('-Wframe-larger-than=69632', cmdline)
-        self.assertIn('-Werror=overloaded-virtual', cmdline)
+        self.assertIn('-Werror=vla', cmdline)
 
     def _assertCxxNoWarningFlags(self, cmdline):
         self.assertNotIn('-Wall -Wextra', cmdline)

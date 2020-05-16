@@ -13,8 +13,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-function cleanup()
-{
+function cleanup() {
     # Cleanup BLADE_ROOT and BUILDs to avoid ran by 'blade build ...' on upper dirs
     find testdata -name BUILD | xargs rm
     rm -rf testdata/BLADE_ROOT
@@ -37,6 +36,6 @@ cp testdata/BLADE_ROOT.TEST testdata/BLADE_ROOT
 python -B $@
 exit_code=$?
 
-cleanup
+# cleanup
 
 exit $exit_code

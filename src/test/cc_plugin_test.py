@@ -24,20 +24,10 @@ class TestCcPlugin(blade_test.TargetTest):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun())
 
-        com_lower_line = ''
-        com_upper_line = ''
-        com_string_line = ''
-        string_main_depends_libs = ''
-        string_plugin_depends_libs = ''
-        for line in self.build_output:
-            if 'plowercase.cpp.o -c' in line:
-                com_lower_line = line
-            if 'puppercase.cpp.o -c' in line:
-                com_upper_line = line
-            if 'string_plugin.cpp.o -c' in line:
-                com_string_line = line
-            if 'libstring_plugin.so' in line:
-                string_plugin_depends_libs = line
+        com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
+        com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
+        com_string_line = self.findCommand(['string_plugin.cpp.o', '-c'])
+        string_plugin_depends_libs = self.findCommand(['libstring_plugin.so'])
 
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)

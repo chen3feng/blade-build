@@ -2,7 +2,13 @@
 .vscode
 *.pyc
 .DS_Store
+
+BUILD
+BLADE_ROOT
+
+blade-bin
+.Building.lock
+build*_*
+
 /blade.zip
-/blade-bin
-/.Building.lock
-/build*_*
+

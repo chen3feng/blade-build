@@ -27,9 +27,8 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
 
         """
         self.assertTrue(self.dryRun())
-
-        copy_lower_line = self.findCommand('Copy')
-        com_upper_line = self.findCommand('puppercase.cpp.o -c')
+        copy_lower_line = self.findCommand('cp ')
+        com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
         upper_depends_libs = self.findCommand('libuppercase.so')
 
         self.assertIn('test_prebuild_cc_library/liblowercase.so', copy_lower_line)
@@ -37,7 +36,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
 
         self.assertIn('-Wall -Wextra', com_upper_line)
         self.assertIn('-Wframe-larger-than=69632', com_upper_line)
-        self.assertIn('-Werror=overloaded-virtual', com_upper_line)
+        self.assertIn('-Werror=vla', com_upper_line)
 
         self.assertTrue(upper_depends_libs)
         self.assertIn('libuppercase.so', upper_depends_libs)

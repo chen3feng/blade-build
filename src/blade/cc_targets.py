@@ -89,7 +89,6 @@ class CcTarget(Target):
                         blade,
                         kwargs)
 
-        self.file_and_link = None
         self.data['warning'] = warning
         self.data['defs'] = defs
         self.data['incs'] = self._incs_to_fullpath(incs)
@@ -99,6 +98,12 @@ class CcTarget(Target):
         self.data['extra_linkflags'] = extra_linkflags
         self.data['objs_name'] = None
         self.data['hdrs'] = []
+
+        # When a prebuilt shared library with a 'soname' is linked into a program
+        # Its name appears in the program's DT_NEEDED tag without full path.
+        # So we need to make a symbolic link let the program find the library.
+        # Type: tuple(target_path, soname)
+        self.file_and_link = None
 
         self._check_defs()
         self._check_incorrect_no_warning()
@@ -409,9 +414,6 @@ class CcTarget(Target):
             soname = self._prebuilt_cc_library_dynamic_soname(so_src)
             if soname:
                 self.file_and_link = (so_target, soname)
-
-        return (static_src_path, static_target_path,
-                dynamic_src_path, dynamic_target_path)
 
     def _prebuilt_cc_library(self):
         """Prebuilt cc library rules. """

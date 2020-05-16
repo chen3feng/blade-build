@@ -11,7 +11,7 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - ninja-build
-    
+
 script:
   - cpp --version
   - gcc -v

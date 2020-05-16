@@ -49,7 +49,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLoadBuilds),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestProtoLibrary),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestResourceLibrary),
-        unittest.defaultTestLoader.loadTestsFromTestCase(TestSwigLibrary),
+        # unittest.defaultTestLoader.loadTestsFromTestCase(TestSwigLibrary),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestDepsAnalyzing),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestQuery),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestTestRunner),

@@ -22,14 +22,14 @@ class TestProtoLibrary(blade_test.TargetTest):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun('--generate-java'))
 
-        com_lower_line = self.findCommand('plowercase.cpp.o -c')
+        com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_proto_cpp_option = self.findCommand(['protobuf/bin/protoc', 'cpp_out', 'rpc_option.proto'])
         com_proto_cpp_meta = self.findCommand(['protobuf/bin/protoc', 'cpp_out', 'rpc_meta_info.proto'])
         com_proto_java_option = self.findCommand(['protobuf/bin/protoc', 'java_out', 'rpc_option.proto'])
         com_proto_java_meta = self.findCommand(['protobuf/bin/protoc', 'java_out', 'rpc_meta_info.proto'])
 
-        com_proto_option_cc = self.findCommand('rpc_option.pb.cc.o -c')
-        com_proto_meta_cc = self.findCommand('rpc_meta_info.pb.cc.o -c')
+        com_proto_option_cc = self.findCommand(['rpc_option.pb.cc.o', '-c'])
+        com_proto_meta_cc = self.findCommand(['rpc_meta_info.pb.cc.o', '-c'])
         meta_depends_libs = self.findCommand(['-shared', 'librpc_meta_info_proto.so'])
         lower_depends_libs = self.findCommand(['-shared', 'liblowercase.so'])
 
