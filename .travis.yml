@@ -7,7 +7,7 @@ before_install: true
 
 install:
     - pip install coverage
-      pip install coveralls
+    - pip install coveralls
 
 addons:
   apt:
