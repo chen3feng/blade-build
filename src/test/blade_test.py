@@ -141,4 +141,6 @@ def run(class_name):
     suite_test.addTests(
         [unittest.defaultTestLoader.loadTestsFromTestCase(class_name)])
     runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    result = runner.run(suite_test)
+    if not result.wasSuccessful():
+        sys.exit(1)
