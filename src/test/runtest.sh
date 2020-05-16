@@ -33,9 +33,18 @@ for f in `find testdata -name BUILD.TEST`; do
 done
 cp testdata/BLADE_ROOT.TEST testdata/BLADE_ROOT
 
+ROOT="$(cd ../.. && pwd)"
+cat > $ROOT/.coveragerc << EOF
+[run]
+data_file = $ROOT/.coverage
+EOF
+
+BLADE_PYTHON_INTERPRETER="coverage run --rcfile=$ROOT/.coveragerc"
+
 python -B $@
 exit_code=$?
 
+coverage report --rcfile=$ROOT/.coveragerc
 # cleanup
 
 exit $exit_code

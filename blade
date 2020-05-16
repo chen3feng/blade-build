@@ -102,4 +102,4 @@ if [[ ! -e "$blade_file" ]]; then
     _error_exit "Cannot find the core file $blade_file"
 fi
 
-python -B $blade_file "$@"
+${BLADE_PYTHON_INTERPRETER:-python} $blade_file "$@"

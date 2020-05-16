@@ -12,3 +12,6 @@ build*_*
 
 /blade.zip
 
+/.coverage
+/.coveragerc
+

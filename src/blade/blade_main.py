@@ -368,8 +368,8 @@ def unlock_workspace(lock_file_fd):
     unlock_file(lock_file_fd)
 
 
-def parse_command_line():
-    parsed_command_line = CmdArguments()
+def parse_command_line(argv):
+    parsed_command_line = CmdArguments(argv)
     command = parsed_command_line.get_command()
     options = parsed_command_line.get_options()
     targets = parsed_command_line.get_targets()
@@ -559,9 +559,9 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
     return exit_code[0]
 
 
-def _main(blade_path):
+def _main(blade_path, argv):
     """The main entry of blade. """
-    command, options, targets = parse_command_line()
+    command, options, targets = parse_command_line(argv)
     setup_console(options)
 
     global _BLADE_ROOT_DIR
@@ -616,11 +616,12 @@ def format_timedelta(seconds):
     return '%sh%sm%ss' % (hours, mins, seconds)
 
 
-def main(blade_path):
+def main(blade_path, argv):
+    print(argv)
     exit_code = 0
     try:
         start_time = time.time()
-        exit_code = _main(blade_path)
+        exit_code = _main(blade_path, argv)
         cost_time = int(time.time() - start_time)
         if cost_time > 1:
             console.info('cost time %s' % format_timedelta(cost_time))
@@ -635,4 +636,4 @@ def main(blade_path):
         console.error(traceback.format_exc())
     if exit_code != 0:
         console.error('failure')
-    sys.exit(exit_code)
+    return exit_code

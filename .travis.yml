@@ -5,6 +5,10 @@ python:
 
 before_install: true
 
+install:
+    - pip install coverage
+      pip install coveralls
+
 addons:
   apt:
     sources:
@@ -14,7 +18,8 @@ addons:
     - ninja-build
 
 script:
-  - cpp --version
-  - gcc -v
-  - g++ -v
-  - src/test/runalltests.sh
+    - gcc -dumpfullversion
+    - src/test/runalltests.sh
+
+after_success:
+    - coveralls

@@ -35,9 +35,9 @@ class CmdArguments(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, argv):
         """Init the class. """
-        self.options, others = self._cmd_parse()
+        self.options, others = self._cmd_parse(argv)
 
         # If '--' in arguments, use all other arguments after it as run
         # arguments
@@ -393,7 +393,7 @@ class CmdArguments(object):
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
 
-    def _cmd_parse(self):
+    def _cmd_parse(self, argv):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
@@ -437,7 +437,7 @@ class CmdArguments(object):
         self._add_query_arguments(query_parser)
         self._add_dump_arguments(dump_parser)
 
-        return arg_parser.parse_known_args()
+        return arg_parser.parse_known_args(argv)
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture. """
