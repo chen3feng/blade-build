@@ -26,6 +26,7 @@ from blade.cc_targets import CcTarget
 from blade.thrift_helper import ThriftHelper
 
 
+# TODO(chen3feng): Support java generation
 class ThriftLibrary(CcTarget):
     """A thrift library target derived from CcTarget. """
 

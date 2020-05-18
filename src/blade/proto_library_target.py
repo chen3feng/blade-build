@@ -133,12 +133,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
         target_languages = set(var_to_list(target_languages))
-        if 'java' in target_languages:
-            self.data['generate_java'] = True
-        if 'python' in target_languages:
-            self.data['generate_python'] = True
-        if 'go' in target_languages:
-            self.data['generate_go'] = True
+        self.data['generate_java'] = 'java' in target_languages
+        self.data['generate_python'] = 'python' in target_languages
+        self.data['generate_go'] = 'go' in target_languages
 
     def _check_proto_srcs_name(self, srcs):
         """Checks whether the proto file's name ends with 'proto'. """
@@ -189,7 +186,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._check_proto_deps()
 
     def _expand_deps_generation(self):
-        self._expand_deps_java_generation()
+        if self.data['generate_java']:
+            self._expand_deps_java_generation()
 
     def _proto_gen_files(self, src):
         """_proto_gen_files. """

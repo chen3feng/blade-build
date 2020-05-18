@@ -79,6 +79,7 @@ class JavaTargetMixIn(object):
                 self.expanded_deps.append(dkey)
 
     def _expand_deps_java_generation(self):
+        """Ensure that all multilingual dependencies such as proto_library generate java code."""
         q = queue.Queue()
         for k in self.deps:
             q.put(k)
@@ -89,14 +90,10 @@ class JavaTargetMixIn(object):
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
-                if dep.type in ('cc_library', 'cc_binary',
-                                'cc_test', 'cc_plugin'):
-                    continue
-                else:
-                    if not dep.data.get('generate_java', False):
-                        dep.data['generate_java'] = True
-                        for dkey in dep.deps:
-                            q.put(dkey)
+                if 'generate_java' in dep.data:
+                    dep.data['generate_java'] = True
+                    for dkey in dep.deps:
+                        q.put(dkey)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
