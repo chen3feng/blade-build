@@ -1,8 +1,8 @@
 # 安装
 
 执行install脚本即可安装到~/bin下，目前因还在开发阶段，变化还比较快，以软链方式安装，install后不能删除checkout出来的原始目录。
-目前blade生成scons脚本，因此还需要安装scons 2.0以上版本。如果用ninja来做后端，则需要安装ninja。
-Blade 支持 Python 2.7.x 和 python3.4+。
+Blade 用 ninja 做后端，还需要安装ninja。
+Blade 支持 Python 2.7.x，对 python 3.x 的支持还在准备中。
 
 install使得可以在任何目录下直接执行
 

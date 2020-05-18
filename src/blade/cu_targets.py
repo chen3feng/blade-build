@@ -82,27 +82,6 @@ class CuTarget(CcTarget):
 
         return nvcc_flags, incs
 
-    def _cu_objects_rules(self):
-        env_name = self._env_name()
-        flags_from_option, incs_list = self._get_cu_flags()
-        incs_string = " -I".join(incs_list)
-        flags_string = " ".join(flags_from_option)
-        objs = []
-        for src in self.srcs:
-            obj = 'obj_%s' % self._var_name_of(src)
-            target_path = os.path.join(
-                self.build_path, self.path, '%s.objs' % self.name, src)
-            self._write_rule(
-                '%s = %s.NvccObject(NVCCFLAGS="-I%s %s", target="%s" + top_env["OBJSUFFIX"]'
-                ', source="%s")' % (obj,
-                                    env_name,
-                                    incs_string,
-                                    flags_string,
-                                    target_path,
-                                    self._target_file_path(src)))
-            objs.append(obj)
-        self._write_rule('%s = [%s]' % (self._objs_name(), ','.join(objs)))
-
 
 class CuLibrary(CuTarget):
     """This class is derived from CuTarget and generates the cu_library
@@ -134,11 +113,8 @@ class CuLibrary(CuTarget):
                           blade,
                           kwargs)
 
-    def scons_rules(self):
-        """Generate scons rules according to user options. """
-        self._prepare_to_generate_rule()
-        self._cu_objects_rules()
-        self._cc_library()
+    def ninja_rule(self):
+        self.error('to be implemented')
 
 
 def cu_library(name,
@@ -196,53 +172,8 @@ class CuBinary(CuTarget):
                           blade,
                           kwargs)
 
-    def _cc_binary(self):
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        (link_all_symbols_lib_list,
-         lib_str,
-         whole_link_flags) = self._get_static_deps_lib_list()
-        if whole_link_flags:
-            self._write_rule(
-                '%s.Append(LINKFLAGS=[%s])' % (env_name, whole_link_flags))
-
-        if self.data.get('export_dynamic'):
-            self._write_rule(
-                '%s.Append(LINKFLAGS="-rdynamic")' % env_name)
-
-        self._setup_link_flags()
-
-        self._write_rule('{0}.Replace('
-                         'CC={0}["NVCC"], '
-                         'CPP={0}["NVCC"], '
-                         'CXX={0}["NVCC"], '
-                         'LINK={0}["NVCC"])'.format(env_name))
-
-        self._write_rule('%s = %s.Program("%s", %s, %s)' % (
-            var_name,
-            env_name,
-            self._target_file_path(),
-            self._objs_name(),
-            lib_str))
-        self._write_rule('%s.Depends(%s, %s)' % (
-            env_name,
-            var_name,
-            self._objs_name()))
-
-        if link_all_symbols_lib_list:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ', '.join(link_all_symbols_lib_list)))
-
-        # self._write_rule('%s.Append(LINKFLAGS=str(version_obj[0]))' % env_name)
-        self._write_rule('%s.Requires(%s, version_obj)' % (
-            env_name, var_name))
-
-    def scons_rules(self):
-        """Generate scons rules according to user options. """
-        self._prepare_to_generate_rule()
-        self._cu_objects_rules()
-        self._cc_binary()
+    def ninja_rule(self):
+        self.error('to be implemented')
 
 
 def cu_binary(name,

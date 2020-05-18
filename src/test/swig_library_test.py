@@ -34,7 +34,7 @@ class TestSwigLibrary(blade_test.TargetTest):
         swig_python_so = ''
         swig_java_so = ''
 
-        for line in self.scons_output:
+        for line in self.build_output:
             if 'plowercase.cpp.o -c' in line:
                 com_lower_line = line
             if 'swig -python' in line:

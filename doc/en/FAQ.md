@@ -166,7 +166,6 @@ The complete command line can be displayed by adding the --verbose parameter to 
 
 ## I modified the source file, why is it still failing, and the error location is not matched (or not recompiled)?
 First alt to the build directory to see if the source code (or header file) is placed here, because the Blade separates the source code and builds the results directory.
-Blade will also go to the build results directory to find the source code first, and because of the limitations of scons, it will be given priority, so there is no good solution.
 If the source file is misplaced here, the build will show Compiling build64_release/..., which makes it easier to locate the problem.
 
 ## How do I publish a precompiled library?

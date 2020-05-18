@@ -103,5 +103,5 @@ class BuildEnvironment(object):
         self.rules_buf.append(rule)
 
     def get_rules(self):
-        """Return the scons rules. """
+        """Return the generated rules. """
         return self.rules_buf

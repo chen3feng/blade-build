@@ -44,7 +44,7 @@ class MavenJar(Target):
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
 
-    def blade_rules(self):
+    def ninja_rules(self):
         maven_cache = maven.MavenCache.instance(build_manager.instance.get_build_path())
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
@@ -55,12 +55,6 @@ class MavenJar(Target):
                     self.data['id'], self.data['classifier'])
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
-
-    def scons_rules(self):
-        return self.blade_rules()
-
-    def ninja_rules(self):
-        return self.blade_rules()
 
 
 _JAVA_SRC_PATH_SEGMENTS = (
@@ -85,6 +79,7 @@ class JavaTargetMixIn(object):
                 self.expanded_deps.append(dkey)
 
     def _expand_deps_java_generation(self):
+        """Ensure that all multilingual dependencies such as proto_library generate java code."""
         q = queue.Queue()
         for k in self.deps:
             q.put(k)
@@ -95,14 +90,10 @@ class JavaTargetMixIn(object):
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
-                if dep.type in ('cc_library', 'cc_binary',
-                                'cc_test', 'cc_plugin'):
-                    continue
-                else:
-                    if not dep.data.get('generate_java', False):
-                        dep.data['generate_java'] = True
-                        for dkey in dep.deps:
-                            q.put(dkey)
+                if 'generate_java' in dep.data:
+                    dep.data['generate_java'] = True
+                    for dkey in dep.deps:
+                        q.put(dkey)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -200,15 +191,11 @@ class JavaTargetMixIn(object):
     def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
         """Extract jar file built by the target with the specified dkey.
 
-        dep_jars: a list of jars built by blade targets. Each item is
-                  either a scons var or a file path depending on the build system.
+        dep_jars: a list of jars built by blade targets. Each item is a file path.
         maven_jars: a list of jars managed by maven repository.
         """
         dep = self.target_database[dkey]
-        if config.get_item('global_config', 'native_builder') == 'ninja':
-            jar = dep._get_target_file('jar')
-        else:
-            jar = dep._get_target_var('jar')
+        jar = dep._get_target_file('jar')
         if jar:
             dep_jars.append(jar)
         else:
@@ -448,66 +435,13 @@ class JavaTargetMixIn(object):
                 return resource[pos + len(seg) + 1:]  # skip separator '/'
         return resource
 
-    def _generate_java_versions(self):
-        java_config = config.get_section('java_config')
-        version = java_config['version']
-        source_version = java_config.get('source_version', version)
-        target_version = java_config.get('target_version', version)
-        # JAVAVERSION must be set because scons need it to deduce class names
-        # from java source, and the default value '1.5' is too low.
-        blade_java_version = version or '1.6'
-        self._write_rule('%s.Replace(JAVAVERSION="%s")' % (
-            self._env_name(), blade_java_version))
-        if source_version:
-            self._write_rule('%s.Append(JAVACFLAGS="-source %s")' % (
-                self._env_name(), source_version))
-        if target_version:
-            self._write_rule('%s.Append(JAVACFLAGS="-target %s")' % (
-                self._env_name(), target_version))
-
-    def _generate_java_source_encoding(self):
-        source_encoding = self.data.get('source_encoding')
-        if source_encoding is None:
-            source_encoding = config.get_item('java_config', 'source_encoding')
-        if source_encoding:
-            self._write_rule('%s.Append(JAVACFLAGS="-encoding %s")' % (
-                self._env_name(), source_encoding))
-
-    def _generate_java_classpath(self, dep_jar_vars, dep_jars):
-        env_name = self._env_name()
-        for dep_jar_var in dep_jar_vars:
-            # Can only append one by one here, maybe a scons bug.
-            # Can only append as string under scons 2.1.0, maybe another bug or defect.
-            self._write_rule('%s.Append(JAVACLASSPATH=str(%s[0]))' % (
-                env_name, dep_jar_var))
-        if dep_jars:
-            self._write_rule('%s.Append(JAVACLASSPATH=%s)' % (env_name, dep_jars))
-
-    def _generate_java_depends(self, var_name, dep_jar_vars, dep_jars,
-                               resources_var, resources_path_var):
-        env_name = self._env_name()
-        if dep_jar_vars:
-            self._write_rule('%s.Depends(%s, [%s])' % (
-                env_name, var_name, ','.join(dep_jar_vars)))
-        if dep_jars:
-            self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
-                env_name, var_name, env_name, sorted(dep_jars)))
-        if resources_var:
-            self._write_rule('%s.Depends(%s, %s.Value(%s))' % (
-                env_name, var_name, env_name, resources_path_var))
-        locations = self.data.get('location_resources')
-        if locations:
-            self._write_rule('%s.Depends(%s, %s.Value("%s"))' % (
-                env_name, var_name, env_name, sorted(set(locations))))
-
-    def _generate_sources(self, ninja=False):
+    def _generate_sources(self):
         """
         Generate java sources in the build directory for the subsequent
         code coverage. The layout is based on the package parsed from sources.
         Note that the classes are still compiled from the sources in the
         source directory.
         """
-        env_name = self._env_name()
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
             src = self._source_file_path(source)
@@ -516,94 +450,7 @@ class JavaTargetMixIn(object):
             package = self._get_source_package_name(src)
             dst = os.path.join(sources_dir, package.replace('.', '/'),
                                os.path.basename(source))
-            if ninja:
-                self.ninja_build('copy', dst, inputs=src)
-            else:
-                self._write_rule('%s.JavaSource(target = "%s", source = "%s")' %
-                                 (env_name, dst, src))
-
-    def _generate_regular_resources(self, resources,
-                                    resources_var, resources_path_var):
-        env_name = self._env_name()
-        resources_dir = self._target_file_path() + '.resources'
-        resources = self._process_regular_resources(resources)
-        for i, resource in enumerate(resources):
-            src, dst = resource[0], os.path.join(resources_dir, resource[1])
-            res_var = self._var_name('resources__%s' % i)
-            self._write_rule('%s = %s.JavaResource(target = "%s", source = "%s")' %
-                             (res_var, env_name, dst, src))
-            self._write_rule('%s.append(%s)' % (resources_var, res_var))
-            self._write_rule('%s.append("%s")' % (resources_path_var, dst))
-
-    def _generate_location_resources(self, resources, resources_var):
-        env_name = self._env_name()
-        resources_dir = self._target_file_path() + '.resources'
-        targets = self.blade.get_build_targets()
-        for i, resource in enumerate(resources):
-            key, type, dst = resource
-            target = targets[key]
-            target_var = target._get_target_var(type)
-            if not target_var:
-                self.warning('Location %s %s is missing. Ignored.' % (key, type))
-                continue
-            if dst:
-                dst_path = os.path.join(resources_dir, dst)
-            else:
-                dst_path = os.path.join(resources_dir, '${SOURCE.file}')
-            res_var = self._var_name('location_resources__%s' % i)
-            self._write_rule('%s = %s.JavaResource(target = "%s", source = %s)' %
-                             (res_var, env_name, dst_path, target_var))
-            self._write_rule('%s.append(%s)' % (resources_var, res_var))
-
-    def _generate_resources(self):
-        resources = self.data['resources']
-        locations = self.data['location_resources']
-        if not resources and not locations:
-            return '', ''
-        env_name = self._env_name()
-        resources_var_name = self._var_name('resources')
-        resources_path_var_name = self._var_name('resources_path')
-        resources_dir = self._target_file_path() + '.resources'
-        self._write_rule('%s, %s = [], []' % (
-            resources_var_name, resources_path_var_name))
-        self._generate_regular_resources(resources, resources_var_name,
-                                         resources_path_var_name)
-        self._generate_location_resources(locations, resources_var_name)
-        if self.blade.get_command() == 'clean':
-            self._write_rule('%s.Clean(%s, "%s")' % (
-                env_name, resources_var_name, resources_dir))
-        return resources_var_name, resources_path_var_name
-
-    def _generate_generated_java_jar(self, var_name, srcs):
-        env_name = self._env_name()
-        self._write_rule('%s = %s.GeneratedJavaJar(target="%s" + top_env["JARSUFFIX"], source=[%s])' % (
-            var_name, env_name, self._target_file_path(), ','.join(srcs)))
-
-    def _generate_java_jar(self, srcs, resources_var):
-        env_name = self._env_name()
-        var_name = self._var_name('jar')
-        self._write_rule('%s = %s.BladeJavaJar(target="%s", source=%s + [%s])' % (
-            var_name, env_name, self._target_file_path() + '.jar',
-            srcs, resources_var))
-        # BladeJavaJar builder puts the generated classes
-        # into .class directory during jar building
-        classes_dir = self._get_classes_dir()
-        if self.blade.get_command() == 'clean':
-            self._write_rule('%s.Clean(%s, "%s")' % (
-                env_name, var_name, classes_dir))
-        return var_name
-
-    def _generate_fat_jar(self, dep_jar_vars, dep_jars):
-        var_name = self._var_name('fatjar')
-        jar_vars = []
-        if self._get_target_var('jar'):
-            jar_vars = [self._get_target_var('jar')]
-        jar_vars.extend(dep_jar_vars)
-        self._write_rule('%s = %s.FatJar(target="%s", source=[%s] + %s)' % (
-            var_name, self._env_name(),
-            self._target_file_path() + '.fat.jar',
-            ','.join(jar_vars), dep_jars))
-        return var_name
+            self.ninja_build('copy', dst, inputs=src)
 
     def ninja_generate_resources(self):
         resources = self.data['resources']
@@ -717,42 +564,11 @@ class JavaTarget(Target, JavaTargetMixIn):
         if warnings is not None:
             self.data['warnings'] = var_to_list(warnings)
 
-    def _clone_env(self):
-        self._write_rule('%s = env_java.Clone()' % self._env_name())
-
-    def _prepare_to_generate_rule(self):
-        """Should be overridden. """
-        self._check_deprecated_deps()
-        self._clone_env()
-        self._generate_java_source_encoding()
-        warnings = self.data.get('warnings')
-        if warnings is None:
-            warnings = config.get_item('java_config', 'warnings')
-        if warnings:
-            self._write_rule('%s.Append(JAVACFLAGS=%s)' % (
-                self._env_name(), warnings))
-
     def _expand_deps_generation(self):
         self._expand_deps_java_generation()
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
-
-    def _generate_jar(self):
-        self._generate_sources()
-        dep_jar_vars, dep_jars = [], []
-        srcs = self._java_full_path_srcs()
-        if srcs:
-            dep_jar_vars, dep_jars = self._get_compile_deps()
-            self._generate_java_classpath(dep_jar_vars, dep_jars)
-        resources_var, resources_path_var = self._generate_resources()
-        if srcs or resources_var:
-            var_name = self._generate_java_jar(srcs, resources_var)
-            self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
-                                        resources_var, resources_path_var)
-            self._add_target_var('jar', var_name)
-            return var_name
-        return ''
 
     def javac_flags(self):
         global_config = config.get_section('global_config')
@@ -774,7 +590,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return srcs
 
     def ninja_generate_jar(self):
-        self._generate_sources(True)
+        self._generate_sources()
         srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
         jar = self._target_file_path() + '.jar'
@@ -815,22 +631,6 @@ class JavaLibrary(JavaTarget):
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
 
-    def _generate_prebuilt_jar(self):
-        var_name = self._var_name('jar')
-        self._write_rule('%s = top_env.File(["%s"])' % (
-            var_name, self.data['binary_jar']))
-        return var_name
-
-    def scons_rules(self):
-        if self.type == 'prebuilt_java_library':
-            jar_var = self._generate_prebuilt_jar()
-        else:
-            self._prepare_to_generate_rule()
-            jar_var = self._generate_jar()
-
-        if jar_var:
-            self._add_default_target_var('jar', jar_var)
-
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':
             jar = os.path.join(self.blade.get_root_dir(),
@@ -853,34 +653,8 @@ class JavaBinary(JavaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_pack_deps()
-        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
-        self._generate_wrapper(self._generate_one_jar(dep_jar_vars, dep_jars))
-
     def _get_all_depended_jars(self):
         return []
-
-    def _generate_one_jar(self, dep_jar_vars, dep_jars):
-        var_name = self._var_name('onejar')
-        jar_vars = []
-        if self._get_target_var('jar'):
-            jar_vars = [self._get_target_var('jar')]
-        jar_vars.extend(dep_jar_vars)
-        self._write_rule('%s = %s.OneJar(target="%s", source=[Value("%s")] + [%s] + %s)' % (
-            var_name, self._env_name(),
-            self._target_file_path() + '.one.jar', self.data['main_class'],
-            ','.join(jar_vars), dep_jars))
-        self._add_target_var('onejar', var_name)
-        return var_name
-
-    def _generate_wrapper(self, onejar):
-        var_name = self._var_name()
-        self._write_rule('%s = %s.JavaBinary(target="%s", source=%s)' % (
-            var_name, self._env_name(), self._target_file_path(), onejar))
-        self._add_default_target_var('bin', var_name)
 
     def ninja_generate_one_jar(self, dep_jars, maven_jars):
         jar = self._get_target_file('jar')
@@ -915,14 +689,6 @@ class JavaFatLibrary(JavaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_pack_deps()
-        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
-        fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
-        self._add_default_target_var('fatjar', fatjar_var)
-
     def ninja_rules(self):
         jar = self.ninja_generate_fat_jar()
         self._add_default_target_file('fatjar', jar)
@@ -940,33 +706,6 @@ class JavaTest(JavaBinary):
         self.data['testdata'] = var_to_list(testdata)
         if target_under_test:
             self.data['target_under_test'] = self._unify_dep(target_under_test)
-
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_test_deps()
-        self._generate_java_test(dep_jar_vars, dep_jars)
-
-    def _prepare_to_generate_rule(self):
-        JavaBinary._prepare_to_generate_rule(self)
-        self._generate_target_under_test_package()
-
-    def _generate_target_under_test_package(self):
-        target_under_test = self.data.get('target_under_test')
-        if target_under_test:
-            target = self.target_database[target_under_test]
-            self._write_rule('%s.Append(JAVATARGETUNDERTESTPKG=%s)' % (
-                self._env_name(), target._get_java_package_names()))
-
-    def _generate_java_test(self, dep_jar_vars, dep_jars):
-        var_name = self._var_name()
-        jar_var = self._get_target_var('jar')
-        if jar_var:
-            self._write_rule('%s = %s.JavaTest(target="%s", '
-                             'source=[Value("%s")] + [%s] + [%s] + %s)' % (
-                                 var_name, self._env_name(), self._target_file_path(),
-                                 self.data['main_class'], jar_var,
-                                 ','.join(dep_jar_vars), dep_jars))
 
     def ninja_java_test_vars(self):
         vars = {

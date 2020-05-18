@@ -35,9 +35,9 @@ class CmdArguments(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, argv):
         """Init the class. """
-        self.options, others = self._cmd_parse()
+        self.options, others = self._cmd_parse(argv)
 
         # If '--' in arguments, use all other arguments after it as run
         # arguments
@@ -209,13 +209,8 @@ class CmdArguments(object):
         """Add build related action arguments. """
         parser.add_argument(
             '--native-builder', dest='native_builder',
-            type=str, choices=['scons', 'ninja'], default='',
+            type=str, choices=['ninja'], default='',
             help='Specify the underly native builder')
-        parser.add_argument(
-            '--generate-scons-only', dest='stop_after',
-            action='store_const', const='generate',
-            help='Generate scons script for debug purpose. '
-                 'DEPRECATED, use --stop_after=generate instead')
 
         # Add extra native builder options arguments.
         parser.add_argument(
@@ -398,7 +393,7 @@ class CmdArguments(object):
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
 
-    def _cmd_parse(self):
+    def _cmd_parse(self, argv):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
@@ -442,7 +437,7 @@ class CmdArguments(object):
         self._add_query_arguments(query_parser)
         self._add_dump_arguments(dump_parser)
 
-        return arg_parser.parse_known_args()
+        return arg_parser.parse_known_args(argv)
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture. """

@@ -123,7 +123,7 @@ $ blade test -m32 -pdebug common...
 # 致谢
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
-* 现阶段 Blade 生成 [SCons](http://www.scons.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 SCons。
+* Blade 生成 [Ninja](https://ninja-build.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 Ninja。
 * [Python](http://www.python.org) 是一种简单易用而又强大的语言，我们喜欢python。
 * Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，
 又增强了 Blade，这些库包括

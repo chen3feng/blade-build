@@ -211,19 +211,6 @@ def native_builder_options(options):
     return build_options
 
 
-def _scons_build(options):
-    cmd = ['scons']
-    cmd += native_builder_options(options)
-    cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
-    cmd += ['--duplicate=soft-copy', '--cache-show']
-    if options.keep_going:
-        cmd.append('-k')
-    if console.verbosity_compare(options.verbosity, 'quiet') <= 0:
-        cmd.append('-s')
-    cmdstr = subprocess.list2cmdline(cmd)
-    return _run_native_builder(cmdstr)
-
-
 def _show_slow_builds(build_start_time, show_builds_slower_than):
     build_dir = build_manager.instance.get_build_path()
     with open(os.path.join(build_dir, '.ninja_log')) as f:
@@ -282,10 +269,7 @@ def _run_ninja(cmd, options):
 def _ninja_build(options):
     cmd = ['ninja']
     cmd += native_builder_options(options)
-    # if options.jobs:
-    # Unlike scons, ninja enable parallel building defaultly,
-    # so only set it when user specified it explicitly.
-    # cmd.append('-j%s' % options.jobs)
+    # Ninja enable parallel building defaultly, but we still set it explicitly.
     cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
     if options.keep_going:
         cmd.append('-k0')
@@ -302,10 +286,7 @@ def build(options):
     _check_code_style(_TARGETS)
     console.info('building...')
     console.flush()
-    if config.get_item('global_config', 'native_builder') == 'ninja':
-        returncode = _ninja_build(options)
-    else:
-        returncode = _scons_build(options)
+    returncode = _ninja_build(options)
     if returncode != 0:
         console.error('building failure.')
         return returncode
@@ -387,8 +368,8 @@ def unlock_workspace(lock_file_fd):
     unlock_file(lock_file_fd)
 
 
-def parse_command_line():
-    parsed_command_line = CmdArguments()
+def parse_command_line(argv):
+    parsed_command_line = CmdArguments(argv)
     command = parsed_command_line.get_command()
     options = parsed_command_line.get_options()
     targets = parsed_command_line.get_targets()
@@ -501,7 +482,8 @@ def adjust_config_by_options(config, options):
 
 
 def clear_build_script():
-    for script in ('SConstruct', 'build.ninja'):
+    scripts = ['build.ninja']
+    for script in scripts:
         script = os.path.join(_BLADE_ROOT_DIR, script)
         try:
             os.remove(script)
@@ -577,9 +559,9 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
     return exit_code[0]
 
 
-def _main(blade_path):
+def _main(blade_path, argv):
     """The main entry of blade. """
-    command, options, targets = parse_command_line()
+    command, options, targets = parse_command_line(argv)
     setup_console(options)
 
     global _BLADE_ROOT_DIR
@@ -634,11 +616,11 @@ def format_timedelta(seconds):
     return '%sh%sm%ss' % (hours, mins, seconds)
 
 
-def main(blade_path):
+def main(blade_path, argv):
     exit_code = 0
     try:
         start_time = time.time()
-        exit_code = _main(blade_path)
+        exit_code = _main(blade_path, argv)
         cost_time = int(time.time() - start_time)
         if cost_time > 1:
             console.info('cost time %s' % format_timedelta(cost_time))
@@ -653,4 +635,4 @@ def main(blade_path):
         console.error(traceback.format_exc())
     if exit_code != 0:
         console.error('failure')
-    sys.exit(exit_code)
+    return exit_code

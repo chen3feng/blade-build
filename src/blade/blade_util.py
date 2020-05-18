@@ -228,9 +228,9 @@ def cpu_count():
         return int(os.sysconf('SC_NPROCESSORS_ONLN'))
 
 
-def regular_variable_name(var):
-    """Replace the chars of var that scons doesn't recognize. """
-    return var.translate(string.maketrans(',-/.+*', '______'))
+def regular_variable_name(name):
+    """convert some name to a valid identifier name"""
+    return name.translate(string.maketrans(',-/.+*', '______'))
 
 
 if PY3:

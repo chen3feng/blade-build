@@ -22,13 +22,14 @@ Blade全局配置
 
 | 参数  | 类型 | 默认值 | 值域 | 说明 |
 |-------|-----|-------|-----|----|
-| native_builder | string | scons | ninja scons | Blade所用的后端构建系统，默认是`scons`，但是建议用`ninja` |
+| native_builder | string | ninja | ninja | Blade所用的后端构建系统，只支持 `ninja` |
 | duplicated_source_action |string| warning | warning error| 发现同一个源文件属于多个目标时的行为，默认为`warning`，建议设置为`error`|
 | test_timeout | int | 600 | | 运行每个测试的超时时间，单位秒，超过超时值依然未结束，视为测试失败 |
 | debug_info_level | string | mid |no low mid high| 生成的构建结果中调试符号的级别，支持四种级别，越高越详细，可执行文件也越大 |
 
+Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，发现 ninja 更合适。
 [ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，
-用ninja速度比scons快很多，因此后续主要基于ninja优化，并逐步淘汰对scons的支持。
+用 ninja 速度比 scons 快很多，因此我们淘汰了对 scons 的支持。
 
 ### cc_config
 所有c/c++目标的公共配置
@@ -89,7 +90,7 @@ Java构建相关的配置
 | protobuf_libs | list   |          |  |protobuf库的路径，Blade deps 格式 |
 | protobuf_path | string |          |  | import 时的 proto 搜索路径，相对于 BLADE_ROOT |
 | protobuf_include_path | string | | | 编译 pb.cc 时额外的 -I 路径 |
-             
+
 ### thrift_library_config
 编译thrift需要的配置
 

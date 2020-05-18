@@ -37,13 +37,13 @@ class TargetTest(unittest.TestCase):
         self.working_dir = '.'
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
-        self.scons_output_file = 'scons_output.txt'
+        self.build_output_file = 'build_output.txt'
 
     def tearDown(self):
         """tear down method. """
         try:
-            os.remove(self.scons_output_file)
-            os.remove('./SConstruct')
+            os.remove(self.build_output_file)
+            os.remove('./build.ninja')
         except OSError:
             pass
 
@@ -54,25 +54,31 @@ class TargetTest(unittest.TestCase):
         # easy debugging.
         p = subprocess.Popen(
             '../../../blade %s %s --generate-dynamic --verbose --dry-run %s > %s' % (
-                self.command, self.targets, extra_args, self.scons_output_file),
+                self.command, self.targets, extra_args, self.build_output_file),
             shell=True)
         try:
             p.wait()
-            self.scons_output = open(self.scons_output_file).readlines()
+            self.build_output = open(self.build_output_file).readlines()
+            print(p.returncode)
             return p.returncode == 0
         except:
             sys.stderr.write('Failed while dry running:\n%s\n' % sys.exc_info())
         return False
 
+    def printOutput(self):
+        """Helper method for debugging"""
+        print(''.join(self.build_output))
+
     def findCommandAndLine(self, kwlist):
         if not isinstance(kwlist, list):
             kwlist = [kwlist]
-        for lineno, line in enumerate(self.scons_output):
+        for lineno, line in enumerate(self.build_output):
             for kw in kwlist:
                 if kw not in line:
                     break
             else:
                 return line, lineno
+        self.assertFalse('%s not found' % kwlist)
         return '', 0
 
     def findCommand(self, kwlist):
@@ -105,7 +111,7 @@ class TargetTest(unittest.TestCase):
     def _assertCxxWarningFlags(self, cmdline):
         self.assertIn('-Wall -Wextra', cmdline)
         self.assertIn('-Wframe-larger-than=69632', cmdline)
-        self.assertIn('-Werror=overloaded-virtual', cmdline)
+        self.assertIn('-Werror=vla', cmdline)
 
     def _assertCxxNoWarningFlags(self, cmdline):
         self.assertNotIn('-Wall -Wextra', cmdline)
@@ -135,4 +141,6 @@ def run(class_name):
     suite_test.addTests(
         [unittest.defaultTestLoader.loadTestsFromTestCase(class_name)])
     runner = unittest.TextTestRunner()
-    runner.run(suite_test)
+    result = runner.run(suite_test)
+    if not result.wasSuccessful():
+        sys.exit(1)

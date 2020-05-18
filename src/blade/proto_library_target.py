@@ -133,12 +133,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
         target_languages = set(var_to_list(target_languages))
-        if 'java' in target_languages:
-            self.data['generate_java'] = True
-        if 'python' in target_languages:
-            self.data['generate_python'] = True
-        if 'go' in target_languages:
-            self.data['generate_go'] = True
+        self.data['generate_java'] = 'java' in target_languages
+        self.data['generate_python'] = 'python' in target_languages
+        self.data['generate_go'] = 'go' in target_languages
 
     def _check_proto_srcs_name(self, srcs):
         """Checks whether the proto file's name ends with 'proto'. """
@@ -189,7 +186,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._check_proto_deps()
 
     def _expand_deps_generation(self):
-        self._expand_deps_java_generation()
+        if self.data['generate_java']:
+            self._expand_deps_java_generation()
 
     def _proto_gen_files(self, src):
         """_proto_gen_files. """
@@ -263,201 +261,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         java_name = '%s.java' % class_name
         return package_dir, java_name
 
-    def _proto_java_rules(self):
-        """Generate scons rules for the java files from proto file. """
-        env_name = self._env_name()
-        java_srcs = []
-        java_src_vars = []
-        for src in self.srcs:
-            src_path = os.path.join(self.path, src)
-            package_dir, java_name = self._proto_java_gen_file(src)
-            proto_java_src = self._target_file_path(
-                os.path.join(os.path.dirname(src), package_dir, java_name))
-            java_srcs.append(proto_java_src)
-            java_src_var = self._var_name_of(proto_java_src)
-            self._write_rule('%s = %s.ProtoJava("%s", "%s")' % (
-                java_src_var, env_name, proto_java_src, src_path))
-            java_src_vars.append(java_src_var)
-            self.data['java_sources'] = (
-                proto_java_src,
-                os.path.join(self.build_path, self.path),
-                self.name)
-            self.data['java_sources_explict_dependency'].append(proto_java_src)
-
-        self._generate_java_versions()
-        self._generate_java_source_encoding()
-        dep_jar_vars, dep_jars = self._get_compile_deps()
-        self._generate_java_classpath(dep_jar_vars, dep_jars)
-        var_name = self._var_name('jar')
-        self._generate_generated_java_jar(var_name, java_src_vars)
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars, '', '')
-        self._add_target_var('jar', var_name)
-
-    def _proto_php_rules(self):
-        """Generate php files. """
-        for src in self.srcs:
-            src_path = os.path.join(self.path, src)
-            proto_php_src = self._proto_gen_php_file(src)
-            self._write_rule('%s.ProtoPhp(["%s"], "%s")' % (
-                self._env_name(),
-                proto_php_src,
-                src_path))
-
-    def _proto_python_rules(self):
-        """Generate python files. """
-        env_name = self._env_name()
-        for src in self.srcs:
-            src_path = os.path.join(self.path, src)
-            proto_python_src = self._proto_gen_python_file(src)
-            py_src_var = self._var_name_of(src, 'python')
-            self._write_rule('%s = %s.ProtoPython(["%s"], "%s")' % (
-                py_src_var,
-                env_name,
-                proto_python_src,
-                src_path))
-            self.data['python_vars'].append(py_src_var)
-            self.data['python_sources'].append(proto_python_src)
-        py_lib_var = self._var_name('python')
-        self._write_rule('%s["BASE_DIR"] = "%s"' % (env_name, self.build_path))
-        self._write_rule('%s["BUILD_DIR"] = "%s"' % (env_name, self.build_path))
-        self._write_rule('%s = %s.PythonLibrary(["%s"], [%s])' % (
-            py_lib_var, env_name,
-            self._target_file_path() + '.pylib',
-            ', '.join(self.data['python_vars'])))
-        self.data['python_var'] = py_lib_var
-
-    def _proto_go_rules(self):
-        """Generate go files. """
-        env_name = self._env_name()
-        var_name = self._var_name('go')
-        go_home = config.get_item('go_config', 'go_home')
-        if not go_home:
-            self.error_exit("'go_home' is not configured")
-        proto_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
-        go_module_enabled = config.get_item('go_config', 'go_module_enabled')
-        go_module_relpath = config.get_item('go_config', 'go_module_relpath')
-        self._write_rule('%s.Replace(PROTOBUFGOPATH="%s")' % (env_name, proto_go_path))
-        self._write_rule('%s = []' % var_name)
-        for src in self.srcs:
-            proto_src = os.path.join(self.path, src)
-            go_src = self._proto_gen_go_file(src)
-            go_src_var = self._var_name_of(src, 'go_src')
-            self._write_rule('%s = %s.ProtoGo("%s", "%s")' % (
-                go_src_var, env_name, go_src, proto_src))
-            # Copy the generated go sources to $GOPATH
-            # according to the standard go directory layout
-            proto_dir = os.path.dirname(src)
-            proto_name = os.path.basename(src)
-            if go_module_enabled and not go_module_relpath:
-                go_dst = os.path.join(proto_go_path, self.path,
-                                      proto_dir, proto_name.replace('.', '_'),
-                                      os.path.basename(go_src))
-            else:
-                go_dst = os.path.join(go_home, 'src', proto_go_path, self.path,
-                                      proto_dir, proto_name.replace('.', '_'),
-                                      os.path.basename(go_src))
-            go_dst_var = self._var_name_of(src, 'go_dst')
-            self._write_rule('%s = %s.ProtoGoSource("%s", %s)' % (
-                go_dst_var, env_name, go_dst, go_src_var))
-            self._write_rule('%s.append(%s)' % (var_name, go_dst_var))
-        self._add_target_var('go', var_name)
-
-    def _proto_descriptor_rules(self):
-        """Generate descriptor files. """
-        proto_srcs = [os.path.join(self.path, src) for src in self.srcs]
-        proto_descriptor_file = self._proto_gen_descriptor_file(self.name)
-        self._write_rule('%s.ProtoDescriptors("%s", %s)' % (
-            self._env_name(), proto_descriptor_file, proto_srcs))
-
-    def _protoc_plugin_rules(self):
-        """Generate scons rules for each protoc plugin. """
-        env_name = self._env_name()
-        protoc_plugin_config = config.get_section('protoc_plugin_config')
-        for plugin in self.data['protoc_plugins']:
-            p = protoc_plugin_config[plugin]
-            for language in p.code_generation:
-                self._write_rule('%s.Append(PROTOC%sPLUGINFLAGS = "%s ")' % (
-                    env_name, language.upper(),
-                    p.protoc_plugin_flag(self.build_path)))
-
     def protoc_direct_dependencies(self):
         protos = self.data.get('public_protos')[:]
         for key in self.deps:
             dep = self.target_database[key]
             protos += dep.data.get('public_protos', [])
         return protos
-
-    def _protoc_direct_dependencies_rules(self):
-        if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
-            dependencies = self.protoc_direct_dependencies()
-            dependencies += config.get_item('proto_library_config', 'well_known_protos')
-            env_name = self._env_name()
-            self._write_rule('%s.Append(PROTOCFLAGS="--direct_dependencies %s")' % (
-                env_name, ':'.join(dependencies)))
-
-    def scons_rules(self):
-        """Generates the scons rules according to user options. """
-        self._prepare_to_generate_rule()
-        if not self.srcs:
-            return
-
-        env_name = self._env_name()
-        options = self.blade.get_options()
-
-        self._protoc_direct_dependencies_rules()
-        self._protoc_plugin_rules()
-
-        if (getattr(options, 'generate_java', False) or
-                self.data.get('generate_java') or
-                self.data.get('generate_scala')):
-            self._proto_java_rules()
-
-        if (getattr(options, 'generate_php', False) or
-                self.data.get('generate_php')):
-            self._proto_php_rules()
-
-        if (getattr(options, 'generate_python', False) or
-                self.data.get('generate_python')):
-            self._proto_python_rules()
-
-        if (getattr(options, 'generate_go', False) or
-                self.data.get('generate_go')):
-            self._proto_go_rules()
-
-        if self.data['generate_descriptors']:
-            self._proto_descriptor_rules()
-
-        self._setup_cc_flags()
-
-        sources = []
-        objs = []
-        for src in self.srcs:
-            (proto_src, proto_hdr) = self._proto_gen_files(src)
-
-            self._write_rule('%s.Proto(["%s", "%s"], "%s")' % (
-                env_name, proto_src, proto_hdr, os.path.join(self.path, src)))
-            obj_name = "obj_%s" % self._var_name_of(src)
-            objs.append(obj_name)
-            self._write_rule(
-                '%s = %s.SharedObject(target="%s" + top_env["OBJSUFFIX"], '
-                'source="%s")' % (obj_name,
-                                  env_name,
-                                  proto_src,
-                                  proto_src))
-            sources.append(proto_src)
-
-        if len(objs) == 1:
-            self._set_objs_name(objs[0])
-            objs_name = objs[0]
-        else:
-            objs_name = self._objs_name()
-            self._write_rule('%s = [%s]' % (objs_name, ','.join(objs)))
-
-        # *.o depends on *.pb.cc
-        self._write_rule('%s.Depends(%s, %s)' % (env_name, objs_name, sources))
-        # pb.cc depends on other proto_library
-        self._generate_generated_header_files_depends(sources)
-        self._cc_library()
 
     def ninja_proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]

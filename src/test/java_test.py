@@ -29,66 +29,14 @@ class TestJava(blade_test.TargetTest):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun())
 
-        com_proto_cpp_option = ''
-        com_proto_java_option = ''
-        com_proto_cpp_meta = ''
-        com_proto_java_meta = ''
-
-        com_proto_option_cc = ''
-        com_proto_meta_cc = ''
-
-        com_swig_python = ''
-        com_swig_java = ''
-        com_swig_python_cxx = ''
-        com_swig_java_cxx = ''
-
-        swig_python_so = ''
-        swig_java_so = ''
-
-        java_com_line = ''
-        java_so_line = ''
-        jar_line = ''
-
-        java_com_idx = 0
-        java_so_idx = 0
-        jar_idx = 0
-        index = 0
-
-        for line in self.scons_output:
-            index += 1
-            if 'protobuf/bin/protoc' in line:
-                if 'cpp_out' in line:
-                    if 'rpc_option.proto' in line:
-                        com_proto_cpp_option = line
-                    elif 'rpc_meta_info.proto' in line:
-                        com_proto_cpp_meta = line
-                if 'java_out' in line:
-                    if 'rpc_option.proto' in line:
-                        com_proto_java_option = line
-                    elif 'rpc_meta_info.proto' in line:
-                        com_proto_java_meta = line
-
-            if 'rpc_option.pb.cc.o -c' in line:
-                com_proto_option_cc = line
-            if 'rpc_meta_info.pb.cc.o -c' in line:
-                com_proto_meta_cc = line
-            if 'swig -python' in line:
-                com_swig_python = line
-            if 'swig -java' in line:
-                com_swig_java = line
-            if 'poppy_client_pywrap.cxx.o -c' in line:
-                com_swig_python_cxx = line
-            if 'poppy_client_javawrap.cxx.o -c' in line:
-                com_swig_java_cxx = line
-            if 'javac -classpath' in line:
-                java_com_line = line
-                java_com_idx = index
-            if 'libpoppy_client_java.so ' in line:
-                java_so_line = line
-                java_so_idx = index
-            if 'jar cf' in line:
-                jar_line = line
-                jar_idx = index
+        com_proto_cpp_option = self.findCommand(['protobuf/bin/protoc', 'cpp_out', 'rpc_option.proto'])
+        com_proto_cpp_meta = self.findCommand(['protobuf/bin/protoc', 'cpp_out', 'rpc_meta_info.proto'])
+        com_proto_java_option = self.findCommand(['protobuf/bin/protoc', 'java_out', 'rpc_option.proto'])
+        com_proto_java_meta = self.findCommand(['protobuf/bin/protoc', 'java_out', 'rpc_meta_info.proto'])
+        com_proto_option_cc = self.findCommand(['rpc_option.pb.cc.o', '-c'])
+        com_proto_meta_cc = self.findCommand(['rpc_meta_info.pb.cc.o', '-c'])
+        java_com_line, java_com_idx = self.findCommandAndLine(['javac', '-classpath'])
+        jar_line, jar_idx = self.findCommandAndLine('jar cf')
 
         self.assertTrue(com_proto_cpp_option)
         self.assertTrue(com_proto_cpp_meta)
@@ -102,16 +50,6 @@ class TestJava(blade_test.TargetTest):
 
         self.assertIn('-fPIC', com_proto_meta_cc)
 
-        self.assertIn('poppy_client_pywrap.cxx', com_swig_python)
-        self.assertIn('poppy_client_javawrap.cxx', com_swig_java)
-
-        self.assertIn('-fno-omit-frame-pointer', com_swig_python_cxx)
-        self.assertIn('-pipe -g', com_swig_python_cxx)
-        self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_python_cxx)
-
-        self.assertIn('-fno-omit-frame-pointer', com_swig_java_cxx)
-        self.assertIn('-pipe -g', com_swig_java_cxx)
-        self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS', com_swig_java_cxx)
         # whole_archive = ('--whole-archive build64_release/test_java_jar/'
         #                  'librpc_meta_info_proto.a build64_release/test_java_jar/'
         #                  'librpc_option_proto.a -Wl,--no-whole-archive')

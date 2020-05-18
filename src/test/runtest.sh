@@ -13,14 +13,13 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-function cleanup()
-{
+function cleanup() {
     # Cleanup BLADE_ROOT and BUILDs to avoid ran by 'blade build ...' on upper dirs
     find testdata -name BUILD | xargs rm
     rm -rf testdata/BLADE_ROOT
 
     # Cleanup generated files
-    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.sconsign.dblite,.Building.lock} SConstruct scons_output.txt
+    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.Building.lock} build.ninja build_output.txt
     rm -f *.pyc ../blade/*.pyc
 }
 
@@ -34,9 +33,18 @@ for f in `find testdata -name BUILD.TEST`; do
 done
 cp testdata/BLADE_ROOT.TEST testdata/BLADE_ROOT
 
+ROOT="$(cd ../.. && pwd)"
+cat > $ROOT/.coveragerc << EOF
+[run]
+data_file = $ROOT/.coverage
+EOF
+
+export BLADE_PYTHON_INTERPRETER="coverage run --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
+
 python -B $@
 exit_code=$?
 
-cleanup
+coverage report --rcfile=$ROOT/.coveragerc
+# cleanup
 
 exit $exit_code

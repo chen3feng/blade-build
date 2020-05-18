@@ -24,9 +24,9 @@ class TestCcTest(blade_test.TargetTest):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun())
 
-        com_lower_line = self.findCommand('plowercase.cpp.o -c')
-        com_upper_line = self.findCommand('puppercase.cpp.o -c')
-        com_string_line = self.findCommand('string_test.cpp.o -c')
+        com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
+        com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
+        com_string_line = self.findCommand(['string_test.cpp.o', '-c'])
         string_main_depends_libs = self.findCommand('string_test_main ')
 
         self.assertCxxFlags(com_lower_line)

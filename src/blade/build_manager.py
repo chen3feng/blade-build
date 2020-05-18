@@ -29,7 +29,6 @@ from blade.build_environment import BuildEnvironment
 from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
 from blade.rules_generator import NinjaRulesGenerator
-from blade.rules_generator import SconsRulesGenerator
 from blade.test_runner import TestRunner
 
 # Global build manager instance
@@ -75,7 +74,7 @@ class Blade(object):
         # BUILD files containing these command line targets; global target
         # functions, i.e., cc_library, cc_binary and etc, in these BUILD
         # files will register targets into target_database, which then becomes
-        # the input to dependency analyzer and SCons rules generator.  It is
+        # the input to dependency analyzer and rules generator.  It is
         # notable that not all targets in target_database are dependencies of
         # command line targets.
         self.__target_database = {}
@@ -148,10 +147,7 @@ class Blade(object):
         return self.__build_targets  # For test
 
     def new_build_rules_generator(self):
-        if config.get_item('global_config', 'native_builder') == 'ninja':
-            return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
-        else:
-            return SconsRulesGenerator('SConstruct', self.__blade_path, self)
+        return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
@@ -377,10 +373,10 @@ class Blade(object):
                 target.name, target.path))
         self.__target_database[key] = target
 
-    def _is_scons_object_type(self, target_type):
+    def _is_real_target_type(self, target_type):
         """The types that shouldn't be registered into blade manager.
 
-        Sholdn't invoke scons_rule method when it is not a scons target which
+        Sholdn't invoke ninja_rule method when it is not a real target which
         could not be registered into blade manager, like system library.
 
         1. system_library
@@ -396,7 +392,7 @@ class Blade(object):
         native_builder = config.get_item('global_config', 'native_builder')
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            if not self._is_scons_object_type(target.type):
+            if not self._is_real_target_type(target.type):
                 continue
             blade_object = self.__target_database.get(k, None)
             if not blade_object:
@@ -409,10 +405,7 @@ class Blade(object):
                     and k not in self.__direct_targets):
                 continue
 
-            if native_builder == 'ninja':
-                blade_object.ninja_rules()
-            else:
-                blade_object.scons_rules()
+            blade_object.ninja_rules()
             rules = blade_object.get_rules()
             if rules:
                 rules_buf.append('\n')

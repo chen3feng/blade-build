@@ -77,37 +77,6 @@ class ShellTest(Target):
             else:
                 self.data['testdata'].append(td)
 
-    def _generate_test_data_rules(self):
-        env_name = self._env_name()
-        var_name = self._var_name('testdata')
-
-        targets = self.blade.get_build_targets()
-        sources = []
-        for key, type, dst in self.data['locations']:
-            target = targets[key]
-            target_var = target._get_target_var(type)
-            if not target_var:
-                self.warning('Location %s %s is missing. Ignored.' % (key, type))
-            else:
-                sources.append('%s, %s.Value("%s")' % (target_var, env_name, dst))
-
-        if sources:
-            self._write_rule('%s = %s.ShellTestData(target = "%s.testdata", '
-                             'source = [%s])' % (
-                                 var_name, env_name,
-                                 self._target_file_path(),
-                                 ', '.join(sources)))
-
-    def scons_rules(self):
-        self._clone_env()
-        env_name = self._env_name()
-        var_name = self._var_name()
-
-        srcs = [self._source_file_path(s) for s in self.srcs]
-        self._write_rule('%s = %s.ShellTest(target = "%s", source = %s)' % (
-            var_name, env_name,
-            self._target_file_path(), srcs))
-        self._generate_test_data_rules()
 
     def ninja_rules(self):
         srcs = [self._source_file_path(s) for s in self.srcs]

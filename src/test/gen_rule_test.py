@@ -23,8 +23,8 @@ class TestGenRule(blade_test.TargetTest):
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun())
-        com_lower_line = self.findCommand('plowercase.cpp.o -c')
-        com_upper_line = self.findCommand('puppercase.cpp.o -c')
+        com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
+        com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
 
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)

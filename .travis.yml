@@ -1,8 +1,13 @@
+dist: bionic
 language: python
 python:
   - "2.7"
 
 before_install: true
+
+install:
+    - pip install coverage
+    - pip install coveralls
 
 addons:
   apt:
@@ -11,9 +16,9 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - ninja-build
-    
+
 script:
-  - cpp --version
-  - gcc -v
-  - g++ -v
-  - src/test/runalltests.sh
+    - src/test/runalltests.sh
+
+after_success:
+    - coveralls

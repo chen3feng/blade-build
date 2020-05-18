@@ -28,20 +28,10 @@ class TestCcLibrary(blade_test.TargetTest):
         """
         self.assertTrue(self.dryRun())
 
-        com_lower_line = ''
-        com_upper_line = ''
-        com_string_line = ''
-        string_depends_libs = ''
-        for line in self.scons_output:
-            if 'plowercase.cpp.o -c' in line:
-                com_lower_line = line
-            if 'puppercase.cpp.o -c' in line:
-                com_upper_line = line
-            if 'blade_string.cpp.o -c' in line:
-                com_string_line = line
-            if 'libblade_string.so' in line:
-                string_depends_libs = line
-
+        com_lower_line = self.findCommand(['-c', 'plowercase.cpp.o'])
+        com_upper_line = self.findCommand(['-c', 'puppercase.cpp.o'])
+        com_string_line = self.findCommand(['-c', 'blade_string.cpp.o'])
+        string_depends_libs = self.findCommand('libblade_string.so')
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)
         self.assertNoWarningCxxFlags(com_string_line)

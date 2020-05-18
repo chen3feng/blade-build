@@ -58,59 +58,11 @@ class ScalaTarget(Target, JavaTargetMixIn):
         if warnings:
             self.data['warnings'] = warnings
 
-    def _generate_scala_target_platform(self):
-        target_platform = config.get_item('scala_config', 'target_platform')
-        if target_platform:
-            self._write_rule('%s.Append(SCALACFLAGS=["-target:%s"])' % (
-                self._env_name(), target_platform))
-
-    def _generate_scala_source_encoding(self):
-        source_encoding = self.data.get('source_encoding')
-        if not source_encoding:
-            source_encoding = config.get_item('scala_config', 'source_encoding')
-        if source_encoding:
-            self._write_rule('%s.Append(SCALACFLAGS=["-encoding %s"])' % (
-                self._env_name(), source_encoding))
-
-    def _generate_scala_warnings(self):
-        warnings = self.data.get('warnings')
-        if not warnings:
-            warnings = config.get_item('scala_config', 'warnings')
-            if not warnings:
-                warnings = '-nowarn'
-        self._write_rule('%s.Append(SCALACFLAGS=["%s"])' % (
-            self._env_name(), warnings))
-
-    def _prepare_to_generate_rule(self):
-        """Do some preparation before generating scons rule. """
-        self._clone_env()
-        self._generate_scala_target_platform()
-        self._generate_scala_source_encoding()
-        self._generate_scala_warnings()
-
     def _expand_deps_generation(self):
         self._expand_deps_java_generation()
 
     def _get_java_pack_deps(self):
         return self._get_pack_deps()
-
-    def _generate_jar(self):
-        sources = [self._source_file_path(src) for src in self.srcs]
-        # Do not generate jar when there is no source
-        if not sources:
-            return ''
-        env_name = self._env_name()
-        var_name = self._var_name('jar')
-        dep_jar_vars, dep_jars = self._get_compile_deps()
-        self._generate_java_classpath(dep_jar_vars, dep_jars)
-        resources_var, resources_path_var = self._generate_resources()
-        self._write_rule('%s = %s.ScalaJar(target="%s", source=%s + [%s])' % (
-            var_name, env_name,
-            self._target_file_path() + '.jar', sources, resources_var))
-        self._generate_java_depends(var_name, dep_jar_vars, dep_jars,
-                                    resources_var, resources_path_var)
-        self._add_target_var('jar', var_name)
-        return var_name
 
     def scalac_flags(self):
         flags = []
@@ -160,12 +112,6 @@ class ScalaLibrary(ScalaTarget):
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
 
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        jar_var = self._generate_jar()
-        if jar_var:
-            self._add_default_target_var('jar', jar_var)
-
     def ninja_rules(self):
         jar = self.ninja_generate_jar()
         if jar:
@@ -181,14 +127,6 @@ class ScalaFatLibrary(ScalaTarget):
                              resources, source_encoding, warnings, kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
-
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_pack_deps()
-        dep_jars = self._detect_maven_conflicted_deps('package', dep_jars)
-        fatjar_var = self._generate_fat_jar(dep_jar_vars, dep_jars)
-        self._add_default_target_var('fatjar', fatjar_var)
 
     def ninja_rules(self):
         jar = self.ninja_generate_fat_jar()
@@ -209,21 +147,6 @@ class ScalaTest(ScalaFatLibrary):
             self._add_hardcode_java_library(scalatest_libs)
         else:
             console.warning('scalatest jar was not configured')
-
-    def scons_rules(self):
-        self._prepare_to_generate_rule()
-        self._generate_jar()
-        dep_jar_vars, dep_jars = self._get_test_deps()
-        self._generate_test(dep_jar_vars, dep_jars)
-
-    def _generate_test(self, dep_jar_vars, dep_jars):
-        var_name = self._var_name()
-        jar_var = self._get_target_var('jar')
-        if jar_var:
-            self._write_rule('%s = %s.ScalaTest(target="%s", '
-                             'source=[%s] + [%s] + %s)' % (
-                                 var_name, self._env_name(), self._target_file_path(),
-                                 jar_var, ','.join(dep_jar_vars), dep_jars))
 
     def ninja_rules(self):
         if not self.srcs:

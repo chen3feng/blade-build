@@ -91,11 +91,10 @@ if [[ "$python_ver" < "2.7" ]]; then
     _error_exit "Please upgrade your python version to 2.7 or above"
 fi
 
-# Check scons environment
-no_scons=$(which scons 2>&1 | grep 'which: no scons in')
+# Check ninja
 no_ninja=$(which ninja 2>&1 | grep 'which: no ninja in')
-if [[ -n "$no_scons" && -n "$no_ninja" ]]; then
-    _error_exit "Please install scons v2.0+ or ninja v1.8+"
+if [[ -n "$no_ninja" ]]; then
+    _error_exit "Please install ninja v1.8+"
 fi
 
 # Check blade file
@@ -103,4 +102,4 @@ if [[ ! -e "$blade_file" ]]; then
     _error_exit "Cannot find the core file $blade_file"
 fi
 
-python -B $blade_file "$@"
+${BLADE_PYTHON_INTERPRETER:-python} $blade_file "$@"
