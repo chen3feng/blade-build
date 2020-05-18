@@ -208,14 +208,14 @@ class CmdArguments(object):
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
-            '--native-builder', dest='native_builder',
+            '--backend-builder', dest='backend_builder',
             type=str, choices=['ninja'], default='',
-            help='Specify the underly native builder')
+            help='Specify the underly backend builder')
 
-        # Add extra native builder options arguments.
+        # Add extra backend builder options arguments.
         parser.add_argument(
-            '--native-builder-options', dest='native_builder_options', type=str,
-            help='Specifies extra native builder options, for debug purpose')
+            '--backend-builder-options', dest='backend_builder_options', type=str,
+            help='Specifies extra backend builder options, for debug purpose')
 
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,

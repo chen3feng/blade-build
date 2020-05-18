@@ -14,7 +14,7 @@ Each configuration parameter of the configuration of all the multiple parameters
 Blade global configuration
 ```python
 global_config(
-    native_builder = 'ninja', # backend build system, only supports ninja now.
+    backend_builder = 'ninja', # backend build system, only supports ninja now.
     duplicated_source_action = 'error', # When the same source file is found to belong to multiple targets, the default is warning
     test_timeout = 600 # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
 )

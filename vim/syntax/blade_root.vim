@@ -25,7 +25,7 @@ syn keyword bladeTarget global_config
 syn keyword bladeArg build_path_template
 syn keyword bladeArg duplicated_source_action
 syn keyword bladeArg test_timeout
-syn keyword bladeArg native_builder
+syn keyword bladeArg backend_builder
 syn keyword bladeTarget cc_test_config
 syn keyword bladeArg dynamic_link
 syn keyword bladeArg heap_check
