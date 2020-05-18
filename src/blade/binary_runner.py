@@ -203,7 +203,7 @@ class BinaryRunner(object):
         shell = target.data.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
-        console.info("'%s' will be ran" % cmd)
+        console.info("Run '%s'" % cmd)
         sys.stdout.flush()
 
         p = subprocess.Popen(cmd, env=run_env, close_fds=True, shell=shell)

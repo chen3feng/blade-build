@@ -617,7 +617,6 @@ def format_timedelta(seconds):
 
 
 def main(blade_path, argv):
-    print(argv)
     exit_code = 0
     try:
         start_time = time.time()

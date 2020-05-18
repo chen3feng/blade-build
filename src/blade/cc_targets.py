@@ -1037,7 +1037,8 @@ build_rules.register_function(cc_library)
 
 def foreign_cc_library(
         name,
-        libpath,
+        package_name,
+        libdir='lib',
         hdrs=[],
         export_incs=[],
         deps=[],
@@ -1045,10 +1046,19 @@ def foreign_cc_library(
         visibility=None,
         deprecated=False,
         **kwargs):
-    """Similar to cc_library, but is built by a foreign build system, such as make, cmake, etc"""
+    """Similar to a prebuilt cc_library, but it is built by a foreign build system,
+    such as autotools, cmake, etc.
+
+    Args:
+        package_name: str, name of the belonging package.
+        libdir: str, the relative path of the lib dir under the `package_name` dir.
+    """
+    import blade
+    libpath = '//' + os.path.join(blade.current_target_dir(), package_name, libdir)
+    current_source_path = build_manager.instance.get_current_source_path()
     cc_library(name=name, prebuilt=True, prebuilt_libpath_pattern=libpath,
-               hdrs=hdrs, export_incs=export_incs, deps=deps, link_all_symbols=link_all_symbols,
-               visibility=visibility, deprecated=deprecated, **kwargs)
+            hdrs=hdrs, export_incs=export_incs, deps=deps, link_all_symbols=link_all_symbols,
+            visibility=visibility, deprecated=deprecated, **kwargs)
 
 
 build_rules.register_function(foreign_cc_library)
