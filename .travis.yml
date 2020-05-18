@@ -18,7 +18,6 @@ addons:
     - ninja-build
 
 script:
-    - gcc -dumpfullversion
     - src/test/runalltests.sh
 
 after_success:
