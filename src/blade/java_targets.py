@@ -182,11 +182,11 @@ class JavaTargetMixIn(object):
 
     def _get_classes_dir(self):
         """Return path of classes dir. """
-        return self._target_file_path() + '.classes'
+        return self._target_file_path(self.name + '.classes')
 
     def _get_sources_dir(self):
         """Return path of sources dir. """
-        return self._target_file_path() + '.sources'
+        return self._target_file_path(self.name + '.sources')
 
     def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
         """Extract jar file built by the target with the specified dkey.
@@ -458,7 +458,7 @@ class JavaTargetMixIn(object):
         if not resources and not locations:
             return []
         inputs, outputs = [], []
-        resources_dir = self._target_file_path() + '.resources'
+        resources_dir = self._target_file_path(self.name + '.resources')
         resources = self._process_regular_resources(resources)
         for src, dst in resources:
             inputs.append(src)
@@ -490,7 +490,7 @@ class JavaTargetMixIn(object):
                         source_encoding=None, javacflags=None,
                         scala=False, scalacflags=None):
         if not output:
-            output = self._target_file_path() + '.jar'
+            output = self._target_file_path(self.name + '.jar')
         if not inputs:
             inputs = [self._source_file_path(s) for s in self.srcs]
         if scala:
@@ -521,7 +521,7 @@ class JavaTargetMixIn(object):
         else:
             inputs = []
         inputs += dep_jars + maven_jars
-        output = self._target_file_path() + '.fat.jar'
+        output = self._target_file_path(self.name + '.fat.jar')
         self.ninja_build('fatjar', output, inputs=inputs)
         return output
 
@@ -593,9 +593,9 @@ class JavaTarget(Target, JavaTargetMixIn):
         self._generate_sources()
         srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
-        jar = self._target_file_path() + '.jar'
+        jar = self._target_file_path(self.name + '.jar')
         if srcs and resources:
-            classes_jar = self._target_file_path() + '__classes__.jar'
+            classes_jar = self._target_file_path(self.name + '__classes__.jar')
             javacflags = self.javac_flags()
             self.ninja_build_jar(classes_jar, inputs=srcs, javacflags=javacflags)
             self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
@@ -663,7 +663,7 @@ class JavaBinary(JavaTarget):
         else:
             inputs = []
         inputs += dep_jars + maven_jars
-        output = self._target_file_path() + '.one.jar'
+        output = self._target_file_path(self.name + '.one.jar')
         vars = {'mainclass': self.data['main_class']}
         self.ninja_build('onejar', output, inputs=inputs, variables=vars)
         self._add_target_file('onejar', output)
@@ -674,7 +674,7 @@ class JavaBinary(JavaTarget):
         dep_jars, maven_jars = self._get_pack_deps()
         maven_jars = self._detect_maven_conflicted_deps('package', maven_jars)
         onejar = self.ninja_generate_one_jar(dep_jars, maven_jars)
-        output = self._target_file_path()
+        output = self._target_file_path(self.name)
         self.ninja_build('javabinary', output, inputs=onejar)
         self._add_default_target_file('bin', output)
 
@@ -725,7 +725,7 @@ class JavaTest(JavaBinary):
             return
         vars = self.ninja_java_test_vars()
         jar = self.ninja_generate_jar()
-        output = self._target_file_path()
+        output = self._target_file_path(self.name)
         dep_jars, maven_jars = self._get_test_deps()
         self.ninja_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 

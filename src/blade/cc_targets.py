@@ -194,6 +194,7 @@ class CcTarget(Target):
                 source = lib
                 break
         if not source:
+            # TODO(chen3feng): Restore this error
             # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
             source = a_src_path
         target = self._target_file_path(os.path.basename(source))
@@ -603,7 +604,7 @@ class CcTarget(Target):
         deps = self._generated_header_files_dependencies()
         if not deps:
             return None
-        stamp = self._target_file_path('%s__stamp__' % self.name)
+        stamp = self._target_file_path(self.name + '__stamp__')
         self.ninja_build('stamp', stamp, inputs=deps)
         self.data['genhdrs_stamp'] = stamp
         return stamp
@@ -634,7 +635,7 @@ class CcTarget(Target):
         if secure:
             implicit_deps.append('__securecc_phony__')
 
-        objs_dir = self._target_file_path() + '.objs'
+        objs_dir = self._target_file_path(self.name + '.objs')
         objs, hdrs_inclusion_srcs = [], []
         if sources:
             srcs = sources
@@ -826,7 +827,7 @@ class CcLibrary(CcTarget):
 
     def _extract_cc_hdrs(self, src):
         """Extract headers included by .cc/.h directly. """
-        objs_dir = self._target_file_path() + '.objs'
+        objs_dir = self._target_file_path(self.name + '.objs')
         path = '%s.o.H' % os.path.join(objs_dir, src)
         if not os.path.exists(path):
             return []
@@ -876,7 +877,7 @@ class CcLibrary(CcTarget):
                 ['common/rpc/rpc_client.h', 'build64_release/common/rpc/rpc_options.pb.h'],
             ]
         """
-        objs_dir = self._target_file_path() + '.objs'
+        objs_dir = self._target_file_path(self.name + '.objs')
         path = '%s.o.H' % os.path.join(objs_dir, src)
         if (not os.path.exists(path) or
                 (path in history and int(os.path.getmtime(path)) == history[path])):
@@ -1166,7 +1167,7 @@ class CcBinary(CcTarget):
             extra_ldflags.append(scm)
             order_only_deps.append(scm)
         extra_ldflags += ['-l%s' % lib for lib in sys_libs]
-        output = self._target_file_path()
+        output = self._target_file_path(self.name)
         self._cc_link_ninja(output, 'link', deps=usr_libs,
                             ldflags=ldflags, extra_ldflags=extra_ldflags,
                             implicit_deps=implicit_deps,
@@ -1286,7 +1287,7 @@ class CcPlugin(CcTarget):
 
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         if self.name.endswith('.so'):
-            output = self._target_file_path()
+            output = self._target_file_path(self.name)
         else:
             output = self._target_file_path('lib%s.so' % self.name)
         if self.srcs or self.expanded_deps:

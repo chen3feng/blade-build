@@ -81,9 +81,9 @@ class ScalaTarget(Target, JavaTargetMixIn):
     def ninja_generate_jar(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
         resources = self.ninja_generate_resources()
-        jar = self._target_file_path() + '.jar'
+        jar = self._target_file_path(self.name + '.jar')
         if srcs and resources:
-            classes_jar = self._target_file_path() + '__classes__.jar'
+            classes_jar = self._target_file_path(self.name + '__classes__.jar')
             scalacflags = self.scalac_flags()
             self.ninja_build_jar(classes_jar, inputs=srcs, scala=True, scalacflags=scalacflags)
             self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
@@ -153,7 +153,7 @@ class ScalaTest(ScalaFatLibrary):
             self.warning('Empty scala test sources.')
             return
         jar = self.ninja_generate_jar()
-        output = self._target_file_path()
+        output = self._target_file_path(self.name)
         dep_jars, maven_jars = self._get_test_deps()
         self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars)
 

@@ -95,7 +95,7 @@ class PythonLibrary(PythonTarget):
     def _ninja_pylib(self):
         if not self.srcs:
             return ''
-        output = self._target_file_path() + '.pylib'
+        output = self._target_file_path(self.name + '.pylib')
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self.ninja_vars()
         self.ninja_build('pythonlibrary', output, inputs=inputs, variables=vars)
@@ -211,7 +211,7 @@ class PythonBinary(PythonLibrary):
         return rel_path.replace('/', '.')
 
     def ninja_rules(self):
-        output = self._target_file_path()
+        output = self._target_file_path(self.name)
         pylib = self._ninja_pylib()
         inputs = [pylib] if pylib else []
         targets = self.blade.get_build_targets()
