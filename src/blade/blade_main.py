@@ -191,7 +191,7 @@ def _check_code_style(targets):
     return 0
 
 
-def _run_native_builder(cmdstr):
+def _run_backend_builder(cmdstr):
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -201,13 +201,13 @@ def _run_native_builder(cmdstr):
         return 1
 
 
-def native_builder_options(options):
-    '''Setup some options which are same in different native builders. '''
+def backend_builder_options(options):
+    """Setup some options which are same in different backend builders."""
     build_options = []
     if options.dry_run:
         build_options.append('-n')
-    if options.native_builder_options:
-        build_options.append(options.native_builder_options)
+    if options.backend_builder_options:
+        build_options.append(options.backend_builder_options)
     return build_options
 
 
@@ -257,7 +257,7 @@ def _show_progress(p, rf):
 def _run_ninja(cmd, options):
     cmdstr = subprocess.list2cmdline(cmd)
     if console.verbosity_compare(options.verbosity, 'quiet') > 0:
-        return _run_native_builder(cmdstr)
+        return _run_backend_builder(cmdstr)
     ninja_output = 'blade-bin/ninja_output.log'
     with open(ninja_output, 'w', buffering=1) as wf, open(ninja_output, 'r', buffering=1) as rf:
         os.environ['NINJA_STATUS'] = '[%f/%t] '  # The progress depends on this format
@@ -268,7 +268,7 @@ def _run_ninja(cmd, options):
 
 def _ninja_build(options):
     cmd = ['ninja']
-    cmd += native_builder_options(options)
+    cmd += backend_builder_options(options)
     # Ninja enable parallel building defaultly, but we still set it explicitly.
     cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
     if options.keep_going:
@@ -316,15 +316,15 @@ def test(options):
 def clean(options):
     console.info('cleaning...(hint: please specify --generate-dynamic to '
                  'clean your so)')
-    native_builder = config.get_item('global_config', 'native_builder')
-    cmd = [native_builder]
-    # cmd += native_builder_options(options)
-    if native_builder == 'ninja':
+    backend_builder = config.get_item('global_config', 'backend_builder')
+    cmd = [backend_builder]
+    # cmd += backend_builder_options(options)
+    if backend_builder == 'ninja':
         cmd += ['-t', 'clean']
     else:
         cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
     cmdstr = subprocess.list2cmdline(cmd)
-    returncode = _run_native_builder(cmdstr)
+    returncode = _run_backend_builder(cmdstr)
     console.info('cleaning done.')
     return returncode
 
@@ -342,15 +342,15 @@ def dump(options):
 
 
 def _dump_compdb(options, output_file_name):
-    native_builder = config.get_item('global_config', 'native_builder')
-    if native_builder != 'ninja':
-        console.error_exit('dump compdb only work when native_builder is ninja')
+    backend_builder = config.get_item('global_config', 'backend_builder')
+    if backend_builder != 'ninja':
+        console.error_exit('dump compdb only work when backend_builder is ninja')
     rules = build_manager.instance.get_all_rule_names()
     cmd = ['ninja', '-t', 'compdb'] + rules
     cmdstr = subprocess.list2cmdline(cmd)
     cmdstr += ' > '
     cmdstr += output_file_name
-    return _run_native_builder(cmdstr)
+    return _run_backend_builder(cmdstr)
 
 
 def lock_workspace():
@@ -475,7 +475,7 @@ def generate_scm(build_dir):
 
 
 def adjust_config_by_options(config, options):
-    for name in ('debug_info_level', 'native_builder'):
+    for name in ('debug_info_level', 'backend_builder'):
         value = getattr(options, name, None)
         if value:
             config.global_config(**{name: value})

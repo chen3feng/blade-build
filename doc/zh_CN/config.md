@@ -22,7 +22,7 @@ Blade全局配置
 
 | 参数  | 类型 | 默认值 | 值域 | 说明 |
 |-------|-----|-------|-----|----|
-| native_builder | string | ninja | ninja | Blade所用的后端构建系统，只支持 `ninja` |
+| backend_builder | string | ninja | ninja | Blade所用的后端构建系统，只支持 `ninja` |
 | duplicated_source_action |string| warning | warning error| 发现同一个源文件属于多个目标时的行为，默认为`warning`，建议设置为`error`|
 | test_timeout | int | 600 | | 运行每个测试的超时时间，单位秒，超过超时值依然未结束，视为测试失败 |
 | debug_info_level | string | mid |no low mid high| 生成的构建结果中调试符号的级别，支持四种级别，越高越详细，可执行文件也越大 |

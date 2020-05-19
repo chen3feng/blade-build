@@ -117,9 +117,13 @@ class GoTarget(Target):
                 implicit_deps += var_to_list(path)
         return srcs + implicit_deps
 
+    def _go_target_path(self):
+        """Return the full path of generate target file"""
+        return self._target_file_path(self.name)
+
     def ninja_rules(self):
         implicit_deps = self.ninja_go_dependencies()
-        output = self._target_file_path()
+        output = self._go_target_path()
         variables = {'package': self.data['go_package']}
         if self.data['extra_goflags']:
             variables['extra_goflags'] = self.data['extra_goflags']
@@ -139,7 +143,7 @@ class GoLibrary(GoTarget):
         self.data['go_rule'] = 'gopackage'
         self.data['go_label'] = 'gopkg'
 
-    def _target_file_path(self):
+    def _go_target_path(self):  # Override
         """Return package object path according to the standard go directory layout. """
         go_home = config.get_item('go_config', 'go_home')
         return os.path.join(go_home, 'pkg',

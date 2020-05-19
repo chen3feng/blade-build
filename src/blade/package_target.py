@@ -168,7 +168,7 @@ class PackageTarget(Target):
         }[t]
 
     def ninja_package_in_shell(self, output, inputs, entries):
-        packageroot = self._target_file_path() + '.sources'
+        packageroot = self._target_file_path(self.name + '.sources')
         package_sources = []
         for src, dst in zip(inputs, entries):
             dst = os.path.join(packageroot, dst)

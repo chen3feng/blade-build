@@ -389,7 +389,7 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
-        native_builder = config.get_item('global_config', 'native_builder')
+        backend_builder = config.get_item('global_config', 'backend_builder')
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_real_target_type(target.type):

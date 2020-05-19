@@ -410,43 +410,15 @@ class Target(object):
         return [], []
 
     def _source_file_path(self, name):
-        """_source_file_path.
-
-        Parameters
-        -----------
-        name: the source's name
-
-        Returns
-        -----------
-        The source's full path in full blade dir tree
-
-        """
+        """Expand the the source file name to full path"""
         return os.path.normpath(os.path.join(self.path, name))
 
-    def _target_file_path(self, name=''):
-        """_target_file_path.
-
-        Parameters
-        -----------
-        name: the target's name
-
-        Returns
-        -----------
-        The target's path below building path
-
-        Description
-        -----------
-        Concatenating building path, target path and target name to be full
-        file path.
-
-        """
-        if not name:
-            name = self.name
-        return os.path.join(self.build_path, self.path, name)
+    def _target_file_path(self, file_name):
+        """Return the full path of file name in the target dir"""
+        return os.path.join(self.build_path, self.path, file_name)
 
     def _add_target_file(self, label, path):
         """
-
         Parameters
         -----------
         label: label of the target file as key in the dictionary
@@ -456,7 +428,6 @@ class Target(object):
         -----------
         Keep track of the output files built by the target itself.
         Set the default target if needed.
-
         """
         self.data['targets'][label] = path
         if not self.data['default_target']:
@@ -464,7 +435,6 @@ class Target(object):
 
     def _add_default_target_file(self, label, path):
         """
-
         Parameters
         -----------
         label: label of the target file as key in the dictionary
@@ -474,14 +444,12 @@ class Target(object):
         -----------
         Keep track of the default target file which could be referenced
         later without specifying label
-
         """
         self.data['default_target'] = path
         self._add_target_file(label, path)
 
     def _get_target_file(self, label=''):
         """
-
         Parameters
         -----------
         label: label of the file built by the target
@@ -494,7 +462,6 @@ class Target(object):
         -----------
         Return the target file path corresponding to the specified label,
         return empty if label doesn't exist in the dictionary
-
         """
         if label:
             return self.data['targets'].get(label, '')
@@ -502,11 +469,9 @@ class Target(object):
 
     def _get_target_files(self):
         """
-
         Returns
         -----------
         All the target files built by the target itself
-
         """
         results = set()
         for _, v in iteritems(self.data['targets']):
