@@ -6,22 +6,22 @@
 ██████╔╝███████╗██║  ██║██████╔╝███████╗
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
+# Blade Build System
 
-[![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
+Blade是一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
+
+Blade is an easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase. It supports building mulitiple programming languages.
+
+Click here to read [README](README-en.md) in English.
 
 ## Build status
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
-
-## Click here to read [README](README-en.md) in English.
-Blade is an easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase. It supports building mulitiple programming languages.
-
-# Blade Build System
-Blade是一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
+## First, let's see the beautiful demo!
+[![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
 
-# 通知
-* 仓库名从typhoon-blade改名为blade-build。
+## 通知
 * Blade 发布1.1.2，包含以下特性：
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
@@ -37,7 +37,7 @@ Blade是一个方便易用高性能的现代化代码构建系统，特别适合
 敬请期待。
 
 
-# 源起
+## 源起
 Blade 是一个现代构建系统，期望的目标是强大而好用，把程序员从构建的繁琐中解放出来。
 
 Blade主要定位于linux下的大型C++项目，密切配合研发流程，比如单元测试，持续集成，覆盖率统计等。
@@ -51,7 +51,7 @@ Autotools 的难用和繁琐的问题，参考[Google工程博客上的一些文
 
 代码开源后，托管到googlecode上，因后来googlecode关闭，迁移到chen3feng个人git仓库继续维护。
 
-# 为何而生
+## 为何而生
 首先，Blade解决了依赖问题。
 当你在构建某些目标时，头文件有变化，会自动重新构建。
 最方便的是，Blade也能追踪库文件的依赖关系。比如
@@ -91,7 +91,7 @@ $ blade test -pdebug common...
 ```bash
 $ blade test -m32 -pdebug common...
 ```
-# 特点
+## 特点
 * 自动分析头文件依赖关系，构建受影响的代码。
 * 增量编译和链接，只构建因变更受影响而需要重新构建的代码。
 * 自动计算库的间接依赖，库的作者只需要写出直接依赖，构建时自动检查所依赖的库是否需要重新构建。
@@ -120,7 +120,7 @@ $ blade test -m32 -pdebug common...
 * 头文件更新，受影响的模块没有重新构建。
 * 被依赖的库需要更新，而构建时没有被更新，比如某子目录依
 
-# 致谢
+## 致谢
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * Blade 生成 [Ninja](https://ninja-build.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 Ninja。
@@ -136,10 +136,8 @@ $ blade test -m32 -pdebug common...
 
 欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](/AUTHORS)
 
-# 文档
+## 文档
 
 看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/zh_CN/user_manual.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/zh_CN/FAQ.md)，也许有你需要的信息。
-
-
