@@ -902,7 +902,7 @@ class CcLibrary(CcTarget):
                     break
                 level, hdr = self._parse_hdr_level(line)
                 if level == -1:
-                    self.log('Unrecognized line %s' % line)
+                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
                     break
                 if level > current_level:
                     if skip_level != -1 and level > skip_level:
