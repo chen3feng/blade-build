@@ -14,7 +14,7 @@ Blade is an easy-to-use, fast and modern build system for trunk based developmen
 
 Click here to read [README](README-en.md) in English.
 
-## Build status
+## Build Status
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
 ## First, let's see the beautiful demo!
