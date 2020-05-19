@@ -25,7 +25,7 @@ Click here to read [README](README-en.md) in English.
 * Blade 发布1.1.2，包含以下特性：
  * python 最低版本要求2.6
  * 对Java，scala构建的完善支持
- * 支持扩展
+ * 支持自定义扩展
 
 1.1.2版是最后一个1.x版本，我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
 * 后端支持[ninja](doc/zh_CN/config.md#global_config)元构建系统，大幅度提高构建性能
