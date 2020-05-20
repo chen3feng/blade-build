@@ -162,13 +162,12 @@ class CmdArguments(object):
                             choices=['no', 'min', 'mid', 'high'],
                             help=('Produces how much debug infomation'))
 
+        # DEPRECATED, see above
         parser.add_argument('--no-debug-info',
                             dest='debug_info_level',
                             action='store_const',
                             const='no',
-                            help=('Do not produce debugging information, this '
-                                  'make less disk space cost but hard to debug, '
-                                  'default is false'))
+                            help=argparse.SUPPRESS)
 
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
