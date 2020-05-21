@@ -38,7 +38,7 @@ Blade用一组target函数来定义目标，这些target的通用属性有：
  * srcs: 列表或字符串，构建该对象需要的源文件，一般在当前目录，或相对于当前目录的子目录中
  * deps: 列表或字符串，该对象所依赖的其它targets
 
-我们也提供了一个 [glob](functions.md) 函数通过通配符来获取源文件列表。
+我们也提供了一个 [glob](functions.md#glob) 函数通过通配符来获取源文件列表。
 
 deps的允许的格式：
 

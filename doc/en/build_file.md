@@ -38,7 +38,7 @@ Blade uses a set of target functions to define targets. The common properties of
  * srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
  * deps: list or string, other targets on which the object depends
 
-We also provide a [glob](functions.md) function to generate the source files list.
+We also provide a [glob](functions.md#glob) function to generate the source files list.
 
 The allowed format of deps:
 
