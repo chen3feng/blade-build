@@ -7,7 +7,7 @@ Update the configuration item to the configuration dict of blade.config for late
 After the configuration file is loaded, the blade will also try to update the options in the command line options with the same name as global_config to the configuration, so that the configuration information from the command line has the highest priority.
 
 ## Loading BUILD files
-Blade will be expanded from the build target specified by the command line, and the `BuiLD` file will be executed one by one through the `execfile` function. When the code in the BUILD file is executed,
+Blade will be expanded from the build target specified by the command line, and the `BUILD` file will be executed one by one through the `execfile` function. When the code in the BUILD file is executed,
 The predefined rule function inside the blade is called to register the target in the data structure inside the blade.
 
 For targets that are directly or indirectly dependent on the target specified in the command line, the blade will load the BUILD file in the corresponding directory until all dependencies are loaded.

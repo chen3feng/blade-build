@@ -1,11 +1,8 @@
-# 构建protobuf和thrift
----
+# Build protobuf and thrift
 
 ## proto_library
-用于定义protobuf目标
-deps 为import所涉及的其他proto_library
-自动依赖protobuf，使用者不需要再显式指定。
-构建时自动调用protoc生成cc和h，并且编译成对应的cc_library
+
+Build protobuf targets
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -13,15 +10,21 @@ proto_library(
     deps = ':rpc_option_proto',
 )
 ```
-Blade支持proto_library，使得在项目中使用protobuf十分方便。
+`deps` are other proto_library which are imported.
+protobuf runtime library will be depended automatically, needn't to be specified explicitly.
 
-要引用某 proto 文件生成的头文件，需要从 BLADE_ROOT 的目录开始，只是把 proto 扩展名改为 pb.h 扩展名。
-比如 //common/base/string_test.proto 生成的头文件，路径为 "common/base/string_test.pb.h"。
+proto_library support generate targets for multiple target languages.
 
-proto_library被Java目标依赖时，会自动构建Java相关的结果，Python也类似。因此同一个proto_library目标可以被多种语言所使用。
+When generate for C++ code, it generate a c++ library with corresponding header files.
+To include the generated header file of a proto file, you should include it with the full path from
+the root of the workspace, replace the `proto` suffix into `pb.h`.
+For example, the header file of `//common/base/string_test.proto` is "common/base/string_test.pb.h".
 
-如果需要强制生成某种语言的目标库，可以通过 `target_languages` 参数来指定：
-If you want to generate code for specified languages, you can use the `target_languages` parameter:
+When a java targets depends on a proto_library, the java relatived code will be generated automatically,
+it is also similar to other target languages，such as python. so we only need one proto_library for
+multiple target languages.
+
+If you want to generate code for specified languages unconditionly, you can use the `target_languages` argument:
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -33,10 +36,10 @@ proto_library(
 The `cpp` target code is always generated.
 
 ## thrift_library
-用于定义thrift库目标
-deps 为import所涉及的其他thrift_library
-自动依赖thrift，使用者不需要再显式指定。
-构建时自动调用thrift命令生成cpp和h，并且编译成对应的cc_library
+Can be used to generate thrift C++ library
+deps is the other thrift_library which are imported.
+thrift runtime will be depended automatically, needn't to be specified explicitly.
+The generated result is a c++ linrary with with corresponding header files.
 
 ```python
 thrift_library(
@@ -51,7 +54,4 @@ thrift_library(
 )
 ```
 
-C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
- * thrift 0.9版（之前版本未测）有个[bug](https://issues.apache.org/jira/browse/THRIFT-1859)，
- 需要修正才能使用，此bug已经在开发版本中[修正](https://builds.apache.org/job/Thrift/633/changes#detail13)
-
+Similay to proto_library, to include generated header files, the full path is also required.
