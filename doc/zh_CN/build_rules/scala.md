@@ -3,13 +3,32 @@
 ## 规则
 scala_library scala_binary scala_test用法类似java，区别是编译器换成了scalac。
 
-和java一样，scala也是JVM上的语言，因此scala目标也可以依赖java目标。
+## 标准库
+构建 Scala 目标总是离不开 scala 标准库，可以通过 maven_jar 来定义：
 
+```
+maven_jar(
+    name = 'scala_library',
+    id = 'org.scala-lang:scala-library:2.12.1',
+)
+```
 
-## java目标依赖scala_library
+也可以通过 prebuilt 的 java_library 来定义：
+```
+java_library(
+    name = 'scala_library',
+    binary_jar = 'scala-2.12.1/scala-library.jar',
+)
+```
 
-java构建目标也可以依赖scala目标，不过需要注意scala目标中应该把scala-library纳入exported依赖。
-否则编译时javac会发出找不到ScalaSignature.bytes()符号的警告。
+## java 和 scala 互操作
+
+和 java 一样，scala 也是 JVM 上的语言，因此 scala 目标也可以依赖 java 库，反之亦然。
+
+不过需要注意，java 构建目标可以依赖 scala 库时，scala 目标中应该把 scala-library 纳入 exported_deps。
+否则编译时 javac 会发出找不到 ScalaSignature.bytes() 符号的警告。
+但是它也应该同时出现在 provided_deps 里，否则它就会被打包进 scala binary 里，和 scala 环境已经提供的冲突。
+但是对于 java_inary，则又需要显式地依赖 scala-library。
 
 ```
 scala_library(
@@ -19,21 +38,3 @@ scala_library(
     provided_deps = ['//path/to/:scala_library'],
 )
 ```
-
-scala_library可以通过maven_jar来定义：
-
-```
-maven_jar(
-    name = 'scala_library',
-    id = 'org.scala-lang:scala-library:2.12.1',
-)
-```
-
-也可以通过prebuilt的java_library来定义：
-```
-java_library(
-    name = 'scala_library',
-    binary_jar = 'scala-2.12.1/scala-library.jar',
-)
-```
-

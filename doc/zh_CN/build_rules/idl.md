@@ -2,10 +2,11 @@
 ---
 
 ## proto_library
-用于定义protobuf目标
-deps 为import所涉及的其他proto_library
-自动依赖protobuf，使用者不需要再显式指定。
-构建时自动调用protoc生成cc和h，并且编译成对应的cc_library
+用于定义 protobuf 目标
+deps 为 import 所涉及的其他 proto_library
+自动依赖 protobuf 运行库，使用者不需要再显式指定。
+
+示例：
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -13,12 +14,16 @@ proto_library(
     deps = ':rpc_option_proto',
 )
 ```
-Blade支持proto_library，使得在项目中使用protobuf十分方便。
+
+protobuf_library 支持生成多种语言的目标。
+
+当编译为 C++ 目标时，构建时自动调用 protoc 生成 pb.cc 和 pb.h，并且编译成对应的 C++ 库。
 
 要引用某 proto 文件生成的头文件，需要从 BLADE_ROOT 的目录开始，只是把 proto 扩展名改为 pb.h 扩展名。
 比如 //common/base/string_test.proto 生成的头文件，路径为 "common/base/string_test.pb.h"。
 
-proto_library被Java目标依赖时，会自动构建Java相关的结果，Python也类似。因此同一个proto_library目标可以被多种语言所使用。
+当 proto_library 被 Java 目标依赖时，会自动构建 Java 相关的结果，Python也类似。
+因此同一个proto_library目标可以被多种语言所使用。
 
 如果需要强制生成某种语言的目标库，可以通过 `target_languages` 参数来指定：
 ```python
@@ -29,7 +34,7 @@ proto_library(
     target_languages = ['java', 'python'],
 )
 ```
-C++ 代码总是生成。
+C++ 代码总是会生成。
 
 ## thrift_library
 用于定义thrift库目标
