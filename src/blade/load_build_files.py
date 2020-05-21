@@ -81,16 +81,27 @@ def enable_if(cond, true_value, false_value=None):
     return ret
 
 
-def glob(srcs, excludes=[]):
-    """A global function can be called in BUILD to specify a set of files using patterns"""
+def glob(include, exclude=None, excludes=None, allow_empty=False):
+    """This function can be called in BUILD to specify a set of files using patterns.
+    Args:
+        include:List(str), file patterns to be matched.
+        exclude:List[str], file patterns to be removed from the result.
+        allow_empty:bool: Whether a empty result is a error.
+
+    Patterns may contain shell-like wildcards, such as * , ? , or [charset].
+    Additionally, the path element '**' matches any subpath.
+    """
     from blade import build_manager
-    srcs = var_to_list(srcs)
-    excludes = var_to_list(excludes)
     source_dir = Path(build_manager.instance.get_current_source_path())
+
+    include = var_to_list(include)
+    if excludes:
+        console.warning('//%s: glob.excludes is deprecated, use exclude instead' % source_dir)
+    exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
         results = []
-        for pattern in srcs:
+        for pattern in include:
             for path in source_dir.glob(pattern):
                 if path.is_file() and not path.name.startswith('.'):
                     results.append(path.relative_to(source_dir))
@@ -102,7 +113,7 @@ def glob(srcs, excludes=[]):
 
     non_special_excludes = set()
     match_excludes = set()
-    for pattern in excludes:
+    for pattern in exclude:
         if is_special(pattern):
             match_excludes.add(pattern)
         else:
@@ -117,7 +128,15 @@ def glob(srcs, excludes=[]):
                 return True
         return False
 
-    return sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+    result = sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+    if not result and not allow_empty:
+        args = repr(include)
+        if exclude:
+            args += ', exclude=%s' % repr(exclude)
+        console.error("//%s: 'glob(%s)' got an empty result. If it is the expected behavior, "
+                      "specify 'allow_empty=True' to eliminate this error" % (source_dir, args))
+
+    return result
 
 
 # Each include in a BUILD file can only affect itself

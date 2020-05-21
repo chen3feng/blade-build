@@ -12,7 +12,7 @@ java_library(
     name = 'rpc',
     srcs = glob([
         'src/main/java/**/*.java',
-    ], excludes = [
+    ], exclude = [
         '*Test.java'
     ]),
     resources = [
@@ -30,19 +30,6 @@ java_library(
         '//thirdparty/java/deps:netty-4.0.36.final',
     ]
 )
-```
-
-- srcs 属性与 glob 函数
-
-srcs 属性和普通规则的 srcs 属性相同，可以指明源文件的路径，遵照 java 开发习惯，比如在 Maven 中无需
-指定源文件列表，所有源文件按照 Maven [标准目录布局](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html)组织放于 src/main/java 目录下，因此在 blade 中提供了 glob
-函数用于自动获取文件列表并支持文件排除：
-
-```python
-glob([
-    '*.java',                           # * 表示匹配当前目录下的 java 文件
-    'src/main/java/**/*.java',          # ** 表示递归目录，规则与 python3 中的 pathlib 相同
-], excludes=['*Test.java'])             # excludes 排除文件列表
 ```
 
 - resources 属性
@@ -135,7 +122,7 @@ jar 包，不下载依赖，用于解决某些运行时依赖下载传递依赖�
 ```python
 java_library(
     name = 'log_process',
-    srcs = glob(['**/*.java'], excludes = ['*Test.java']),
+    srcs = glob(['**/*.java'], exclude = ['*Test.java']),
     resources = glob(['resources/*']),
     deps = [
         ':log_proto',
