@@ -142,7 +142,7 @@ class Target(object):
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        console.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
+        self.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
         if '/' in self.name:

@@ -14,7 +14,7 @@
 from __future__ import absolute_import
 
 import shlex
-from argparse import ArgumentParser, Action
+import argparse
 
 from blade import console
 from blade.blade_platform import BuildArchitecture
@@ -75,17 +75,10 @@ class CmdArguments(object):
                                'a_path:target_name)')
         if len(self.targets) > 1:
             console.warning('run command will only take one target to build and run')
-        if self.options.runargs:
-            console.warning('--runargs has been deprecated, please put all run'
-                            ' arguments after a "--"')
-            self.options.args = shlex.split(self.options.runargs) + self.options.args
 
     def _check_test_options(self):
-        """check that test command options. """
-        if self.options.testargs:
-            console.warning('--testargs has been deprecated, please put all test'
-                            ' arguments after a "--" ')
-            self.options.args = shlex.split(self.options.testargs) + self.options.args
+        """check that test command options."""
+        pass
 
     def _check_plat_and_profile_options(self):
         """check platform and profile options. """
@@ -164,13 +157,17 @@ class CmdArguments(object):
                             default='release',
                             help=('Build profile, default is release'))
 
+        parser.add_argument('--debug-info-level',
+                            dest='debug_info_level',
+                            choices=['no', 'min', 'mid', 'high'],
+                            help='Produces how much debug information')
+
+        # DEPRECATED, see above
         parser.add_argument('--no-debug-info',
                             dest='debug_info_level',
                             action='store_const',
                             const='no',
-                            help=('Do not produce debugging information, this '
-                                  'make less disk space cost but hard to debug, '
-                                  'default is false'))
+                            help=argparse.SUPPRESS)
 
     def __add_generate_arguments(self, parser):
         """Add generate related arguments. """
@@ -210,7 +207,7 @@ class CmdArguments(object):
         parser.add_argument(
             '--backend-builder', dest='backend_builder',
             type=str, choices=['ninja'], default='',
-            help='Specify the underly backend builder')
+            help='Specify the underlying backend builder')
 
         # Add extra backend builder options arguments.
         parser.add_argument(
@@ -219,7 +216,7 @@ class CmdArguments(object):
 
         parser.add_argument(
             '-j', '--jobs', dest='jobs', type=int, default=0,
-            help=('Specifies the number of jobs (commands) to run simultaneously'))
+            help=('Specifies the number of build jobs (commands) to run simultaneously'))
 
         parser.add_argument(
             '-k', '--keep-going', dest='keep_going',
@@ -235,7 +232,7 @@ class CmdArguments(object):
             help='Dry run (don\'t run commands but act like they succeeded)')
 
         parser.add_argument(
-            '--show-builds-slower-than', dest='show_builds_slower_than', type=float,
+            '--show-builds-slower-than', dest='show_builds_slower_than', metavar='SECONDS', type=float,
             help='Show build commands which are slower than specified seconds')
 
     def __add_coverage_arguments(self, parser):
@@ -246,15 +243,15 @@ class CmdArguments(object):
             help='Add build options to support GNU gprof')
 
         parser.add_argument(
-            '--gcov', dest='coverage',
-            action='store_true', default=False,
-            help='Add build options to support GNU gcov to do coverage test. '
-                 'DEPRECATED, please use --coverage')
-
-        parser.add_argument(
             '--coverage', dest='coverage',
             action='store_true', default=False,
             help='Add build options to support coverage test')
+
+        # DEPRECATED, please use --coverage
+        parser.add_argument(
+            '--gcov', dest='coverage',
+            action='store_true', default=False,
+            help=argparse.SUPPRESS)
 
     def _add_query_arguments(self, parser):
         """Add query arguments for parser. """
@@ -274,23 +271,6 @@ class CmdArguments(object):
             '--output-format', dest='output_format', type=str,
             choices=('plain', 'tree', 'dot'), default='plain',
             help='Specify the format of query results')
-
-        class OutputDotFileAction(Action):
-            """Custom action to set both output format and file"""
-
-            def __init__(self, **kwargs):
-                super(OutputDotFileAction, self).__init__(**kwargs)
-
-            def __call__(self, parser, namespace, argument_values, option_string):
-                namespace.output_format = 'dot'
-                namespace.output_file = argument_values
-
-        parser.add_argument(
-            '--output-dot-file', '--output-to-dot', dest='output_file', type=str,
-            action=OutputDotFileAction,
-            help=('Short for --output_format dot --output_file OUTPUT_FILE. '
-                  '--output-to-dot is DEPRECATED'))
-
         parser.add_argument(
             '--depended', dest='dependents', action='store_true',
             help='DEPRECATED, please use --dependents')
@@ -303,10 +283,6 @@ class CmdArguments(object):
 
     def _add_test_arguments(self, parser):
         """Add test command arguments. """
-        parser.add_argument(
-            '--testargs', dest='testargs', type=str,
-            help='Command line arguments to be passed to tests')
-
         parser.add_argument(
             '--full-test', action='store_true',
             dest='full_test', default=False,
@@ -322,7 +298,7 @@ class CmdArguments(object):
             help='Shows the test result in detail and provides a file')
 
         parser.add_argument(
-            '--show-tests-slower-than', type=float,
+            '--show-tests-slower-than', type=float, metavar='SECONDS',
             dest='show_tests_slower_than',
             help='Show tests which are slower than specified seconds')
 
@@ -332,14 +308,12 @@ class CmdArguments(object):
             help='Run tests directly without build')
 
         parser.add_argument(
-            '--skip-tests', dest='skip_tests', type=str, default='',
+            '--skip-tests', dest='skip_tests', type=str, default='', metavar='TARGET_LIST',
             help='Skip tests which matches this comma seperated target list')
 
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
-        parser.add_argument(
-            '--runargs', dest='runargs', type=str,
-            help='Command line arguments to be passed to the single run target')
+        pass
 
     def _add_build_arguments(self, *parsers):
         """Add building arguments for parsers. """
@@ -379,7 +353,7 @@ class CmdArguments(object):
     def _add_dump_arguments(self, parser):
         """Add query arguments for parser. """
         parser.add_argument(
-            '--to-file', dest='dump_to_file', type=str, action='store',
+            '--to-file', dest='dump_to_file', type=str, action='store', metavar='FILEPATH',
             default='/dev/stdout',
             help='Specifies the path of file to write the dump result')
         group = parser.add_mutually_exclusive_group(required=True)
@@ -396,7 +370,7 @@ class CmdArguments(object):
     def _cmd_parse(self, argv):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
-        arg_parser = ArgumentParser(prog='blade', description=blade_cmd_help)
+        arg_parser = argparse.ArgumentParser(prog='blade', description=blade_cmd_help)
         arg_parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
         sub_parser = arg_parser.add_subparsers(
             dest='command',
@@ -410,11 +384,13 @@ class CmdArguments(object):
 
         run_parser = sub_parser.add_parser(
             'run',
-            help='Build and runs a single target')
+            help='Build and runs a single target',
+            epilog='Any arguments after the empty "--" will be passed to the program')
 
         test_parser = sub_parser.add_parser(
             'test',
-            help='Build the specified targets and runs tests')
+            help='Build the specified targets and runs tests',
+            epilog='Any arguments after the empty "--" will be passed to the program')
 
         clean_parser = sub_parser.add_parser(
             'clean',
