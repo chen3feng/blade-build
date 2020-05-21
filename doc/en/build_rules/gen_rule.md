@@ -40,5 +40,4 @@ to generate source code and want to reference the generated source code in other
 consider them as if they are generated in the source tree, without the BUILD_DIR prefix.
 
 Multiple similar gen\_rule can be considered to be defined as an extension maintained in a separate
-`bld` file, and through [include] (../include.md)Functions are introduced to reduce code redundancy
-and better maintenance.
+`bld` file, and through [include] (../functions.md) function to reduce code redundancy and to keep better maintenance.
