@@ -269,6 +269,8 @@ class TestRunner(binary_runner.BinaryRunner):
         return execfiles, classes_dirs, source_dirs
 
     def _generate_java_coverage_report(self):
+        """Run jacococli to generate coverage report"""
+        # TODO(chen3feng): Support generating other formats
         java_test_config = config.get_section('java_test_config')
         jacoco_home = java_test_config['jacoco_home']
         if not jacoco_home:
@@ -288,7 +290,7 @@ class TestRunner(binary_runner.BinaryRunner):
             jacococli = os.path.join(jacoco_home, 'lib', 'jacococli.jar')
             classfiles = ['--classfiles ' + files for files in classes_dirs]
             sourcefiles = ['--sourcefiles ' + files for files in source_dirs]
-            print(classes_dirs)
+            # See https://www.jacoco.org/jacoco/trunk/doc/cli.html
             cmd_str = ('{java} -jar {jacococli} report {execfiles} {classfiles} {sourcefiles} '
                        '--html {report_dir}').format(
                               java=java, jacococli=jacococli, execfiles=' '.join(execfiles),
