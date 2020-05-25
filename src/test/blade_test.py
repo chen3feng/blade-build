@@ -8,6 +8,7 @@
  This is the main test module for all targets.
 """
 
+import io
 import os
 import subprocess
 import sys
@@ -58,11 +59,11 @@ class TargetTest(unittest.TestCase):
             shell=True)
         try:
             p.wait()
-            self.build_output = open(self.build_output_file).readlines()
+            self.build_output = io.open(self.build_output_file, encoding='utf-8').readlines()
             print(p.returncode)
             return p.returncode == 0
         except:
-            sys.stderr.write('Failed while dry running:\n%s\n' % sys.exc_info())
+            sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
         return False
 
     def printOutput(self):

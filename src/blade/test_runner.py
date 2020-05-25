@@ -25,7 +25,7 @@ from collections import namedtuple
 from blade import binary_runner
 from blade import config
 from blade import console
-from blade.blade_util import md5sum
+from blade.blade_util import md5sum, iteritems
 from blade.test_scheduler import TestScheduler
 # pylint: disable=unused-import
 from blade.test_scheduler import TestRunResult  # Used by eval
@@ -105,7 +105,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 console.notice('old environments: %s' % old)
 
         self.test_history['env'] = new_env
-        self.env_md5 = md5sum(str(sorted(new_env.iteritems())))
+        self.env_md5 = md5sum(str(sorted(iteritems(new_env))))
 
     def _save_test_history(self, passed_run_results, failed_run_results):
         """update test history and save it to file. """
@@ -115,7 +115,7 @@ class TestRunner(binary_runner.BinaryRunner):
             print(str(self.test_history), file=f)
 
     def _merge_run_results_to_history(self, run_results):
-        for key, run_result in run_results.iteritems():
+        for key, run_result in iteritems(run_results):
             self.test_history['items'][key] = TestHistoryItem(self.test_jobs[key], run_result)
 
     def _get_test_target_md5sum(self, target):
@@ -303,7 +303,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._generate_java_coverage_report()
 
     def _show_banner(self, text):
-        pads = (76 - len(text)) / 2
+        pads = int((76 - len(text)) / 2)
         console.notice('{0} {1} {0}'.format('=' * pads, text), prefix=False)
 
     def _show_skipped_tests(self):
@@ -317,7 +317,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _show_run_results(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
         tests = []
-        for key, result in run_results.iteritems():
+        for key, result in iteritems(run_results):
             reason = self.test_jobs[key].reason
             tests.append((key, result.cost_time, reason, result.exit_code))
         tests.sort(key=lambda x: x[1])
@@ -327,7 +327,7 @@ class TestRunner(binary_runner.BinaryRunner):
                             key[0], key[1], reason, result, costtime), prefix=False)
 
     def _collect_slow_tests(self, run_results):
-        return [(result.cost_time, key) for key, result in run_results.iteritems()
+        return [(result.cost_time, key) for key, result in iteritems(run_results)
                 if result.cost_time > self.options.show_tests_slower_than]
 
     def _show_slow_tests(self, passed_run_results, failed_run_results):

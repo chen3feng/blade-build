@@ -17,7 +17,7 @@ import subprocess
 
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list, iteritems
+from blade.blade_util import var_to_list, iteritems, to_string
 
 
 class BuildArchitecture(object):
@@ -235,6 +235,8 @@ class BuildPlatform(object):
                              shell=True,
                              universal_newlines=True)
         stdout, stderr = p.communicate()
+        stdout = to_string(stdout)
+        stderr = to_string(stderr)
         return p.returncode, stdout, stderr
 
     def get_cc(self):

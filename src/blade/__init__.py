@@ -1,8 +1,10 @@
 """Public API for user rules"""
 
+from __future__ import absolute_import
+
 # Default imports for user code
-import config
-import console
+import blade.config
+import blade.console
 
 
 def current_source_dir():

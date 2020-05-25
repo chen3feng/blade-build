@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import textwrap
 import time
 
@@ -525,7 +526,7 @@ build %s: cxx %s
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
             cmd.append(prefix)
-        cmd.append('python -m blade.toolchain %s' % builder)
+        cmd.append('%s -m blade.toolchain %s' % (sys.executable, builder))
         if suffix:
             cmd.append(suffix)
         else:
