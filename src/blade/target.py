@@ -12,11 +12,15 @@
 from __future__ import absolute_import
 
 import os
+import re
 import string
 
 from blade import config
 from blade import console
 from blade.blade_util import var_to_list, iteritems
+
+
+LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 def _normalize_one(target, working_dir):

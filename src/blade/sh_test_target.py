@@ -17,9 +17,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 
 class ShellTest(Target):
@@ -70,7 +69,7 @@ class ShellTest(Target):
             else:
                 self.error_exit('Invalid testdata %s. Test data should be either str or tuple.' % td)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.data['locations'].append((key, type, dst))

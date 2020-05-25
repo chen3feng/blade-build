@@ -26,10 +26,9 @@ from blade import build_rules
 from blade import config
 from blade import console
 from blade import maven
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
 from blade.blade_util import iteritems
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 
 class MavenJar(Target):
@@ -173,7 +172,7 @@ class JavaTargetMixIn(object):
                 self.error_exit('Invalid resource %s. Resource should be either a str or a tuple.' %
                                 resource)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.data['location_resources'].append((key, type, dst))
