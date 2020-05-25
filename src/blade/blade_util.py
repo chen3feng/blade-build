@@ -20,7 +20,6 @@ import fcntl
 import os
 import json
 import sys
-import re
 import string
 import signal
 import subprocess
@@ -32,7 +31,6 @@ try:
 except ImportError:
     import md5
 
-location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 _IN_PY3 = sys.version_info[0] == 3
 

@@ -18,9 +18,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 _package_types = frozenset([
     'tar',
@@ -84,7 +83,7 @@ class PackageTarget(Target):
             else:
                 self.error_exit('Invalid src %s. src should be either str or tuple.' % s)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 self._add_location_reference(m, dst)
             else:

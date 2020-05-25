@@ -28,6 +28,7 @@ The toolchain function is defined as follows:
 
 from __future__ import absolute_import
 
+import getpass
 import os
 import shutil
 import socket
@@ -63,7 +64,7 @@ namespace binary_version {
        version,
        profile,
        time.asctime(),
-       os.getenv('USER'),
+       getpass.getuser(),
        socket.gethostname(),
        compiler))
 

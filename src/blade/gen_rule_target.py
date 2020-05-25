@@ -16,10 +16,9 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import location_re
 from blade.blade_util import regular_variable_name
 from blade.blade_util import var_to_list
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 
 class GenRuleTarget(Target):
@@ -56,7 +55,7 @@ class GenRuleTarget(Target):
 
         self.data['outs'] = outs
         self.data['locations'] = []
-        self.data['cmd'] = location_re.sub(self._process_location_reference, cmd)
+        self.data['cmd'] = LOCATION_RE.sub(self._process_location_reference, cmd)
         self.data['cmd_name'] = cmd_name
         if generate_hdrs is not None:
             self.data['generate_hdrs'] = generate_hdrs
