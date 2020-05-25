@@ -343,7 +343,7 @@ javacflags =
         jacoco_home = config.get_item('java_test_config', 'jacoco_home')
         if jacoco_home:
             jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
-            prefix = 'JACOCOAGENT=%s' % jacoco_agent
+            prefix = 'BLADE_JACOCOAGENT=%s' % jacoco_agent
         else:
             prefix = ''
         self._add_rule('javatargetundertestpkg = __targetundertestpkg__')

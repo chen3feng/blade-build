@@ -47,8 +47,15 @@ cc_test(
 
 C/C++测试覆盖率，是通过gcc的[gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)实现的。测试运行完后，需要自己执行gcov或者lcov之类的第三方工具生成测试覆盖报告。
 
-java测试覆盖率，是通过jacoco库来生成的，具体请阅读[使用说明](../../java/README.md)。
-
+要生成 Java 测试覆盖率报告，你需要下载并解压[jacoco]()，然后进行配置：
+```python
+java_test(
+    ...
+    jacoco_home = 'path/to/jacoco',
+    ...
+)
+```
+测试报告会生成到 build 目录下的 `java_coverage_report` 目录里。
 
 ## 跳过指定的测试
 Blade支持通过--skip-tests参数显式地跳过指定的测试，当需要批量运行大量的测试，而又期望跳过某些测试时，这个选项就很有用。例如：
