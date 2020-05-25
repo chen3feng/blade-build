@@ -120,7 +120,7 @@ _MAX_WORKER_THREADS = 16
 
 
 class TestScheduler(object):
-    """TestScheduler. """
+    """Schedule specified tests to be ran in multiple test threads"""
 
     def __init__(self, tests_list, num_jobs):
         """init method. """

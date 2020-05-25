@@ -58,7 +58,7 @@ def _diff_env(a, b):
 
 
 class TestRunner(binary_runner.BinaryRunner):
-    """TestRunner. """
+    """Run specified tests and collect the results"""
     def __init__(self, targets, options, target_database, direct_targets, skip_tests):
         """Init method. """
         # pylint: disable=too-many-locals, too-many-statements
@@ -165,8 +165,8 @@ class TestRunner(binary_runner.BinaryRunner):
             test_target.append(str(os.path.getctime(f)))
 
         for f in related_file_data_list:
-            test_target_data.append(os.path.getmtime(f))
-            test_target_data.append(os.path.getctime(f))
+            test_target_data.append(str(os.path.getmtime(f)))
+            test_target_data.append(str(os.path.getctime(f)))
         return md5sum(''.join(test_target)), md5sum(''.join(test_target_data))
 
     def _skip_test(self, target):
@@ -240,14 +240,15 @@ class TestRunner(binary_runner.BinaryRunner):
                 self.skipped_tests.append(target.key)
 
     def _get_java_coverage_data(self):
-        """
-        Return a list of tuples(source directory, class directory, execution data)
+        """Return a tuples of execution data files, classes directories, source directories.
         for each java_test.
             source directory: source directory of java_library target under test
             class directory: class directory of java_library target under test
             execution data: jacoco.exec collected by jacoco agent during testing
         """
-        coverage_data = []
+        execfiles = []
+        source_dirs = []
+        classes_dirs = []
         for key in self.test_jobs:
             target = self.targets[key]
             if target.type != 'java_test':
@@ -259,39 +260,41 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target_under_test:
                 continue
             target_under_test = self.target_database[target_under_test]
+            classes_dir = target_under_test._get_classes_dir()
             source_dir = target_under_test._get_sources_dir()
-            class_dir = target_under_test._get_classes_dir()
-            coverage_data.append((source_dir, class_dir, execution_data))
+            execfiles.append(execution_data)
+            classes_dirs.append(classes_dir)
+            source_dirs.append(source_dir)
 
-        return coverage_data
+        return execfiles, classes_dirs, source_dirs
 
     def _generate_java_coverage_report(self):
         java_test_config = config.get_section('java_test_config')
         jacoco_home = java_test_config['jacoco_home']
-        coverage_reporter = java_test_config['coverage_reporter']
-        if not jacoco_home or not coverage_reporter:
-            console.warning('Missing jacoco home or coverage report generator '
-                            'in global configuration. '
+        if not jacoco_home:
+            console.warning('Missing jacoco home in java_test configuration. '
                             'Abort java coverage report generation.')
             return
-        jacoco_libs = os.path.join(jacoco_home, 'lib', 'jacocoant.jar')
-        report_dir = os.path.join(self.build_dir, 'java', 'coverage_report')
+        report_dir = os.path.join(self.build_dir, 'java_coverage_report')
         if not os.path.exists(report_dir):
             os.makedirs(report_dir)
 
-        coverage_data = self._get_java_coverage_data()
-        if coverage_data:
+        execfiles, classes_dirs, source_dirs = self._get_java_coverage_data()
+        if execfiles:
             java = 'java'
             java_home = config.get_item('java_config', 'java_home')
             if java_home:
                 java = os.path.join(java_home, 'bin', 'java')
-            cmd = ['%s -classpath %s:%s com.tencent.gdt.blade.ReportGenerator' % (
-                java, coverage_reporter, jacoco_libs)]
-            cmd.append(report_dir)
-            for data in coverage_data:
-                cmd.append(','.join(data))
-            cmd_str = ' '.join(cmd)
-            console.info('Generating java coverage report')
+            jacococli = os.path.join(jacoco_home, 'lib', 'jacococli.jar')
+            classfiles = ['--classfiles ' + files for files in classes_dirs]
+            sourcefiles = ['--sourcefiles ' + files for files in source_dirs]
+            print(classes_dirs)
+            cmd_str = ('{java} -jar {jacococli} report {execfiles} {classfiles} {sourcefiles} '
+                       '--html {report_dir}').format(
+                              java=java, jacococli=jacococli, execfiles=' '.join(execfiles),
+                              classfiles=' '.join(classfiles), sourcefiles=' '.join(sourcefiles),
+                              report_dir=report_dir)
+            console.info('Generating java coverage report `%s`' % report_dir)
             console.debug(cmd_str)
             if subprocess.call(cmd_str, shell=True) != 0:
                 console.warning('Failed to generate java coverage report')

@@ -100,7 +100,6 @@ class BladeConfig(object):
             'java_test_config': {
                 'junit_libs': [],
                 'jacoco_home': '',
-                'coverage_reporter': '',
             },
             'scala_config': {
                 'scala_home': '',

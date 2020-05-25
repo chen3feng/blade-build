@@ -251,7 +251,7 @@ def _get_all_test_class_names_in_jar(jar):
 
 
 def _generate_java_test_coverage_flag(targetundertestpkg):
-    jacoco_agent = os.environ.get('JACOCOAGENT')
+    jacoco_agent = os.environ.get('BLADE_JACOCOAGENT')
     if targetundertestpkg and jacoco_agent:
         jacoco_agent = os.path.abspath(jacoco_agent)
         packages = targetundertestpkg.split(':')
