@@ -158,19 +158,16 @@ class TestRunner(binary_runner.BinaryRunner):
         related_file_list.sort()
         related_file_data_list.sort()
 
-        test_target_str = ''
-        test_target_data_str = ''
+        test_target = []
+        test_target_data = []
         for f in related_file_list:
-            mtime = os.path.getmtime(f)
-            ctime = os.path.getctime(f)
-            test_target_str += str(mtime) + str(ctime)
+            test_target.append(str(os.path.getmtime(f)))
+            test_target.append(str(os.path.getctime(f)))
 
         for f in related_file_data_list:
-            mtime = os.path.getmtime(f)
-            ctime = os.path.getctime(f)
-            test_target_data_str += str(mtime) + str(ctime)
-
-        return md5sum(test_target_str), md5sum(test_target_data_str)
+            test_target_data.append(os.path.getmtime(f))
+            test_target_data.append(os.path.getctime(f))
+        return md5sum(''.join(test_target)), md5sum(''.join(test_target_data))
 
     def _skip_test(self, target):
         """Whether skip this test"""
