@@ -1,3 +1,7 @@
+os:
+  - linux
+  - osx
+          g
 dist: bionic
 language: python
 python:
@@ -7,20 +11,20 @@ python:
 before_install: true
 
 install:
-    - pip install -r requirements.txt
-    - pip install coverage
-    - pip install coveralls
+  - pip install -r requirements.txt
+  - pip install coverage
+  - pip install coveralls
 
 addons:
   apt:
     sources:
-    - kubuntu-backports
-    - ubuntu-toolchain-r-test
+      - kubuntu-backports
+      - ubuntu-toolchain-r-test
     packages:
-    - ninja-build
+      - ninja-build
 
 script:
-    - src/test/runalltests.sh
+  - src/test/runalltests.sh
 
 after_success:
-    - coveralls
+  - coveralls
