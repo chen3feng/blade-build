@@ -419,8 +419,7 @@ def setup_log(build_dir, options):
 
 def generate_scm_svn():
     url = revision = 'unknown'
-    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
     stdout = to_string(stdout)
     stderr = to_string(stderr)
