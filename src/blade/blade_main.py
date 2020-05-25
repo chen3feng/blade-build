@@ -89,7 +89,7 @@ from blade import config
 from blade import console
 from blade import target
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
-from blade.blade_util import get_cwd, iteritems
+from blade.blade_util import get_cwd, iteritems, to_string
 from blade.blade_util import lock_file, unlock_file
 from blade.command_args import CmdArguments
 
@@ -419,9 +419,10 @@ def setup_log(build_dir, options):
 
 def generate_scm_svn():
     url = revision = 'unknown'
-    p = subprocess.Popen('svn info', shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
+    stdout = to_string(stdout)
+    stderr = to_string(stderr)
     if p.returncode != 0:
         console.debug('Failed to generate svn scm: %s' % stderr)
     else:
@@ -441,6 +442,8 @@ def generate_scm_git():
     def git(cmd):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
+        stdout = to_string(stdout)
+        stderr = to_string(stderr)
         if p.returncode != 0:
             console.debug('Failed to generate git scm: %s' % stderr)
             return ''

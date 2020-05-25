@@ -16,11 +16,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-try:
-    basestring
-except NameError:
-    basestring = str
-
 import fcntl
 import os
 import json
@@ -39,28 +34,37 @@ except ImportError:
 
 location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
-PY3 = sys.version_info[0] == 3
+_IN_PY3 = sys.version_info[0] == 3
 
 
-def md5sum_str(user_str):
-    """md5sum of basestring. """
-    if not isinstance(user_str, basestring):
-        console.error_exit('Not a valid basestring type to calculate md5.')
+def md5sum_bytes(text):
+    """Calculate md5sum of a byte string."""
+    assert isinstance(text, bytes), 'Invalid type %s' % type(text)
     m = md5.md5()
-    m.update(user_str)
+    m.update(text)
     return m.hexdigest()
 
 
+def md5sum_str(text):
+    """Calculate md5sum of a byte string."""
+    assert isinstance(text, str), 'Invalid type %s' % type(text)
+    return md5sum_bytes(text.encode('utf-8'))
+
+
 def md5sum_file(file_name):
-    """Calculate md5sum of the file. """
-    with open(file_name) as f:
-        digest = md5sum_str(f.read())
+    """Calculate md5sum of a file. """
+    with open(file_name, 'rb') as f:
+        digest = md5sum_bytes(f.read())
     return digest
 
 
 def md5sum(obj):
-    """Calculate md5sum and returns it. """
-    return md5sum_str(obj)
+    """Calculate md5sum of a string-like object"""
+    if isinstance(obj, bytes):
+        return md5sum_bytes(obj)
+    elif isinstance(obj, str):
+        return md5sum_str(obj)
+    assert False, 'Invalid type %s' % type(str)
 
 
 def lock_file(filename):
@@ -101,6 +105,16 @@ def stable_unique(seq):
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
+def to_string(text):
+    if text is None:
+        return text
+    if isinstance(text, str):
+        return text
+    if isinstance(text, bytes):
+        return text.decode('utf-8')
+    assert False, 'Unknown type %s' % type(text)
+
+
 def get_cwd():
     """get_cwd
 
@@ -110,7 +124,7 @@ def get_cwd():
 
     """
     p = subprocess.Popen(['pwd'], stdout=subprocess.PIPE, shell=True)
-    return p.communicate()[0].strip()
+    return to_string(p.communicate()[0].strip())
 
 
 def find_file_bottom_up(name, from_dir=None):
@@ -138,7 +152,7 @@ def find_blade_root_dir(working_dir=None):
     named BLADE_ROOT.
 
     """
-    blade_root = find_file_bottom_up(b'BLADE_ROOT', from_dir=working_dir)
+    blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
     if not blade_root:
         console.error_exit(
             "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
@@ -146,29 +160,6 @@ def find_blade_root_dir(working_dir=None):
             "(aka the directory where you #include start from).\n"
             "You should create it manually at the first time.")
     return os.path.dirname(blade_root)
-
-
-if "check_output" not in dir(subprocess):
-    def check_output(*popenargs, **kwargs):
-        r"""Run command with arguments and return its output as a byte string.
-
-        Backported from Python 2.7 as it's implemented as pure python on stdlib.
-
-        >>> check_output(["ls", "-l", "/dev/null"])
-        'crw-rw-rw- 1 root root 1, 3 Oct 18  2007 /dev/null\n'
-
-        """
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            error = subprocess.CalledProcessError(retcode, cmd)
-            error.output = output
-            raise error
-        return output
 
 
 def _echo(stdout, stderr):
@@ -228,12 +219,14 @@ def cpu_count():
         return int(os.sysconf('SC_NPROCESSORS_ONLN'))
 
 
+_TRANS_TABLE = (str if _IN_PY3 else string).maketrans(',-/.+*', '______')
+
+
 def regular_variable_name(name):
     """convert some name to a valid identifier name"""
-    return name.translate(string.maketrans(',-/.+*', '______'))
+    return name.translate(_TRANS_TABLE)
 
-
-if PY3:
+if _IN_PY3:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
 else:

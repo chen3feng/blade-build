@@ -14,11 +14,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-try:
-    basestring
-except NameError:
-    basestring = str
-
 import os
 import re
 import sys
@@ -423,7 +418,7 @@ def proto_library_config(append=None, **kwargs):
                          'been renamed to protobuf_incs, and become a list') %
                         _blade_config.current_file_name)
         del kwargs['protobuf_include_path']
-        if isinstance(path, basestring) and ' ' in path:
+        if isinstance(path, str) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()
         else:
             kwargs['protobuf_incs'] = [path]
@@ -458,7 +453,7 @@ def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
-        if isinstance(extra_incs, basestring) and ' ' in extra_incs:
+        if isinstance(extra_incs, str) and ' ' in extra_incs:
             console.warning('//%s: cc_config: extra_incs has been changed to list' %
                             _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()

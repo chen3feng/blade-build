@@ -31,11 +31,6 @@ from blade.blade_util import var_to_list, stable_unique
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
-if "check_output" not in dir(subprocess):
-    from blade.blade_util import check_output
-
-    subprocess.check_output = check_output
-
 
 def _is_hdr(filename):
     _, ext = os.path.splitext(filename)
