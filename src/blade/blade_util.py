@@ -37,18 +37,18 @@ location_re = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 _IN_PY3 = sys.version_info[0] == 3
 
 
-def md5sum_bytes(text):
+def md5sum_bytes(content):
     """Calculate md5sum of a byte string."""
-    assert isinstance(text, bytes), 'Invalid type %s' % type(text)
+    assert isinstance(content, bytes), 'Invalid type %s' % type(content)
     m = md5.md5()
-    m.update(text)
+    m.update(content)
     return m.hexdigest()
 
 
-def md5sum_str(text):
-    """Calculate md5sum of a byte string."""
-    assert isinstance(text, str), 'Invalid type %s' % type(text)
-    return md5sum_bytes(text.encode('utf-8'))
+def md5sum_str(content):
+    """Calculate md5sum of a string."""
+    assert isinstance(content, str), 'Invalid type %s' % type(content)
+    return md5sum_bytes(content.encode('utf-8'))
 
 
 def md5sum_file(file_name):
