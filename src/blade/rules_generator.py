@@ -304,6 +304,18 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             return os.path.join(java_home, 'bin', cmd)
         return cmd
 
+    def get_jacoco_agent(self):
+        jacoco_home = config.get_item('java_test_config', 'jacoco_home')
+        if jacoco_home:
+            return os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
+        return ''
+
+    def get_jacoco_agent_prefix(self):
+        jacoco_agent = self.get_jacoco_agent()
+        if jacoco_agent:
+            return 'BLADE_JACOCOAGENT=%s' % jacoco_agent
+        return ''
+
     def generate_javac_rules(self, java_config):
         javac = self.get_java_command(java_config, 'javac')
         jar = self.get_java_command(java_config, 'jar')
@@ -340,14 +352,9 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            description='JAVA RESOURCE ${in}')
 
     def generate_java_test_rules(self):
-        jacoco_home = config.get_item('java_test_config', 'jacoco_home')
-        if jacoco_home:
-            jacoco_agent = os.path.join(jacoco_home, 'lib', 'jacocoagent.jar')
-            prefix = 'BLADE_JACOCOAGENT=%s' % jacoco_agent
-        else:
-            prefix = ''
-        self._add_rule('javatargetundertestpkg = __targetundertestpkg__')
-        args = '${mainclass} ${javatargetundertestpkg} ${out} ${in}'
+        prefix = self.get_jacoco_agent_prefix()
+        self._add_rule('targetundertestpkg = __targetundertestpkg__')
+        args = '${mainclass} ${targetundertestpkg} ${out} ${in}'
         self.generate_rule(name='javatest',
                            command=self._toolchain_command('java_test', prefix=prefix, suffix=args),
                            description='JAVA TEST ${out}')
@@ -362,14 +369,11 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            command=self._toolchain_command('java_binary'),
                            description='JAVA BIN ${out}')
 
-    def generate_scala_rules(self, java_config):
+    def generate_scalac_rule(self, java_config):
+        scalac = 'scalac'
         scala_home = config.get_item('scala_config', 'scala_home')
         if scala_home:
-            scala = os.path.join(scala_home, 'bin', 'scala')
-            scalac = os.path.join(scala_home, 'bin', 'scalac')
-        else:
-            scala = 'scala'
-            scalac = 'scalac'
+            scalac = os.path.join(scala_home, 'bin', scalac)
         java = self.get_java_command(java_config, 'java')
         self._add_rule(textwrap.dedent('''\
                 scalacflags = -nowarn
@@ -386,9 +390,18 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self.generate_rule(name='scalac',
                            command=' '.join(cmd),
                            description='SCALAC ${out}')
-        args = '%s %s ${out} ${in}' % (java, scala)
-        self.generate_rule(name='scalatest',
-                           command=self._toolchain_command('scala_test', suffix=args),
+
+    def generate_scalatest_rule(self, java_config):
+        scala = 'scala'
+        scala_home = config.get_item('scala_config', 'scala_home')
+        if scala_home:
+            scala = os.path.join(scala_home, 'bin', scala)
+        java = self.get_java_command(java_config, 'java')
+        args = '%s %s ${targetundertestpkg} ${out} ${in}' % (java, scala)
+        prefix = self.get_jacoco_agent_prefix()
+        self._add_rule('javatargetundertestpkg = __targetundertestpkg__')
+        self.generate_rule(name='scalatest', command=self._toolchain_command('scala_test',
+                           prefix=prefix, suffix=args),
                            description='SCALA TEST ${out}')
 
     def generate_java_scala_rules(self):
@@ -405,7 +418,8 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            command=self._toolchain_command('java_fatjar'),
                            description='FAT JAR ${out}')
         self.generate_java_binary_rules()
-        self.generate_scala_rules(java_config)
+        self.generate_scalac_rule(java_config)
+        self.generate_scalatest_rule(java_config)
 
     def generate_thrift_rules(self):
         thrift_config = config.get_section('thrift_config')

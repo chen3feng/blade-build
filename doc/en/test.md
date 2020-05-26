@@ -52,7 +52,7 @@ C/C++ test coverage is implemented by gcc's [gcov](https://gcc.gnu.org/onlinedoc
 
 To generate java test coverage, you need to download and unzip a [jacoco](https://www.eclemma.org/jacoco/) releases build, and configure it correctly:
 ```python
-java_test(
+java_test_config(
     ...
     jacoco_home = 'path/to/jacoco',
     ...

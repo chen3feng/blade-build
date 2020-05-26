@@ -251,8 +251,7 @@ class TestRunner(binary_runner.BinaryRunner):
         classes_dirs = []
         for key in self.test_jobs:
             target = self.targets[key]
-            if target.type != 'java_test':
-                continue
+            # if target.type != 'java_test': continue
             execution_data = os.path.join(self._runfiles_dir(target), 'jacoco.exec')
             if not os.path.isfile(execution_data):
                 continue
@@ -260,7 +259,11 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target_under_test:
                 continue
             target_under_test = self.target_database[target_under_test]
+
             classes_dir = target_under_test._get_classes_dir()
+            if not os.path.exists(classes_dir):
+                classes_dir = target_under_test._get_target_file('jar')
+
             source_dir = target_under_test._get_sources_dir()
             execfiles.append(execution_data)
             classes_dirs.append(classes_dir)

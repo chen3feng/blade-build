@@ -79,6 +79,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
         return flags
 
     def ninja_generate_jar(self):
+        self._generate_sources()
         srcs = [self._source_file_path(s) for s in self.srcs]
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')
@@ -137,11 +138,12 @@ class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, exclusions, testdata, kwargs):
+                 warnings, exclusions, testdata, target_under_test, kwargs):
         ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
                                  warnings, exclusions, kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
+        self._set_target_under_test(target_under_test, deps)
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
@@ -208,17 +210,22 @@ def scala_test(name,
                warnings=None,
                exclusions=[],
                testdata=[],
+               target_under_test=None,
                **kwargs):
-    """Define scala_test target. """
-    target = ScalaTest(name,
-                       srcs,
-                       deps,
-                       resources,
-                       source_encoding,
-                       warnings,
-                       exclusions,
-                       testdata,
-                       kwargs)
+    """Build a scala test target
+    Args:
+        Most attributes are similar to java_test.
+    """
+    target = ScalaTest(name=name,
+                       srcs=srcs,
+                       deps=deps,
+                       resources=resources,
+                       source_encoding=source_encoding,
+                       warnings=warnings,
+                       exclusions=exclusions,
+                       testdata=testdata,
+                       target_under_test=target_under_test,
+                       kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

@@ -63,18 +63,23 @@ java_library(name = 'A', srcs = 'A.java', deps = ':B')
 java_library(name = 'B', srcs = 'B.java', deps = ':C')
 java_library(name = 'C', srcs = 'C.java')
 ```
-The symbols defined in `C.java` is invisible to `A.java`, so when you write the deps for a java_library, you must add all of the direct dependencies into the deps. you can see you import list, ensure each library you imported is in the deps list.
+The symbols defined in `C.java` is invisible to `A.java`, so when you write the deps for a
+java_library, you must add all of the direct dependencies into the deps. you can see you import
+list, ensure each library you imported is in the deps list.
 
 - exported_deps attribute
 
 Each dep in the list will be transitive for the user of this library.
 
 As you already know, in the java (and also other JVM languages such as scala) build rules, `deps` are not transitve.
-If a type from dependency appears in the public interface of a library, the users may don't know they should depends one your dependency, use this attribute will be a help.
+If a type from dependency appears in the public interface of a library, the users may don't know
+they should depends one your dependency, use this attribute will be a help.
 
 When a dependency appears in the `exported_deps`, it will be passed to the source file at the compile phrase.
 
-For the above example, if in B.java, some method used the type defined in C.java，the user of `B`, `A` also have to depends on `C`, or there will be a compile error. if you put `C` int the `exported_deps` of `B`, `A` will get `C` as as it compile dependency.
+For the above example, if in B.java, some method used the type defined in C.java，the user of `B`,
+`A` also have to depends on `C`, or there will be a compile error. if you put `C` int the
+`exported_deps` of `B`, `A` will get `C` as as it compile dependency.
 
 ```python
 java_library(name = 'B', srcs = 'B.java', exported_deps = ':C')
@@ -82,7 +87,10 @@ java_library(name = 'B', srcs = 'B.java', exported_deps = ':C')
 
 - provided_deps attribute
 
-`provided_deps` is used to describe some libraries which will be provied by the runtime environment, same as the `provided` in maven scope，there dependencies will be used to compile，but they will not be packed into the final `fatjar`. The scenaio is hadoop or spark. this attribute can reduce the size of fatjar, and also reduces the conflict with the environment provided libraries.
+`provided_deps` is used to describe some libraries which will be provied by the runtime environment,
+same as the `provided` in maven scope，there dependencies will be used to compile，but they will
+not be packed into the final `fatjar`. The scenaio is hadoop or spark. this attribute can reduce
+the size of fatjar, and also reduces the conflict with the environment provided libraries.
 
 ## maven_jar
 
@@ -104,7 +112,8 @@ Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
 
 - transitive attribute
 
-Whether use transitive maven dependency, the default value is True, blade will download jar and its transitive dependencies; otherwise only the jar file of this target will be downloaded.
+Whether use transitive maven dependency, the default value is True, blade will download jar and its
+transitive dependencies; otherwise only the jar file of this target will be downloaded.
 
 ## java_fat_library
 
@@ -149,7 +158,8 @@ java_fat_library(
 ```
 - exclusions attribute
 
-Specify maven dependencies to be excludes. The syntax is a list of maven ids (group:artifact:version), also support wildcard, such as:
+Specify maven dependencies to be excludes. The syntax is a list of maven ids
+(group:artifact:version), also support wildcard, such as:
 `com.google.protobuf:protobuf:\*` and `com.google.protobuf:\*:\*`, but only the tail parts can be wildcard.
 
 ## java_binary
@@ -171,6 +181,7 @@ The results include a fat jar with a wrapper shell script.
 
 ## java_test
 Build and run tests.
+
 ```python
 java_test(
     name = 'poppy_java_test',
@@ -178,8 +189,15 @@ java_test(
         glob('test/com/soso/poppy/**/*Test.Java)'
     ],
     deps = [
-        '//poppy:poppy_java_client',
+        '//poppy:poppy_java',
         '//thirdparty/junit:junit',
-    ]
+    ],
+    target_under_test = '//poppy:poppy_java',
 )
 ```
+
+Attributes:
+
+- target_under_test: str，the target to be tested. if this attribute is missing, Blade will try to
+  find it from `deps` (by matching the dep name with the '_test' removed test name).
+  If finally this attribute is not set, test coverage report can not be generated.

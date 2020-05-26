@@ -370,19 +370,26 @@ def generate_java_binary_entry(args):
 
 
 def generate_scala_test_entry(args):
-    java, scala, script, jar = args[:4]
-    jars = args[3:]
+    java, scala, targetundertestpkg, script, jar = args[:5]
+    jars = args[4:]
     test_class_names = _get_all_test_class_names_in_jar(jar)
     scala, java = os.path.abspath(scala), os.path.abspath(java)
-    java_args = '-J'
+    java_args = ''
+    coverage_flags = _java_test_coverage_flag(targetundertestpkg)
+    if coverage_flags:
+        java_args = '-J%s' % coverage_flags
     run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
     with open(script, 'w') as f:
         text = textwrap.dedent('''\
                 #!/bin/sh
                 # Auto generated wrapper shell script by blade
 
-                JAVACMD=%s exec %s %s -classpath %s %s $@
-                ''') % (java, scala, java_args, ':'.join(jars), run_args)
+                if [ -n "$BLADE_COVERAGE" ]; then
+                    coverage_options="%s"
+                fi
+
+                JAVACMD=%s exec %s "$coverage_options" -classpath %s %s $@
+                ''') % (java_args, java, scala, ':'.join(jars), run_args)
         f.write(text)
     os.chmod(script, 0o755)
 

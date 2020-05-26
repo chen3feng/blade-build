@@ -49,7 +49,7 @@ C/C++测试覆盖率，是通过gcc的[gcov](https://gcc.gnu.org/onlinedocs/gcc/
 
 要生成 Java 测试覆盖率报告，你需要下载并解压[jacoco]()，然后进行配置：
 ```python
-java_test(
+java_test_config(
     ...
     jacoco_home = 'path/to/jacoco',
     ...
