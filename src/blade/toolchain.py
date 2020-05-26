@@ -58,13 +58,13 @@ def generate_scm_entry(args):
                 extern const char kBuilderName[] = "%s";
                 extern const char kHostName[] = "%s";
                 extern const char kCompiler[] = "%s";
-                }}''' % (version,
-                         version,
-                         profile,
-                         time.asctime(),
-                         getpass.getuser(),
-                         socket.gethostname(),
-                         compiler))
+                }}''') % (version,
+                          version,
+                          profile,
+                          time.asctime(),
+                          getpass.getuser(),
+                          socket.gethostname(),
+                          compiler))
 
 
 _PACKAGE_MANIFEST = 'MANIFEST.TXT'
