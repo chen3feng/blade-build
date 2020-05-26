@@ -205,13 +205,12 @@ class CmdArguments(object):
     def __add_build_actions_arguments(self, parser):
         """Add build related action arguments. """
         parser.add_argument(
-            '--backend-builder', dest='backend_builder',
-            type=str, choices=['ninja'], default='',
-            help='Specify the underlying backend builder')
+            '--backend-builder', dest='backend_builder', choices=['ninja'],
+            help='Specify the underlying backend builder (currently only support ninja)')
 
         # Add extra backend builder options arguments.
         parser.add_argument(
-            '--backend-builder-options', dest='backend_builder_options', type=str,
+            '--backend-builder-options', dest='backend_builder_options', metavar='OPTIONS',
             help='Specifies extra backend builder options, for debug purpose')
 
         parser.add_argument(
@@ -308,7 +307,7 @@ class CmdArguments(object):
             help='Run tests directly without build')
 
         parser.add_argument(
-            '--skip-tests', dest='skip_tests', type=str, default='', metavar='TARGET_LIST',
+            '--skip-tests', dest='skip_tests', default='', metavar='TARGET_LIST',
             help='Skip tests which matches this comma seperated target list')
 
     def _add_run_arguments(self, parser):
@@ -353,7 +352,7 @@ class CmdArguments(object):
     def _add_dump_arguments(self, parser):
         """Add query arguments for parser. """
         parser.add_argument(
-            '--to-file', dest='dump_to_file', type=str, action='store', metavar='FILEPATH',
+            '--to-file', dest='dump_to_file', action='store', metavar='FILEPATH',
             default='/dev/stdout',
             help='Specifies the path of file to write the dump result')
         group = parser.add_mutually_exclusive_group(required=True)

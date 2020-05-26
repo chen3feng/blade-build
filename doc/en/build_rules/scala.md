@@ -1,8 +1,10 @@
 # Build Scala Targets
 
 ## Rules
-The `scala_library`, `scala_binary`, `scala_test` are similar to the java rules，
-the key difference is that the compile is changed to scalac, and with the scala runtime.
+The `scala_library`, `scala_binary`, `scala_test` are similar to the java rules,
+the key difference is that the compiler is changed to scalac, and with the scala runtime.
+
+scala\_test using the [scalatest](https://www.scalatest.org) library.
 
 ## Standard Runtime Library
 Scala targets always need the standard scala_library, it can be define by maven_jar:

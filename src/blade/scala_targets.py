@@ -79,7 +79,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
         return flags
 
     def ninja_generate_jar(self):
-        self._generate_sources()
+        self._generate_sources_dir_for_coverage()
         srcs = [self._source_file_path(s) for s in self.srcs]
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')

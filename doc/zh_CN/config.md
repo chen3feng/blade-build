@@ -17,6 +17,14 @@ global_config(
 )
 ```
 
+你可以用 `blade dump` 命令来输出当前的配置，并根据需要修改使用：
+
+```
+blade dump --config --to-file my.config
+```
+
+不加 `--to-file` 选项，则输出到标准输出。
+
 ### global_config
 Blade全局配置
 

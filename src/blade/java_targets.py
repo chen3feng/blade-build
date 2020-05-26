@@ -431,11 +431,11 @@ class JavaTargetMixIn(object):
         for seg in segs:
             pos = resource.find(seg)
             if pos != -1:
-                return resource[pos + len(seg) + 1:]  # skip separator '/'
+                return resource[pos + len(seg) + 1:]  # skip the separator '/'
         return resource
 
     def _find_target_under_test(self, deps):
-        """Try to find 'target_under_test' from deps"""
+        """Try to find 'target_under_test' atomically from deps"""
         name = self.name
         if not name.endswith('_test'):
             return None
@@ -446,17 +446,17 @@ class JavaTargetMixIn(object):
         return None
 
     def _set_target_under_test(self, target_under_test, deps):
-        """Set 'target_under_test' attribute"""
+        """Set the 'target_under_test' attribute"""
         if not target_under_test:
             target_under_test = self._find_target_under_test(deps)
         if target_under_test:
             self.data['target_under_test'] = self._unify_dep(target_under_test)
         else:
-            self.warning('Missing "target_under_test", test coverage report will not be generated')
+            self.warning('Missing "target_under_test", test coverage report can not be generated')
 
-    def _generate_sources(self):
+    def _generate_sources_dir_for_coverage(self):
         """
-        Generate java sources in the build directory for the subsequent
+        Generate a '<name>.sources' dir in the build directory for the subsequent
         code coverage. The layout is based on the package parsed from sources.
         Note that the classes are still compiled from the sources in the
         source directory.
@@ -609,7 +609,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return srcs
 
     def ninja_generate_jar(self):
-        self._generate_sources()
+        self._generate_sources_dir_for_coverage()
         srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')
