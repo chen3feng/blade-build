@@ -5,26 +5,26 @@
 # Date:   October 27, 2017
 
 """
-This module defines various toolchain functions for building
+This module defines various build functions for building
 targets from sources and custom parameters.
 The toolchain function is defined as follows:
 
-    def toolchain_function_name(targets, sources, **kwargs):
+    def build_function_name(kwargs..., args):
         pass
 
     Return None on success, otherwise a non-zero value to
     indicate failure.
 
     Parameters:
-
-        * targets: a list of files separated by comma
-                   to be built by tool chain
-        * sources: a list of files as separated by comma
-                   inputs to tool chain
-        * kwargs: name=value pairs as parameters for tool chain
+        * kwargs...: name=value pairs as parameters for tool chain
+        * args: any other non-kw args
+    When call this from the command line, all arguments which match `--name=value`
+    pattern will be converted into a kwarg, any other arguments merged into the
+    `args` argument.
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import getpass
 import os
@@ -33,6 +33,7 @@ import socket
 import sys
 import tarfile
 import textwrap
+import traceback
 import time
 import zipfile
 
@@ -41,8 +42,33 @@ from blade import console
 from blade import fatjar
 
 
-def generate_scm_entry(args):
-    scm, revision, url, profile, compiler = args
+def parse_command_line(argv):
+    """Simple command line parsing.
+
+    options can only be passed as the form of `--name=value`, any other arguments are treated as
+    normal arguments.
+
+    Returns:
+        tuple(options: dict, args: list)
+    """
+    options = {}
+    args = []
+    for arg in argv:
+        if arg.startswith('--'):
+            pos = arg.find('=')
+            if pos < 0:
+                args.append(arg)
+                continue
+            name = arg[2:pos]
+            value = arg[pos+1:]
+            options[name] = value
+        else:
+            args.append(arg)
+    return options, args
+
+
+def generate_scm(scm, revision, url, profile, compiler, args):
+    """Generate `scm.c` file"""
     version = '%s@%s' % (url, revision)
     with open(scm, 'w') as f:
         f.write(textwrap.dedent(r'''\
@@ -71,6 +97,7 @@ _PACKAGE_MANIFEST = 'MANIFEST.TXT'
 
 
 def archive_package_sources(package, sources, destinations):
+    """Content of the `MANIFEST.TXT` file in the target zip file"""
     manifest = []
     for i, s in enumerate(sources):
         package(s, destinations[i])
@@ -106,7 +133,7 @@ def generate_tar_package(path, sources, destinations, suffix):
     tar.close()
 
 
-def generate_package_entry(args):
+def generate_package(args):
     path = args[0]
     manifest = args[1:]
     assert len(manifest) % 2 == 0
@@ -123,7 +150,7 @@ def generate_package_entry(args):
         generate_tar_package(path, sources, destinations, suffix)
 
 
-def generate_securecc_object_entry(args):
+def generate_securecc_object(args):
     obj, phony_obj = args
     if not os.path.exists(obj):
         shutil.copy(phony_obj, obj)
@@ -134,7 +161,8 @@ def generate_securecc_object_entry(args):
             shutil.copy(phony_obj, obj)
 
 
-def generate_resource_index(targets, sources, name, path):
+def _generate_resource_index(targets, sources, name, path):
+    """Generate resource index description file for a cc resource library"""
     header, source = targets
     with open(header, 'w') as h, open(source, 'w') as c:
         full_name = blade_util.regular_variable_name(os.path.join(path, name))
@@ -188,14 +216,14 @@ def generate_resource_index(targets, sources, name, path):
                 #endif  // {1}''').format(index_name, guard_name))
 
 
-def generate_resource_index_entry(args):
+def generate_resource_index(args):
     name, path = args[0], args[1]
     targets = args[2], args[3]
     sources = args[4:]
-    return generate_resource_index(targets, sources, name, path)
+    return _generate_resource_index(targets, sources, name, path)
 
 
-def generate_java_jar_entry(args):
+def generate_java_jar(args):
     jar, target = args[0], args[1]
     resources_dir = target.replace('.jar', '.resources')
     arg = args[2]
@@ -225,7 +253,7 @@ def generate_java_jar_entry(args):
         return archive_resources(resources_dir, resources, True)
 
 
-def generate_java_resource_entry(args):
+def generate_java_resource(args):
     assert len(args) % 2 == 0
     middle = len(args) / 2
     targets = args[:middle]
@@ -251,21 +279,24 @@ def _get_all_test_class_names_in_jar(jar):
     return test_class_names
 
 
-def _java_test_coverage_flag(targetundertestpkg):
-    jacoco_agent = os.environ.get('BLADE_JACOCOAGENT')
-    if targetundertestpkg and jacoco_agent:
-        jacoco_agent = os.path.abspath(jacoco_agent)
-        packages = targetundertestpkg.split(':')
+def _jacoco_test_coverage_flag(jacocoagent, packages_under_test):
+    if packages_under_test and jacocoagent:
+        jacocoagent = os.path.abspath(jacocoagent)
+        packages = packages_under_test.split(':')
         options = [
             'includes=%s' % ':'.join([p + '.*' for p in packages if p]),
             'output=file',
         ]
-        return '-javaagent:%s=%s' % (jacoco_agent, ','.join(options))
+        return '-javaagent:%s=%s' % (jacocoagent, ','.join(options))
     return ''
 
 
-def _generate_java_test(script, main_class, jars, args, targetundertestpkg):
+def generate_java_test(script, main_class, jacocoagent, packages_under_test, args):
+    jars = args
+    test_jar = jars[0]
+    test_classes = ' '.join(_get_all_test_class_names_in_jar(test_jar))
     with open(script, 'w') as f:
+        coverage_flags = _jacoco_test_coverage_flag(jacocoagent, packages_under_test)
         f.write(textwrap.dedent('''\
                 #!/bin/sh
                 # Auto generated wrapper shell script by blade
@@ -275,32 +306,21 @@ def _generate_java_test(script, main_class, jars, args, targetundertestpkg):
                 fi
 
                 exec java $coverage_options -classpath %s %s %s $@''') % (
-            _java_test_coverage_flag(targetundertestpkg), ':'.join(jars), main_class, args))
+                coverage_flags, ':'.join(jars), main_class, test_classes))
     os.chmod(script, 0o755)
 
 
-def generate_java_test_entry(args):
-    main_class, targetundertestpkg, script, jar = args[:4]
-    if targetundertestpkg == '__targetundertestpkg__':
-        targetundertestpkg = ''
-    jars = args[3:]
-    test_class_names = _get_all_test_class_names_in_jar(jar)
-    return _generate_java_test(script, main_class, jars, ' '.join(test_class_names),
-                               targetundertestpkg)
-
-
-def generate_fat_jar_entry(args):
+def generate_fat_jar(args):
     jar = args[0]
     console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
     console.enable_color(True)
     fatjar.generate_fat_jar(jar, args[1:])
 
 
-def generate_one_jar(onejar,
-                     main_class,
-                     main_jar,
-                     jars,
-                     bootjar):
+def generate_one_jar(onejar, main_class, bootjar, args):
+    # Assume the first jar is the main jar, others jars are dependencies.
+    main_jar = args[0]
+    jars = args[1:]
     path = onejar
     onejar = zipfile.ZipFile(path, 'w')
     jar_path_set = set()
@@ -344,13 +364,7 @@ def generate_one_jar(onejar,
     onejar.close()
 
 
-def generate_one_jar_entry(args):
-    bootjar, main_class, onejar, main_jar = args[:4]
-    jars = args[4:]
-    generate_one_jar(onejar, main_class, main_jar, jars, bootjar)
-
-
-def generate_java_binary_entry(args):
+def generate_java_binary(args):
     script, onejar = args
     basename = os.path.basename(onejar)
     fullpath = os.path.abspath(onejar)
@@ -369,13 +383,13 @@ def generate_java_binary_entry(args):
     os.chmod(script, 0o755)
 
 
-def generate_scala_test_entry(args):
-    java, scala, targetundertestpkg, script, jar = args[:5]
-    jars = args[4:]
-    test_class_names = _get_all_test_class_names_in_jar(jar)
+def generate_scala_test(script, java, scala, jacocoagent, packages_under_test, args):
+    jars = args
+    test_jar = jars[0]
+    test_class_names = _get_all_test_class_names_in_jar(test_jar)
     scala, java = os.path.abspath(scala), os.path.abspath(java)
     java_args = ''
-    coverage_flags = _java_test_coverage_flag(targetundertestpkg)
+    coverage_flags = _jacoco_test_coverage_flag(jacocoagent, packages_under_test)
     if coverage_flags:
         java_args = '-J%s' % coverage_flags
     run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
@@ -394,7 +408,7 @@ def generate_scala_test_entry(args):
     os.chmod(script, 0o755)
 
 
-def generate_shell_test_entry(args):
+def generate_shell_test(args):
     wrapper = args[0]
     scripts = args[1:]
     with open(wrapper, 'w') as f:
@@ -410,7 +424,7 @@ def generate_shell_test_entry(args):
     os.chmod(wrapper, 0o755)
 
 
-def generate_shell_testdata_entry(args):
+def generate_shell_testdata(args):
     path = args[0]
     testdata = args[1:]
     assert len(testdata) % 2 == 0
@@ -422,19 +436,16 @@ def generate_shell_testdata_entry(args):
             f.write('%s %s\n' % (os.path.abspath(sources[i]), destinations[i]))
 
 
-def generate_python_library_entry(args):
-    basedir, pylib = args[0], args[1]
-    if basedir == '__pythonbasedir__':
-        basedir = ''
+def generate_python_library(pylib, basedir, args):
     sources = []
-    for py in args[2:]:
+    for py in args:
         digest = blade_util.md5sum_file(py)
         sources.append((py, digest))
     with open(pylib, 'w') as f:
-        f.write(str({
+        print(str({
             'base_dir': basedir,
             'srcs': sources
-        }))
+        }), file=f)
 
 
 def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
@@ -486,69 +497,64 @@ def _pybin_add_whl(pybin, libname, dirs, dirs_with_init_py):
     _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py)
 
 
-def generate_python_binary(basedir, mainentry, path, args):
-    if basedir == '__pythonbasedir__':
-        basedir = ''
-    pybin = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+def generate_python_binary(pybin, basedir, mainentry, args):
+    pybin_zip = zipfile.ZipFile(pybin, 'w', zipfile.ZIP_DEFLATED)
     dirs, dirs_with_init_py = set(), set()
     for arg in args:
         if arg.endswith('.pylib'):
-            _pybin_add_pylib(pybin, arg, dirs, dirs_with_init_py)
+            _pybin_add_pylib(pybin_zip, arg, dirs, dirs_with_init_py)
         elif arg.endswith('.egg'):
-            _pybin_add_egg(pybin, arg)
+            _pybin_add_egg(pybin_zip, arg)
         elif arg.endswith('.whl'):
-            _pybin_add_whl(pybin, arg, dirs, dirs_with_init_py)
+            _pybin_add_whl(pybin_zip, arg, dirs, dirs_with_init_py)
         else:
-            assert False
+            assert False, 'Unknown file type "%s" to build python_binary' % arg
 
     # Insert __init__.py into each dir if missing
     dirs_missing_init_py = dirs - dirs_with_init_py
     for dir in sorted(dirs_missing_init_py):
-        pybin.writestr(os.path.join(dir, '__init__.py'), '')
-    pybin.writestr('__init__.py', '')
-    pybin.close()
+        pybin_zip.writestr(os.path.join(dir, '__init__.py'), '')
+    pybin_zip.writestr('__init__.py', '')
+    pybin_zip.close()
 
-    with open(path, 'rb') as f:
+    with open(pybin, 'rb') as f:
         zip_content = f.read()
     # Insert bootstrap before zip, it is also a valid zip file.
     # unzip will seek actually start until meet the zip magic number.
     bootstrap = ('#!/bin/sh\n\n'
                  'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % mainentry
-    with open(path, 'wb') as f:
+    with open(pybin, 'wb') as f:
         f.write(bootstrap)
         f.write(zip_content)
-    os.chmod(path, 0o755)
-
-
-def generate_python_binary_entry(args):
-    generate_python_binary(args[0], args[1], args[2], args[3:])
+    os.chmod(pybin, 0o755)
 
 
 toolchains = {
-    'scm': generate_scm_entry,
-    'package': generate_package_entry,
-    'securecc_object': generate_securecc_object_entry,
-    'resource_index': generate_resource_index_entry,
-    'java_jar': generate_java_jar_entry,
-    'java_resource': generate_java_resource_entry,
-    'java_test': generate_java_test_entry,
-    'java_fatjar': generate_fat_jar_entry,
-    'java_onejar': generate_one_jar_entry,
-    'java_binary': generate_java_binary_entry,
-    'scala_test': generate_scala_test_entry,
-    'shell_test': generate_shell_test_entry,
-    'shell_testdata': generate_shell_testdata_entry,
-    'python_library': generate_python_library_entry,
-    'python_binary': generate_python_binary_entry,
+    'scm': generate_scm,
+    'package': generate_package,
+    'securecc_object': generate_securecc_object,
+    'resource_index': generate_resource_index,
+    'java_jar': generate_java_jar,
+    'java_resource': generate_java_resource,
+    'java_test': generate_java_test,
+    'java_fatjar': generate_fat_jar,
+    'java_onejar': generate_one_jar,
+    'java_binary': generate_java_binary,
+    'scala_test': generate_scala_test,
+    'shell_test': generate_shell_test,
+    'shell_testdata': generate_shell_testdata,
+    'python_library': generate_python_library,
+    'python_binary': generate_python_binary,
 }
 
 
 if __name__ == '__main__':
     name = sys.argv[1]
     try:
-        ret = toolchains[name](sys.argv[2:])
+        options, args = parse_command_line(sys.argv[2:])
+        ret = toolchains[name](args=args, **options)
     except Exception as e:  # pylint: disable=broad-except
         ret = 1
-        console.error(str(e))
+        console.error('Blade build tool %s error: %s %s' % (name, str(e), traceback.format_exc()))
     if ret:
         sys.exit(ret)
