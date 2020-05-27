@@ -255,20 +255,19 @@ class TestRunner(binary_runner.BinaryRunner):
             execution_data = os.path.join(self._runfiles_dir(target), 'jacoco.exec')
             if not os.path.isfile(execution_data):
                 continue
-            target_under_test = target.data.get('target_under_test')
-            if not target_under_test:
-                continue
-            target_under_test = self.target_database[target_under_test]
-
-            classes_dir = target_under_test._get_classes_dir()
-            if not os.path.exists(classes_dir):
-                classes_dir = target_under_test._get_target_file('jar')
-
-            source_dir = target_under_test._get_sources_dir()
-
             execfiles.append(execution_data)
-            classes_dirs.append(classes_dir)
-            source_dirs.append(source_dir)
+
+            for dkey in target.deps:
+                dep = self.target_database[dkey]
+                if not dep.data.get('jacoco_coverage'):
+                    continue
+                classes_dir = dep._get_classes_dir()
+                if not os.path.exists(classes_dir):
+                    classes_dir = dep._get_target_file('jar')
+                classes_dirs.append(classes_dir)
+
+                source_dir = dep._get_sources_dir()
+                source_dirs.append(source_dir)
 
         return execfiles, classes_dirs, source_dirs
 

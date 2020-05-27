@@ -434,35 +434,15 @@ class JavaTargetMixIn(object):
                 return resource[pos + len(seg) + 1:]  # skip the separator '/'
         return resource
 
-    def _find_target_under_test(self, deps):
-        """Try to find 'target_under_test' atomically from deps"""
-        name = self.name
-        if not name.endswith('_test'):
-            return None
-        name = ':' + name[:-5]
-        for dep in deps:
-            if dep.endswith(name):
-                return dep
-        return None
-
-    def _set_target_under_test(self, target_under_test, deps):
-        """Set the 'target_under_test' attribute"""
-        if not target_under_test:
-            target_under_test = self._find_target_under_test(deps)
-        if target_under_test:
-            self.data['target_under_test'] = self._unify_dep(target_under_test)
-        else:
-            self.warning('Missing "target_under_test", test coverage report can not be generated')
-
     def _packages_under_test(self):
         """Package names under test"""
-        target_under_test = self.data.get('target_under_test')
-        if target_under_test:
-            target = self.target_database[target_under_test]
-            packages = target._get_java_package_names()
-            if packages:
-                return ':'.join(packages)
-        return ''
+        packages = []
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            if not dep.data.get('jacoco_coverage'):
+                continue
+            packages += dep._get_java_package_names()
+        return ':'.join(packages)
 
     def _generate_sources_dir_for_coverage(self):
         """
@@ -644,7 +624,7 @@ class JavaLibrary(JavaTarget):
     """JavaLibrary"""
 
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 prebuilt, binary_jar, exported_deps, provided_deps, kwargs):
+                 prebuilt, binary_jar, exported_deps, provided_deps, coverage, kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -659,6 +639,8 @@ class JavaLibrary(JavaTarget):
             if not binary_jar:
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
+        else:
+            self.data['jacoco_coverage'] = coverage
 
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':
@@ -728,12 +710,11 @@ class JavaTest(JavaBinary):
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, main_class, exclusions,
-                 testdata, target_under_test, kwargs):
+                 testdata, kwargs):
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
-        self._set_target_under_test(target_under_test, deps)
 
     def ninja_java_test_vars(self):
         vars = {
@@ -768,19 +749,26 @@ def java_library(name,
                  binary_jar='',
                  exported_deps=[],
                  provided_deps=[],
+                 coverage=True,
                  **kwargs):
-    """Define java_library target. """
-    target = JavaLibrary(name,
-                         srcs,
-                         deps,
-                         resources,
-                         source_encoding,
-                         warnings,
-                         prebuilt,
-                         binary_jar,
-                         exported_deps,
-                         provided_deps,
-                         kwargs)
+    """Define java_library target.
+
+    Args:
+        coverage: bool, Whether generate test coverage data for this library.
+            It is useful to be False in some casees such as srcs are generated.
+    """
+    target = JavaLibrary(name=name,
+                         srcs=srcs,
+                         deps=deps,
+                         resources=resources,
+                         source_encoding=source_encoding,
+                         warnings=warnings,
+                         prebuilt=prebuilt,
+                         binary_jar=binary_jar,
+                         exported_deps=exported_deps,
+                         provided_deps=provided_deps,
+                         coverage=coverage,
+                         kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -815,26 +803,18 @@ def java_test(name,
               main_class='org.junit.runner.JUnitCore',
               exclusions=[],
               testdata=[],
-              target_under_test='',
               **kwargs):
-    """Build a java test target.
-    Args:
-        target_under_test: str, the target to be tested, used to generate coverage report.
-            if this attribute is missing, blade will try to find it according to the test target
-            name (by removing the '_test' suffix).
-            If this attribute is not set finally, test coverage report can not be generated.
-    """
-    target = JavaTest(name,
-                      srcs,
-                      deps,
-                      resources,
-                      source_encoding,
-                      warnings,
-                      main_class,
-                      exclusions,
-                      testdata,
-                      target_under_test,
-                      kwargs)
+    """Build a java test target"""
+    target = JavaTest(name=name,
+                      srcs=srcs,
+                      deps=deps,
+                      resources=resources,
+                      source_encoding=source_encoding,
+                      warnings=warnings,
+                      main_class=main_class,
+                      exclusions=exclusions,
+                      testdata=testdata,
+                      kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

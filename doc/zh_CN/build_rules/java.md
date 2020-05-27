@@ -58,6 +58,10 @@ java_library(
 )
 ```
 
+- coverage 属性
+  bool 类型，是否为本库生成测试覆盖率数据。某些情况，比如 srcs 是生成的代码，可以考虑设置为 False。
+
+
 ### 多种依赖方式
 
 为了适应 java 项目的需要，除了原有的 deps 依赖，新增了 exported_deps/provided_deps 依赖，这里首先
@@ -194,11 +198,5 @@ java_test(
         '//poppy:poppy_java',
         '//thirdparty/junit:junit',
     ],
-    target_under_test = '//poppy:poppy_java',
 )
 ```
-
-属性:
-
-- target_under_test: 字符串，被测试的目标，如果缺少，Blade 尝试从 `deps` 中自动查找
-  （用测试名去掉 _test 后缀去匹配），如果最终缺失，将会导致测试覆盖报告缺失。

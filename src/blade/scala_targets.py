@@ -112,6 +112,7 @@ class ScalaLibrary(ScalaTarget):
                              resources, source_encoding, warnings, kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
+        self.data['jacoco_coverage'] = True
 
     def ninja_rules(self):
         jar = self.ninja_generate_jar()
@@ -138,12 +139,11 @@ class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, exclusions, testdata, target_under_test, kwargs):
+                 warnings, exclusions, testdata, kwargs):
         ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
                                  warnings, exclusions, kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
-        self._set_target_under_test(target_under_test, deps)
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
@@ -213,7 +213,6 @@ def scala_test(name,
                warnings=None,
                exclusions=[],
                testdata=[],
-               target_under_test=None,
                **kwargs):
     """Build a scala test target
     Args:
@@ -227,7 +226,6 @@ def scala_test(name,
                        warnings=warnings,
                        exclusions=exclusions,
                        testdata=testdata,
-                       target_under_test=target_under_test,
                        kwargs=kwargs)
     build_manager.instance.register_target(target)
 
