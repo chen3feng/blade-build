@@ -2,6 +2,7 @@
 
 ## 规则
 scala_library scala_binary scala_test用法类似java，区别是编译器换成了scalac。
+scala\_test 使用 [scalatest](https://www.scalatest.org) 库。
 
 ## 标准库
 构建 Scala 目标总是离不开 scala 标准库，可以通过 maven_jar 来定义：

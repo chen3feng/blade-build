@@ -239,20 +239,19 @@ class TestRunner(binary_runner.BinaryRunner):
             else:
                 self.skipped_tests.append(target.key)
 
-    def _get_java_coverage_data(self):
+    def _get_jacoco_coverage_data(self):
         """Return a tuples of execution data files, classes directories, source directories.
         for each java_test.
-            source directory: source directory of java_library target under test
-            class directory: class directory of java_library target under test
             execution data: jacoco.exec collected by jacoco agent during testing
+            class directory: class directory of target under test
+            source directory: source directory of target under test
         """
         execfiles = []
         source_dirs = []
         classes_dirs = []
         for key in self.test_jobs:
             target = self.targets[key]
-            if target.type != 'java_test':
-                continue
+
             execution_data = os.path.join(self._runfiles_dir(target), 'jacoco.exec')
             if not os.path.isfile(execution_data):
                 continue
@@ -260,15 +259,20 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target_under_test:
                 continue
             target_under_test = self.target_database[target_under_test]
+
             classes_dir = target_under_test._get_classes_dir()
+            if not os.path.exists(classes_dir):
+                classes_dir = target_under_test._get_target_file('jar')
+
             source_dir = target_under_test._get_sources_dir()
+
             execfiles.append(execution_data)
             classes_dirs.append(classes_dir)
             source_dirs.append(source_dir)
 
         return execfiles, classes_dirs, source_dirs
 
-    def _generate_java_coverage_report(self):
+    def _generate_jacoco_coverage_report(self):
         """Run jacococli to generate coverage report"""
         # TODO(chen3feng): Support generating other formats
         java_test_config = config.get_section('java_test_config')
@@ -277,11 +281,11 @@ class TestRunner(binary_runner.BinaryRunner):
             console.warning('Missing jacoco home in java_test configuration. '
                             'Abort java coverage report generation.')
             return
-        report_dir = os.path.join(self.build_dir, 'java_coverage_report')
+        report_dir = os.path.join(self.build_dir, 'jacoco_coverage_report')
         if not os.path.exists(report_dir):
             os.makedirs(report_dir)
 
-        execfiles, classes_dirs, source_dirs = self._get_java_coverage_data()
+        execfiles, classes_dirs, source_dirs = self._get_jacoco_coverage_data()
         if execfiles:
             java = 'java'
             java_home = config.get_item('java_config', 'java_home')
@@ -302,7 +306,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 console.warning('Failed to generate java coverage report')
 
     def _generate_coverage_report(self):
-        self._generate_java_coverage_report()
+        self._generate_jacoco_coverage_report()
 
     def _show_banner(self, text):
         pads = int((76 - len(text)) / 2)

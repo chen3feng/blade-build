@@ -32,7 +32,7 @@ from blade.target import Target, LOCATION_RE
 
 
 class MavenJar(Target):
-    """MavenJar"""
+    """Describe a maven jar"""
 
     def __init__(self, name, id, classifier, transitive):
         Target.__init__(self, name, 'maven_jar', [], [], None, build_manager.instance, {})
@@ -431,12 +431,32 @@ class JavaTargetMixIn(object):
         for seg in segs:
             pos = resource.find(seg)
             if pos != -1:
-                return resource[pos + len(seg) + 1:]  # skip separator '/'
+                return resource[pos + len(seg) + 1:]  # skip the separator '/'
         return resource
 
-    def _generate_sources(self):
+    def _find_target_under_test(self, deps):
+        """Try to find 'target_under_test' atomically from deps"""
+        name = self.name
+        if not name.endswith('_test'):
+            return None
+        name = ':' + name[:-5]
+        for dep in deps:
+            if dep.endswith(name):
+                return dep
+        return None
+
+    def _set_target_under_test(self, target_under_test, deps):
+        """Set the 'target_under_test' attribute"""
+        if not target_under_test:
+            target_under_test = self._find_target_under_test(deps)
+        if target_under_test:
+            self.data['target_under_test'] = self._unify_dep(target_under_test)
+        else:
+            self.warning('Missing "target_under_test", test coverage report can not be generated')
+
+    def _generate_sources_dir_for_coverage(self):
         """
-        Generate java sources in the build directory for the subsequent
+        Generate a '<name>.sources' dir in the build directory for the subsequent
         code coverage. The layout is based on the package parsed from sources.
         Note that the classes are still compiled from the sources in the
         source directory.
@@ -589,7 +609,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return srcs
 
     def ninja_generate_jar(self):
-        self._generate_sources()
+        self._generate_sources_dir_for_coverage()
         srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')
@@ -703,8 +723,7 @@ class JavaTest(JavaBinary):
                             source_encoding, warnings, main_class, exclusions, kwargs)
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
-        if target_under_test:
-            self.data['target_under_test'] = self._unify_dep(target_under_test)
+        self._set_target_under_test(target_under_test, deps)
 
     def ninja_java_test_vars(self):
         vars = {
@@ -793,7 +812,13 @@ def java_test(name,
               testdata=[],
               target_under_test='',
               **kwargs):
-    """Define java_test target. """
+    """Build a java test target.
+    Args:
+        target_under_test: str, the target to be tested, used to generate coverage report.
+            if this attribute is missing, blade will try to find it according to the test target
+            name (by removing the '_test' suffix).
+            If this attribute is not set finally, test coverage report can not be generated.
+    """
     target = JavaTest(name,
                       srcs,
                       deps,

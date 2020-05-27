@@ -46,19 +46,21 @@ cc_test(
 ```
 
 ## Test coverage
-When building and running tests, with the --coverage parameter, the blade will include coverage-related compile options, currently only for C++ and Java.
+When building and running tests, with the `--coverage` option, blade will include coverage-related compile options, and collect coverage data after the tests finished, currently only support C++, Java and Scala.
 
 C/C++ test coverage is implemented by gcc's [gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html). After the test is run, you need to execute a third-party tool such as gcov or lcov to generate a test coverage report.
 
-To generate java test coverage, you need to download and unzip a [jacoco](https://www.eclemma.org/jacoco/) releases build, and configure it correctly:
+To generate java/scala test coverage, you need to download and unzip a [jacoco](https://www.eclemma.org/jacoco/) releases build, and configure it correctly:
+
 ```python
-java_test(
+java_test_config(
     ...
     jacoco_home = 'path/to/jacoco',
     ...
 )
 ```
-The java test coverage report will be generated into the `java_coverage_report` dir under the build dir.
+
+The java/scala test coverage report will be generated into the `jacoco_coverage_report` dir under the build dir.
 
 ## Skip specified tests
 Blade supports explicitly skipping specified tests with the `--skip-tests parameter`, which is useful when you need to run a large number of tests in batches and expect to skip some tests. E.g:

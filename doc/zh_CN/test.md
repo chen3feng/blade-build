@@ -43,19 +43,19 @@ cc_test(
 
 
 ## 测试覆盖率
-构建和运行测试时，加上--coverage参数，blade就会加入覆盖率相关的编译选项，目前仅支持C++和java。
+构建和运行测试时，加上--coverage参数，blade 就会加入覆盖率相关的编译选项，并在运行时收集测试覆盖率数据，目前仅支持 C++、Java 和 Scala。
 
 C/C++测试覆盖率，是通过gcc的[gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)实现的。测试运行完后，需要自己执行gcov或者lcov之类的第三方工具生成测试覆盖报告。
 
-要生成 Java 测试覆盖率报告，你需要下载并解压[jacoco]()，然后进行配置：
+要生成 Java/Scala 测试覆盖率报告，你需要下载并解压[jacoco]()，然后进行配置：
 ```python
-java_test(
+java_test_config(
     ...
     jacoco_home = 'path/to/jacoco',
     ...
 )
 ```
-测试报告会生成到 build 目录下的 `java_coverage_report` 目录里。
+测试报告会生成到 build 目录下的 `jacoco_coverage_report` 目录里。
 
 ## 跳过指定的测试
 Blade支持通过--skip-tests参数显式地跳过指定的测试，当需要批量运行大量的测试，而又期望跳过某些测试时，这个选项就很有用。例如：

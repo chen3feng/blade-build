@@ -183,6 +183,7 @@ java_binary(
 
 ## java_test
 编译和运行java测试代码。
+
 ```python
 java_test(
     name = 'poppy_java_test',
@@ -190,8 +191,14 @@ java_test(
         glob('test/com/soso/poppy/**/*Test.Java)'
     ],
     deps = [
-        '//poppy:poppy_java_client',
+        '//poppy:poppy_java',
         '//thirdparty/junit:junit',
-    ]
+    ],
+    target_under_test = '//poppy:poppy_java',
 )
 ```
+
+属性:
+
+- target_under_test: 字符串，被测试的目标，如果缺少，Blade 尝试从 `deps` 中自动查找
+  （用测试名去掉 _test 后缀去匹配），如果最终缺失，将会导致测试覆盖报告缺失。

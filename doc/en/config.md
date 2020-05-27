@@ -10,6 +10,14 @@ Blade supports three configuration files, which are loaded in the following orde
 
 Each configuration parameter of the configuration of all the multiple parameters described later has a default value, and does not need to be completely written or ordered.
 
+You can run `blade dump` command to dump current configuration, and modify it as your need:
+
+```
+blade dump --config --to-file my.config
+```
+
+Without the `--to-file` option, the result will be dumped to stdout.
+
 ### global_config
 Blade global configuration
 ```python
