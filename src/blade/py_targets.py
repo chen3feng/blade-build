@@ -66,7 +66,7 @@ class PythonTarget(Target):
         vars = {}
         basedir = self.data.get('python_base')
         if basedir:
-            vars['pythonbasedir'] = basedir
+            vars['basedir'] = basedir
         return vars
 
 

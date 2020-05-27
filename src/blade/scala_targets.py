@@ -157,7 +157,10 @@ class ScalaTest(ScalaFatLibrary):
         jar = self.ninja_generate_jar()
         output = self._target_file_path(self.name)
         dep_jars, maven_jars = self._get_test_deps()
-        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars)
+        vars = {
+            'packages_under_test': self._packages_under_test()
+        }
+        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
 def scala_library(name,

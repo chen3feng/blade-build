@@ -454,6 +454,16 @@ class JavaTargetMixIn(object):
         else:
             self.warning('Missing "target_under_test", test coverage report can not be generated')
 
+    def _packages_under_test(self):
+        """Package names under test"""
+        target_under_test = self.data.get('target_under_test')
+        if target_under_test:
+            target = self.target_database[target_under_test]
+            packages = target._get_java_package_names()
+            if packages:
+                return ':'.join(packages)
+        return ''
+
     def _generate_sources_dir_for_coverage(self):
         """
         Generate a '<name>.sources' dir in the build directory for the subsequent
@@ -728,13 +738,8 @@ class JavaTest(JavaBinary):
     def ninja_java_test_vars(self):
         vars = {
             'mainclass': self.data['main_class'],
+            'packages_under_test': self._packages_under_test()
         }
-        target_under_test = self.data.get('target_under_test')
-        if target_under_test:
-            target = self.target_database[target_under_test]
-            packages = target._get_java_package_names()
-            if packages:
-                vars['javatargetundertestpkg'] = ':'.join(packages)
         return vars
 
     def ninja_rules(self):
