@@ -383,13 +383,13 @@ def generate_java_binary(args):
     os.chmod(script, 0o755)
 
 
-def generate_scala_test(script, java, scala, jacocoagent, target_under_test, args):
+def generate_scala_test(script, java, scala, jacocoagent, packages_under_test, args):
     jars = args
     test_jar = jars[0]
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
     scala, java = os.path.abspath(scala), os.path.abspath(java)
     java_args = ''
-    coverage_flags = _jacoco_test_coverage_flag(jacocoagent, target_under_test)
+    coverage_flags = _jacoco_test_coverage_flag(jacocoagent, packages_under_test)
     if coverage_flags:
         java_args = '-J%s' % coverage_flags
     run_args = 'org.scalatest.run ' + ' '.join(test_class_names)
