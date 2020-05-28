@@ -89,7 +89,7 @@ class BladeConfig(object):
                 'target_version': '',
                 'maven': 'mvn',
                 'maven_central': '',
-                'maven_snapshot_update_policy': '',
+                'maven_snapshot_update_policy': 'daily',
                 'maven_snapshot_update_policy__doc__':
                     'Can be %s' % _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES,
                 'maven_snapshot_update_interval': 0,
