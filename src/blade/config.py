@@ -24,6 +24,9 @@ from blade.blade_util import var_to_list, iteritems, exec_
 from blade.constants import HEAP_CHECK_VALUES
 
 
+
+_MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES = ['always', 'daily', 'interval', 'never']
+
 _config_globals = {}
 
 
@@ -38,6 +41,9 @@ class BladeConfig(object):
 
     def __init__(self):
         self.current_file_name = ''  # For error reporting
+        # Support generate comments when dump the config by the special '__doc__' convention.
+        # __doc__ field is for section
+        # __doc__ suffix of items are for items.
         self.configs = {
             'global_config': {
                 '__doc__': 'Global configuration',
@@ -83,6 +89,11 @@ class BladeConfig(object):
                 'target_version': '',
                 'maven': 'mvn',
                 'maven_central': '',
+                'maven_snapshot_update_policy': '',
+                'maven_snapshot_update_policy__doc__':
+                    'Can be %s' % _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES,
+                'maven_snapshot_update_interval': 0,
+                'maven_snapshot_update_interval__doc__': 'When policy is interval, in minutes',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
                 'java_home': '',
@@ -300,7 +311,7 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        console.error_exit('//%s: Invalid %s value %s, can only be in %s' % (
+        console.error_exit('//%s: Invalid config item "%s" value "%s", can only be in %s' % (
             _blade_config.current_file_name, name, value, valid_values))
 
 
@@ -347,13 +358,13 @@ def cc_library_config(append=None, **kwargs):
     _blade_config.update_config('cc_library_config', append, kwargs)
 
 
-__DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+_DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 
 
 @config_rule
 def global_config(append=None, **kwargs):
     """global_config section. """
-    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
+    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', _DUPLICATED_SOURCE_ACTION_VALUES)
     debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     _check_test_ignored_envs(kwargs)
@@ -375,6 +386,8 @@ def link_config(append=None, **kwargs):
 @config_rule
 def java_config(append=None, **kwargs):
     """java_config. """
+    _check_kwarg_enum_value(kwargs, 'maven_snapshot_update_policy',
+            _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES)
     _blade_config.update_config('java_config', append, kwargs)
 
 
