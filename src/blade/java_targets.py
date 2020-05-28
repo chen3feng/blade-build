@@ -756,7 +756,7 @@ def java_library(name,
 
     Args:
         coverage: bool, Whether generate test coverage data for this library.
-            It is useful to be False in some casees such as srcs are generated.
+            It is useful to be False in some cases such as srcs are generated.
     """
     target = JavaLibrary(name=name,
                          srcs=srcs,

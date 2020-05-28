@@ -54,7 +54,7 @@ java_library(
 ```
 
 - coverage attribute
-  bool, Whether generate test coverage data for this library. It is useful to be False in some casees such as srcs are generated.
+  bool, Whether generate test coverage data for this library. It is useful to be False in some cases such as srcs are generated.
 
 ### Mutiple kinds of dependancy
 
