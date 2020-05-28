@@ -42,17 +42,17 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 ### cc_config
 所有c/c++目标的公共配置
 
-| 参数  | 类型 | 默认值 | 值域 | 说明 |
-|-------|-----|-------|-----|-----|
-| extra_incs   | list |  [] | |额外的头文件搜索路径，比如['thirdparty']｜
-| cppflags     | list |  [] | | C/C++公用编译选项 |
-| cflags       | list |  [] | | C专用编译选项 |
-| cxxflags     | list |  [] | | C++专用编译选项 |
-| linkflags    | list |  [] | | 构建库和可执行文件以及测试时公用的链接选项，比如库搜索路径等 |
-| warnings     | list | 内置 | 一般是-W开头，比如['-Wall', '-Wextra']等 | C/C++公用警告 |
-| c_warnings   | list | 内置 | | 编译C代码时的专用警告 |
-| cxx_warnings | list | 内置 | |编译C++代码时的专用警告 |
-| optimize     | list | 内置 | | 优化专用选项，debug模式下会被忽略，比如 -O2，-omit-frame-pointer 等 |
+| 参数           | 类型   | 默认值   | 值域                                     | 说明                                                                |
+| -------------- | ------ | -------- | ------                                   | ------------------------                                            |
+| extra_incs     | list   | []       |                                          | 额外的头文件搜索路径，比如['thirdparty']                            |
+| cppflags       | list   | []       |                                          | C/C++公用编译选项                                                   |
+| cflags         | list   | []       |                                          | C专用编译选项                                                       |
+| cxxflags       | list   | []       |                                          | C++专用编译选项                                                     |
+| linkflags      | list   | []       |                                          | 构建库和可执行文件以及测试时公用的链接选项，比如库搜索路径等        |
+| warnings       | list   | 内置     | 一般是-W开头，比如['-Wall', '-Wextra']等 | C/C++公用警告                                                       |
+| c_warnings     | list   | 内置     |                                          | 编译C代码时的专用警告                                               |
+| cxx_warnings   | list   | 内置     |                                          | 编译C++代码时的专用警告                                             |
+| optimize       | list   | 内置     |                                          | 优化专用选项，debug模式下会被忽略，比如 -O2，-omit-frame-pointer 等 |
 
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。
@@ -60,14 +60,14 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 ### cc_test_config
 构建和运行测试所需的配置
 
-| 参数  | 类型 | 默认值 | 值域 | 说明 |
-|-------|-----|-------|-----|-----|
-| dynamic_link          |bool   | False               |True False | 测试程序是否默认动态链接，可以减少磁盘开销 |
-| heap_check            |string | 空                  | [参考 gperftools 的文档](https://gperftools.github.io/gperftools/heap_checker.html) | 开启 gperftools 的 HEAPCHECK，空表示不开启 |
-| gperftools_libs       |list   | ['#tcmalloc']       | | tcmclloc 库，blade deps 格式 |
-| gperftools_debug_libs |list   | ['#tcmalloc_debug'] | | tcmalloc_debug 库，blade deps 格式 |
-| gtest_libs            |list   | ['#gtest']          | | gtest 的库，blade deps 格式 |
-| gtest_main_libs       |list   | [‘#gtest_main’]     | | gtest_main 的库路径，blade deps 格式 |
+| 参数                    | 类型     | 默认值                | 值域                                                                                | 说明                                         |
+| ----------------------- | -------- | --------------------- | ------                                                                              | -------------------------------------------- |
+| dynamic_link            | bool     | False                 |                                                                                     | 测试程序是否默认动态链接，可以减少磁盘开销   |
+| heap_check              | string   | 空                    | [参考 gperftools 的文档](https://gperftools.github.io/gperftools/heap_checker.html) | 开启 gperftools 的 HEAPCHECK，空表示不开启   |
+| gperftools_libs         | list     | ['#tcmalloc']         |                                                                                     | tcmclloc 库，blade deps 格式                 |
+| gperftools_debug_libs   | list     | ['#tcmalloc_debug']   |                                                                                     | tcmalloc_debug 库，blade deps 格式           |
+| gtest_libs              | list     | ['#gtest']            |                                                                                     | gtest 的库，blade deps 格式                  |
+| gtest_main_libs         | list     | [‘#gtest_main’]       |                                                                                     | gtest_main 的库路径，blade deps 格式         |
 
 注意:
 
@@ -78,16 +78,22 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 ### java_config
 Java构建相关的配置
 
-| 参数  | 类型 | 默认值 | 值域 | 说明 |
-|-------|-----|-------|-----|-----|
-| version         | string | 空 | "6" "1.6" 等 | JDK 兼容性版本号 |
-| source_version  | string | 取 version 的值 | | 提供与指定发行版的源代码版本兼容性 |
-| target_version  | string | 取 version 的值 | | 生成特定 VM 版本的类文件 |
-| maven           | string | 'mvn'          | | 调用 `mvn` 命令需要的路径 |
-| maven_central   | string | 空             | | maven 仓库的URL
-| warnings        | list   | ['-Werror', '-Xlint:all'] | | 警告设置 |
-| source_encoding | string | None                      | | 设置源代码的默认编码 |
-| java_home       | string | 读取 '$JAVA_HOME' 环境变量  | | 设置JAVA_HOME |
+| 参数                           | 类型   | 默认值                      | 值域         | 说明                                 |
+|--------------------------------|--------|-----------------------------|--------------|--------------------------------------|
+| version                        | string | 空                          | "6" "1.6" 等 | JDK 兼容性版本号                     |
+| source_version                 | string | 取 version 的值             |              | 提供与指定发行版的源代码版本兼容性   |
+| target_version                 | string | 取 version 的值             |              | 生成特定 VM 版本的类文件             |
+| maven                          | string | 'mvn'                       |              | 调用 `mvn` 命令需要的路径            |
+| maven_central                  | string | 空                          |              | maven 仓库的URL                      |
+| maven_snapshot_update_policy   | string | daily                       |              | maven 仓库的 SNAPSHOT 版本的更新策略 |
+| maven_snapshot_update_interval | int    | 空                          |              | maven 仓库的 SNAPSHOT 版本的更新间隔 |
+| warnings                       | list   | ['-Werror', '-Xlint:all']   |              | 警告设置                             |
+| source_encoding                | string | None                        |              | 设置源代码的默认编码                 |
+| java_home                      | string | 读取 '$JAVA_HOME' 环境变量  |              | 设置JAVA_HOME                        |
+
+关于 Maven：
+- maven_snapshot_updata_policy 允许的值："always", "daily"(默认), "interval",  "never"
+- maven_snapshot_update_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
 
 ### proto_library_config
 编译protobuf需要的配置
@@ -102,12 +108,12 @@ Java构建相关的配置
 ### thrift_library_config
 编译thrift需要的配置
 
-| 参数  | 类型 | 默认值 | 值域 | 说明 |
-|-------|-----|-------|-----|-----|
-| thrift      | string | 'thrift' | | thrift 编译器的路径 |
-| thrift_libs | list   |          | | hrift库的路径，Blade deps 格式 |
-| thrift_incs | list   |          | | 编译 thrift 生成的 C++ 时额外的头文件搜索路径 |
-| thrift_gen_params | string | 'cpp:include_prefix,pure_enums' | | thrift 的编译参数 |
+| 参数              | 类型   | 默认值                          | 值域 | 说明                                          |
+|-------------------|--------|---------------------------------|------|-----------------------------------------------|
+| thrift            | string | 'thrift'                        |      | thrift 编译器的路径                           |
+| thrift_libs       | list   |                                 |      | hrift库的路径，Blade deps 格式                |
+| thrift_incs       | list   |                                 |      | 编译 thrift 生成的 C++ 时额外的头文件搜索路径 |
+| thrift_gen_params | string | 'cpp:include_prefix,pure_enums' |      | thrift 的编译参数                             |
 
 所有的 config 的列表类型的选项均支持追加模式，用法如下：
 

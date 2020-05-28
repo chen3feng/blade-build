@@ -63,6 +63,28 @@ note:
 * The gtest library also relies on pthreads, so gtest_libs needs to be written as ['#gtest', '#pthread']
 * Or include the source code in your source tree, such as thirdparty, you can write gtest_libs='//thirdparty/gtest:gtest'.
 
+### java_config
+Java related configurations
+
+| param           | type   | default                   | value          | description |
+|-----------------|--------|---------------------------|----------------|-------------|
+| version         | string | empty                     | "6" "1.6", ... | Provide compatibility with specified release |
+| source_version  | string | take `version`            |                | Provide source compatibility with specified release |
+| target_version  | string | take `version`            |                | Generate class files for specific VM version |
+| maven           | string | 'mvn'                     |                | The command to run `mvn` |
+| maven_central   | string |                           |                | Maven repository URL
+| maven_snapshot_update_policy   | string | daily      |                | Update policy of snapshot version in maven repository   |
+| maven_snapshot_update_interval | int    | empty      |                | Update interval of snapshot version in maven repository |
+| warnings        | list   | ['-Werror', '-Xlint:all'] |                | Warning flags |
+| source_encoding | string | None                      |                | Specify character encoding used by source files |
+| java_home       | string | Take from '$JAVA_HOME'    |                | Set JAVA_HOME |
+
+About maven:
+
+- maven_snapshot_updata_policy values: "always", "daily"(default), "interval",  "never"
+- maven_snapshot_update_interval is in minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
+
+
 ### proto_library_config
 Compile the configuration required by protobuf
 ```python

@@ -133,8 +133,8 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        console.error('//%s: "glob(%s)" got an empty result. If it is the expected behavior, '
-                      'specify "allow_empty=True" to eliminate this error' % (source_dir, args))
+        console.warning('//%s: "glob(%s)" got an empty result. If it is the expected behavior, '
+                        'specify "allow_empty=True" to eliminate this error' % (source_dir, args))
 
     return result
 

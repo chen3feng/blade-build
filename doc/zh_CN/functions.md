@@ -37,7 +37,7 @@ include后，被导入的文件的定义均会被导入到当前BUILD文件中�
 glob(include, exclude=[], allow_empty=False)
 ```
 Glob 是一个返回在源代码目录中匹配某些模式的文件的辅助函数。模式可以包含一些 shell 样式的通配符，比如`*`、`?` 和 `[字符集]`、，另外，`**` 匹配任意级别的子目录。
-你可以用 `exclude` 来排除一些文件。
+你可以用 `exclude` 来排除一些文件。include 和 exclude 都支持 list。
 
 示例：
 ```python
