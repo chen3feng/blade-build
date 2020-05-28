@@ -53,6 +53,9 @@ java_library(
 )
 ```
 
+- coverage attribute
+  bool, Whether generate test coverage data for this library. It is useful to be False in some cases such as srcs are generated.
+
 ### Mutiple kinds of dependancy
 
 For java targets，except the normal `deps`, they also support `exported_deps`，`provided_deps`.
@@ -192,12 +195,5 @@ java_test(
         '//poppy:poppy_java',
         '//thirdparty/junit:junit',
     ],
-    target_under_test = '//poppy:poppy_java',
 )
 ```
-
-Attributes:
-
-- target_under_test: str，the target to be tested. if this attribute is missing, Blade will try to
-  find it from `deps` (by matching the dep name with the '_test' removed test name).
-  If finally this attribute is not set, test coverage report can not be generated.
