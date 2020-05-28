@@ -110,7 +110,7 @@ class MavenCache(object):
         """Check if the modification time of file is expired relative to build time. """
         return self.__build_time - os.path.getmtime(filename) > self.__snapshot_update_interval
 
-    def _is_expired(self, filename, version, logfile):
+    def _need_download(self, filename, version, logfile):
         if not os.path.isfile(os.path.join(filename)):
             return True
         if not version.endswith('-SNAPSHOT'):
@@ -121,7 +121,6 @@ class MavenCache(object):
             return False
         if not os.path.isfile(logfile):
             return True
-        print(self.__snapshot_update_interval)
         return self._is_file_expired(logfile)
 
     def _download_jar(self, id, classifier):
@@ -135,7 +134,7 @@ class MavenCache(object):
         log_path = os.path.join(self.__log_dir, log)
         target_path = self._generate_jar_path(id)
         target_log = os.path.join(target_path, log)
-        if not self._is_expired(os.path.join(target_path, jar), version, target_log):
+        if not self._need_download(os.path.join(target_path, jar), version, target_log):
             return True
 
         if classifier:
@@ -165,7 +164,7 @@ class MavenCache(object):
         target_path = self._generate_jar_path(id)
         log, classpath = artifact + '__classpath.log', 'classpath.txt'
         log = os.path.join(target_path, log)
-        if not self._is_expired(os.path.join(target_path, classpath), version, log):
+        if not self._need_download(os.path.join(target_path, classpath), version, log):
             return True
 
         # if classifier:
