@@ -121,19 +121,28 @@ class MavenCache(object):
             return False
         if not os.path.isfile(logfile):
             return True
+        # Use the logfile's timestamp as the update time
         return self._is_file_expired(logfile)
+
+    def _filename_base(self, artifact, version, classifier):
+        if classifier:
+            return artifact + '-' + version + '-' + classifier
+        return artifact + '-' + version
 
     def _download_jar(self, id, classifier):
         group, artifact, version = id.split(':')
-        pom = artifact + '-' + version + '.pom'
-        jar = artifact + '-' + version + '.jar'
-        log = artifact + '__download.log'
-        if classifier:
-            jar = artifact + '-' + version + '-' + classifier + '.jar'
-            log = artifact + '-' + classifier + '__download.log'
-        log_path = os.path.join(self.__log_dir, log)
+        basename = self._filename_base(artifact, version, classifier)
+        pom = basename + '.pom'
+        jar = basename + '.jar'
+
+        # Write log to build dir temporarily, and move it into the target_path after success.
+        log_path = os.path.join(self.__log_dir, basename + '_download.log')
         target_path = self._generate_jar_path(id)
-        target_log = os.path.join(target_path, log)
+        target_log = 'download.log'
+        if classifier:
+            target_log = classifier + '_download.log'
+        target_log = os.path.join(target_path, target_path)
+
         if not self._need_download(os.path.join(target_path, jar), version, target_log):
             return True
 
@@ -156,7 +165,7 @@ class MavenCache(object):
                 return False
             console.warning('Download standalone artifact %s successfully, but '
                             'its transitive dependencies are unavailable.' % id)
-        shutil.copy(log_path, target_log)
+        shutil.move(log_path, target_log)
         return True
 
     def _download_dependency(self, id, classifier):
