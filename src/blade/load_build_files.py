@@ -96,7 +96,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
 
     include = var_to_list(include)
     if excludes:
-        console.warning('//%s: glob.excludes is deprecated, use exclude instead' % source_dir)
+        console.warning('//%s: "glob.excludes" is deprecated, use "exclude" instead' % source_dir)
     exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
@@ -133,8 +133,8 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        console.error("//%s: 'glob(%s)' got an empty result. If it is the expected behavior, "
-                      "specify 'allow_empty=True' to eliminate this error" % (source_dir, args))
+        console.error('//%s: "glob(%s)" got an empty result. If it is the expected behavior, '
+                      'specify "allow_empty=True" to eliminate this error' % (source_dir, args))
 
     return result
 

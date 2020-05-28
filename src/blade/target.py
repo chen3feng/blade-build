@@ -154,7 +154,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            self.warning('unrecognized options %s' % kwargs)
+            self.error_exit('unrecognized options %s' % kwargs)
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets"""

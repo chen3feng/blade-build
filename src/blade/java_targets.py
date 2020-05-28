@@ -709,10 +709,11 @@ class JavaTest(JavaBinary):
     """JavaTest"""
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, exclusions,
-                 testdata, kwargs):
+                 warnings, main_class, exclusions, testdata, target_under_test, kwargs):
         JavaBinary.__init__(self, name, srcs, deps, resources,
                             source_encoding, warnings, main_class, exclusions, kwargs)
+        if target_under_test:
+            self.warning('"target_under_test" is deprecated, you can remove it safely')
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -803,6 +804,7 @@ def java_test(name,
               main_class='org.junit.runner.JUnitCore',
               exclusions=[],
               testdata=[],
+              target_under_test=None,
               **kwargs):
     """Build a java test target"""
     target = JavaTest(name=name,
@@ -814,6 +816,7 @@ def java_test(name,
                       main_class=main_class,
                       exclusions=exclusions,
                       testdata=testdata,
+                      target_under_test=target_under_test,
                       kwargs=kwargs)
     build_manager.instance.register_target(target)
 
