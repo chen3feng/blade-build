@@ -47,6 +47,8 @@ syn keyword bladeArg source_version
 syn keyword bladeArg target_version
 syn keyword bladeArg maven
 syn keyword bladeArg maven_central
+syn keyword bladeArg maven_snapshot_update_policy
+syn keyword bladeArg maven_snapshot_update_interval
 syn keyword bladeArg warnings
 syn keyword bladeArg source_encoding
 syn keyword bladeArg java_home
