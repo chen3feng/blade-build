@@ -74,20 +74,21 @@ class TestRunner(binary_runner.BinaryRunner):
         # Test history is the key to implement incremental test.
         # It will be loaded from file before test, compared with test jobs,
         # and be updated and saved to file back after test.
+        self.test_history_file = os.path.join(self.build_dir, _TEST_HISTORY_FILE)
         self.test_history = {}  # {key, dict{}}
 
         self._load_test_history()
         self._update_test_history()
 
     def _load_test_history(self):
-        if os.path.exists(_TEST_HISTORY_FILE):
-            try:
-                with open(_TEST_HISTORY_FILE) as f:
+        if os.path.exists(self.test_history_file):
+            with open(self.test_history_file) as f:
+                try:
                     # pylint: disable=eval-used
                     self.test_history = eval(f.read())
-            except (IOError, SyntaxError, NameError, TypeError) as e:
-                console.debug('Exception when loading test history: %s' % e)
-                console.warning('error loading incremental test history, will run full test')
+                except (SyntaxError, NameError, TypeError) as e:
+                    console.debug('Exception when loading test history: %s' % e)
+                    console.warning('error loading incremental test history, will run full test')
 
         if 'items' not in self.test_history:
             self.test_history['items'] = {}
@@ -111,7 +112,7 @@ class TestRunner(binary_runner.BinaryRunner):
         """update test history and save it to file. """
         self._merge_run_results_to_history(passed_run_results)
         self._merge_run_results_to_history(failed_run_results)
-        with open(_TEST_HISTORY_FILE, 'w') as f:
+        with open(self.test_history_file, 'w') as f:
             print(str(self.test_history), file=f)
 
     def _merge_run_results_to_history(self, run_results):

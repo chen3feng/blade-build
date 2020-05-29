@@ -279,7 +279,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         for p in self.data['protoc_plugins']:
             if language in p.code_generation:
                 path = p.path
-                flag = p.protoc_plugin_flag(self.build_path)
+                flag = p.protoc_plugin_flag(self.build_dir)
                 vars = {'protoc%spluginflags' % language: flag}
                 break
         return path, vars
@@ -317,7 +317,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path(self.name + '.pylib')
         self.ninja_build('pythonlibrary', pylib, inputs=generated_pys,
-                         variables={'pythonbasedir': self.build_path})
+                         variables={'pythonbasedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
     def ninja_proto_go_rules(self):

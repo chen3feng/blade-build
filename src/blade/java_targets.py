@@ -44,7 +44,7 @@ class MavenJar(Target):
         return [], self.data.get('maven_deps', [])
 
     def ninja_rules(self):
-        maven_cache = maven.MavenCache.instance(build_manager.instance.get_build_path())
+        maven_cache = maven.MavenCache.instance(self.build_dir)
         binary_jar = maven_cache.get_jar_path(self.data['id'],
                                               self.data['classifier'])
         if binary_jar:

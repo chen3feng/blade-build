@@ -567,7 +567,7 @@ class RulesGenerator(object):
         self.blade_path = blade_path
         self.blade = blade
         self.build_platform = self.blade.get_build_platform()
-        self.build_dir = self.blade.get_build_path()
+        self.build_dir = self.blade.get_build_dir()
 
     def get_all_rule_names(self):
         """Get all build rule names"""

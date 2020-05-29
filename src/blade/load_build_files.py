@@ -221,9 +221,9 @@ def _is_load_excluded(d):
     """
     if d.startswith('.'):
         return True
-    for build_path in ('build32_debug', 'build32_release',
+    for build_dir in ('build32_debug', 'build32_release',
                        'build64_debug', 'build64_release'):
-        if d.startswith(build_path):
+        if d.startswith(build_dir):
             return True
 
     return False

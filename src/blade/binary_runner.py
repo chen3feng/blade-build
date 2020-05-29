@@ -32,7 +32,7 @@ class BinaryRunner(object):
         """Init method. """
         from blade import build_manager
         self.targets = targets
-        self.build_dir = build_manager.instance.get_build_path()
+        self.build_dir = build_manager.instance.get_build_dir()
         self.options = options
         self.run_list = ['cc_binary',
                          'cc_test',
