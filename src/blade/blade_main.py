@@ -84,13 +84,13 @@ from string import Template
 
 from blade import build_attributes
 from blade import build_manager
+from blade import command_line
 from blade import config
 from blade import console
 from blade import target
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
 from blade.blade_util import get_cwd, iteritems, to_string
 from blade.blade_util import lock_file, unlock_file
-from blade.command_args import CmdArguments
 
 # Run target
 _TARGETS = None
@@ -368,14 +368,6 @@ def unlock_workspace(lock_file_fd):
     unlock_file(lock_file_fd)
 
 
-def parse_command_line(argv):
-    parsed_command_line = CmdArguments(argv)
-    command = parsed_command_line.get_command()
-    options = parsed_command_line.get_options()
-    targets = parsed_command_line.get_targets()
-    return command, options, targets
-
-
 def load_config(options, blade_root_dir):
     """load the configuration file and parse. """
     # Init global build attributes
@@ -564,7 +556,7 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
 
 def _main(blade_path, argv):
     """The main entry of blade. """
-    command, options, targets = parse_command_line(argv)
+    command, options, targets = command_line.parse(argv)
     setup_console(options)
 
     global _BLADE_ROOT_DIR

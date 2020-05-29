@@ -27,8 +27,8 @@ except ImportError:
     VERSION = '(developing, unversioned)'
 
 
-class CmdArguments(object):
-    """CmdArguments
+class ParsedCommandLine(object):
+    """Parsed Command Line
 
     Parses user's input and provides hint.
     blade {command} [options] targets
@@ -434,3 +434,10 @@ class CmdArguments(object):
     def get_targets(self):
         """Returns the targets from command line."""
         return self.targets
+
+
+def parse(argv):
+    """Parse argv into command, options and targets"""
+    cmdline = ParsedCommandLine(argv)
+    return cmdline.get_command(), cmdline.get_options(), cmdline.get_targets()
+
