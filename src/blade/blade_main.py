@@ -191,6 +191,7 @@ def _check_code_style(targets):
 
 
 def _run_backend_builder(cmdstr):
+    console.debug('Run build command: ' + cmdstr)
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -211,7 +212,7 @@ def backend_builder_options(options):
 
 
 def _show_slow_builds(build_start_time, show_builds_slower_than):
-    build_dir = build_manager.instance.get_build_path()
+    build_dir = build_manager.instance.get_build_dir()
     with open(os.path.join(build_dir, '.ninja_log')) as f:
         head = f.readline()
         if '# ninja log v5' not in head:
@@ -266,7 +267,7 @@ def _run_ninja(cmd, options):
 
 
 def _ninja_build(options):
-    cmd = ['ninja']
+    cmd = ['ninja', '-f', build_manager.instance.build_script()]
     cmd += backend_builder_options(options)
     # Ninja enable parallel building defaultly, but we still set it explicitly.
     cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
@@ -318,10 +319,8 @@ def clean(options):
     backend_builder = config.get_item('global_config', 'backend_builder')
     cmd = [backend_builder]
     # cmd += backend_builder_options(options)
-    if backend_builder == 'ninja':
-        cmd += ['-t', 'clean']
-    else:
-        cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
+    cmd.append('-f%s' % build_manager.instance.build_script())
+    cmd += ['-t', 'clean']
     cmdstr = subprocess.list2cmdline(cmd)
     returncode = _run_backend_builder(cmdstr)
     console.info('cleaning done.')
@@ -345,15 +344,17 @@ def _dump_compdb(options, output_file_name):
     if backend_builder != 'ninja':
         console.error_exit('dump compdb only work when backend_builder is ninja')
     rules = build_manager.instance.get_all_rule_names()
-    cmd = ['ninja', '-t', 'compdb'] + rules
+    cmd = ['ninja', '-f', build_manager.instance.build_script(), '-t', 'compdb']
+    cmd += rules
     cmdstr = subprocess.list2cmdline(cmd)
     cmdstr += ' > '
     cmdstr += output_file_name
     return _run_backend_builder(cmdstr)
 
 
-def lock_workspace():
-    lock_file_fd, ret_code = lock_file('.Building.lock')
+def lock_workspace(build_dir):
+    _BUILDING_LOCK_FILE ='.blade.building.lock'
+    lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
             console.error_exit(
@@ -484,7 +485,7 @@ def adjust_config_by_options(config, options):
 
 
 def clear_build_script():
-    scripts = ['build.ninja']
+    scripts = [build_manager.instance.build_script()]
     for script in scripts:
         script = os.path.join(_BLADE_ROOT_DIR, script)
         try:
@@ -590,7 +591,7 @@ def _main(blade_path, argv):
 
     generate_scm(build_dir)
 
-    lock_file_fd = lock_workspace()
+    lock_file_fd = lock_workspace(build_dir)
     try:
         if options.profiling:
             return run_subcommand_profile(command, options, targets, blade_path, build_dir)

@@ -874,7 +874,7 @@ class CcLibrary(CcTarget):
                 (path in history and int(os.path.getmtime(path)) == history[path])):
             return '', []
 
-        build_dir = self.build_path
+        build_dir = self.build_dir
         stacks, hdrs_stack = [], []
 
         def _process_hdr(level, hdr, current_level):
@@ -1154,7 +1154,7 @@ class CcBinary(CcTarget):
 
         extra_ldflags, order_only_deps = [], []
         if self.data['embed_version']:
-            scm = os.path.join(self.build_path, 'scm.cc.o')
+            scm = os.path.join(self.build_dir, 'scm.cc.o')
             extra_ldflags.append(scm)
             order_only_deps.append(scm)
         extra_ldflags += ['-l%s' % lib for lib in sys_libs]

@@ -44,7 +44,7 @@ class Blade(object):
                  load_targets,
                  blade_path,
                  working_dir,
-                 build_path,
+                 build_dir,
                  blade_root_dir,
                  blade_options,
                  command):
@@ -55,7 +55,7 @@ class Blade(object):
         self.__load_targets = load_targets
         self.__blade_path = blade_path
         self.__working_dir = working_dir
-        self.__build_path = build_path
+        self.__build_dir = build_dir
         self.__root_dir = blade_root_dir
         self.__options = blade_options
         self.__command = command
@@ -99,10 +99,11 @@ class Blade(object):
 
         self.svn_root_dirs = []
 
-        self._verify_history_path = os.path.join(build_path, '.blade_verify.json')
+        self._verify_history_path = os.path.join(build_dir, '.blade_verify.json')
         self._verify_history = {
             'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
         }
+        self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
 
     def load_targets(self):
         """Load the targets. """
@@ -147,7 +148,11 @@ class Blade(object):
         return self.__build_targets  # For test
 
     def new_build_rules_generator(self):
-        return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
+        return NinjaRulesGenerator(self.__build_script, self.__blade_path, self)
+
+    def build_script(self):
+        """Return build script file name"""
+        return self.__build_script
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
@@ -318,9 +323,9 @@ class Blade(object):
     def get_build_time(self):
         return self.__build_time
 
-    def get_build_path(self):
-        """The current building path. """
-        return self.__build_path
+    def get_build_dir(self):
+        """The current building dir. """
+        return self.__build_dir
 
     def get_root_dir(self):
         """Return the blade root path. """
@@ -467,11 +472,11 @@ def initialize(
         load_targets,
         blade_path,
         working_dir,
-        build_path,
+        build_dir,
         blade_root_dir,
         blade_options,
         command):
     global instance
     instance = Blade(command_targets, load_targets,
-                     blade_path, working_dir, build_path, blade_root_dir,
+                     blade_path, working_dir, build_dir, blade_root_dir,
                      blade_options, command)

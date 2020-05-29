@@ -80,7 +80,7 @@ class Target(object):
 
         """
         self.blade = blade
-        self.build_path = self.blade.get_build_path()
+        self.build_dir = self.blade.get_build_dir()
         current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
 
@@ -419,7 +419,7 @@ class Target(object):
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        return os.path.join(self.build_path, self.path, file_name)
+        return os.path.join(self.build_dir, self.path, file_name)
 
     def _add_target_file(self, label, path):
         """

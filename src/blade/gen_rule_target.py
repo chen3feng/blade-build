@@ -63,7 +63,7 @@ class GenRuleTarget(Target):
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
-        return ','.join(['"%s"' % os.path.join(self.build_path, path, src)
+        return ','.join(['"%s"' % os.path.join(self.build_dir, path, src)
                          for src in srcs])
 
     def _process_location_reference(self, m):
@@ -82,8 +82,8 @@ class GenRuleTarget(Target):
         cmd = cmd.replace('$FIRST_SRC', '${_in_1}')
         cmd = cmd.replace('$FIRST_OUT', '${_out_1}')
         cmd = cmd.replace('$SRC_DIR', self.path)
-        cmd = cmd.replace('$OUT_DIR', os.path.join(self.build_path, self.path))
-        cmd = cmd.replace('$BUILD_DIR', self.build_path)
+        cmd = cmd.replace('$OUT_DIR', os.path.join(self.build_dir, self.path))
+        cmd = cmd.replace('$BUILD_DIR', self.build_dir)
         locations = self.data['locations']
         if locations:
             targets = self.blade.get_build_targets()

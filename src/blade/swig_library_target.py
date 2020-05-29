@@ -63,22 +63,22 @@ class SwigLibrary(CcTarget):
     def _pyswig_gen_python_file(self, path, src):
         """Generate swig python file for python. """
         swig_name = src[:-2]
-        return os.path.join(self.build_path, path, '%s.py' % swig_name)
+        return os.path.join(self.build_dir, path, '%s.py' % swig_name)
 
     def _pyswig_gen_file(self, path, src):
         """Generate swig cxx files for python. """
         swig_name = src[:-2]
-        return os.path.join(self.build_path, path, '%s_pywrap.cxx' % swig_name)
+        return os.path.join(self.build_dir, path, '%s_pywrap.cxx' % swig_name)
 
     def _javaswig_gen_file(self, path, src):
         """Generate swig cxx files for java. """
         swig_name = src[:-2]
-        return os.path.join(self.build_path, path, '%s_javawrap.cxx' % swig_name)
+        return os.path.join(self.build_dir, path, '%s_javawrap.cxx' % swig_name)
 
     def _phpswig_gen_file(self, path, src):
         """Generate swig cxx files for php. """
         swig_name = src[:-2]
-        return os.path.join(self.build_path, path, '%s_phpwrap.cxx' % swig_name)
+        return os.path.join(self.build_dir, path, '%s_phpwrap.cxx' % swig_name)
 
     def _swig_extract_dependency_files(self, src):
         dep = []
