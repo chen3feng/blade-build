@@ -12,6 +12,7 @@ Implement java_library, java_binary, java_test and java_fat_library
 
 from __future__ import absolute_import
 
+import collections
 import os
 import re
 from distutils.version import LooseVersion
@@ -82,17 +83,16 @@ class JavaTargetMixIn(object):
 
     def _expand_deps_java_generation(self):
         """Ensure that all multilingual dependencies such as proto_library generate java code."""
-        queue = list(self.deps)
+        queue = collections.deque(self.deps)
         keys = set()
         while queue:
-            k = queue.pop(0)
+            k = queue.popleft()
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
-                if 'generate_java' in dep.data:
+                if 'generate_java' in dep.data:  # Has this attribute
                     dep.data['generate_java'] = True
-                    for dkey in dep.deps:
-                        queue.append(dkey)
+                    queue.extend(dep.deps)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -215,17 +215,17 @@ class JavaTargetMixIn(object):
         Recursively get exported dependencies and return a tuple of (target jars, maven jars)
         """
         dep_jars, maven_jars = [], []
-        queue = list(self.deps)
+        queue = collections.deque(self.deps)
         keys = set()
         while queue:
-            key = queue.pop(0)
+            key = queue.popleft()
             if key not in keys:
                 keys.add(key)
                 dep = self.target_database[key]
                 exported_deps = dep.data.get('exported_deps', [])
                 for edkey in exported_deps:
                     self.__collect_dep_jars(edkey, dep_jars, maven_jars)
-                    queue.append(edkey)
+                queue.extend(exported_deps)
 
         return list(set(dep_jars)), list(set(maven_jars))
 
