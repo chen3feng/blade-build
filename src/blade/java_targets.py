@@ -195,7 +195,7 @@ class JavaTargetMixIn(object):
         """Return path of sources dir. """
         return self._target_file_path(self.name + '.sources')
 
-    def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
+    def __collect_dep_jars(self, dkey, dep_jars, maven_jars):
         """Extract jar file built by the target with the specified dkey.
 
         dep_jars: a list of jars built by blade targets. Each item is a file path.
@@ -215,7 +215,7 @@ class JavaTargetMixIn(object):
         """Return a tuple of (target jars, maven jars). """
         dep_jars, maven_jars = [], []
         for d in deps:
-            self.__extract_dep_jars(d, dep_jars, maven_jars)
+            self.__collect_dep_jars(d, dep_jars, maven_jars)
         return dep_jars, maven_jars
 
     def __get_exported_deps(self, deps):
@@ -235,7 +235,7 @@ class JavaTargetMixIn(object):
                 dep = self.target_database[key]
                 exported_deps = dep.data.get('exported_deps', [])
                 for edkey in exported_deps:
-                    self.__extract_dep_jars(edkey, dep_jars, maven_jars)
+                    self.__collect_dep_jars(edkey, dep_jars, maven_jars)
                     q.put(edkey)
 
         return list(set(dep_jars)), list(set(maven_jars))
@@ -323,10 +323,10 @@ class JavaTargetMixIn(object):
         """
         Recursively scan direct dependencies and exclude provided dependencies.
         """
-        deps = set(self.deps)
-        provided_deps = self.data.get('provided_deps', [])
-        for provided_dep in provided_deps:
-            deps.discard(provided_dep)
+        if 'java_pack_deps' in self.data: # Cache result
+            return self.data['java_pack_deps']
+
+        deps = set(self.deps) - set(self.data.get('provided_deps', []))
         dep_jars, maven_jars = self.__get_deps(deps)
 
         for dep in deps:
@@ -335,9 +335,10 @@ class JavaTargetMixIn(object):
             dep_jars += pack_dep_jars
             maven_jars += pack_maven_jars
 
-        dep_jars, maven_jars = set(dep_jars), set(maven_jars)
-        maven_jars = self._process_pack_exclusions(maven_jars)
-        return sorted(dep_jars), sorted(maven_jars)
+        dep_jars = sorted(set(dep_jars))
+        maven_jars = sorted(self._process_pack_exclusions(set(maven_jars)))
+        self.data['java_pack_deps'] = (dep_jars, maven_jars)
+        return dep_jars, maven_jars
 
     def _get_java_package_names(self):
         """
