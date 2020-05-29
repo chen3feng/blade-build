@@ -16,11 +16,6 @@ import os
 import re
 from distutils.version import LooseVersion
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
 from blade import build_manager
 from blade import build_rules
 from blade import config
@@ -87,20 +82,17 @@ class JavaTargetMixIn(object):
 
     def _expand_deps_java_generation(self):
         """Ensure that all multilingual dependencies such as proto_library generate java code."""
-        q = queue.Queue()
-        for k in self.deps:
-            q.put(k)
-
+        queue = list(self.deps)
         keys = set()
-        while not q.empty():
-            k = q.get()
+        while queue:
+            k = queue.pop(0)
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
                 if 'generate_java' in dep.data:
                     dep.data['generate_java'] = True
                     for dkey in dep.deps:
-                        q.put(dkey)
+                        queue.append(dkey)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -218,25 +210,22 @@ class JavaTargetMixIn(object):
             self.__collect_dep_jars(d, dep_jars, maven_jars)
         return dep_jars, maven_jars
 
-    def __get_exported_deps(self, deps):
+    def __get_exported_deps(self):
         """
         Recursively get exported dependencies and return a tuple of (target jars, maven jars)
         """
         dep_jars, maven_jars = [], []
-        q = queue.Queue(0)
-        for key in deps:
-            q.put(key)
-
+        queue = list(self.deps)
         keys = set()
-        while not q.empty():
-            key = q.get()
+        while queue:
+            key = queue.pop(0)
             if key not in keys:
                 keys.add(key)
                 dep = self.target_database[key]
                 exported_deps = dep.data.get('exported_deps', [])
                 for edkey in exported_deps:
                     self.__collect_dep_jars(edkey, dep_jars, maven_jars)
-                    q.put(edkey)
+                    queue.append(edkey)
 
         return list(set(dep_jars)), list(set(maven_jars))
 
@@ -304,7 +293,7 @@ class JavaTargetMixIn(object):
 
     def _get_compile_deps(self):
         dep_jars, maven_jars = self.__get_deps(self.deps)
-        exported_dep_jars, exported_maven_jars = self.__get_exported_deps(self.deps)
+        exported_dep_jars, exported_maven_jars = self.__get_exported_deps()
         maven_jars += self.__get_maven_transitive_deps(self.deps)
         dep_jars = sorted(set(dep_jars + exported_dep_jars))
         maven_jars = self._detect_maven_conflicted_deps('compile',

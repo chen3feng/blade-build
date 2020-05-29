@@ -14,14 +14,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import collections
 import os
 import subprocess
 from string import Template
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 
 from blade import build_manager
 from blade import config
@@ -442,14 +438,12 @@ class CcTarget(Target):
         NOTE: Here is an optimization: If we know the detaild generated header files, depends on
               them explicitly rather than depends on the whole target improves the parallelism.
          """
-        q = queue.Queue(0)
-        for key in self.deps:
-            q.put(key)
+        queue = collections.deque(self.deps)
 
         keys = set()
         result = []
-        while not q.empty():
-            key = q.get()
+        while queue:
+            key = queue.popleft()
             if key not in keys:
                 keys.add(key)
                 t = self.target_database[key]
@@ -465,8 +459,7 @@ class CcTarget(Target):
                     stamp = t.data['genhdrs_stamp']
                     if stamp:
                         result.append(stamp)
-                for k in t.deps:
-                    q.put(k)
+                queue.extend(t.deps)
 
         return result
 
