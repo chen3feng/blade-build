@@ -272,6 +272,12 @@ class TestRunner(binary_runner.BinaryRunner):
 
         return execfiles, classes_dirs, source_dirs
 
+    @staticmethod
+    def _cut_in_before_each(value, items):
+        """Cut in `value` before each elements of items"""
+        # See https://www.w3resource.com/python-exercises/list/python-data-type-list-exercise-47.php
+        return [v for elt in items for v in (value, elt)]
+
     def _generate_jacoco_coverage_report(self):
         """Run jacococli to generate coverage report"""
         # TODO(chen3feng): Support generating other formats
@@ -287,22 +293,25 @@ class TestRunner(binary_runner.BinaryRunner):
 
         execfiles, classes_dirs, source_dirs = self._get_jacoco_coverage_data()
         if execfiles:
+            console.info('Generating java coverage report `%s`' % report_dir)
             java = 'java'
             java_home = config.get_item('java_config', 'java_home')
             if java_home:
                 java = os.path.join(java_home, 'bin', 'java')
             jacococli = os.path.join(jacoco_home, 'lib', 'jacococli.jar')
-            classfiles = ['--classfiles ' + files for files in classes_dirs]
-            sourcefiles = ['--sourcefiles ' + files for files in source_dirs]
+            classfiles = self._cut_in_before_each('--classfiles', classes_dirs)
+            sourcefiles = self._cut_in_before_each('--sourcefiles', source_dirs)
+
             # See https://www.jacoco.org/jacoco/trunk/doc/cli.html
-            cmd_str = ('{java} -jar {jacococli} report {execfiles} {classfiles} {sourcefiles} '
-                       '--html {report_dir}').format(
-                              java=java, jacococli=jacococli, execfiles=' '.join(execfiles),
-                              classfiles=' '.join(classfiles), sourcefiles=' '.join(sourcefiles),
-                              report_dir=report_dir)
-            console.info('Generating java coverage report `%s`' % report_dir)
-            console.debug(cmd_str)
-            if subprocess.call(cmd_str, shell=True) != 0:
+            cmd = [java, '-jar', jacococli, 'report']
+            cmd += execfiles
+            cmd += classfiles
+            cmd += sourcefiles
+            cmd += ['--html', report_dir]
+            console.debug(' '.join(cmd))
+            # NOTE: If call with(cmd:str, shell=True), may cause a 'command line too long' error
+            # Pass cmd as a list and shell=False solves this problem
+            if subprocess.call(cmd, shell=False) != 0:
                 console.warning('Failed to generate java coverage report')
 
     def _generate_coverage_report(self):
