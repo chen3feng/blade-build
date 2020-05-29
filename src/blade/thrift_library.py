@@ -105,7 +105,7 @@ class ThriftLibrary(CcTarget):
             self.ninja_build('thrift', thrift_files, inputs=self._source_file_path(src))
             headers += [h for h in thrift_files if h.endswith('.h')]
             thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
-            sources += [os.path.relpath(s, target_path) for s in thrift_cpp_sources]
+            sources += [os.path.relpath(s, target_dir) for s in thrift_cpp_sources]
         self.data['generated_hdrs'] = headers
         self._cc_objects_ninja(sources, True, generated_headers=headers)
         self._cc_library_ninja()

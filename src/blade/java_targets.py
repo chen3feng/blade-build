@@ -36,9 +36,16 @@ class MavenJar(Target):
 
     def __init__(self, name, id, classifier, transitive):
         Target.__init__(self, name, 'maven_jar', [], [], None, build_manager.instance, {})
+        self._check_id(id)
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
+
+    def _check_id(self, id):
+        """Check if id is valid. """
+        if not maven.is_valid_id(id):
+            self.error_exit('Invalid id %s: Id should be group:artifact:version, '
+                            'such as jaxen:jaxen:1.1.6' % id)
 
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
@@ -46,12 +53,13 @@ class MavenJar(Target):
     def ninja_rules(self):
         maven_cache = maven.MavenCache.instance(self.build_dir)
         binary_jar = maven_cache.get_jar_path(self.data['id'],
-                                              self.data['classifier'])
+                                              self.data['classifier'],
+                                              self.fullname)
         if binary_jar:
             self.data['binary_jar'] = binary_jar
             if self.data.get('transitive'):
                 deps_path = maven_cache.get_jar_deps_path(
-                    self.data['id'], self.data['classifier'])
+                    self.data['id'], self.data['classifier'], self.fullname)
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
 

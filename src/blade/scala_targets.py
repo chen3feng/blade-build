@@ -144,6 +144,10 @@ class ScalaTest(ScalaFatLibrary):
                                  warnings, exclusions, kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
+
+        if not self.srcs:
+            self.warning('Empty scala test sources.')
+
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
@@ -152,7 +156,6 @@ class ScalaTest(ScalaFatLibrary):
 
     def ninja_rules(self):
         if not self.srcs:
-            self.warning('Empty scala test sources.')
             return
         jar = self.ninja_generate_jar()
         output = self._target_file_path(self.name)
