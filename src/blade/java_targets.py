@@ -648,7 +648,7 @@ class JavaLibrary(JavaTarget):
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
         else:
-            self.data['jacoco_coverage'] = coverage
+            self.data['jacoco_coverage'] = coverage and bool(srcs)
 
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':

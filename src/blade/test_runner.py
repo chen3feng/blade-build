@@ -248,8 +248,8 @@ class TestRunner(binary_runner.BinaryRunner):
             source directory: source directory of target under test
         """
         execfiles = []
-        source_dirs = []
-        classes_dirs = []
+        source_dirs = set()
+        classes_dirs = set()
         for key in self.test_jobs:
             target = self.targets[key]
 
@@ -265,10 +265,10 @@ class TestRunner(binary_runner.BinaryRunner):
                 classes_dir = dep._get_classes_dir()
                 if not os.path.exists(classes_dir):
                     classes_dir = dep._get_target_file('jar')
-                classes_dirs.append(classes_dir)
+                classes_dirs.add(classes_dir)
 
                 source_dir = dep._get_sources_dir()
-                source_dirs.append(source_dir)
+                source_dirs.add(source_dir)
 
         return execfiles, classes_dirs, source_dirs
 

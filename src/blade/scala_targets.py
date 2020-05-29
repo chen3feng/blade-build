@@ -112,7 +112,7 @@ class ScalaLibrary(ScalaTarget):
                              resources, source_encoding, warnings, kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
-        self.data['jacoco_coverage'] = True
+        self.data['jacoco_coverage'] = bool(srcs)
 
     def ninja_rules(self):
         jar = self.ninja_generate_jar()
