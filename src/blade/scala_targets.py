@@ -44,14 +44,14 @@ class ScalaTarget(Target, JavaTargetMixIn):
         deps = var_to_list(deps)
         resources = var_to_list(resources)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(ScalaTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                blade=build_manager.instance,
+                kwargs=kwargs)
         self._process_resources(resources)
         if source_encoding:
             self.data['source_encoding'] = source_encoding
@@ -108,8 +108,15 @@ class ScalaLibrary(ScalaTarget):
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
         all_deps = var_to_list(deps) + exported_deps + provided_deps
-        ScalaTarget.__init__(self, name, 'scala_library', srcs, all_deps,
-                             resources, source_encoding, warnings, kwargs)
+        super(ScalaLibrary, self).__init__(
+                name=name,
+                type='scala_library',
+                srcs=srcs,
+                deps=all_deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
         self.data['jacoco_coverage'] = bool(srcs)
@@ -125,8 +132,15 @@ class ScalaFatLibrary(ScalaTarget):
 
     def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
                  exclusions, kwargs):
-        ScalaTarget.__init__(self, name, 'scala_fat_library', srcs, deps,
-                             resources, source_encoding, warnings, kwargs)
+        super(ScalaFatLibrary, self).__init__(
+                name=name,
+                type='scala_fat_library',
+                srcs=srcs,
+                deps=deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -140,8 +154,10 @@ class ScalaTest(ScalaFatLibrary):
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, exclusions, testdata, kwargs):
-        ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
-                                 warnings, exclusions, kwargs)
+        super(ScalaTest, self).__init__(
+                name=name, srcs=srcs, deps=deps, resources=resources,
+                source_encoding=source_encoding, warnings=warnings,
+                exclusions=exclusions, kwargs=kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -176,15 +192,16 @@ def scala_library(name,
                   provided_deps=[],
                   **kwargs):
     """Define scala_library target. """
-    target = ScalaLibrary(name,
-                          srcs,
-                          deps,
-                          resources,
-                          source_encoding,
-                          warnings,
-                          exported_deps,
-                          provided_deps,
-                          kwargs)
+    target = ScalaLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exported_deps=exported_deps,
+            provided_deps=provided_deps,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -197,14 +214,15 @@ def scala_fat_library(name,
                       exclusions=[],
                       **kwargs):
     """Define scala_fat_library target. """
-    target = ScalaFatLibrary(name,
-                             srcs,
-                             deps,
-                             resources,
-                             source_encoding,
-                             warnings,
-                             exclusions,
-                             kwargs)
+    target = ScalaFatLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

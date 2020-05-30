@@ -32,21 +32,21 @@ class ResourceLibrary(CcTarget):
         Init the cc target.
 
         """
-        CcTarget.__init__(self,
-                          name,
-                          'resource_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [],
-                          [],
-                          [],
-                          optimize,
-                          extra_cppflags,
-                          [],
-                          blade,
-                          kwargs)
+        super(ResourceLibrary, self).__init__(
+                name=name,
+                type='resource_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning='',
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
 
     def ninja_rules(self):
         self._check_deprecated_deps()
@@ -79,13 +79,14 @@ def resource_library(name,
                      extra_cppflags=[],
                      **kwargs):
     """resource_library. """
-    target = ResourceLibrary(name,
-                             srcs,
-                             deps,
-                             optimize,
-                             extra_cppflags,
-                             build_manager.instance,
-                             kwargs)
+    target = ResourceLibrary(
+            name,
+            srcs=srcs,
+            deps=deps,
+            optimize=optimize,
+            extra_cppflags=extra_cppflags,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

@@ -42,16 +42,21 @@ class FBThriftLibrary(CcTarget):
                  kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'fbthrift_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
+        super(FBThriftLibrary, self).__init__(
+                name=name,
+                type='fbthrift_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning='',
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
 
         fbthrift_config = config.get_section('fbthrift_config')
         fbthrift_libs = var_to_list(fbthrift_config['fbthrift_libs'])

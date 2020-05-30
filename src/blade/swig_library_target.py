@@ -31,16 +31,21 @@ class SwigLibrary(CcTarget):
                  extra_swigflags,
                  blade,
                  kwargs):
-        CcTarget.__init__(self,
-                          name,
-                          'swig_library',
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          [], [], [], optimize, extra_swigflags, [],
-                          blade,
-                          kwargs)
+        super(SwigLibrary, self).__init__(
+                name=name,
+                type='swig_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning=warning,
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
         self.data['cpperraswarn'] = warning
         self.data['java_package'] = java_package
         self.data['java_lib_packed'] = java_lib_packed
@@ -48,6 +53,7 @@ class SwigLibrary(CcTarget):
         self.data['java_sources_explict_dependency'] = []
         self.data['python_vars'] = []
         self.data['python_sources'] = []
+        self.data['extra_swigflags'] = extra_swigflags
 
         build_platform = self.blade.get_build_platform()
         self.php_inc_list = build_platform.get_php_include()
@@ -93,26 +99,28 @@ class SwigLibrary(CcTarget):
         self.error('not implemented')
 
 
-def swig_library(name,
-                 srcs=[],
-                 deps=[],
-                 warning='',
-                 java_package='',
-                 java_lib_packed=False,
-                 optimize=[],
-                 extra_swigflags=[],
-                 **kwargs):
+def swig_library(
+        name,
+        srcs=[],
+        deps=[],
+        warning='',
+        java_package='',
+        java_lib_packed=False,
+        optimize=[],
+        extra_swigflags=[],
+        **kwargs):
     """swig_library target. """
-    target = SwigLibrary(name,
-                         srcs,
-                         deps,
-                         warning,
-                         java_package,
-                         java_lib_packed,
-                         optimize,
-                         extra_swigflags,
-                         build_manager.instance,
-                         kwargs)
+    target = SwigLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            java_package=java_package,
+            java_lib_packed=java_lib_packed,
+            optimize=optimize,
+            extra_swigflags=extra_swigflags,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

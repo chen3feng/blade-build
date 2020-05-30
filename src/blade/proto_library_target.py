@@ -87,16 +87,21 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'proto_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
+        super(ProtoLibrary, self).__init__(
+                name=name,
+                type='proto_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning='',
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
 
         self._check_proto_srcs_name(srcs)
         if srcs:
@@ -401,17 +406,18 @@ def proto_library(name,
             `java`, `python`, see protoc's `--xx_out`s.
             NOTE: The `cpp` target code is always generated.
     """
-    proto_library_target = ProtoLibrary(name,
-                                        srcs,
-                                        deps,
-                                        optimize,
-                                        deprecated,
-                                        generate_descriptors,
-                                        target_languages,
-                                        plugins,
-                                        source_encoding,
-                                        build_manager.instance,
-                                        kwargs)
+    proto_library_target = ProtoLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            optimize=optimize,
+            deprecated=deprecated,
+            generate_descriptors=generate_descriptors,
+            target_languages=target_languages,
+            plugins=plugins,
+            source_encoding=source_encoding,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(proto_library_target)
 
 

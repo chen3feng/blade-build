@@ -44,14 +44,14 @@ class GoTarget(Target):
         deps = var_to_list(deps)
         extra_goflags = ' '.join(var_to_list(extra_goflags))
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(GoTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                blade=build_manager.instance,
+                kwargs=kwargs)
 
         self._set_go_package()
         self._init_go_environment()
@@ -139,7 +139,13 @@ class GoLibrary(GoTarget):
     """GoLibrary generates build rules for a go package. """
 
     def __init__(self, name, srcs, deps, extra_goflags, kwargs):
-        GoTarget.__init__(self, name, 'go_library', srcs, deps, extra_goflags, kwargs)
+        super(GoLibrary, self).__init__(
+                name=name,
+                type='go_library',
+                srcs=srcs,
+                deps=deps,
+                extra_goflags=extra_goflags,
+                kwargs=kwargs)
         self.data['go_rule'] = 'gopackage'
         self.data['go_label'] = 'gopkg'
 
@@ -155,7 +161,13 @@ class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable. """
 
     def __init__(self, name, srcs, deps, extra_goflags, kwargs):
-        GoTarget.__init__(self, name, 'go_binary', srcs, deps, extra_goflags, kwargs)
+        super(GoBinary, self).__init__(
+                name=name,
+                type='go_binary',
+                srcs=srcs,
+                deps=deps,
+                extra_goflags=extra_goflags,
+                kwargs=kwargs)
         self.data['go_rule'] = 'gocommand'
         self.data['go_label'] = 'bin'
 
@@ -164,7 +176,13 @@ class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary. """
 
     def __init__(self, name, srcs, deps, testdata, extra_goflags, kwargs):
-        GoTarget.__init__(self, name, 'go_test', srcs, deps, extra_goflags, kwargs)
+        super(GoTest, self).__init__(
+                name=name,
+                type='go_test',
+                srcs=srcs,
+                deps=deps,
+                extra_goflags=extra_goflags,
+                kwargs=kwargs)
         self.data['go_rule'] = 'gotest'
         self.data['testdata'] = var_to_list(testdata)
 
@@ -174,11 +192,12 @@ def go_library(name,
                deps=[],
                extra_goflags=None,
                **kwargs):
-    build_manager.instance.register_target(GoLibrary(name,
-                                                     srcs,
-                                                     deps,
-                                                     extra_goflags,
-                                                     kwargs))
+    build_manager.instance.register_target(GoLibrary(
+        name=name,
+        srcs=srcs,
+        deps=deps,
+        extra_goflags=extra_goflags,
+        kwargs=kwargs))
 
 
 def go_binary(name,
@@ -186,11 +205,12 @@ def go_binary(name,
               deps=[],
               extra_goflags=None,
               **kwargs):
-    build_manager.instance.register_target(GoBinary(name,
-                                                    srcs,
-                                                    deps,
-                                                    extra_goflags,
-                                                    kwargs))
+    build_manager.instance.register_target(GoBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            extra_goflags=extra_goflags,
+            kwargs=kwargs))
 
 
 def go_test(name,
@@ -199,12 +219,13 @@ def go_test(name,
             testdata=[],
             extra_goflags=None,
             **kwargs):
-    build_manager.instance.register_target(GoTest(name,
-                                                  srcs,
-                                                  deps,
-                                                  testdata,
-                                                  extra_goflags,
-                                                  kwargs))
+    build_manager.instance.register_target(GoTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            testdata=testdata,
+            extra_goflags=extra_goflags,
+            kwargs=kwargs))
 
 
 def find_go_srcs(path):

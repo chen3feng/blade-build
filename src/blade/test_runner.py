@@ -62,7 +62,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def __init__(self, targets, options, target_database, direct_targets, skip_tests):
         """Init method. """
         # pylint: disable=too-many-locals, too-many-statements
-        binary_runner.BinaryRunner.__init__(self, targets, options, target_database)
+        super(TestRunner, self).__init__(targets, options, target_database)
         self.direct_targets = direct_targets
 
         # Test jobs should be run

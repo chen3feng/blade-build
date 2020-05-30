@@ -40,14 +40,14 @@ class PythonTarget(Target):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        visibility,
-                        build_manager.instance,
-                        kwargs)
+        super(PythonTarget, self).__init__(
+            name=name,
+            type=type,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            blade=build_manager.instance,
+            kwargs=kwargs)
 
         if base:
             if not base.startswith('//'):
@@ -83,14 +83,14 @@ class PythonLibrary(PythonTarget):
                  visibility,
                  kwargs):
         """Init method. """
-        PythonTarget.__init__(self,
-                              name,
-                              'py_library',
-                              srcs,
-                              deps,
-                              base,
-                              visibility,
-                              kwargs)
+        super(PythonLibrary, self).__init__(
+                name=name,
+                type='py_library',
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=visibility,
+                kwargs=kwargs)
 
     def _ninja_pylib(self):
         if not self.srcs:
@@ -115,14 +115,14 @@ class PrebuiltPythonLibrary(PythonTarget):
                  visibility,
                  kwargs):
         """Init method. """
-        PythonTarget.__init__(self,
-                              name,
-                              'prebuilt_py_library',
-                              srcs,
-                              deps,
-                              base,
-                              visibility,
-                              kwargs)
+        super(PythonTarget, self).__init__(
+                name=name,
+                type='prebuilt_py_library',
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=visibility,
+                kwargs=kwargs)
         if base:
             self.error_exit("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
@@ -147,19 +147,21 @@ def py_library(name,
     """python library. """
     # pylint: disable=redefined-variable-type
     if prebuilt:
-        target = PrebuiltPythonLibrary(name,
-                                       srcs,
-                                       deps,
-                                       base,
-                                       visibility,
-                                       kwargs)
+        target = PrebuiltPythonLibrary(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=visibility,
+                kwargs=kwargs)
     else:
-        target = PythonLibrary(name,
-                               srcs,
-                               deps,
-                               base,
-                               visibility,
-                               kwargs)
+        target = PythonLibrary(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=visibility,
+                kwargs=kwargs)
 
     build_manager.instance.register_target(target)
 
@@ -183,13 +185,13 @@ class PythonBinary(PythonLibrary):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        PythonLibrary.__init__(self,
-                               name,
-                               srcs,
-                               deps,
-                               base,
-                               None,
-                               kwargs)
+        super(PythonBinary, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=None,
+                kwargs=kwargs)
 
         self.type = 'py_binary'
         self.data['run_in_shell'] = True
@@ -260,13 +262,13 @@ class PythonTest(PythonBinary):
                  testdata,
                  kwargs):
         """Init method. """
-        PythonBinary.__init__(self,
-                              name,
-                              srcs,
-                              deps,
-                              main,
-                              base,
-                              kwargs)
+        super(PythonTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                main=main,
+                base=base,
+                kwargs=kwargs)
         self.type = 'py_test'
         self.data['testdata'] = testdata
 
@@ -279,13 +281,14 @@ def py_test(name,
             testdata=[],
             **kwargs):
     """python test. """
-    target = PythonTest(name,
-                        srcs,
-                        deps,
-                        main,
-                        base,
-                        testdata,
-                        kwargs)
+    target = PythonTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            main=main,
+            base=base,
+            testdata=testdata,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
