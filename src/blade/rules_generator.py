@@ -78,8 +78,8 @@ class ScriptHeaderGenerator(object):
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     # pylint: disable=too-many-public-methods
     def __init__(self, options, build_dir, blade_path, build_platform, blade):
-        ScriptHeaderGenerator.__init__(
-            self, options, build_dir, build_platform,
+        super(NinjaScriptHeaderGenerator, self).__init__(
+            options, build_dir, build_platform,
             blade.build_environment, blade.svn_root_dirs)
         self.blade = blade
         self.blade_path = blade_path
@@ -590,7 +590,7 @@ class NinjaRulesGenerator(RulesGenerator):
     """Generate ninja rules to build.ninja. """
 
     def __init__(self, ninja_path, blade_path, blade):
-        RulesGenerator.__init__(self, ninja_path, blade_path, blade)
+        super(NinjaRulesGenerator, self).__init__(ninja_path, blade_path, blade)
         self.__all_rule_names = []
 
     def get_all_rule_names(self):  # override

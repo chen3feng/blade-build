@@ -49,20 +49,21 @@ class PackageTarget(Target):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        Target.__init__(self,
-                        name,
-                        'package',
-                        [],
-                        deps,
-                        None,
-                        blade,
-                        kwargs)
+        super(PackageTarget, self).__init__(
+                name=name,
+                type='package',
+                srcs=[],
+                deps=deps,
+                visibility=None,
+                blade=blade,
+                kwargs=kwargs)
 
         if type not in _package_types:
             self.error_exit('Invalid type %s. Types supported by the package are %s' % (
                             type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
-        self.data['sources'], self.data['locations'] = [], []
+        self.data['sources'] = []
+        self.data['locations'] = []
         self._process_srcs(srcs)
 
         if not out:

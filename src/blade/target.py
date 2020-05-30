@@ -68,7 +68,7 @@ class Target(object):
 
     def __init__(self,
                  name,
-                 target_type,
+                 type,
                  srcs,
                  deps,
                  visibility,
@@ -88,7 +88,7 @@ class Target(object):
         self.fullname = '%s:%s' % self.key
         self.name = name
         self.path = current_source_path
-        self.type = target_type
+        self.type = type
         self.srcs = srcs
         self.deps = []
         self.expanded_deps = []
@@ -549,7 +549,14 @@ class Target(object):
 class SystemLibrary(Target):
     def __init__(self, name, blade):
         name = name[1:]
-        Target.__init__(self, name, 'system_library', [], [], None, blade, {})
+        super(SystemLibrary, self).__init__(
+                name=name,
+                type='system_library',
+                srcs=[],
+                deps=[],
+                visibility=None,
+                blade=blade,
+                kwargs={})
         self.key = ('#', name)
         self.fullname = '%s:%s' % self.key
         self.path = '#'

@@ -44,14 +44,14 @@ class ShellTest(Target):
         deps = var_to_list(deps)
         testdata = var_to_list(testdata)
 
-        Target.__init__(self,
-                        name,
-                        'sh_test',
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(ShellTest, self).__init__(
+                name=name,
+                type='sh_test',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                blade=build_manager.instance,
+                kwargs=kwargs)
 
         self._process_test_data(testdata)
 
@@ -104,11 +104,12 @@ def sh_test(name,
             deps=[],
             testdata=[],
             **kwargs):
-    build_manager.instance.register_target(ShellTest(name,
-                                                     srcs,
-                                                     deps,
-                                                     testdata,
-                                                     kwargs))
+    build_manager.instance.register_target(ShellTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            testdata=testdata,
+            kwargs=kwargs))
 
 
 build_rules.register_function(sh_test)

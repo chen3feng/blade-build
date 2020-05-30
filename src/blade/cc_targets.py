@@ -42,7 +42,7 @@ class CcTarget(Target):
 
     def __init__(self,
                  name,
-                 target_type,
+                 type,
                  srcs,
                  deps,
                  visibility,
@@ -71,14 +71,14 @@ class CcTarget(Target):
         extra_cppflags = var_to_list(extra_cppflags)
         extra_linkflags = var_to_list(extra_linkflags)
 
-        Target.__init__(self,
-                        name,
-                        target_type,
-                        srcs,
-                        deps,
-                        visibility,
-                        blade,
-                        kwargs)
+        super(CcTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                blade=blade,
+                kwargs=kwargs)
 
         self.data['warning'] = warning
         self.data['defs'] = defs
@@ -630,21 +630,21 @@ class CcLibrary(CcTarget):
 
         """
         # pylint: disable=too-many-locals
-        CcTarget.__init__(self,
-                          name,
-                          'cc_library',
-                          srcs,
-                          deps,
-                          visibility,
-                          warning,
-                          defs,
-                          incs,
-                          export_incs,
-                          optimize,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CcLibrary, self).__init__(
+                name=name,
+                type='cc_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=export_incs,
+                optimize=optimize,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                blade=blade,
+                kwargs=kwargs)
         if prebuilt:
             self.type = 'prebuilt_cc_library'
             self.srcs = []
@@ -901,26 +901,27 @@ def cc_library(name,
                **kwargs):
     """cc_library target. """
     # pylint: disable=too-many-locals
-    target = CcLibrary(name,
-                       srcs,
-                       deps,
-                       visibility,
-                       warning,
-                       defs,
-                       incs,
-                       export_incs,
-                       optimize,
-                       always_optimize,
-                       prebuilt or pre_build,
-                       prebuilt_libpath_pattern,
-                       link_all_symbols,
-                       deprecated,
-                       extra_cppflags,
-                       extra_linkflags,
-                       allow_undefined,
-                       secure,
-                       build_manager.instance,
-                       kwargs)
+    target = CcLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            export_incs=export_incs,
+            optimize=optimize,
+            always_optimize=always_optimize,
+            prebuilt=prebuilt or pre_build,
+            prebuilt_libpath_pattern=prebuilt_libpath_pattern,
+            link_all_symbols=link_all_symbols,
+            deprecated=deprecated,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            allow_undefined=allow_undefined,
+            secure=secure,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     if pre_build:
         self.warning("'pre_build' has been deprecated, please use 'prebuilt'")
     build_manager.instance.register_target(target)
@@ -985,21 +986,21 @@ class CcBinary(CcTarget):
 
         """
         # pylint: disable=too-many-locals
-        CcTarget.__init__(self,
-                          name,
-                          'cc_binary',
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          defs,
-                          incs,
-                          [],
-                          optimize,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CcBinary, self).__init__(
+                name=name,
+                type='cc_binary',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                blade=blade,
+                kwargs=kwargs)
         self.data['embed_version'] = embed_version
         self.data['dynamic_link'] = dynamic_link
         self.data['export_dynamic'] = export_dynamic
@@ -1088,20 +1089,21 @@ def cc_binary(name,
               export_dynamic=False,
               **kwargs):
     """cc_binary target. """
-    cc_binary_target = CcBinary(name,
-                                srcs,
-                                deps,
-                                warning,
-                                defs,
-                                incs,
-                                embed_version,
-                                optimize,
-                                dynamic_link,
-                                extra_cppflags,
-                                extra_linkflags,
-                                export_dynamic,
-                                build_manager.instance,
-                                kwargs)
+    cc_binary_target = CcBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            embed_version=embed_version,
+            optimize=optimize,
+            dynamic_link=dynamic_link,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            export_dynamic=export_dynamic,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(cc_binary_target)
 
 
@@ -1147,21 +1149,21 @@ class CcPlugin(CcTarget):
         Init the cc plugin target.
 
         """
-        CcTarget.__init__(self,
-                          name,
-                          'cc_plugin',
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          defs,
-                          incs,
-                          [],
-                          optimize,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CcPlugin, self).__init__(
+                  name=name,
+                  type='cc_plugin',
+                  srcs=srcs,
+                  deps=deps,
+                  visibility=None,
+                  warning=warning,
+                  defs=defs,
+                  incs=incs,
+                  export_incs=[],
+                  optimize=optimize,
+                  extra_cppflags=extra_cppflags,
+                  extra_linkflags=extra_linkflags,
+                  blade=blade,
+                  kwargs=kwargs)
         self.prefix = prefix
         self.suffix = suffix
         self.data['allow_undefined'] = allow_undefined
@@ -1258,31 +1260,27 @@ class CcTest(CcBinary):
                  heap_check_debug,
                  blade,
                  kwargs):
-        """Init method.
-
-        Init the cc test.
-
-        """
+        """Init method."""
         # pylint: disable=too-many-locals
         cc_test_config = config.get_section('cc_test_config')
         if dynamic_link is None:
             dynamic_link = cc_test_config['dynamic_link']
 
-        CcBinary.__init__(self,
-                          name,
-                          srcs,
-                          deps,
-                          warning,
-                          defs,
-                          incs,
-                          embed_version,
-                          optimize,
-                          dynamic_link,
-                          extra_cppflags,
-                          extra_linkflags,
-                          export_dynamic,
-                          blade,
-                          kwargs)
+        super(CcTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                embed_version=embed_version,
+                optimize=optimize,
+                dynamic_link=dynamic_link,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                export_dynamic=export_dynamic,
+                blade=blade,
+                kwargs=kwargs)
         self.type = 'cc_test'
         self.data['testdata'] = var_to_list(testdata)
         self.data['always_run'] = always_run
@@ -1334,25 +1332,26 @@ def cc_test(name,
             **kwargs):
     """cc_test target. """
     # pylint: disable=too-many-locals
-    cc_test_target = CcTest(name,
-                            srcs,
-                            deps,
-                            warning,
-                            defs,
-                            incs,
-                            embed_version,
-                            optimize,
-                            dynamic_link,
-                            testdata,
-                            extra_cppflags,
-                            extra_linkflags,
-                            export_dynamic,
-                            always_run,
-                            exclusive,
-                            heap_check,
-                            heap_check_debug,
-                            build_manager.instance,
-                            kwargs)
+    cc_test_target = CcTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            embed_version=embed_version,
+            optimize=optimize,
+            dynamic_link=dynamic_link,
+            testdata=testdata,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            export_dynamic=export_dynamic,
+            always_run=always_run,
+            exclusive=exclusive,
+            heap_check=heap_check,
+            heap_check_debug=heap_check_debug,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(cc_test_target)
 
 

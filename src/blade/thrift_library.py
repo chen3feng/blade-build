@@ -40,16 +40,21 @@ class ThriftLibrary(CcTarget):
                  kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'thrift_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
+        super(ThriftLibrary, self).__init__(
+                name=name,
+                type='thrift_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning='',
+                depfs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
         self.data['python_vars'] = []
         self.data['python_sources'] = []
 
@@ -118,13 +123,14 @@ def thrift_library(name,
                    deprecated=False,
                    **kwargs):
     """thrift_library target. """
-    thrift_library_target = ThriftLibrary(name,
-                                          srcs,
-                                          deps,
-                                          optimize,
-                                          deprecated,
-                                          build_manager.instance,
-                                          kwargs)
+    thrift_library_target = ThriftLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            optimize=optimize,
+            deprecated=deprecated,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(thrift_library_target)
 
 

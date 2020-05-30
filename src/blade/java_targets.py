@@ -31,7 +31,14 @@ class MavenJar(Target):
     """Describe a maven jar"""
 
     def __init__(self, name, id, classifier, transitive):
-        Target.__init__(self, name, 'maven_jar', [], [], None, build_manager.instance, {})
+        super(MavenJar, self).__init__(
+                name=name,
+                type='maven_jar',
+                srcs=[],
+                deps=[],
+                visibility=None,
+                blade=build_manager.instance,
+                kwargs={})
         self._check_id(id)
         self.data['id'] = id
         self.data['classifier'] = classifier
@@ -558,14 +565,14 @@ class JavaTarget(Target, JavaTargetMixIn):
         deps = var_to_list(deps)
         resources = var_to_list(resources)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(JavaTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                blade=build_manager.instance,
+                kwargs=kwargs)
         self._process_resources(resources)
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
@@ -629,8 +636,15 @@ class JavaLibrary(JavaTarget):
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
         all_deps = var_to_list(deps) + exported_deps + provided_deps
-        JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
-                            source_encoding, warnings, kwargs)
+        super(JavaLibrary, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=all_deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
         if prebuilt:
@@ -655,8 +669,15 @@ class JavaBinary(JavaTarget):
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, main_class, exclusions, kwargs):
-        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
-                            source_encoding, warnings, kwargs)
+        super(JavaBinary, self).__init__(
+                name=name,
+                type='java_binary',
+                srcs=srcs,
+                deps=deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
         if exclusions:
@@ -693,8 +714,15 @@ class JavaFatLibrary(JavaTarget):
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, exclusions, kwargs):
-        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
-                            resources, source_encoding, warnings, kwargs)
+        super(JavaFatLibrary, self).__init__(
+                name=name,
+                type='java_fat_library',
+                srcs=srcs,
+                deps=deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -708,8 +736,16 @@ class JavaTest(JavaBinary):
 
     def __init__(self, name, srcs, deps, resources, source_encoding,
                  warnings, main_class, exclusions, testdata, target_under_test, kwargs):
-        JavaBinary.__init__(self, name, srcs, deps, resources,
-                            source_encoding, warnings, main_class, exclusions, kwargs)
+        super(JavaTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                main_class=main_class,
+                exclusions=exclusions,
+                kwargs=kwargs)
         if target_under_test:
             self.warning('"target_under_test" is deprecated, you can remove it safely')
         self.type = 'java_test'
@@ -756,18 +792,19 @@ def java_library(name,
         coverage: bool, Whether generate test coverage data for this library.
             It is useful to be False in some cases such as srcs are generated.
     """
-    target = JavaLibrary(name=name,
-                         srcs=srcs,
-                         deps=deps,
-                         resources=resources,
-                         source_encoding=source_encoding,
-                         warnings=warnings,
-                         prebuilt=prebuilt,
-                         binary_jar=binary_jar,
-                         exported_deps=exported_deps,
-                         provided_deps=provided_deps,
-                         coverage=coverage,
-                         kwargs=kwargs)
+    target = JavaLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            prebuilt=prebuilt,
+            binary_jar=binary_jar,
+            exported_deps=exported_deps,
+            provided_deps=provided_deps,
+            coverage=coverage,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -781,15 +818,16 @@ def java_binary(name,
                 exclusions=[],
                 **kwargs):
     """Define java_binary target. """
-    target = JavaBinary(name,
-                        srcs,
-                        deps,
-                        resources,
-                        source_encoding,
-                        warnings,
-                        main_class,
-                        exclusions,
-                        kwargs)
+    target = JavaBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            main_class=main_class,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -805,17 +843,18 @@ def java_test(name,
               target_under_test=None,
               **kwargs):
     """Build a java test target"""
-    target = JavaTest(name=name,
-                      srcs=srcs,
-                      deps=deps,
-                      resources=resources,
-                      source_encoding=source_encoding,
-                      warnings=warnings,
-                      main_class=main_class,
-                      exclusions=exclusions,
-                      testdata=testdata,
-                      target_under_test=target_under_test,
-                      kwargs=kwargs)
+    target = JavaTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            main_class=main_class,
+            exclusions=exclusions,
+            testdata=testdata,
+            target_under_test=target_under_test,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -828,14 +867,15 @@ def java_fat_library(name,
                      exclusions=[],
                      **kwargs):
     """Define java_fat_library target. """
-    target = JavaFatLibrary(name,
-                            srcs,
-                            deps,
-                            resources,
-                            source_encoding,
-                            warnings,
-                            exclusions,
-                            kwargs)
+    target = JavaFatLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

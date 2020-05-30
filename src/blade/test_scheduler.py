@@ -41,7 +41,7 @@ _SIGNAL_MAP = dict([
 class WorkerThread(threading.Thread):
     def __init__(self, id, job_queue, job_handler, redirect):
         """Init methods for this thread. """
-        threading.Thread.__init__(self)
+        super(WorkerThread, self).__init__()
         self.thread_id = id
         self.running = True
         self.job_queue = job_queue

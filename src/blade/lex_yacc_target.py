@@ -43,18 +43,21 @@ class LexYaccLibrary(CcTarget):
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
             self.error_exit('srcs for lex_yacc_library must be a pair of [lex_file, yacc_file]')
 
-        CcTarget.__init__(self,
-                          name,
-                          'lex_yacc_library',
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          defs,
-                          incs,
-                          [], [], [], [],
-                          blade,
-                          kwargs)
+        super(LexYaccLibrary, self).__init__(
+                name=name,
+                type='lex_yacc_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=[],
+                optimize=None,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                blade=blade,
+                kwargs=kwargs)
 
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix

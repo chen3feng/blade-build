@@ -36,22 +36,20 @@ class GenRuleTarget(Target):
                  blade,
                  kwargs):
         """Init method.
-
         Init the gen rule target.
-
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
         outs = var_to_list(outs)
 
-        Target.__init__(self,
-                        name,
-                        'gen_rule',
-                        srcs,
-                        deps,
-                        None,
-                        blade,
-                        kwargs)
+        super(GenRuleTarget, self).__init__(
+                name=name,
+                type='gen_rule',
+                srcs=srcs,
+                deps=deps,
+                visibility=None,
+                blade=blade,
+                kwargs=kwargs)
 
         self.data['outs'] = outs
         self.data['locations'] = []
