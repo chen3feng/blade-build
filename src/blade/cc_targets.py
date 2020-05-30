@@ -231,19 +231,7 @@ class CcTarget(Target):
 
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
-        oflags = []
-        opt_list = self.data.get('optimize')
-        if not opt_list:
-            opt_list = config.get_item('cc_config', 'optimize')
-        if opt_list:
-            for flag in opt_list:
-                if flag.startswith('-'):
-                    oflags.append(flag)
-                else:
-                    oflags.append('-' + flag)
-        else:
-            oflags = ['-O2']
-        return oflags
+        return self.data.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
 
     def _get_cc_flags(self):
         """_get_cc_flags.
@@ -303,85 +291,6 @@ class CcTarget(Target):
         incs = stable_unique(incs)
         return incs
 
-    def _static_deps_list(self):
-        """_static_deps_list.
-
-        Returns
-        -----------
-        link_all_symbols_lib_list: the libs to link all its symbols into target
-        lib_list: the libs list to be statically linked into static library
-
-        Description
-        -----------
-        It will find the libs needed to be linked into the target statically.
-
-        """
-        build_targets = self.blade.get_build_targets()
-        lib_list = []
-        link_all_symbols_lib_list = []
-        for dep in self.expanded_deps:
-            dep_target = build_targets[dep]
-            if dep_target.type == 'cc_library' and not dep_target.srcs:
-                continue
-            # system lib
-            if dep_target.type == 'system_library':
-                lib_name = "'%s'" % dep_target.name
-            else:
-                lib_name = dep_target.data.get('static_cc_library_var')
-            if lib_name:
-                if dep_target.data.get('link_all_symbols'):
-                    link_all_symbols_lib_list.append(lib_name)
-                else:
-                    lib_list.append(lib_name)
-
-        return (link_all_symbols_lib_list, lib_list)
-
-    def _dynamic_deps_list(self):
-        """_dynamic_deps_list.
-
-        Returns
-        -----------
-        lib_list: the libs list to be dynamically linked into dynamic library
-
-        Description
-        -----------
-        It will find the libs needed to be linked into the target dynamically.
-
-        """
-        build_targets = self.blade.get_build_targets()
-        lib_list = []
-        for lib in self.expanded_deps:
-            dep_target = build_targets[lib]
-            if (dep_target.type == 'cc_library' and
-                    not dep_target.srcs):
-                continue
-            # system lib
-            if lib[0] == '#':
-                lib_name = "'%s'" % lib[1]
-            else:
-                lib_name = dep_target.data.get('dynamic_cc_library_var')
-            if lib_name:
-                lib_list.append(lib_name)
-
-        return lib_list
-
-    def _get_static_deps_lib_list(self):
-        """Returns a tuple that needed to write static deps rules. """
-        (link_all_symbols_lib_list, lib_list) = self._static_deps_list()
-        lib_str = 'LIBS=[%s]' % ','.join(lib_list)
-        whole_link_flags = []
-        if link_all_symbols_lib_list:
-            whole_link_flags = ['"-Wl,--whole-archive"']
-            for i in link_all_symbols_lib_list:
-                whole_link_flags.append(i)
-            whole_link_flags.append('"-Wl,--no-whole-archive"')
-        return (link_all_symbols_lib_list, lib_str, ', '.join(whole_link_flags))
-
-    def _get_dynamic_deps_lib_list(self):
-        """Returns the libs string. """
-        lib_list = self._dynamic_deps_list()
-        return 'LIBS=[%s]' % ','.join(lib_list)
-
     def _prebuilt_cc_library_is_depended(self):
         build_targets = self.blade.get_build_targets()
         depended_targets = self.blade.get_depended_target_database()
@@ -429,7 +338,7 @@ class CcTarget(Target):
         if self._need_dynamic_library():
             self._dynamic_cc_library()
 
-    def _generated_header_files_dependencies(self):
+    def _cc_compile_dep_files(self):
         """Calculate the dependencies which generate header files.
 
         If a dependency will generate c/c++ header files, we must depends on it during the
@@ -455,8 +364,8 @@ class CcTarget(Target):
                     generated_hdrs = t.data.get('generated_hdrs')
                     if generated_hdrs:
                         result += generated_hdrs
-                elif 'genhdrs_stamp' in t.data:  # ninja only
-                    stamp = t.data['genhdrs_stamp']
+                elif 'cc_compile_deps_file' in t.data:  # ninja only
+                    stamp = t.data['cc_compile_deps_file']
                     if stamp:
                         result.append(stamp)
                 queue.extend(t.deps)
@@ -586,15 +495,15 @@ class CcTarget(Target):
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
         pass
 
-    def _cc_objects_generated_header_files_dependency(self):
+    def _cc_compile_deps_stamp_file(self):
         """Return a stamp which depends on targets which generate header files. """
-        self.data['genhdrs_stamp'] = None
-        deps = self._generated_header_files_dependencies()
+        self.data['cc_compile_deps_file'] = None
+        deps = self._cc_compile_dep_files()
         if not deps:
             return None
-        stamp = self._target_file_path(self.name + '__stamp__')
+        stamp = self._target_file_path(self.name + '__compile_deps__')
         self.ninja_build('stamp', stamp, inputs=deps)
-        self.data['genhdrs_stamp'] = stamp
+        self.data['cc_compile_deps_file'] = stamp
         return stamp
 
     def _securecc_object_ninja(self, obj, src, implicit_deps, vars):
@@ -616,7 +525,7 @@ class CcTarget(Target):
         vars = {}
         self._setup_ninja_cc_vars(vars)
         implicit_deps = []
-        stamp = self._cc_objects_generated_header_files_dependency()
+        stamp = self._cc_compile_deps_stamp_file()
         if stamp:
             implicit_deps.append(stamp)
         secure = self.data.get('secure')
