@@ -57,7 +57,7 @@ False: Don't optimize in debug mode。
 The default value is False。It only apply to cc_library.
 
 * prebuilt=True
-Use prebuild in cc_library is deprecated. you should use `prebuilt_cc_library`.
+Use prebuilt in cc_library is deprecated. you should use `prebuilt_cc_library`.
 
 * export_incs
 Similar to `incs`, but it is transitive for all targets depends on it, even if indirect depends on it.
