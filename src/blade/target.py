@@ -554,7 +554,7 @@ class SystemLibrary(Target):
                 type='system_library',
                 srcs=[],
                 deps=[],
-                visibility=None,
+                visibility=['PUBLIC'],
                 blade=blade,
                 kwargs={})
         self.key = ('#', name)

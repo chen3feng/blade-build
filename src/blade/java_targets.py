@@ -30,13 +30,13 @@ from blade.target import Target, LOCATION_RE
 class MavenJar(Target):
     """Describe a maven jar"""
 
-    def __init__(self, name, id, classifier, transitive):
+    def __init__(self, name, id, classifier, transitive, visibility):
         super(MavenJar, self).__init__(
                 name=name,
                 type='maven_jar',
                 srcs=[],
                 deps=[],
-                visibility=None,
+                visibility=visibility,
                 blade=build_manager.instance,
                 kwargs={})
         self._check_id(id)
@@ -552,6 +552,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  type,
                  srcs,
                  deps,
+                 visibility,
                  resources,
                  source_encoding,
                  warnings,
@@ -570,7 +571,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                 type=type,
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 blade=build_manager.instance,
                 kwargs=kwargs)
         self._process_resources(resources)
@@ -628,8 +629,21 @@ class JavaTarget(Target, JavaTargetMixIn):
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 prebuilt, binary_jar, exported_deps, provided_deps, coverage, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            prebuilt,
+            binary_jar,
+            exported_deps,
+            provided_deps,
+            coverage,
+            kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
@@ -641,6 +655,7 @@ class JavaLibrary(JavaTarget):
                 type=type,
                 srcs=srcs,
                 deps=all_deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -667,13 +682,24 @@ class JavaLibrary(JavaTarget):
 class JavaBinary(JavaTarget):
     """JavaBinary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, exclusions, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            main_class,
+            exclusions,
+            kwargs):
         super(JavaBinary, self).__init__(
                 name=name,
                 type='java_binary',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,

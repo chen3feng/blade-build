@@ -41,6 +41,7 @@ class PackageTarget(Target):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  type,
                  out,
                  shell,
@@ -54,7 +55,7 @@ class PackageTarget(Target):
                 type='package',
                 srcs=[],
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 blade=blade,
                 kwargs=kwargs)
 
@@ -188,18 +189,20 @@ class PackageTarget(Target):
 def package(name,
             srcs,
             deps=[],
+            visibility=None,
             type='tar',
             out=None,
             shell=False,
             **kwargs):
-    package_target = PackageTarget(name,
-                                   srcs,
-                                   deps,
-                                   type,
-                                   out,
-                                   shell,
-                                   build_manager.instance,
-                                   kwargs)
+    package_target = PackageTarget(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            type=type,
+            out=out,
+            shell=shell,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(package_target)
 
 

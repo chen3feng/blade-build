@@ -72,6 +72,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  optimize,
                  deprecated,
                  generate_descriptors,
@@ -92,7 +93,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 type='proto_library',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning='',
                 defs=[],
                 incs=[],
@@ -389,16 +390,18 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.ninja_proto_rules(self.blade.get_options())
 
 
-def proto_library(name,
-                  srcs=[],
-                  deps=[],
-                  optimize=[],
-                  deprecated=False,
-                  generate_descriptors=False,
-                  target_languages=None,
-                  plugins=[],
-                  source_encoding='iso-8859-1',
-                  **kwargs):
+def proto_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        optimize=[],
+        deprecated=False,
+        generate_descriptors=False,
+        target_languages=None,
+        plugins=[],
+        source_encoding='iso-8859-1',
+        **kwargs):
     """proto_library target.
     Args:
         generate_descriptors (bool): Whether generate binary protobuf descriptors.
@@ -410,6 +413,7 @@ def proto_library(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             optimize=optimize,
             deprecated=deprecated,
             generate_descriptors=generate_descriptors,

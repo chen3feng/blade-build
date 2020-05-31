@@ -178,6 +178,7 @@ class PythonBinary(PythonLibrary):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  main,
                  base,
                  kwargs):
@@ -189,8 +190,8 @@ class PythonBinary(PythonLibrary):
                 name=name,
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 base=base,
-                visibility=None,
                 kwargs=kwargs)
 
         self.type = 'py_binary'
@@ -232,16 +233,19 @@ class PythonBinary(PythonLibrary):
 def py_binary(name,
               srcs=[],
               deps=[],
+              visibility=None,
               main=None,
               base=None,
               **kwargs):
     """python binary. """
-    target = PythonBinary(name,
-                          srcs,
-                          deps,
-                          main,
-                          base,
-                          kwargs)
+    target = PythonBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            main=main,
+            base=base,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -257,6 +261,7 @@ class PythonTest(PythonBinary):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  main,
                  base,
                  testdata,
@@ -266,6 +271,7 @@ class PythonTest(PythonBinary):
                 name=name,
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 main=main,
                 base=base,
                 kwargs=kwargs)
@@ -276,6 +282,7 @@ class PythonTest(PythonBinary):
 def py_test(name,
             srcs=[],
             deps=[],
+            visibility=None,
             main=None,
             base=None,
             testdata=[],
@@ -285,6 +292,7 @@ def py_test(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             main=main,
             base=base,
             testdata=testdata,

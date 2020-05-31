@@ -37,6 +37,7 @@ class FBThriftLibrary(CcTarget):
                  srcs,
                  deps,
                  optimize,
+                 visibility,
                  deprecated,
                  blade,
                  kwargs):
@@ -47,7 +48,7 @@ class FBThriftLibrary(CcTarget):
                 type='fbthrift_library',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning='',
                 defs=[],
                 incs=[],
@@ -109,16 +110,19 @@ def fbthrift_library(name,
                      srcs=[],
                      deps=[],
                      optimize=[],
+                     visibility=None,
                      deprecated=False,
                      **kwargs):
     """fbthrift_library target. """
-    fbthrift_library_target = FBThriftLibrary(name,
-                                              srcs,
-                                              deps,
-                                              optimize,
-                                              deprecated,
-                                              build_manager.instance,
-                                              kwargs)
+    fbthrift_library_target = FBThriftLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            optimize=optimize,
+            visibility=visibility,
+            deprecated=deprecated,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(fbthrift_library_target)
 
 

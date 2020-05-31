@@ -30,14 +30,16 @@ from blade.thrift_helper import ThriftHelper
 class ThriftLibrary(CcTarget):
     """A thrift library target derived from CcTarget. """
 
-    def __init__(self,
-                 name,
-                 srcs,
-                 deps,
-                 optimize,
-                 deprecated,
-                 blade,
-                 kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            optimize,
+            deprecated,
+            blade,
+            kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
         super(ThriftLibrary, self).__init__(
@@ -45,7 +47,7 @@ class ThriftLibrary(CcTarget):
                 type='thrift_library',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning='',
                 depfs=[],
                 incs=[],
@@ -116,17 +118,20 @@ class ThriftLibrary(CcTarget):
         self._cc_library_ninja()
 
 
-def thrift_library(name,
-                   srcs=[],
-                   deps=[],
-                   optimize=[],
-                   deprecated=False,
-                   **kwargs):
+def thrift_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        optimize=[],
+        deprecated=False,
+        **kwargs):
     """thrift_library target. """
     thrift_library_target = ThriftLibrary(
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             optimize=optimize,
             deprecated=deprecated,
             blade=build_manager.instance,

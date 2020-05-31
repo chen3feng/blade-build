@@ -38,6 +38,7 @@ class GoTarget(Target):
                  srcs,
                  deps,
                  extra_goflags,
+                 visibility,
                  kwargs):
         """Init the go target. """
         srcs = var_to_list(srcs)
@@ -49,7 +50,7 @@ class GoTarget(Target):
                 type=type,
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 blade=build_manager.instance,
                 kwargs=kwargs)
 
@@ -138,12 +139,13 @@ class GoTarget(Target):
 class GoLibrary(GoTarget):
     """GoLibrary generates build rules for a go package. """
 
-    def __init__(self, name, srcs, deps, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
         super(GoLibrary, self).__init__(
                 name=name,
                 type='go_library',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.data['go_rule'] = 'gopackage'
@@ -160,12 +162,13 @@ class GoLibrary(GoTarget):
 class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable. """
 
-    def __init__(self, name, srcs, deps, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
         super(GoBinary, self).__init__(
                 name=name,
                 type='go_binary',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.data['go_rule'] = 'gocommand'
@@ -175,54 +178,64 @@ class GoBinary(GoTarget):
 class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary. """
 
-    def __init__(self, name, srcs, deps, testdata, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, testdata, extra_goflags, kwargs):
         super(GoTest, self).__init__(
                 name=name,
                 type='go_test',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.data['go_rule'] = 'gotest'
         self.data['testdata'] = var_to_list(testdata)
 
 
-def go_library(name,
-               srcs,
-               deps=[],
-               extra_goflags=None,
-               **kwargs):
+def go_library(
+        name,
+        srcs,
+        deps=[],
+        extra_goflags=None,
+        visibility=None,
+        **kwargs):
     build_manager.instance.register_target(GoLibrary(
         name=name,
         srcs=srcs,
         deps=deps,
+        visibility=visibility,
         extra_goflags=extra_goflags,
         kwargs=kwargs))
 
 
-def go_binary(name,
-              srcs,
-              deps=[],
-              extra_goflags=None,
-              **kwargs):
+def go_binary(
+        name,
+        srcs,
+        deps=[],
+        visibility=None,
+        extra_goflags=None,
+        **kwargs):
     build_manager.instance.register_target(GoBinary(
             name=name,
             srcs=srcs,
             deps=deps,
             extra_goflags=extra_goflags,
+            visibility=visibility,
             kwargs=kwargs))
 
 
-def go_test(name,
-            srcs,
-            deps=[],
-            testdata=[],
-            extra_goflags=None,
-            **kwargs):
+def go_test(
+        name,
+        srcs,
+        deps=[],
+        visibility=None,
+        testdata=[],
+        extra_goflags=None,
+        **kwargs):
     build_manager.instance.register_target(GoTest(
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             testdata=testdata,
             extra_goflags=extra_goflags,
             kwargs=kwargs))
@@ -250,10 +263,12 @@ def extract_go_package(path):
     raise Exception('Failed to find package in %s' % path)
 
 
-def go_package(name,
-               deps=[],
-               testdata=[],
-               extra_goflags = None):
+def go_package(
+        name,
+        deps=[],
+        testdata=[],
+        visibility=None,
+        extra_goflags = None):
     path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
@@ -266,13 +281,16 @@ def go_package(name,
                 main = True
                 break
         if main:
-            go_binary(name=name, srcs=srcs, deps=deps, extra_goflags=extra_goflags)
+            go_binary(name=name, srcs=srcs, deps=deps, visibility=visibility,
+                      extra_goflags=extra_goflags)
         else:
-            go_library(name=name, srcs=srcs, deps=deps, extra_goflags=extra_goflags)
+            go_library(name=name, srcs=srcs, deps=deps, visibility=visibility,
+                       extra_goflags=extra_goflags)
     if tests:
         go_test(name='%s_test' % name,
                 srcs=tests,
                 deps=deps,
+                visibility=visibility,
                 testdata=testdata,
                 extra_goflags=extra_goflags)
 

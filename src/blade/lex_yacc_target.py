@@ -23,6 +23,7 @@ class LexYaccLibrary(CcTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
@@ -48,7 +49,7 @@ class LexYaccLibrary(CcTarget):
                 type='lex_yacc_library',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -135,32 +136,36 @@ class LexYaccLibrary(CcTarget):
         self._cc_library_ninja()
 
 
-def lex_yacc_library(name,
-                     srcs=[],
-                     deps=[],
-                     warning='yes',
-                     defs=[],
-                     incs=[],
-                     allow_undefined=False,
-                     recursive=False,
-                     prefix=None,
-                     lexflags=[],
-                     yaccflags=[],
-                     **kwargs):
+def lex_yacc_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        warning='yes',
+        defs=[],
+        incs=[],
+        allow_undefined=False,
+        recursive=False,
+        prefix=None,
+        lexflags=[],
+        yaccflags=[],
+        **kwargs):
     """lex_yacc_library. """
-    target = LexYaccLibrary(name,
-                            srcs,
-                            deps,
-                            warning,
-                            defs,
-                            incs,
-                            allow_undefined,
-                            recursive,
-                            prefix,
-                            lexflags,
-                            yaccflags,
-                            build_manager.instance,
-                            kwargs)
+    target = LexYaccLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            visibility=visibility,
+            defs=defs,
+            incs=incs,
+            allow_undefined=allow_undefined,
+            recursive=recursive,
+            prefix=prefix,
+            lexflags=lexflags,
+            yaccflags=yaccflags,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

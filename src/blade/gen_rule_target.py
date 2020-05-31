@@ -28,6 +28,7 @@ class GenRuleTarget(Target):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  outs,
                  cmd,
                  cmd_name,
@@ -47,7 +48,7 @@ class GenRuleTarget(Target):
                 type='gen_rule',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 blade=blade,
                 kwargs=kwargs)
 
@@ -135,15 +136,17 @@ class GenRuleTarget(Target):
         self.data['generated_hdrs'] = [o for o in outputs if o.endswith('.h')]
 
 
-def gen_rule(name,
-             srcs=[],
-             deps=[],
-             outs=[],
-             cmd='',
-             cmd_name='COMMAND',
-             generate_hdrs=None,
-             heavy=False,
-             **kwargs):
+def gen_rule(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        outs=[],
+        cmd='',
+        cmd_name='COMMAND',
+        generate_hdrs=None,
+        heavy=False,
+        **kwargs):
     """General Build Rule
     Args:
         generate_hdrs: Optional[bool]:
@@ -154,16 +157,18 @@ def gen_rule(name,
             some headers, we should set this argument to True.
         heavy: bool: Whether this target is a heavy target, which means it will cost many cpu/memory
     """
-    gen_rule_target = GenRuleTarget(name=name,
-                                    srcs=srcs,
-                                    deps=deps,
-                                    outs=outs,
-                                    cmd=cmd,
-                                    cmd_name=cmd_name,
-                                    generate_hdrs=generate_hdrs,
-                                    heavy=heavy,
-                                    blade=build_manager.instance,
-                                    kwargs=kwargs)
+    gen_rule_target = GenRuleTarget(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            outs=outs,
+            cmd=cmd,
+            cmd_name=cmd_name,
+            generate_hdrs=generate_hdrs,
+            heavy=heavy,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)
 
 

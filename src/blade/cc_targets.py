@@ -951,9 +951,17 @@ def foreign_cc_library(
     import blade
     libpath = '//' + os.path.join(blade.current_target_dir(), package_name, libdir)
     current_source_path = build_manager.instance.get_current_source_path()
-    cc_library(name=name, prebuilt=True, prebuilt_libpath_pattern=libpath,
-            hdrs=hdrs, export_incs=export_incs, deps=deps, link_all_symbols=link_all_symbols,
-            visibility=visibility, deprecated=deprecated, **kwargs)
+    cc_library(
+            name=name,
+            prebuilt=True,
+            prebuilt_libpath_pattern=libpath,
+            hdrs=hdrs,
+            export_incs=export_incs,
+            deps=deps,
+            link_all_symbols=link_all_symbols,
+            visibility=visibility,
+            deprecated=deprecated,
+            **kwargs)
 
 
 build_rules.register_function(foreign_cc_library)
@@ -970,6 +978,7 @@ class CcBinary(CcTarget):
                  srcs,
                  deps,
                  warning,
+                 visibility,
                  defs,
                  incs,
                  embed_version,
@@ -991,7 +1000,7 @@ class CcBinary(CcTarget):
                 type='cc_binary',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -1133,6 +1142,7 @@ class CcPlugin(CcTarget):
                  srcs,
                  deps,
                  warning,
+                 visibility,
                  defs,
                  incs,
                  optimize,
@@ -1154,7 +1164,7 @@ class CcPlugin(CcTarget):
                   type='cc_plugin',
                   srcs=srcs,
                   deps=deps,
-                  visibility=None,
+                  visibility=visibility,
                   warning=warning,
                   defs=defs,
                   incs=incs,
@@ -1198,36 +1208,40 @@ class CcPlugin(CcTarget):
             self._add_default_target_file('so', output)
 
 
-def cc_plugin(name,
-              srcs=[],
-              deps=[],
-              warning='yes',
-              defs=[],
-              incs=[],
-              optimize=[],
-              prefix=None,
-              suffix=None,
-              extra_cppflags=[],
-              extra_linkflags=[],
-              allow_undefined=True,
-              strip=False,
-              **kwargs):
+def cc_plugin(
+        name,
+        srcs=[],
+        deps=[],
+        warning='yes',
+        visibility=None,
+        defs=[],
+        incs=[],
+        optimize=[],
+        prefix=None,
+        suffix=None,
+        extra_cppflags=[],
+        extra_linkflags=[],
+        allow_undefined=True,
+        strip=False,
+        **kwargs):
     """cc_plugin target. """
-    target = CcPlugin(name,
-                      srcs,
-                      deps,
-                      warning,
-                      defs,
-                      incs,
-                      optimize,
-                      prefix,
-                      suffix,
-                      extra_cppflags,
-                      extra_linkflags,
-                      allow_undefined,
-                      strip,
-                      build_manager.instance,
-                      kwargs)
+    target = CcPlugin(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            visibility=visibility,
+            defs=defs,
+            incs=incs,
+            optimize=optimize,
+            prefix=prefix,
+            suffix=suffix,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            allow_undefined=allow_undefined,
+            strip=strip,
+            blade=build_manager.instance,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -1240,26 +1254,28 @@ class CcTest(CcBinary):
     rules according to user options.
     """
 
-    def __init__(self,
-                 name,
-                 srcs,
-                 deps,
-                 warning,
-                 defs,
-                 incs,
-                 embed_version,
-                 optimize,
-                 dynamic_link,
-                 testdata,
-                 extra_cppflags,
-                 extra_linkflags,
-                 export_dynamic,
-                 always_run,
-                 exclusive,
-                 heap_check,
-                 heap_check_debug,
-                 blade,
-                 kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            warning,
+            visibility,
+            defs,
+            incs,
+            embed_version,
+            optimize,
+            dynamic_link,
+            testdata,
+            extra_cppflags,
+            extra_linkflags,
+            export_dynamic,
+            always_run,
+            exclusive,
+            heap_check,
+            heap_check_debug,
+            blade,
+            kwargs):
         """Init method."""
         # pylint: disable=too-many-locals
         cc_test_config = config.get_section('cc_test_config')
@@ -1271,6 +1287,7 @@ class CcTest(CcBinary):
                 srcs=srcs,
                 deps=deps,
                 warning=warning,
+                visibility=visibility,
                 defs=defs,
                 incs=incs,
                 embed_version=embed_version,
@@ -1316,6 +1333,7 @@ def cc_test(name,
             srcs=[],
             deps=[],
             warning='yes',
+            visibility=None,
             defs=[],
             incs=[],
             embed_version=False,
@@ -1337,6 +1355,7 @@ def cc_test(name,
             srcs=srcs,
             deps=deps,
             warning=warning,
+            visibility=visibility,
             defs=defs,
             incs=incs,
             embed_version=embed_version,

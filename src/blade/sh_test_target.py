@@ -38,6 +38,7 @@ class ShellTest(Target):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  testdata,
                  kwargs):
         srcs = var_to_list(srcs)
@@ -49,7 +50,7 @@ class ShellTest(Target):
                 type='sh_test',
                 srcs=srcs,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 blade=build_manager.instance,
                 kwargs=kwargs)
 
@@ -102,12 +103,14 @@ class ShellTest(Target):
 def sh_test(name,
             srcs,
             deps=[],
+            visibility=None,
             testdata=[],
             **kwargs):
     build_manager.instance.register_target(ShellTest(
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             testdata=testdata,
             kwargs=kwargs))
 
