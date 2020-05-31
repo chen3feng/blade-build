@@ -44,7 +44,7 @@ class TargetTest(unittest.TestCase):
         """tear down method. """
         try:
             os.remove(self.build_output_file)
-            os.remove('./build.ninja')
+            os.remove('build64_release/build.ninja')
         except OSError:
             pass
 
