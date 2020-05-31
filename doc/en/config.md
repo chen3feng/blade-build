@@ -21,31 +21,55 @@ Without the `--to-file` option, the result will be dumped to stdout.
 ### global_config
 Blade global configuration
 ```python
-global_config(
-    backend_builder = 'ninja', # backend build system, only supports ninja now.
     duplicated_source_action = 'error', # When the same source file is found to belong to multiple targets, the default is warning
     test_timeout = 600 # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
-)
 ```
+| parameter                  | type   | default | values             | description                                                                                |
+|----------------------------|--------|---------|--------------------|----------------------------------------------------------------------------                |
+| backend\_builder           | string | ninja   | ninja              | Backend build system, only `ninja` currently                                               |
+| duplicated\_source\_action | string | warning | warning, error     | The action when the same source file is found to belong to multiple targets                |
+| test\_timeout              | int    | 600     |                    | in seconds, tests which can't finish in this seconds will be reported as fail              |
+| debug\_info\_level         | string | mid     | no, low, mid, high | Debug information level, the higher may be helpful for debugging, but cost more disk space |
+| build\_jobs                | int    | 0       | 0~#CPU cores       | The number of concurrent build jobs, 0 means decided by blade itself                       |
+| test\_jobs                 | int    | 0       | 0~#CPU cores/2     | The number of concurrent build jobs, 0 means decided by blade itself                       |
 
 [ninja](https://ninja-build.org/) is a meta-construction system that focuses on building speeds.
 We used to use scons as the backend, but ninja is much faster, so the we only use ninja as backend, and the support for scons is removed.
 
 ### cc_config
+
 Common configuration of all c/c++ targets
+
+| parameter      | type   | default  | values                                   | description              |
+| -------------- | ------ | -------- | ------                                   | ------------------------ |
+| extra\_incs    | list   | []       |                                          | header file search paths |
+| cppflags       | list   | []       |                                          | C/C++ common options     |
+| cflags         | list   | []       |                                          | C only options           |
+| cxxflags       | list   | []       |                                          | C++ only options         |
+| linkflags      | list   | []       |                                          | Link options             |
+| warnings       | list   | 内置     | -Wxxx such as ['-Wall', '-Wextra']       | C/C++ common warnings    |
+| c\_warnings    | list   | 内置     |                                          | C only warnings          |
+| cxx\_warnings  | list   | 内置     |                                          | C++ only warnings        |
+| optimize       | list   | 内置     |                                          | optimize options         |
+
+All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
+The optimize flags is separate from other compile flags because it is ignored in debug mode.
+
+Example:
 ```python
 cc_config(
     extra_incs = ['thirdparty'], # extra -I, like thirdparty
     warnings = ['-Wall', '-Wextra'...], # C/C++ Public Warning
     c_warnings = ['-Wall', '-Wextra'...], # C special warning
     cxx_warnings = ['-Wall', '-Wextra'...], # C++ Dedicated warning
-    optimize = '-O2', # optimization level
+    optimize = ['-O2'], # optimization level
 )
 ```
-All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
 
 ### cc_test_config
+
 The configuration required to build and run the test
+
 ```python
 cc_test_config(
     dynamic_link=True, # Test program default dynamic link, can reduce disk overhead, the default is False

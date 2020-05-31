@@ -7,6 +7,7 @@ The Blade passes a series of files named "BUILD" (all uppercase), which need to 
 Building a script is simple:
 
 Example: common/base/string/BUILD
+
 ```python
 cc_library(
     name = 'string',
@@ -20,9 +21,11 @@ cc_library(
     deps = ['//common/base:int']
 )
 ```
+
 It is also an explanation, just need to list the target name, source file name and dependency name (may not be).
 
 ## Style suggestion
+
 * Four spaces are indented, do not use tab characters
 * Always use single quotes
 * Target name is lowercase
@@ -34,9 +37,10 @@ It is also an explanation, just need to list the target name, source file name a
 ## Common Attributes
 Blade uses a set of target functions to define targets. The common properties of these targets are:
 
- * name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
- * srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
- * deps: list or string, other targets on which the object depends
+* name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
+* srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
+* deps: list or string, other targets on which the object depends
+* visibility: list or string, control visibility to the listed targets, there is a special value: 'PUBLIC', means visible to everyone.
 
 We also provide a [glob](functions.md#glob) function to generate the source files list.
 
