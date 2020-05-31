@@ -96,6 +96,8 @@ class Blade(object):
 
         self.__build_platform = BuildPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
+        self.__build_jobs_num = 0
+        self.__test_jobs_num = 0
 
         self.svn_root_dirs = []
 
@@ -200,7 +202,8 @@ class Blade(object):
                                  self.__options,
                                  self.__target_database,
                                  self.__direct_targets,
-                                 skip_tests)
+                                 skip_tests,
+                                 self.test_jobs_num())
         return test_runner.run()
 
     def query(self):
@@ -442,12 +445,12 @@ class Blade(object):
         with open(self._verify_history_path, 'w') as f:
             json.dump(self._verify_history, f)
 
-    def parallel_jobs_num(self):
-        """Tune the jobs num. """
+    def _build_jobs_num(self):
+        """Calculate build jobs num."""
         # User has the highest priority
-        user_jobs_num = self.__options.jobs
-        if user_jobs_num > 0:
-            return user_jobs_num
+        jobs_num = config.get_item('global_config', 'build_jobs')
+        if jobs_num > 0:
+            return jobs_num
 
         # Calculate job numbers smartly
         distcc_enabled = config.get_item('distcc_config', 'enabled')
@@ -457,10 +460,33 @@ class Blade(object):
             jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
         else:
             cpu_core_num = cpu_count()
-            # machines with cpu_core_num > 4 is usually shared by multiple users,
+            # machines with cpu_core_num > 8 is usually shared by multiple users,
             # set an upper bound to avoid interfering other users
-            jobs_num = min(2 * cpu_core_num, 8)
-        console.info('tunes the parallel jobs number(-j N) to be %d' % jobs_num)
+            jobs_num = min(cpu_core_num, 8)
+        console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
+        return jobs_num
+
+    def build_jobs_num(self):
+        """The number of build jobs"""
+        if self.__build_jobs_num == 0:
+            self.__build_jobs_num = self._build_jobs_num()
+        return self.__build_jobs_num
+
+    def test_jobs_num(self):
+        """Calculate the number of test jobs"""
+        # User has the highest priority
+        jobs_num = config.get_item('global_config', 'test_jobs')
+        if jobs_num > 0:
+            return jobs_num
+        # In distcc enabled mode, the build_jobs_num may be quiet large, but we
+        # only support run test locally, so the test_jobs_num should be limited
+        # by local cpu mumber.
+        # WE limit the test_jobs_num to be half of build job number because test
+        # may be heavier than build (may be not, perhaps).
+        build_jobs_num = self.build_jobs_num()
+        cpu_core_num = cpu_count()
+        jobs_num = max(min(build_jobs_num, cpu_core_num) / 2, 1)
+        console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 
     def get_all_rule_names(self):

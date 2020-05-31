@@ -57,6 +57,10 @@ class BladeConfig(object):
                 'test_ignored_envs': [],
                 'backend_builder': 'ninja',
                 'debug_info_level': 'mid',
+                'build_jobs': 0,
+                'build_jobs__doc__': 'The number of build jobs (commands) to run simultaneously',
+                'test_jobs': 0,
+                'test_jobs__doc__': 'The number of test jobs to run simultaneously'
             },
 
             'cc_test_config': {
@@ -233,11 +237,11 @@ class BladeConfig(object):
                     if isinstance(section[k], list):
                         section[k] += var_to_list(append[k])
                     else:
-                        console.warning('//%s: %s: config item %s is not a list' %
+                        console.warning('%s: %s: config item %s is not a list' %
                                         (self.current_file_name, section_name, k))
 
                 else:
-                    console.warning('//%s: %s: unknown config item name: %s' %
+                    console.warning('%s: %s: unknown config item name: %s' %
                                     (self.current_file_name, section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
@@ -248,7 +252,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
-                console.warning('//%s: %s: unknown config item name: %s' %
+                console.warning('%s: %s: unknown config item name: %s' %
                                 (self.current_file_name, section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:

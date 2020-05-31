@@ -269,8 +269,7 @@ def _run_ninja(cmd, options):
 def _ninja_build(options):
     cmd = ['ninja', '-f', build_manager.instance.build_script()]
     cmd += backend_builder_options(options)
-    # Ninja enable parallel building defaultly, but we still set it explicitly.
-    cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
+    cmd.append('-j%s' % build_manager.instance.build_jobs_num())
     if options.keep_going:
         cmd.append('-k0')
     if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
@@ -470,7 +469,9 @@ def generate_scm(build_dir):
 
 
 def adjust_config_by_options(config, options):
-    for name in ('debug_info_level', 'backend_builder'):
+    # Common options between config and command line
+    common_options = ('debug_info_level', 'backend_builder', 'build_jobs', 'test_jobs')
+    for name in common_options:
         value = getattr(options, name, None)
         if value:
             config.global_config(**{name: value})

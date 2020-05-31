@@ -214,7 +214,7 @@ class ParsedCommandLine(object):
             help='Specifies extra backend builder options, for debug purpose')
 
         parser.add_argument(
-            '-j', '--jobs', dest='jobs', type=int, default=0,
+            '-j', '--jobs', dest='build_jobs', type=int,
             help=('Specifies the number of build jobs (commands) to run simultaneously'))
 
         parser.add_argument(
@@ -288,7 +288,7 @@ class ParsedCommandLine(object):
             help='Enable full test, default is incremental test')
 
         parser.add_argument(
-            '-t', '--test-jobs', dest='test_jobs', type=int, default=1,
+            '-t', '--test-jobs', dest='test_jobs', type=int,
             help=('Specifies the number of tests to run simultaneously'))
 
         parser.add_argument(
