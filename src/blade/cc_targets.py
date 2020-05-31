@@ -167,30 +167,6 @@ class CcTarget(Target):
         if illegal_path_list:
             self.warning("warning='no' should only be used for code in thirdparty.")
 
-    def _library_target_path(self, prefer_dynamic=False):
-        """
-        Return source and target path of the prebuilt cc library.
-        When both .so and .a exist, return .so if prefer_dynamic is True.
-        Otherwise return the existing one.
-        """
-        a_src_path, so_src_path = self._library_source_path()
-        libs = (a_src_path, so_src_path)  # Ordered by priority
-        if prefer_dynamic:
-            libs = (so_src_path, a_src_path)
-        source = ''
-        for lib in libs:
-            if os.path.exists(lib):
-                source = lib
-                break
-        if not source:
-            # TODO(chen3feng): Restore this error
-            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
-            source = a_src_path
-        target = self._target_file_path(os.path.basename(source))
-        return source, target
-
-    _default_prebuilt_libpath = None
-
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
         return self.data.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
@@ -315,7 +291,7 @@ class CcTarget(Target):
             2. Only dynamic library(.so) exists
             3. Both static and dynamic libraries exist
         """
-        static_src_path, static_target_path = self._library_target_path()
+        static_src_path, static_target_path = self._library_paths(prefer_dynamic=False)
         if static_src_path.endswith('.a'):
             path = static_src_path
         else:
@@ -325,7 +301,7 @@ class CcTarget(Target):
 
         dynamic_src_path, dynamic_target_path = '', ''
         if self._need_dynamic_library():
-            dynamic_src_path, dynamic_target_path = self._library_target_path(True)
+            dynamic_src_path, dynamic_target_path = self._library_paths(prefer_dynamic=True)
             if dynamic_target_path != static_target_path:
                 assert static_src_path.endswith('.a')
                 assert dynamic_src_path.endswith('.so')
@@ -830,12 +806,15 @@ class PrebuiltCcLibrary(CcTarget):
         self.data['deprecated'] = deprecated
         self.data['hdrs'] = var_to_list(hdrs)
 
+    _default_prebuilt_libpath = None
+
     def _library_source_path(self):
+        """Library full path in source dir"""
         options = self.blade.get_options()
         bits, arch, profile = options.bits, options.arch, options.profile
-        if CcTarget._default_prebuilt_libpath is None:
+        if PrebuiltCcLibrary._default_prebuilt_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
-            CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
+            PrebuiltCcLibrary._default_prebuilt_libpath = Template(pattern).substitute(
                 bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('libpath_pattern')
@@ -844,7 +823,7 @@ class PrebuiltCcLibrary(CcTarget):
                                                    arch=arch,
                                                    profile=profile)
         else:
-            libpath = CcTarget._default_prebuilt_libpath
+            libpath = PrebuiltCcLibrary._default_prebuilt_libpath
         if libpath.startswith('//'):
             libpath = libpath[2:]
         else:
@@ -852,8 +831,30 @@ class PrebuiltCcLibrary(CcTarget):
         return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
                 for s in ['a', 'so']]
 
+    def _library_paths(self, prefer_dynamic):
+        """
+        Return source and target path of the prebuilt cc library.
+        When both .so and .a exist, return .so if prefer_dynamic is True.
+        Otherwise return the existing one.
+        """
+        a_src_path, so_src_path = self._library_source_path()
+        libs = (a_src_path, so_src_path)  # Ordered by priority
+        if prefer_dynamic:
+            libs = (so_src_path, a_src_path)
+        source = ''
+        for lib in libs:
+            if os.path.exists(lib):
+                source = lib
+                break
+        if not source:
+            # TODO(chen3feng): Restore this error
+            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
+            source = a_src_path
+        target = self._target_file_path(os.path.basename(source))
+        return source, target
+
     def _soname(self, so):
-        """Get the soname of prebuilt shared library. """
+        """Get the soname of prebuilt shared library."""
         soname = None
         try:
             output = subprocess.check_output('objdump -p %s' % so, shell=True)
@@ -868,6 +869,7 @@ class PrebuiltCcLibrary(CcTarget):
 
 
     def _is_depended(self):
+        """Does this library really be used"""
         build_targets = self.blade.get_build_targets()
         depended_targets = self.blade.get_depended_target_database()
         for key in depended_targets[self.key]:
@@ -1008,7 +1010,8 @@ def foreign_cc_library(
         deprecated=False,
         **kwargs):
     """Similar to a prebuilt cc_library, but it is built by a foreign build system,
-    such as autotools, cmake, etc.
+    such as autotools, cmake, etc. It is not really 'prebuilt', its relay on
+    prebuilt_cc_library is just a makeshift and should be refactored in the future.
 
     Args:
         package_name: str, name of the belonging package.
