@@ -44,7 +44,7 @@ Attributes:
 
   This attribute tells the linker don't discard any unused symbols in this library even if it seems
   to be unused.
-  
+
   You'd better put these self-registering code into a separated small library. otherwise, the whole
   library will be linked into the executable unconditionally, increase the size of the executable.
 
@@ -57,7 +57,7 @@ False: Don't optimize in debug mode。
 The default value is False。It only apply to cc_library.
 
 * prebuilt=True
-For libraries without source code, library should be put under the lib{32,64} sub dir accordingly.
+Use prebuild in cc_library is deprecated. you should use `prebuilt_cc_library`.
 
 * export_incs
 Similar to `incs`, but it is transitive for all targets depends on it, even if indirect depends on it.
@@ -70,6 +70,22 @@ dynamic library, it contains the paths of dependencies.
 These libraries can just be used locally (such as run tests)，not fit for the production environment.
 If you want to build a shared library can be use in the environment, you should use `cc_plugin`,
 which will include the code from it dependencies.
+
+
+## prebuilt_cc_library
+
+For libraries without source code, library should be put under the lib{32,64} sub dir accordingly.
+The attributes `deps`, `export_incs`, `link_all_symbols` is still avialiable, but other attributes,
+include compile and link related options, are not not present in prebuilt_cc_library.
+
+Example:
+
+```python
+prebuilt_cc_library(
+    name = 'mysql',
+    deps = [':mystring', '#pthread']
+)
+```
 
 ## cc_binary
 Build executable from source.

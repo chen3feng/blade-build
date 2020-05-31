@@ -64,6 +64,19 @@ cc_library(
 
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
+## prebuilt_cc_library
+  主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。对应的二进制文件必须存在 lib{32,64} 这样的子目录中。
+  除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
+
+  示例：
+
+  ```python
+  prebuilt_cc_library(
+      name = 'mysql',
+      deps = [':mystring', '#pthread']
+  )
+  ```
+
 ## cc_binary
 定义C++可执行文件目标
 ```python
