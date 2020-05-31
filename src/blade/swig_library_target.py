@@ -30,7 +30,6 @@ class SwigLibrary(CcTarget):
                  java_lib_packed,
                  optimize,
                  extra_swigflags,
-                 blade,
                  kwargs):
         super(SwigLibrary, self).__init__(
                 name=name,
@@ -45,7 +44,6 @@ class SwigLibrary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=[],
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
         self.data['cpperraswarn'] = warning
         self.data['java_package'] = java_package
@@ -122,7 +120,6 @@ def swig_library(
             java_lib_packed=java_lib_packed,
             optimize=optimize,
             extra_swigflags=extra_swigflags,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 

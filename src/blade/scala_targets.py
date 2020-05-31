@@ -51,7 +51,6 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=build_manager.instance,
                 kwargs=kwargs)
         self._process_resources(resources)
         if source_encoding:

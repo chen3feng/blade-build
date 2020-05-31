@@ -79,7 +79,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  target_languages,
                  plugins,
                  source_encoding,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -101,7 +100,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 optimize=optimize,
                 extra_cppflags=[],
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
 
         self._check_proto_srcs_name(srcs)
@@ -420,7 +418,6 @@ def proto_library(
             target_languages=target_languages,
             plugins=plugins,
             source_encoding=source_encoding,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(proto_library_target)
 

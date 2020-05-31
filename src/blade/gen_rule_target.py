@@ -34,7 +34,6 @@ class GenRuleTarget(Target):
                  cmd_name,
                  generate_hdrs,
                  heavy,
-                 blade,
                  kwargs):
         """Init method.
         Init the gen rule target.
@@ -49,7 +48,6 @@ class GenRuleTarget(Target):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=blade,
                 kwargs=kwargs)
 
         self.data['outs'] = outs
@@ -167,7 +165,6 @@ def gen_rule(
             cmd_name=cmd_name,
             generate_hdrs=generate_hdrs,
             heavy=heavy,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)
 

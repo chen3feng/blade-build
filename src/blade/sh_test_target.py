@@ -51,7 +51,6 @@ class ShellTest(Target):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=build_manager.instance,
                 kwargs=kwargs)
 
         self._process_test_data(testdata)

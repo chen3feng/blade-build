@@ -53,7 +53,6 @@ class CcTarget(Target):
                  optimize,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -77,7 +76,6 @@ class CcTarget(Target):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=blade,
                 kwargs=kwargs)
 
         self.data['warning'] = warning
@@ -622,7 +620,6 @@ class CcLibrary(CcTarget):
                  extra_linkflags,
                  allow_undefined,
                  secure,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -643,7 +640,6 @@ class CcLibrary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
         if prebuilt:
             self.type = 'prebuilt_cc_library'
@@ -920,7 +916,6 @@ def cc_library(name,
             extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
             secure=secure,
-            blade=build_manager.instance,
             kwargs=kwargs)
     if pre_build:
         self.warning("'pre_build' has been deprecated, please use 'prebuilt'")
@@ -987,7 +982,6 @@ class CcBinary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  export_dynamic,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -1008,7 +1002,6 @@ class CcBinary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
         self.data['embed_version'] = embed_version
         self.data['dynamic_link'] = dynamic_link
@@ -1113,7 +1106,6 @@ def cc_binary(name,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             export_dynamic=export_dynamic,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(cc_binary_target)
 
@@ -1154,7 +1146,6 @@ class CcPlugin(CcTarget):
                  extra_linkflags,
                  allow_undefined,
                  strip,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -1174,7 +1165,6 @@ class CcPlugin(CcTarget):
                   optimize=optimize,
                   extra_cppflags=extra_cppflags,
                   extra_linkflags=extra_linkflags,
-                  blade=blade,
                   kwargs=kwargs)
         self.prefix = prefix
         self.suffix = suffix
@@ -1242,7 +1232,6 @@ def cc_plugin(
             extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
             strip=strip,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
@@ -1276,7 +1265,6 @@ class CcTest(CcBinary):
             exclusive,
             heap_check,
             heap_check_debug,
-            blade,
             kwargs):
         """Init method."""
         # pylint: disable=too-many-locals
@@ -1298,7 +1286,6 @@ class CcTest(CcBinary):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 export_dynamic=export_dynamic,
-                blade=blade,
                 kwargs=kwargs)
         self.type = 'cc_test'
         self.data['testdata'] = var_to_list(testdata)
@@ -1371,7 +1358,6 @@ def cc_test(name,
             exclusive=exclusive,
             heap_check=heap_check,
             heap_check_debug=heap_check_debug,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(cc_test_target)
 

@@ -25,7 +25,6 @@ class ResourceLibrary(CcTarget):
                  deps,
                  optimize,
                  extra_cppflags,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -45,7 +44,6 @@ class ResourceLibrary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
 
     def ninja_rules(self):
@@ -85,7 +83,6 @@ def resource_library(name,
             deps=deps,
             optimize=optimize,
             extra_cppflags=extra_cppflags,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 

@@ -38,7 +38,6 @@ class ThriftLibrary(CcTarget):
             visibility,
             optimize,
             deprecated,
-            blade,
             kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
@@ -55,7 +54,6 @@ class ThriftLibrary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=[],
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
         self.data['python_vars'] = []
         self.data['python_sources'] = []
@@ -134,7 +132,6 @@ def thrift_library(
             visibility=visibility,
             optimize=optimize,
             deprecated=deprecated,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(thrift_library_target)
 

@@ -46,7 +46,6 @@ class PythonTarget(Target):
             srcs=srcs,
             deps=deps,
             visibility=visibility,
-            blade=build_manager.instance,
             kwargs=kwargs)
 
         if base:

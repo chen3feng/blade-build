@@ -39,7 +39,6 @@ class FBThriftLibrary(CcTarget):
                  optimize,
                  visibility,
                  deprecated,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
@@ -56,7 +55,6 @@ class FBThriftLibrary(CcTarget):
                 optimize=optimize,
                 extra_cppflags=[],
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
 
         fbthrift_config = config.get_section('fbthrift_config')
@@ -121,7 +119,6 @@ def fbthrift_library(name,
             optimize=optimize,
             visibility=visibility,
             deprecated=deprecated,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(fbthrift_library_target)
 

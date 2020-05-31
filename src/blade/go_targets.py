@@ -51,7 +51,6 @@ class GoTarget(Target):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=build_manager.instance,
                 kwargs=kwargs)
 
         self._set_go_package()

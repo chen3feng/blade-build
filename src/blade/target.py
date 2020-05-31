@@ -72,14 +72,14 @@ class Target(object):
                  srcs,
                  deps,
                  visibility,
-                 blade,
                  kwargs):
         """Init method.
 
         Init the target.
 
         """
-        self.blade = blade
+        from blade import build_manager
+        self.blade = build_manager.instance
         self.build_dir = self.blade.get_build_dir()
         current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
@@ -219,7 +219,7 @@ class Target(object):
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
         if key not in self.target_database:
-            lib = SystemLibrary(name, self.blade)
+            lib = SystemLibrary(name)
             self.blade.register_target(lib)
 
     def _add_location_reference_target(self, m):
@@ -547,7 +547,7 @@ class Target(object):
 
 
 class SystemLibrary(Target):
-    def __init__(self, name, blade):
+    def __init__(self, name):
         name = name[1:]
         super(SystemLibrary, self).__init__(
                 name=name,
@@ -555,7 +555,6 @@ class SystemLibrary(Target):
                 srcs=[],
                 deps=[],
                 visibility=['PUBLIC'],
-                blade=blade,
                 kwargs={})
         self.key = ('#', name)
         self.fullname = '%s:%s' % self.key

@@ -39,7 +39,6 @@ class CuTarget(CcTarget):
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
@@ -59,7 +58,6 @@ class CuTarget(CcTarget):
                 options=[],
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
 
     def _get_cu_flags(self):
@@ -101,7 +99,6 @@ class CuLibrary(CuTarget):
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
         super(CuLibrary, self).__init__(
                 name=name,
@@ -114,7 +111,6 @@ class CuLibrary(CuTarget):
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
 
     def ninja_rule(self):
@@ -141,7 +137,6 @@ def cu_library(name,
             incs=incs,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
@@ -165,7 +160,6 @@ class CuBinary(CuTarget):
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
         super(CuBinary, self).__init__(
                 name=name,
@@ -178,7 +172,6 @@ class CuBinary(CuTarget):
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
 
     def ninja_rule(self):
@@ -205,7 +198,6 @@ def cu_binary(name,
             incs=incs,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
@@ -232,7 +224,6 @@ class CuTest(CuBinary):
                  testdata,
                  always_run,
                  exclusive,
-                 blade,
                  kwargs):
         # pylint: disable=too-many-locals
         super(CuTest, self).__init__(
@@ -245,7 +236,6 @@ class CuTest(CuBinary):
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                blade=blade,
                 kwargs=kwargs)
         self.type = 'cu_test'
         self.data['testdata'] = var_to_list(testdata)
@@ -288,7 +278,6 @@ def cu_test(
             testdata=testdata,
             always_run=always_run,
             exclusive=exclusive,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 

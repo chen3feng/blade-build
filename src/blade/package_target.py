@@ -45,7 +45,6 @@ class PackageTarget(Target):
                  type,
                  out,
                  shell,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
@@ -56,7 +55,6 @@ class PackageTarget(Target):
                 srcs=[],
                 deps=deps,
                 visibility=visibility,
-                blade=blade,
                 kwargs=kwargs)
 
         if type not in _package_types:
@@ -202,7 +200,6 @@ def package(name,
             type=type,
             out=out,
             shell=shell,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(package_target)
 

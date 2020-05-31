@@ -37,7 +37,6 @@ class MavenJar(Target):
                 srcs=[],
                 deps=[],
                 visibility=visibility,
-                blade=build_manager.instance,
                 kwargs={})
         self._check_id(id)
         self.data['id'] = id
@@ -572,7 +571,6 @@ class JavaTarget(Target, JavaTargetMixIn):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
-                blade=build_manager.instance,
                 kwargs=kwargs)
         self._process_resources(resources)
         self.data['source_encoding'] = source_encoding

@@ -32,7 +32,6 @@ class LexYaccLibrary(CcTarget):
                  prefix,
                  lexflags,
                  yaccflags,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -57,7 +56,6 @@ class LexYaccLibrary(CcTarget):
                 optimize=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
-                blade=blade,
                 kwargs=kwargs)
 
         self.data['recursive'] = recursive
@@ -164,7 +162,6 @@ def lex_yacc_library(
             prefix=prefix,
             lexflags=lexflags,
             yaccflags=yaccflags,
-            blade=build_manager.instance,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
