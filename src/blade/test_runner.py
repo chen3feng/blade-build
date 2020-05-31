@@ -59,11 +59,17 @@ def _diff_env(a, b):
 
 class TestRunner(binary_runner.BinaryRunner):
     """Run specified tests and collect the results"""
-    def __init__(self, targets, options, target_database, direct_targets, skip_tests):
-        """Init method. """
+    def __init__(
+            self, targets, options, target_database, direct_targets, skip_tests,
+            test_jobs_num):
+        """Init method.
+        Args:
+            test_jobs_num:int, max number of concurrent test jobs
+        """
         # pylint: disable=too-many-locals, too-many-statements
         super(TestRunner, self).__init__(targets, options, target_database)
         self.direct_targets = direct_targets
+        self.__test_jobs_num = test_jobs_num
 
         # Test jobs should be run
         self.test_jobs = {}  # dict{key : TestJob}
@@ -417,7 +423,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
         console.notice('%d tests to run' % len(tests_run_list))
         console.flush()
-        scheduler = TestScheduler(tests_run_list, self.options.test_jobs)
+        scheduler = TestScheduler(tests_run_list, self.__test_jobs_num)
         try:
             scheduler.schedule_jobs()
         except KeyboardInterrupt:

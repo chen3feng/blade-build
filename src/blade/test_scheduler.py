@@ -116,9 +116,6 @@ class WorkerThread(threading.Thread):
             traceback.print_exc()
 
 
-_MAX_WORKER_THREADS = 16
-
-
 class TestScheduler(object):
     """Schedule specified tests to be ran in multiple test threads"""
 
@@ -139,13 +136,6 @@ class TestScheduler(object):
 
     def _get_workers_num(self):
         """get the number of thread workers. """
-        cpu_count = blade_util.cpu_count()
-        max_workers = max(cpu_count, _MAX_WORKER_THREADS)
-        if self.num_jobs <= 1:
-            return 1
-        elif self.num_jobs > max_workers:
-            self.num_jobs = max_workers
-
         return min(len(self.tests_list), self.num_jobs)
 
     def _get_result(self, returncode):
