@@ -49,7 +49,7 @@ class ThriftLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning='',
-                depfs=[],
+                defs=[],
                 incs=[],
                 export_incs=[],
                 optimize=optimize,

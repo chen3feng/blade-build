@@ -104,8 +104,18 @@ class ScalaTarget(Target, JavaTargetMixIn):
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 exported_deps, provided_deps, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exported_deps,
+            provided_deps,
+            kwargs):
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
         all_deps = var_to_list(deps) + exported_deps + provided_deps
@@ -114,6 +124,7 @@ class ScalaLibrary(ScalaTarget):
                 type='scala_library',
                 srcs=srcs,
                 deps=all_deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -131,13 +142,23 @@ class ScalaLibrary(ScalaTarget):
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 exclusions, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exclusions,
+            kwargs):
         super(ScalaFatLibrary, self).__init__(
                 name=name,
                 type='scala_fat_library',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -158,8 +179,8 @@ class ScalaTest(ScalaFatLibrary):
             name,
             srcs,
             deps,
-            resources,
             visibility,
+            resources,
             source_encoding,
             warnings,
             exclusions,
@@ -214,8 +235,8 @@ def scala_library(name,
             name=name,
             srcs=srcs,
             deps=deps,
-            resources=resources,
             visibility=visibility,
+            resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
             exported_deps=exported_deps,

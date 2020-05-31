@@ -738,13 +738,23 @@ class JavaBinary(JavaTarget):
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, exclusions, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exclusions,
+            kwargs):
         super(JavaFatLibrary, self).__init__(
                 name=name,
                 type='java_fat_library',
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -760,12 +770,25 @@ class JavaFatLibrary(JavaTarget):
 class JavaTest(JavaBinary):
     """JavaTest"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, exclusions, testdata, target_under_test, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            main_class,
+            exclusions,
+            testdata,
+            target_under_test,
+            kwargs):
         super(JavaTest, self).__init__(
                 name=name,
                 srcs=srcs,
                 deps=deps,
+                visibility=visibility,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -795,14 +818,15 @@ class JavaTest(JavaBinary):
         self.ninja_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
-def maven_jar(name, id, classifier='', transitive=True):
-    target = MavenJar(name, id, classifier, transitive)
+def maven_jar(name, id, classifier='', transitive=True, visibility=None):
+    target = MavenJar(name, id, classifier, transitive, visibility)
     build_manager.instance.register_target(target)
 
 
 def java_library(name,
                  srcs=[],
                  deps=[],
+                 visibility=None,
                  resources=[],
                  source_encoding=None,
                  warnings=None,
@@ -822,6 +846,7 @@ def java_library(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -838,6 +863,7 @@ def java_binary(name,
                 main_class,
                 srcs=[],
                 deps=[],
+                visibility=None,
                 resources=[],
                 source_encoding=None,
                 warnings=None,
@@ -848,6 +874,7 @@ def java_binary(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -860,6 +887,7 @@ def java_binary(name,
 def java_test(name,
               srcs,
               deps=[],
+              visibility=None,
               resources=[],
               source_encoding=None,
               warnings=None,
@@ -873,6 +901,7 @@ def java_test(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -887,6 +916,7 @@ def java_test(name,
 def java_fat_library(name,
                      srcs=[],
                      deps=[],
+                     visibility=None,
                      resources=[],
                      source_encoding=None,
                      warnings=None,
@@ -897,6 +927,7 @@ def java_fat_library(name,
             name=name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,

@@ -111,17 +111,17 @@ class PrebuiltPythonLibrary(PythonTarget):
                  name,
                  srcs,
                  deps,
-                 base,
                  visibility,
+                 base,
                  kwargs):
         """Init method. """
-        super(PythonTarget, self).__init__(
+        super(PrebuiltPythonLibrary, self).__init__(
                 name=name,
                 type='prebuilt_py_library',
                 srcs=srcs,
                 deps=deps,
-                base=base,
                 visibility=visibility,
+                base=base,
                 kwargs=kwargs)
         if base:
             self.error_exit("Prebuilt py_library doesn't support base")
@@ -140,9 +140,9 @@ class PrebuiltPythonLibrary(PythonTarget):
 def py_library(name,
                srcs=[],
                deps=[],
+               visibility=None,
                base=None,
                prebuilt=None,
-               visibility=None,
                **kwargs):
     """python library. """
     # pylint: disable=redefined-variable-type
@@ -151,16 +151,16 @@ def py_library(name,
                 name=name,
                 srcs=srcs,
                 deps=deps,
-                base=base,
                 visibility=visibility,
+                base=base,
                 kwargs=kwargs)
     else:
         target = PythonLibrary(
                 name=name,
                 srcs=srcs,
                 deps=deps,
-                base=base,
                 visibility=visibility,
+                base=base,
                 kwargs=kwargs)
 
     build_manager.instance.register_target(target)
