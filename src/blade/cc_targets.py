@@ -167,66 +167,6 @@ class CcTarget(Target):
         if illegal_path_list:
             self.warning("warning='no' should only be used for code in thirdparty.")
 
-    def _prebuilt_cc_library_path(self, prefer_dynamic=False):
-        """
-        Return source and target path of the prebuilt cc library.
-        When both .so and .a exist, return .so if prefer_dynamic is True.
-        Otherwise return the existing one.
-        """
-        a_src_path, so_src_path = self._prebuilt_cc_library_pathname()
-        libs = (a_src_path, so_src_path)  # Ordered by priority
-        if prefer_dynamic:
-            libs = (so_src_path, a_src_path)
-        source = ''
-        for lib in libs:
-            if os.path.exists(lib):
-                source = lib
-                break
-        if not source:
-            # TODO(chen3feng): Restore this error
-            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
-            source = a_src_path
-        target = self._target_file_path(os.path.basename(source))
-        return source, target
-
-    _default_prebuilt_libpath = None
-
-    def _prebuilt_cc_library_pathname(self):
-        options = self.blade.get_options()
-        bits, arch, profile = options.bits, options.arch, options.profile
-        if CcTarget._default_prebuilt_libpath is None:
-            pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
-            CcTarget._default_prebuilt_libpath = Template(pattern).substitute(
-                bits=bits, arch=arch, profile=profile)
-
-        pattern = self.data.get('prebuilt_libpath_pattern')
-        if pattern:
-            libpath = Template(pattern).substitute(bits=bits,
-                                                   arch=arch,
-                                                   profile=profile)
-        else:
-            libpath = CcTarget._default_prebuilt_libpath
-        if libpath.startswith('//'):
-            libpath = libpath[2:]
-        else:
-            libpath = os.path.join(self.path, libpath)
-        return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
-                for s in ['a', 'so']]
-
-    def _prebuilt_cc_library_dynamic_soname(self, so):
-        """Get the soname of prebuilt shared library. """
-        soname = None
-        try:
-            output = subprocess.check_output('objdump -p %s' % so, shell=True)
-            for line in output.splitlines():
-                parts = line.split()
-                if len(parts) == 2 and parts[0] == 'SONAME':
-                    soname = parts[1]
-                    break
-        except subprocess.CalledProcessError:
-            pass
-        return soname
-
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
         return self.data.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
@@ -289,42 +229,6 @@ class CcTarget(Target):
         incs = stable_unique(incs)
         return incs
 
-    def _prebuilt_cc_library_is_depended(self):
-        build_targets = self.blade.get_build_targets()
-        depended_targets = self.blade.get_depended_target_database()
-        for key in depended_targets[self.key]:
-            t = build_targets[key]
-            if t.type != 'prebuilt_cc_library':
-                return True
-        return False
-
-    def _prebuilt_cc_library_symbolic_link(self,
-                                           static_lib_source, static_lib_target,
-                                           dynamic_lib_source, dynamic_lib_target):
-        """Make a symbolic link if either static or dynamic library is so. """
-        so_src, so_target = '', ''
-        if static_lib_target.endswith('.so'):
-            so_src = static_lib_source
-            so_target = static_lib_target
-        elif dynamic_lib_target.endswith('.so'):
-            so_src = dynamic_lib_source
-            so_target = dynamic_lib_target
-        if so_src:
-            soname = self._prebuilt_cc_library_dynamic_soname(so_src)
-            if soname:
-                self.file_and_link = (so_target, soname)
-
-    def _prebuilt_cc_library(self):
-        """Prebuilt cc library rules. """
-        # We allow a prebuilt cc_library doesn't exist if it is not used.
-        # So if this library is not depended by any target, don't generate any
-        # rule to avoid runtime error and also avoid unnecessary runtime cost.
-        if not self._prebuilt_cc_library_is_depended():
-            return
-
-        paths = self._prebuilt_cc_library_ninja_rules()
-        self._prebuilt_cc_library_symbolic_link(*paths)
-
     def _need_dynamic_library(self):
         options = self.blade.get_options()
         return (getattr(options, 'generate_dynamic') or
@@ -378,7 +282,7 @@ class CcTarget(Target):
                 os.makedirs(dir)
             open(src, 'w').close()
 
-    def _prebuilt_cc_library_ninja_rules(self):
+    def _ninja_rules(self):
         """Prebuilt cc library ninja rules.
 
         There are 3 cases for prebuilt library as below:
@@ -387,7 +291,7 @@ class CcTarget(Target):
             2. Only dynamic library(.so) exists
             3. Both static and dynamic libraries exist
         """
-        static_src_path, static_target_path = self._prebuilt_cc_library_path()
+        static_src_path, static_target_path = self._library_paths(prefer_dynamic=False)
         if static_src_path.endswith('.a'):
             path = static_src_path
         else:
@@ -397,7 +301,7 @@ class CcTarget(Target):
 
         dynamic_src_path, dynamic_target_path = '', ''
         if self._need_dynamic_library():
-            dynamic_src_path, dynamic_target_path = self._prebuilt_cc_library_path(True)
+            dynamic_src_path, dynamic_target_path = self._library_paths(prefer_dynamic=True)
             if dynamic_target_path != static_target_path:
                 assert static_src_path.endswith('.a')
                 assert dynamic_src_path.endswith('.so')
@@ -604,6 +508,7 @@ class CcLibrary(CcTarget):
     def __init__(self,
                  name,
                  srcs,
+                 hdrs,
                  deps,
                  visibility,
                  warning,
@@ -612,8 +517,6 @@ class CcLibrary(CcTarget):
                  export_incs,
                  optimize,
                  always_optimize,
-                 prebuilt,
-                 prebuilt_libpath_pattern,
                  link_all_symbols,
                  deprecated,
                  extra_cppflags,
@@ -641,22 +544,12 @@ class CcLibrary(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
-        if prebuilt:
-            self.type = 'prebuilt_cc_library'
-            self.srcs = []
-            if prebuilt_libpath_pattern:
-                self.data['prebuilt_libpath_pattern'] = prebuilt_libpath_pattern
         self.data['link_all_symbols'] = link_all_symbols
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
+        self.data['hdrs'] = var_to_list(hdrs)
         self.data['secure'] = secure
-
-    def _rpath_link(self, dynamic):
-        path = self._prebuilt_cc_library_path(dynamic)[1]
-        if path.endswith('.so'):
-            return os.path.dirname(path)
-        return None
 
     def _need_generate_hdrs(self):
         for path in self.blade.get_sources_keyword_list():
@@ -867,62 +760,242 @@ class CcLibrary(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
-        if self.type == 'prebuilt_cc_library':
-            self._prebuilt_cc_library()
-        elif self.srcs:
+        if self.srcs:
             self._cc_objects_ninja(self.srcs)
             self._cc_library_ninja()
 
 
-def cc_library(name,
-               srcs=[],
-               deps=[],
-               visibility=None,
-               warning='yes',
-               defs=[],
-               incs=[],
-               export_incs=[],
-               hdrs=[],
-               optimize=[],
-               always_optimize=False,
-               pre_build=False,
-               prebuilt=False,
-               prebuilt_libpath_pattern=None,
-               link_all_symbols=False,
-               deprecated=False,
-               extra_cppflags=[],
-               extra_linkflags=[],
-               allow_undefined=False,
-               secure=False,
-               **kwargs):
-    """cc_library target. """
-    # pylint: disable=too-many-locals
-    target = CcLibrary(
+class PrebuiltCcLibrary(CcTarget):
+    """
+    This class is derived from CcTarget and it generates the library
+    rules including dynamic library rules according to user option.
+    """
+
+    def __init__(self,
+                 name,
+                 hdrs,
+                 deps,
+                 visibility,
+                 export_incs,
+                 libpath_pattern,
+                 link_all_symbols,
+                 deprecated,
+                 kwargs):
+        """Init method.
+
+        Init the cc library.
+
+        """
+        # pylint: disable=too-many-locals
+        super(PrebuiltCcLibrary, self).__init__(
+                name=name,
+                type='prebuilt_cc_library',
+                srcs=[],
+                deps=deps,
+                visibility=visibility,
+                warning='no',
+                defs=[],
+                incs=[],
+                export_incs=export_incs,
+                optimize=[],
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
+        self.data['libpath_pattern'] = libpath_pattern
+        self.data['link_all_symbols'] = link_all_symbols
+        self.data['deprecated'] = deprecated
+        self.data['hdrs'] = var_to_list(hdrs)
+
+    _default_prebuilt_libpath = None
+
+    def _library_source_path(self):
+        """Library full path in source dir"""
+        options = self.blade.get_options()
+        bits, arch, profile = options.bits, options.arch, options.profile
+        if PrebuiltCcLibrary._default_prebuilt_libpath is None:
+            pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
+            PrebuiltCcLibrary._default_prebuilt_libpath = Template(pattern).substitute(
+                bits=bits, arch=arch, profile=profile)
+
+        pattern = self.data.get('libpath_pattern')
+        if pattern:
+            libpath = Template(pattern).substitute(bits=bits,
+                                                   arch=arch,
+                                                   profile=profile)
+        else:
+            libpath = PrebuiltCcLibrary._default_prebuilt_libpath
+        if libpath.startswith('//'):
+            libpath = libpath[2:]
+        else:
+            libpath = os.path.join(self.path, libpath)
+        return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
+                for s in ['a', 'so']]
+
+    def _library_paths(self, prefer_dynamic):
+        """
+        Return source and target path of the prebuilt cc library.
+        When both .so and .a exist, return .so if prefer_dynamic is True.
+        Otherwise return the existing one.
+        """
+        a_src_path, so_src_path = self._library_source_path()
+        libs = (a_src_path, so_src_path)  # Ordered by priority
+        if prefer_dynamic:
+            libs = (so_src_path, a_src_path)
+        source = ''
+        for lib in libs:
+            if os.path.exists(lib):
+                source = lib
+                break
+        if not source:
+            # TODO(chen3feng): Restore this error
+            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
+            source = a_src_path
+        target = self._target_file_path(os.path.basename(source))
+        return source, target
+
+    def _soname(self, so):
+        """Get the soname of prebuilt shared library."""
+        soname = None
+        try:
+            output = subprocess.check_output('objdump -p %s' % so, shell=True)
+            for line in output.splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[0] == 'SONAME':
+                    soname = parts[1]
+                    break
+        except subprocess.CalledProcessError:
+            pass
+        return soname
+
+
+    def _is_depended(self):
+        """Does this library really be used"""
+        build_targets = self.blade.get_build_targets()
+        depended_targets = self.blade.get_depended_target_database()
+        for key in depended_targets[self.key]:
+            t = build_targets[key]
+            if t.type != 'prebuilt_cc_library':
+                return True
+        return False
+
+    def _prepare_symbolic_link(
+            self, static_lib_source, static_lib_target,
+            dynamic_lib_source, dynamic_lib_target):
+        """Make a symbolic link if either static or dynamic library is so. """
+        so_src, so_target = '', ''
+        if static_lib_target.endswith('.so'):
+            so_src = static_lib_source
+            so_target = static_lib_target
+        elif dynamic_lib_target.endswith('.so'):
+            so_src = dynamic_lib_source
+            so_target = dynamic_lib_target
+        if so_src:
+            soname = self._soname(so_src)
+            if soname:
+                self.file_and_link = (so_target, soname)
+
+    def _rpath_link(self, dynamic):
+        path = self._library_source_path()[1]
+        if path.endswith('.so'):
+            return os.path.dirname(path)
+        return None
+
+    def ninja_rules(self):
+        """Generate ninja build rules for cc object/library. """
+        self._check_deprecated_deps()
+        # We allow a prebuilt cc_library doesn't exist if it is not used.
+        # So if this library is not depended by any target, don't generate any
+        # rule to avoid runtime error and also avoid unnecessary runtime cost.
+        if not self._is_depended():
+            return
+
+        paths = self._ninja_rules()
+        self._prepare_symbolic_link(*paths)
+
+
+def prebuilt_cc_library(
+        name,
+        deps=[],
+        visibility=None,
+        export_incs=[],
+        hdrs=[],
+        libpath_pattern=None,
+        link_all_symbols=False,
+        deprecated=False,
+        **kwargs):
+    """prebuilt_cc_library target. """
+    target = PrebuiltCcLibrary(
             name=name,
-            srcs=srcs,
             deps=deps,
             visibility=visibility,
-            warning=warning,
-            defs=defs,
-            incs=incs,
             export_incs=export_incs,
-            optimize=optimize,
-            always_optimize=always_optimize,
-            prebuilt=prebuilt or pre_build,
-            prebuilt_libpath_pattern=prebuilt_libpath_pattern,
+            hdrs=hdrs,
+            libpath_pattern=libpath_pattern,
             link_all_symbols=link_all_symbols,
             deprecated=deprecated,
-            extra_cppflags=extra_cppflags,
-            extra_linkflags=extra_linkflags,
-            allow_undefined=allow_undefined,
-            secure=secure,
             kwargs=kwargs)
-    if pre_build:
-        self.warning("'pre_build' has been deprecated, please use 'prebuilt'")
     build_manager.instance.register_target(target)
+    return target
 
-
-build_rules.register_function(cc_library)
+def cc_library(
+        name,
+        srcs=[],
+        hdrs=[],
+        deps=[],
+        visibility=None,
+        warning='yes',
+        defs=[],
+        incs=[],
+        export_incs=[],
+        optimize=[],
+        always_optimize=False,
+        pre_build=False,
+        prebuilt=False,
+        prebuilt_libpath_pattern=None,
+        link_all_symbols=False,
+        deprecated=False,
+        extra_cppflags=[],
+        extra_linkflags=[],
+        allow_undefined=False,
+        secure=False,
+        **kwargs):
+    """cc_library target. """
+    # pylint: disable=too-many-locals
+    if pre_build or prebuilt:
+        target = prebuilt_cc_library(
+                name=name,
+                hdrs=hdrs,
+                deps=deps,
+                visibility=visibility,
+                export_incs=export_incs,
+                libpath_pattern=prebuilt_libpath_pattern,
+                link_all_symbols=link_all_symbols,
+                deprecated=deprecated,
+                **kwargs)
+        target.warning('"cc_library.prebuilt" is deprecated, please use the standalone '
+                       '"prebuilt_cc_library" rule')
+        return
+    else:
+        target = CcLibrary(
+                name=name,
+                srcs=srcs,
+                hdrs=hdrs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=export_incs,
+                optimize=optimize,
+                always_optimize=always_optimize,
+                link_all_symbols=link_all_symbols,
+                deprecated=deprecated,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                allow_undefined=allow_undefined,
+                secure=secure,
+                kwargs=kwargs)
+    build_manager.instance.register_target(target)
 
 
 def foreign_cc_library(
@@ -937,7 +1010,8 @@ def foreign_cc_library(
         deprecated=False,
         **kwargs):
     """Similar to a prebuilt cc_library, but it is built by a foreign build system,
-    such as autotools, cmake, etc.
+    such as autotools, cmake, etc. It is not really 'prebuilt', its relay on
+    prebuilt_cc_library is just a makeshift and should be refactored in the future.
 
     Args:
         package_name: str, name of the belonging package.
@@ -946,10 +1020,9 @@ def foreign_cc_library(
     import blade
     libpath = '//' + os.path.join(blade.current_target_dir(), package_name, libdir)
     current_source_path = build_manager.instance.get_current_source_path()
-    cc_library(
+    prebuilt_cc_library(
             name=name,
-            prebuilt=True,
-            prebuilt_libpath_pattern=libpath,
+            libpath_pattern=libpath,
             hdrs=hdrs,
             export_incs=export_incs,
             deps=deps,
@@ -959,7 +1032,9 @@ def foreign_cc_library(
             **kwargs)
 
 
+build_rules.register_function(cc_library)
 build_rules.register_function(foreign_cc_library)
+build_rules.register_function(prebuilt_cc_library)
 
 
 class CcBinary(CcTarget):

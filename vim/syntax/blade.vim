@@ -1,4 +1,4 @@
-" This is the Vim syntax file for Blade.
+ " This is the Vim syntax file for Blade.
 " Author: Chen Feng <phongchen@tencent.com>
 
 if version < 600
@@ -24,6 +24,11 @@ syn keyword bladeTarget java_library java_binary java_test maven_jar java_fat_li
 syn keyword bladeTarget package py_binary py_library py_test
 syn keyword bladeTarget scala_library scala_test scala_fat_library sh_test
 syn keyword bladeTarget resource_library swig_library thrift_library
+
+syn keyword bladeTarget prebuilt_cc_library
+syn keyword bladeTarget foreign_cc_library
+syn keyword bladeArg libpath_pattern
+
 
 " TODO(chen3feng): Reorgnize by target
 " Sorted by alphabet order
