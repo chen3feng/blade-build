@@ -115,7 +115,7 @@ class CcTarget(Target):
                 replaced_deps = dep.deps
                 if replaced_deps:
                     self.warning('//%s is deprecated, please depends on //%s' % (
-                        "%s:%s" % dep, "%s/%s" % replaced_deps[0]))
+                        "%s:%s" % dep, "%s:%s" % replaced_deps[0]))
 
     __cxx_keyword_list = frozenset([
         'and', 'and_eq', 'alignas', 'alignof', 'asm', 'auto',
