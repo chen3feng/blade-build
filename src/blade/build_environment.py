@@ -33,10 +33,10 @@ class BuildEnvironment(object):
         self.distcc_host_list = distcc_host_list or os.environ.get('DISTCC_HOSTS', '')
         if self.distcc_installed and self.distcc_host_list:
             self.distcc_env_prepared = True
-            console.info('distcc is enabled automatically due DISTCC_HOSTS set')
+            console.info('Distcc is enabled automatically due DISTCC_HOSTS set')
             distcc_log_file = os.environ.get('DISTCC_LOG', '')
             if distcc_log_file:
-                console.debug('distcc log: %s' % distcc_log_file)
+                console.debug('Distcc log: %s' % distcc_log_file)
 
         self.rules_buf = []
 
@@ -47,7 +47,7 @@ class BuildEnvironment(object):
         CXX = os.getenv('CXX')
         # clang scan-build always fail with ccache.
         if CC and os.path.basename(CC) == 'ccc-analyzer' and CXX and os.path.basename(CXX) == 'c++-analyzer':
-            console.debug('ccache is disabled for scan-build')
+            console.debug('Ccache is disabled for scan-build')
             return False
 
         try:
@@ -61,7 +61,7 @@ class BuildEnvironment(object):
             if p.returncode == 0:
                 version_line = stdout.splitlines(True)[0]
                 if version_line and version_line.find('ccache version') != -1:
-                    console.debug('ccache found')
+                    console.debug('Ccache found')
                     return True
         except OSError:
             pass
@@ -81,7 +81,7 @@ class BuildEnvironment(object):
         if p.returncode == 0:
             version_line = stdout.splitlines(True)[0]
             if version_line and version_line.find('distcc') != -1:
-                console.debug('distcc found')
+                console.debug('Distcc found')
                 return True
 
     def setup_build_cache(self, options):

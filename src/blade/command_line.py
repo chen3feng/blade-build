@@ -74,7 +74,7 @@ class ParsedCommandLine(object):
                                'blade run //target_path:target_name (or '
                                'a_path:target_name)')
         if len(self.targets) > 1:
-            console.warning('run command will only take one target to build and run')
+            console.warning('Run command will only take one target to build and run')
 
     def _check_test_options(self):
         """check that test command options."""
@@ -96,7 +96,7 @@ class ParsedCommandLine(object):
             self.options.bits = m
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
             if self.options.arch is None:
-                console.error_exit('-m %s is not supported by the architecture %s'
+                console.error_exit('"-m%s" is not supported by the architecture %s'
                                    % (m, compiler_arch))
 
     def _check_clean_options(self):
@@ -106,7 +106,7 @@ class ParsedCommandLine(object):
     def _check_query_options(self):
         """check query action options. """
         if not self.options.deps and not self.options.dependents:
-            console.error_exit('please specify --deps, --dependents or both to '
+            console.error_exit('Please specify --deps, --dependents or both to '
                                'query target')
 
     def _check_build_options(self):

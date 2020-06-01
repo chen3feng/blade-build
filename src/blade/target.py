@@ -154,7 +154,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            self.error_exit('unrecognized options %s' % kwargs)
+            self.error_exit('Unrecognized options %s' % kwargs)
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets"""
@@ -541,8 +541,8 @@ class Target(object):
                     path = path[2:]
                 return (path, name.strip())
 
-        console.error_exit('invalid target lib format: %s, '
-                           'should be #lib_name or lib_path:lib_name' %
+        self.error_exit('Invalid target lib format: "%s", '
+                           'should be "#lib_name" or "//lib_path:lib_name"' %
                            target_string)
 
 

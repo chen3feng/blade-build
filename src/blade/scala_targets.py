@@ -205,7 +205,7 @@ class ScalaTest(ScalaFatLibrary):
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
         else:
-            console.warning('scalatest jar was not configured')
+            console.warning('Config: "scala_test_config.scalatest_libs" is not configured')
 
     def ninja_rules(self):
         if not self.srcs:

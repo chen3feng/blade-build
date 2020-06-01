@@ -39,10 +39,10 @@ _SIGNAL_MAP = dict([
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, id, job_queue, job_handler, redirect):
+    def __init__(self, index, job_queue, job_handler, redirect):
         """Init methods for this thread. """
         super(WorkerThread, self).__init__()
-        self.thread_id = id
+        self.index = index
         self.running = True
         self.job_queue = job_queue
         self.job_handler = job_handler
@@ -52,12 +52,12 @@ class WorkerThread(threading.Thread):
         self.job_name = ''
         self.job_is_timeout = False
         self.job_lock = threading.Lock()
-        console.info('blade test executor %d starts to work' % self.thread_id)
+        console.info('Test worker %d starts to work' % self.index)
 
     def _process(self):
         """Private handler to handle one job. """
-        console.info('blade worker %d starts to process' % self.thread_id)
-        console.info('blade worker %d finish' % self.thread_id)
+        console.info('Test worker %d starts to process' % self.index)
+        console.info('Test worker %d finish' % self.index)
 
     def terminate(self):
         """Terminate the worker. """
@@ -172,7 +172,7 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
         result = self._get_result(p.returncode)
-        msg = 'Output of //%s:\n%s\n//%s finished: %s\n' % (
+        msg = 'Output of //%s:\n%s\nTest //%s finished: %s\n' % (
             test_name, stdout, test_name, result)
         if console.verbosity_le('quiet') and p.returncode != 0:
             console.error(msg, prefix=False)
@@ -195,7 +195,7 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
         result = self._get_result(p.returncode)
-        console.info('//%s finished : %s\n' % (test_name, result))
+        console.info('Test //%s finished : %s\n' % (test_name, result))
 
         return p.returncode
 
@@ -269,7 +269,7 @@ class TestScheduler(object):
             return
 
         num_of_workers = self._get_workers_num()
-        console.info('spawn %d worker(s) to run tests' % num_of_workers)
+        console.info('Spawn %d worker thread(s) to run tests' % num_of_workers)
 
         for i in self.tests_list:
             target = i[0]
@@ -287,7 +287,7 @@ class TestScheduler(object):
         self._wait_worker_threads(threads)
 
         if not self.exclusive_job_queue.empty():
-            console.info('spawn 1 worker to run exclusive tests')
+            console.info('Spawn 1 worker thread to run exclusive tests')
             last_t = WorkerThread(num_of_workers, self.exclusive_job_queue,
                                   self._process_job, quiet)
             last_t.start()

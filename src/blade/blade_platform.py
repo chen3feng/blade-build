@@ -300,7 +300,7 @@ class CcFlagsManager(object):
             else:
                 unrecognized_flags.append(flag)
         if unrecognized_flags:
-            console.warning('Config: unrecognized %s flags: %s' % (
+            console.warning('config: Unrecognized %s flags: %s' % (
                     language, ', '.join(unrecognized_flags)))
         return valid_flags
 

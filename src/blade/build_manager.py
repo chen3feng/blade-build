@@ -109,7 +109,7 @@ class Blade(object):
 
     def load_targets(self):
         """Load the targets. """
-        console.info('loading BUILDs...')
+        console.info('Loading BUILD files...')
         (self.__direct_targets,
          self.__all_command_targets,
          self.__build_targets) = load_targets(self.__load_targets,
@@ -118,7 +118,7 @@ class Blade(object):
         if self.__command_targets != self.__load_targets:
             # In query dependents mode, we must use command targets to execute query
             self.__all_command_targets = self._expand_command_targets()
-        console.info('loading done.')
+        console.info('Loading done.')
         return self.__direct_targets, self.__all_command_targets  # For test
 
     def _expand_command_targets(self):
@@ -141,12 +141,12 @@ class Blade(object):
 
     def analyze_targets(self):
         """Expand the targets. """
-        console.info('analyzing dependency graph...')
+        console.info('Analyzing dependency graph...')
         (self.__sorted_targets_keys,
          self.__depended_targets) = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
 
-        console.info('analyzing done.')
+        console.info('Analyzing done.')
         return self.__build_targets  # For test
 
     def new_build_rules_generator(self):
@@ -158,11 +158,11 @@ class Blade(object):
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
-        console.info('generating build rules...')
+        console.info('Generating build rules...')
         generator = self.new_build_rules_generator()
         rules = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
-        console.info('generating done.')
+        console.info('Generating done.')
         return rules
 
     def generate(self):
@@ -212,10 +212,10 @@ class Blade(object):
         if output_file_name:
             output_file_name = os.path.join(self.__working_dir, output_file_name)
             output_file = open(output_file_name, 'w')
-            console.info('query result will be written to file "%s"' % self.__options.output_file)
+            console.info('Query result will be written to file "%s"' % self.__options.output_file)
         else:
             output_file = sys.stdout
-            console.info('query result:')
+            console.info('Query result:')
 
         output_format = self.__options.output_format
         if output_format == 'dot':
@@ -295,7 +295,7 @@ class Blade(object):
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
         if self.__options.dependents:
-            console.error_exit('only query --deps can be output as tree format')
+            console.error_exit('Only query --deps can be output as tree format')
         print(file=output_file)
         for key in self.__all_command_targets:
             self._query_dependency_tree(key, 0, self.__build_targets, output_file)
@@ -404,7 +404,7 @@ class Blade(object):
                 continue
             blade_object = self.__target_database.get(k, None)
             if not blade_object:
-                console.warning('not registered blade object, key %s' % str(k))
+                console.warning('"%s" is not a registered blade object' % str(k))
                 continue
             if (skip_test and target.type.endswith('_test')
                     and k not in self.__direct_targets):

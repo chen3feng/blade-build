@@ -129,7 +129,7 @@ class PrebuiltPythonLibrary(PythonTarget):
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
             console.error_exit(
-                '%s: Invalid file %s in srcs, prebuilt py_library only support egg and whl' %
+                '%s: Invalid file "%s" in srcs, prebuilt py_library only support egg and whl' %
                 (self.fullname, src))
 
     def ninja_rules(self):
@@ -201,9 +201,9 @@ class PythonBinary(PythonLibrary):
             if len(srcs) == 1:
                 self.data['main'] = srcs[0]
             else:
-                console.error_exit(
-                    '%s: The entry file must be specified by the "main" '
-                    'argument if there are more than one srcs' % self.fullname)
+                self.error_exit(
+                    'The entry file must be specified by the "main" '
+                    'argument if there are more than one srcs')
 
     def _get_entry(self):
         main = self.data['main']
