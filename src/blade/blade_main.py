@@ -166,7 +166,7 @@ def _get_changed_files(targets, blade_root_dir, working_dir):
 def _check_code_style(targets):
     cpplint = config.get_item('cc_config', 'cpplint')
     if not cpplint:
-        console.info('cpplint disabled')
+        console.info('Cpplint is disabled')
         return 0
     changed_files = _get_changed_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     if not changed_files:
@@ -283,16 +283,16 @@ def _ninja_build(options):
 
 def build(options):
     _check_code_style(_TARGETS)
-    console.info('building...')
+    console.info('Building...')
     console.flush()
     returncode = _ninja_build(options)
     if returncode != 0:
-        console.error('building failure.')
+        console.error('Build failure.')
         return returncode
     if not build_manager.instance.verify():
-        console.error('building failure.')
+        console.error('Build failure.')
         return 1
-    console.info('building done.')
+    console.info('Build done.')
     return 0
 
 
@@ -313,8 +313,8 @@ def test(options):
 
 
 def clean(options):
-    console.info('cleaning...(hint: please specify --generate-dynamic to '
-                 'clean your so)')
+    console.info('Cleaning...(hint: You can specify --generate-dynamic to '
+                 'clean shared libraries)')
     backend_builder = config.get_item('global_config', 'backend_builder')
     cmd = [backend_builder]
     # cmd += backend_builder_options(options)
@@ -322,7 +322,7 @@ def clean(options):
     cmd += ['-t', 'clean']
     cmdstr = subprocess.list2cmdline(cmd)
     returncode = _run_backend_builder(cmdstr)
-    console.info('cleaning done.')
+    console.info('Cleaning done.')
     return returncode
 
 
@@ -341,7 +341,7 @@ def dump(options):
 def _dump_compdb(options, output_file_name):
     backend_builder = config.get_item('global_config', 'backend_builder')
     if backend_builder != 'ninja':
-        console.error_exit('dump compdb only work when backend_builder is ninja')
+        console.error_exit('Dump compdb only work when backend_builder is ninja')
     rules = build_manager.instance.get_all_rule_names()
     cmd = ['ninja', '-f', build_manager.instance.build_script(), '-t', 'compdb']
     cmd += rules
@@ -356,8 +356,7 @@ def lock_workspace(build_dir):
     lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
-            console.error_exit(
-                'There is already an active building in current source tree.')
+            console.error_exit('There is already an active building in current source tree.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
@@ -619,16 +618,16 @@ def main(blade_path, argv):
         exit_code = _main(blade_path, argv)
         cost_time = int(time.time() - start_time)
         if cost_time > 1:
-            console.info('cost time %s' % format_timedelta(cost_time))
+            console.info('Cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
         exit_code = e.code  # pylint: disable=redefined-variable-type
     except KeyboardInterrupt:
-        console.error('keyboard interrupted', -signal.SIGINT)
+        console.error('KeyboardInterrupt')
         exit_code = -signal.SIGINT
     except:  # pylint: disable=bare-except
         exit_code = 1
         console.error(traceback.format_exc())
     if exit_code != 0:
-        console.error('failure')
+        console.error('Failure')
     return exit_code

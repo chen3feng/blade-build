@@ -206,8 +206,8 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            description='AR ${out}')
         link_jobs = config.get_item('link_config', 'link_jobs')
         if link_jobs:
-            link_jobs = min(link_jobs, self.blade.parallel_jobs_num())
-            console.info('tunes the parallel link jobs to be %s' % link_jobs)
+            link_jobs = min(link_jobs, self.blade.build_jobs_num())
+            console.info('Adjust parallel link jobs number to %s' % link_jobs)
             pool = 'link_pool'
             self._add_rule(textwrap.dedent('''\
                     pool %s
@@ -271,7 +271,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             go_module_enabled = config.get_item('go_config', 'go_module_enabled')
             go_module_relpath = config.get_item('go_config', 'go_module_relpath')
             if not go_home:
-                console.error_exit('go_home is not configured in either BLADE_ROOT or BLADE_ROOT.local.')
+                console.error_exit('"go_config.go_home" is not configured')
             if go_module_enabled and not go_module_relpath:
                 outdir = proto_config['protobuf_go_path']
             else:

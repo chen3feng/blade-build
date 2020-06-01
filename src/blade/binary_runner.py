@@ -75,10 +75,8 @@ class BinaryRunner(object):
                 long_path, short_path = dest_norm, item_norm
             else:
                 long_path, short_path = item_norm, dest_norm
-            if (long_path.startswith(short_path) and
-                    long_path[len(short_path)] == '/'):
-                console.error_exit('%s could not exist with %s in testdata of %s' % (
-                    dest, item, target.fullname))
+            if long_path.startswith(short_path) and long_path[len(short_path)] == '/':
+                target.error_exit('"%s" could not exist with "%s" in testdata' % (dest, item))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
@@ -95,7 +93,7 @@ class BinaryRunner(object):
             src = os.path.abspath(prebuilt_file[0])
             dst = os.path.join(runfiles_dir, prebuilt_file[1])
             if os.path.lexists(dst):
-                console.warning('trying to make duplicate prebuilt symlink:\n'
+                console.warning('Trying to make duplicate prebuilt symlink:\n'
                                 '%s -> %s\n'
                                 '%s -> %s already exists\n'
                                 'skipped, should check duplicate prebuilt '
@@ -146,7 +144,7 @@ class BinaryRunner(object):
             dest_list.append(dest)
             dest_path = os.path.join(runfiles_dir, dest)
             if os.path.exists(dest_path):
-                console.warning('//%s: %s already existed, could not prepare testdata.' %
+                console.warning('//%s: "%s" already existed, could not prepare testdata.' %
                                 (target.fullname, dest))
                 continue
             try:
@@ -196,8 +194,7 @@ class BinaryRunner(object):
         target_key = tuple(target_name.split(':'))
         target = self.targets[target_key]
         if target.type not in self.run_list:
-            console.error_exit('target %s:%s is not a target that could run' % (
-                target_key[0], target_key[1]))
+            target.error_exit('is not a executable target')
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         shell = target.data.get('run_in_shell', False)

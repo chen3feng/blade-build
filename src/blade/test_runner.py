@@ -94,7 +94,7 @@ class TestRunner(binary_runner.BinaryRunner):
                     self.test_history = eval(f.read())
                 except (SyntaxError, NameError, TypeError) as e:
                     console.debug('Exception when loading test history: %s' % e)
-                    console.warning('error loading incremental test history, will run full test')
+                    console.warning('Error loading incremental test history, will run full test')
 
         if 'items' not in self.test_history:
             self.test_history['items'] = {}
@@ -107,9 +107,9 @@ class TestRunner(binary_runner.BinaryRunner):
             console.notice('Some tests will be run due to test environments changed:')
             new, old = _diff_env(new_env, old_env)
             if new:
-                console.notice('new environments: %s' % new)
+                console.notice('New environments: %s' % new)
             if old:
-                console.notice('old environments: %s' % old)
+                console.notice('Old environments: %s' % old)
 
         self.test_history['env'] = new_env
         self.env_md5 = md5sum(str(sorted(iteritems(new_env))))
@@ -355,7 +355,7 @@ class TestRunner(binary_runner.BinaryRunner):
         slow_tests = (self._collect_slow_tests(passed_run_results) +
                       self._collect_slow_tests(failed_run_results))
         if slow_tests:
-            console.warning('%d slow tests:' % len(slow_tests))
+            console.warning('Found %d slow tests:' % len(slow_tests))
             for cost_time, key in sorted(slow_tests):
                 console.warning('%.4gs\t//%s:%s' % (cost_time, key[0], key[1]), prefix=False)
 
@@ -374,7 +374,7 @@ class TestRunner(binary_runner.BinaryRunner):
             console.notice('All %d tests passed!' % len(passed_run_results))
             return
 
-        msg = ['total %d tests' % len(self.test_jobs)]
+        msg = ['Total %d tests' % len(self.test_jobs)]
         if passed_run_results:
             msg.append('%d passed' % len(passed_run_results))
         if failed_run_results:

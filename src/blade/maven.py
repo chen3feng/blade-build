@@ -74,7 +74,7 @@ class MavenCache(object):
         if self.__snapshot_update_policy == 'interval':
             interval = java_config.get('maven_snapshot_update_interval')
             if not interval:
-                console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
+                Console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
                                    '"maven_snapshot_update_policy" is "interval"')
             self.__snapshot_update_interval = interval * 60  # minutes
         else:
@@ -97,7 +97,7 @@ class MavenCache(object):
     def _check_config(self):
         """Check whether maven is configured correctly. """
         if not self.__maven:
-            console.error_exit('MavenCache was not configured')
+            console.error_exit('MavenCache is not configured')
 
     def _is_file_expired(self, filename):
         """Check if the modification time of file is expired relative to build time. """
