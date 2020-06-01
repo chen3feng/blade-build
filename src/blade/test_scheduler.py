@@ -132,7 +132,8 @@ class TestScheduler(object):
         self.passed_run_results = {}
         self.failed_run_results = {}
 
-        self.num_of_ran_tests = 0
+        self.num_of_finished_tests = 0
+        self.num_of_running_tests = 0
 
     def _get_workers_num(self):
         """get the number of thread workers. """
@@ -147,9 +148,10 @@ class TestScheduler(object):
         return result
 
     def _show_progress(self, cmd):
-        console.info('[%s/%s] Running %s' % (self.num_of_ran_tests, len(self.tests_list), cmd))
+        console.info('[%s/%s/%s] Running %s' % (self.num_of_finished_tests,
+                self.num_of_running_tests, len(self.tests_list), cmd))
         if console.verbosity_le('quiet'):
-            console.show_progress_bar(self.num_of_ran_tests, len(self.tests_list))
+            console.show_progress_bar(self.num_of_finished_tests, len(self.tests_list))
 
     def _run_job_redirect(self, job, job_thread):
         """run job and redirect the output. """
@@ -206,6 +208,9 @@ class TestScheduler(object):
         target = job[0]
         start_time = time.time()
 
+        with self.run_result_lock:
+            self.num_of_running_tests += 1
+
         try:
             if redirect:
                 returncode = self._run_job_redirect(job, job_thread)
@@ -225,7 +230,8 @@ class TestScheduler(object):
                 self.passed_run_results[target.key] = run_result
             else:
                 self.failed_run_results[target.key] = run_result
-            self.num_of_ran_tests += 1
+            self.num_of_running_tests -= 1
+            self.num_of_finished_tests += 1
 
     def _join_thread(self, t):
         """Join thread and keep signal awareable"""
