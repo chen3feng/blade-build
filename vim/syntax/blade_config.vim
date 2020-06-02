@@ -21,13 +21,16 @@ syn keyword bladeTarget build_target
 syn keyword bladeArg bits
 syn keyword bladeArg arch
 syn keyword bladeArg is_debug
+
 syn keyword bladeTarget global_config
 syn keyword bladeArg build_path_template
+syn keyword bladeArg debug_info_level
 syn keyword bladeArg duplicated_source_action
 syn keyword bladeArg test_timeout
 syn keyword bladeArg backend_builder
 syn keyword bladeArg build_jobs
 syn keyword bladeArg test_jobs
+
 syn keyword bladeTarget cc_test_config
 syn keyword bladeArg dynamic_link
 syn keyword bladeArg heap_check
@@ -36,13 +39,17 @@ syn keyword bladeArg gperftools_debug_libs
 syn keyword bladeArg gtest_libs
 syn keyword bladeArg gtest_main_libs
 syn keyword bladeArg pprof_path
+
 syn keyword bladeTarget cc_binary_config
 syn keyword bladeArg extra_libs
 syn keyword bladeArg run_lib_paths
+
 syn keyword bladeTarget distcc_config
 syn keyword bladeArg enabled
+
 syn keyword bladeTarget link_config
 syn keyword bladeArg link_on_tmp
+
 syn keyword bladeTarget java_config
 syn keyword bladeArg version
 syn keyword bladeArg source_version
@@ -54,33 +61,41 @@ syn keyword bladeArg maven_snapshot_update_interval
 syn keyword bladeArg warnings
 syn keyword bladeArg source_encoding
 syn keyword bladeArg java_home
+
 syn keyword bladeTarget java_binary_config
 syn keyword bladeArg one_jar_boot_jar
+
 syn keyword bladeTarget java_test_config
 syn keyword bladeArg junit_libs
 syn keyword bladeArg jacoco_home
 syn keyword bladeArg coverage_reporter
+
 syn keyword bladeTarget scala_config
 syn keyword bladeArg scala_home
 syn keyword bladeArg target_platform
 syn keyword bladeArg warnings
 syn keyword bladeArg source_encoding
+
 syn keyword bladeTarget scala_test_config
 syn keyword bladeArg scalatest_libs
+
 syn keyword bladeTarget go_config
 syn keyword bladeArg go
 syn keyword bladeArg go_home
+
 syn keyword bladeTarget thrift_config
 syn keyword bladeTarget thrift_library_config
 syn keyword bladeArg thrift
 syn keyword bladeArg thrift_libs
 syn keyword bladeArg thrift_incs
+
 syn keyword bladeTarget fbthrift_config
 syn keyword bladeTarget fbthrift_library_config
 syn keyword bladeArg fbthrift1
 syn keyword bladeArg fbthrift2
 syn keyword bladeArg fbthrift_libs
 syn keyword bladeArg fbthrift_incs
+
 syn keyword bladeTarget proto_library_config
 syn keyword bladeArg protoc
 syn keyword bladeArg protoc_java
@@ -96,6 +111,7 @@ syn keyword bladeArg protoc_go_plugin
 syn keyword bladeArg protobuf_go_path
 syn keyword bladeArg protoc_direct_dependencies
 syn keyword bladeArg well_known_protos
+
 syn keyword bladeTarget cc_config
 syn keyword bladeArg extra_incs
 syn keyword bladeArg cppflags
@@ -113,9 +129,11 @@ syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
 syn keyword bladeArg securecc
 syn keyword bladeArg header_inclusion_dependencies
+
 syn keyword bladeTarget cc_library_config
 syn keyword bladeArg generate_dynamic
 syn keyword bladeArg prebuilt_libpath_pattern
+
 syn keyword bladeTarget protoc_plugin
 syn keyword bladeArg name
 syn keyword bladeArg path

@@ -50,6 +50,11 @@ class Blade(object):
                  command):
         """init method.
 
+        Args:
+            command_targets: List[str], target patterns are specified in command line.
+            load_targets: List[str], target patterns should be loaded from workspace. It usually should be same
+                as the command_targets, but in query dependents mode, all targets should be loaded.
+            blade_path: str, the path of the `blade` python module, used to be called by builtin tools.
         """
         self.__command_targets = command_targets
         self.__load_targets = load_targets
@@ -63,12 +68,11 @@ class Blade(object):
         # Source dir of current loading BUILD file
         self.__current_source_path = blade_root_dir
 
-        # The direct targets that are used for analyzing
+        # The targets which are specified in command line explicitly, not pattern expanded.
         self.__direct_targets = []
 
-        # All command targets, make sure that all targets specified with ...
-        # are all in the list now
-        self.__all_command_targets = []
+        # All command targets, includes direct targets and expanded target patterns.
+        self.__expanded_command_targets = []
 
         # Given some targets specified in the command line, Blade will load
         # BUILD files containing these command line targets; global target
@@ -79,7 +83,7 @@ class Blade(object):
         # command line targets.
         self.__target_database = {}
 
-        # targets to build after loading the build files.
+        # The targets to be build after loading the build files.
         self.__build_targets = {}
 
         # The targets keys list after sorting by topological sorting method.
@@ -111,15 +115,15 @@ class Blade(object):
         """Load the targets. """
         console.info('Loading BUILD files...')
         (self.__direct_targets,
-         self.__all_command_targets,
+         self.__expanded_command_targets,
          self.__build_targets) = load_targets(self.__load_targets,
                                               self.__root_dir,
                                               self)
         if self.__command_targets != self.__load_targets:
             # In query dependents mode, we must use command targets to execute query
-            self.__all_command_targets = self._expand_command_targets()
+            self.__expanded_command_targets = self._expand_command_targets()
         console.info('Loading done.')
-        return self.__direct_targets, self.__all_command_targets  # For test
+        return self.__direct_targets, self.__expanded_command_targets  # For test
 
     def _expand_command_targets(self):
         """Expand command line targets to targets list"""
@@ -188,9 +192,7 @@ class Blade(object):
 
     def run(self, target):
         """Run the target. """
-        runner = BinaryRunner(self.__build_targets,
-                              self.__options,
-                              self.__target_database)
+        runner = BinaryRunner(self.__options, self.__target_database, self.__build_targets)
         return runner.run_target(target)
 
     def test(self):
@@ -198,12 +200,14 @@ class Blade(object):
         skip_tests = []
         if self.__options.skip_tests:
             skip_tests = target.normalize(self.__options.skip_tests.split(','), self.__working_dir)
-        test_runner = TestRunner(self.__build_targets,
-                                 self.__options,
-                                 self.__target_database,
-                                 self.__direct_targets,
-                                 skip_tests,
-                                 self.test_jobs_num())
+        test_runner = TestRunner(
+                self.__options,
+                self.__target_database,
+                self.__direct_targets,
+                self.__expanded_command_targets,
+                self.__build_targets,
+                skip_tests,
+                self.test_jobs_num())
         return test_runner.run()
 
     def query(self):
@@ -282,7 +286,7 @@ class Blade(object):
     def query_helper(self):
         """Query the targets helper method. """
         all_targets = self.__build_targets
-        query_list = self.__all_command_targets
+        query_list = self.__expanded_command_targets
 
         result_map = {}
         for key in query_list:
@@ -297,7 +301,7 @@ class Blade(object):
         if self.__options.dependents:
             console.error_exit('Only query --deps can be output as tree format')
         print(file=output_file)
-        for key in self.__all_command_targets:
+        for key in self.__expanded_command_targets:
             self._query_dependency_tree(key, 0, self.__build_targets, output_file)
             print(file=output_file)
 
@@ -317,7 +321,7 @@ class Blade(object):
     def dump_targets(self, output_file_name):
         result = []
         with open(output_file_name, 'w') as f:
-            for target_key in self.__all_command_targets:
+            for target_key in self.__expanded_command_targets:
                 target = self.__target_database[target_key]
                 result.append(target.dump())
             json.dump(result, fp=f, indent=2)

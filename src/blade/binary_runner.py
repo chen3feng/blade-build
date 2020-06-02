@@ -28,10 +28,10 @@ from blade.blade_util import environ_add_path
 class BinaryRunner(object):
     """BinaryRunner. """
 
-    def __init__(self, targets, options, target_database):
+    def __init__(self, options, target_database, build_targets):
         """Init method. """
         from blade import build_manager
-        self.targets = targets
+        self._build_targets = build_targets
         self.build_dir = build_manager.instance.get_build_dir()
         self.options = options
         self.run_list = ['cc_binary',
@@ -186,13 +186,13 @@ class BinaryRunner(object):
 
     def _clean_env(self):
         """clean test environment. """
-        for target in self.targets.values():
+        for target in self._build_targets.values():
             self._clean_target(target)
 
     def run_target(self, target_name):
         """Run one single target. """
         target_key = tuple(target_name.split(':'))
-        target = self.targets[target_key]
+        target = self._build_targets[target_key]
         if target.type not in self.run_list:
             target.error_exit('is not a executable target')
         run_env = self._prepare_env(target)
