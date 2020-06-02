@@ -41,7 +41,7 @@ class LexYaccLibrary(CcTarget):
         if (len(srcs) != 2 or
                 (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
-            self.error_exit('srcs for lex_yacc_library must be a pair of [lex_file, yacc_file]')
+            self.error_exit('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
 
         super(LexYaccLibrary, self).__init__(
                 name=name,

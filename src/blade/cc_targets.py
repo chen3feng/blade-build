@@ -114,8 +114,8 @@ class CcTarget(Target):
             if dep and dep.data.get('deprecated'):
                 replaced_deps = dep.deps
                 if replaced_deps:
-                    self.warning('This is deprecated, please depends on //%s:%s' % (
-                                        replaced_deps[0][0], replaced_deps[0][1]))
+                    self.warning('//%s is deprecated, please depends on //%s' % (
+                        "%s:%s" % dep, "%s:%s" % replaced_deps[0]))
 
     __cxx_keyword_list = frozenset([
         'and', 'and_eq', 'alignas', 'alignof', 'asm', 'auto',
@@ -165,7 +165,7 @@ class CcTarget(Target):
             illegal_path_list += [s for s in srcs if not keyword in s]
 
         if illegal_path_list:
-            self.warning("warning='no' should only be used for code in thirdparty.")
+            self.warning(""""warning='no'" should only be used for thirdparty libraries.""")
 
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""

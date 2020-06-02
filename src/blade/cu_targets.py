@@ -114,7 +114,7 @@ class CuLibrary(CuTarget):
                 kwargs=kwargs)
 
     def ninja_rule(self):
-        self.error('to be implemented')
+        self.error('To be implemented')
 
 
 def cu_library(name,
@@ -175,7 +175,7 @@ class CuBinary(CuTarget):
                 kwargs=kwargs)
 
     def ninja_rule(self):
-        self.error('to be implemented')
+        self.error('To be implemented')
 
 
 def cu_binary(name,

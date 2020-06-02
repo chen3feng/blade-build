@@ -208,7 +208,7 @@ class BladeConfig(object):
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
-                console.info('loading config file "%s"' % filename)
+                console.info('Loading config file "%s"' % filename)
                 exec_(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
@@ -223,13 +223,13 @@ class BladeConfig(object):
                 self._append_config(section_name, section, append)
             self._replace_config(section_name, section, user_config)
         else:
-            console.error('%s: %s: unknown config section name' % (
+            console.error('%s: %s: Unknown config section name' % (
                 self.current_file_name, section_name))
 
     def _append_config(self, section_name, section, append):
         """Append config section items"""
         if not isinstance(append, dict):
-            console.error('%s: %s: append must be a dict' %
+            console.error('%s: %s: Append must be a dict' %
                           (self.current_file_name, section_name))
         else:
             for k in append:
@@ -237,11 +237,11 @@ class BladeConfig(object):
                     if isinstance(section[k], list):
                         section[k] += var_to_list(append[k])
                     else:
-                        console.warning('%s: %s: config item %s is not a list' %
+                        console.warning('%s: %s: Config item %s is not a list' %
                                         (self.current_file_name, section_name, k))
 
                 else:
-                    console.warning('%s: %s: unknown config item name: %s' %
+                    console.warning('%s: %s: Unknown config item name: %s' %
                                     (self.current_file_name, section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
@@ -252,7 +252,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
-                console.warning('%s: %s: unknown config item name: %s' %
+                console.warning('%s: %s: Unknown config item name: %s' %
                                 (self.current_file_name, section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:
@@ -328,8 +328,8 @@ def _check_test_ignored_envs(kwargs):
             re.compile(name)
         except re.error as e:
             console.error_exit(
-                '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' % (
-                _blade_config.current_file_name, name, e))
+                    '%s: "global_config.test_ignored_envs": Invalid env name or regex "%s", %s' % (
+                        _blade_config.current_file_name, name, e))
 
 
 @config_rule
@@ -345,7 +345,7 @@ def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
-        console.error_exit('cc_test_config: heap_check can only be in %s' %
+        console.error_exit('"cc_test_config.heap_check" can only be in %s' %
                            HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
@@ -447,7 +447,7 @@ def protoc_plugin(**kwargs):
     """protoc_plugin. """
     from blade.proto_library_target import ProtocPlugin
     if 'name' not in kwargs:
-        console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
+        console.error_exit('Missing "name" in protoc_plugin parameters: %s' % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')
     section[kwargs['name']] = ProtocPlugin(**kwargs)
 
@@ -470,7 +470,7 @@ def cc_config(append=None, **kwargs):
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, str) and ' ' in extra_incs:
-            console.warning('//%s: cc_config: extra_incs has been changed to list' %
+            console.warning('//%s: "cc_config.extra_incs" has been changed to list' %
                             _blade_config.current_file_name)
             kwargs['extra_incs'] = extra_incs.split()
     _blade_config.update_config('cc_config', append, kwargs)

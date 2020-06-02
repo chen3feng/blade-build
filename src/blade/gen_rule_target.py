@@ -33,6 +33,7 @@ class GenRuleTarget(Target):
                  cmd,
                  cmd_name,
                  generate_hdrs,
+                 export_incs,
                  heavy,
                  kwargs):
         """Init method.
@@ -56,12 +57,18 @@ class GenRuleTarget(Target):
         self.data['cmd_name'] = cmd_name
         if generate_hdrs is not None:
             self.data['generate_hdrs'] = generate_hdrs
+        if export_incs:
+            self.data['export_incs'] = self._expand_incs(var_to_list(export_incs))
         self.data['heavy'] = heavy
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
         return ','.join(['"%s"' % os.path.join(self.build_dir, path, src)
                          for src in srcs])
+
+    def _expand_incs(self, incs):
+        """Expand incs"""
+        return [self._target_file_path(inc) for inc in incs]
 
     def _process_location_reference(self, m):
         """Process target location reference in the command. """
@@ -143,17 +150,21 @@ def gen_rule(
         cmd='',
         cmd_name='COMMAND',
         generate_hdrs=None,
+        export_incs=[],
         heavy=False,
         **kwargs):
     """General Build Rule
     Args:
-        generate_hdrs: Optional[bool]:
+        generate_hdrs: Optional[bool],
             Specify whether this target will generate c/c++ header files.
             Defaultly, gen_rule will calculate a generated header files list automatically
             according to the names in the |outs|`
             But if they are not specified in the outs, and we sure know this target will generate
             some headers, we should set this argument to True.
-        heavy: bool: Whether this target is a heavy target, which means it will cost many cpu/memory
+        export_incs List(str), the include dirs to be exported to dependants, NOTE these dirs are
+            under the target dir, it's different with cc_library.export_incs.
+        heavy: bool, Whether this target is a heavy target, which means to build it will cost many
+            cpu/memory.
     """
     gen_rule_target = GenRuleTarget(
             name=name,
@@ -164,6 +175,7 @@ def gen_rule(
             cmd=cmd,
             cmd_name=cmd_name,
             generate_hdrs=generate_hdrs,
+            export_incs=export_incs,
             heavy=heavy,
             kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)

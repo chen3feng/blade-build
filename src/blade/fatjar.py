@@ -84,7 +84,7 @@ def generate_fat_jar(target, jars):
                 else:
                     if name.endswith('/'):
                         continue
-                    message = ('%s: duplicate path %s found in {%s, %s}' % (
+                    message = ('%s: Duplicate path %s found in {%s, %s}' % (
                         target, name,
                         os.path.basename(path_jar_dict[name]),
                         os.path.basename(dep_jar)))

@@ -31,7 +31,7 @@ class ThriftParser(object):
     def __init__(self, path):
         self.path = path
         if not os.path.isfile(self.path):
-            console.error_exit('%s is not a valid file.' % self.path)
+            console.error_exit('"%s" is not a valid file.' % self.path)
 
         self.thrift_name = os.path.basename(self.path)[:-7]
         # Package name for each language.

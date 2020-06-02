@@ -191,7 +191,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             __current_globles = build_rules.get_all()
             exec_(build_file, __current_globles, None)
         except SystemExit:
-            console.error_exit('%s: fatal error' % build_file)
+            console.error_exit('%s: Fatal error' % build_file)
         except:  # pylint: disable=bare-except
             console.error_exit('Parse error in %s\n%s' % (
                 build_file, traceback.format_exc()))
