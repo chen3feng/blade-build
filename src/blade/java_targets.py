@@ -66,6 +66,14 @@ class MavenJar(Target):
                     self.data['maven_deps'] = deps_path.split(':')
 
 
+def debug_info_options():
+    """javac debug information options(-g)"""
+    global_config = config.get_section('global_config')
+    java_config = config.get_section('java_config')
+    debug_info_level = global_config['debug_info_level']
+    return java_config['debug_info_levels'][debug_info_level]
+
+
 _JAVA_SRC_PATH_SEGMENTS = (
     'src/main/java',
     'src/test/java',
@@ -584,14 +592,10 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._get_pack_deps()
 
     def javac_flags(self):
-        global_config = config.get_section('global_config')
-        java_config = config.get_section('java_config')
-        debug_info_level = global_config['debug_info_level']
-        debug_info_options = java_config['debug_info_levels'][debug_info_level]
         warnings = self.data.get('warnings')
         if not warnings:
-            warnings = java_config['warnings']
-        return debug_info_options + warnings
+            warnings = config.get_item('java_config', 'warnings')
+        return debug_info_options() + warnings
 
     def _java_full_path_srcs(self):
         """Expand srcs to full path"""

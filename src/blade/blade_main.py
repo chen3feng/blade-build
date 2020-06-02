@@ -356,7 +356,7 @@ def lock_workspace(build_dir):
     lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
-            console.error_exit('There is already an active building in current source tree.')
+            console.error_exit('There is already an active building in current workspace.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
