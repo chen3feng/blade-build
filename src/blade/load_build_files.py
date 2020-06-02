@@ -211,19 +211,29 @@ def _find_depender(dkey, blade):
     return None
 
 
-def _is_load_excluded(d):
-    """Whether exclude the directory when loading BUILD.
+# File names should be skipped
+_SKIP_FILES = ['BLADE_ROOT', '.bladeskip']
 
-        1. Exclude build directory and directories starting with
-           '.', e.g. .svn.
-        2. TODO(wentingli): Exclude directories matching patterns
-           configured globally
+
+def _is_load_excluded(root, d):
+    """Whether exclude the directory when loading BUILD.
     """
+    # TODO(wentingli): Exclude directories matching patterns configured globally
+
+    # Exclude directories starting with '.', e.g. '.', '..', '.svn', '.git'.
     if d.startswith('.'):
         return True
+
+    # Exclude build dirs
     for build_dir in ('build32_debug', 'build32_release',
                        'build64_debug', 'build64_release'):
         if d.startswith(build_dir):
+            return True
+
+    # Exclude directories containing special files
+    for skip_file in _SKIP_FILES:
+        if os.path.exists(os.path.join(root, d, skip_file)):
+            console.info('Skip "%s"' % os.path.join(root, d))
             return True
 
     return False
@@ -267,7 +277,7 @@ def load_targets(target_ids, blade_root_dir, blade):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                dirs[:] = [d for d in dirs if not _is_load_excluded(d)]
+                dirs[:] = [d for d in dirs if not _is_load_excluded(root, d)]
                 if 'BUILD' in files:
                     source_dirs.append(root)
         else:
