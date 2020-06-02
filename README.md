@@ -1,3 +1,5 @@
+# Blade Build System
+
 ```
 ██████╗ ██╗      █████╗ ██████╗ ███████╗
 ██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝
@@ -6,7 +8,6 @@
 ██████╔╝███████╗██║  ██║██████╔╝███████╗
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
-# Blade Build System
 
 Blade是一个方便易用高性能的现代化代码构建系统，特别适合公司内的大规模代码库的敏捷构建，内置了对多种编程语言及单元测试框架的直接支持。
 
@@ -15,19 +16,22 @@ Blade is an easy-to-use, fast and modern build system for trunk based developmen
 Click here to read [README](README-en.md) in English.
 
 ## Build Status
+
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
 
-## First, let's see the beautiful demo!
+## First, let's see the beautiful demo
+
 [![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
-
 ## 通知
+
 * Blade 发布1.1.2，包含以下特性：
- * python 最低版本要求2.6
- * 对Java，scala构建的完善支持
- * 支持自定义扩展
+  * python 最低版本要求2.6
+  * 对Java，scala构建的完善支持
+  * 支持自定义扩展
 
 我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
+
 * 后端支持[ninja](doc/zh_CN/config.md#global_config)构建系统，大幅度提高构建性能
 * 全面支持Python构建
 * 完善对扩展的支持
@@ -37,6 +41,7 @@ Click here to read [README](README-en.md) in English.
 欢迎尝试。
 
 ## 源起
+
 Blade 是一个现代构建系统，期望的目标是强大而好用，把程序员从构建的繁琐中解放出来。
 
 Blade主要定位于linux下的大型C++项目，密切配合研发流程，比如单元测试，持续集成，覆盖率统计等。
@@ -51,10 +56,12 @@ Autotools 的难用和繁琐的问题，参考[Google工程博客上的一些文
 代码开源后，托管到googlecode上，因后来googlecode关闭，迁移到chen3feng个人git仓库继续维护。
 
 ## 为何而生
+
 首先，Blade解决了依赖问题。
 当你在构建某些目标时，头文件有变化，会自动重新构建。
 最方便的是，Blade也能追踪库文件的依赖关系。比如
 库 foo 依赖库 common，那么在库 foo 的 BUILD 文件中列入依赖：
+
 ```python
 cc_library(
     name = 'foo',
@@ -62,7 +69,9 @@ cc_library(
     deps = ':common'
 )
 ```
+
 那么对于使用foo的程序，如果没有直接用到common，那么就只需要列出foo，并不需要列出common。
+
 ```python
 cc_binary(
     name = 'my_app',
@@ -70,27 +79,37 @@ cc_binary(
     deps = ':foo'
 )
 ```
+
 这样当你的库实现发生变化，增加或者减少库时，并不需要通知库的用户一起改动，Blade自动维护这层间接的依赖关系。当构建my_app时，也会自动检查foo和common是否也需要更新。
 
 说到易用性，除了依赖关系的自动维护，Blade还可以做到，用户只需要敲一行命令，就能把整个目录树的编译链接和单元测试全部搞定。例如：
 
 递归构建和测试common目录下所有的目标
+
 ```bash
-$ blade test common...
+blade test common...
 ```
+
 以32位模式构建和测试
+
 ```bash
-$ blade test -m32 common...
+blade test -m32 common...
 ```
+
 以调试模式构建和测试
+
 ```bash
-$ blade test -pdebug common...
+blade test -pdebug common...
 ```
+
 显然，你可以组合这些标志
+
 ```bash
-$ blade test -m32 -pdebug common...
+blade test -m32 -pdebug common...
 ```
+
 ## 特点
+
 * 自动分析头文件依赖关系，构建受影响的代码。
 * 增量编译和链接，只构建因变更受影响而需要重新构建的代码。
 * 自动计算库的间接依赖，库的作者只需要写出直接依赖，构建时自动检查所依赖的库是否需要重新构建。
@@ -120,6 +139,7 @@ $ blade test -m32 -pdebug common...
 * 被依赖的库需要更新，而构建时没有被更新，比如某子目录依
 
 ## 致谢
+
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
 [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
 * Blade 生成 [Ninja](https://ninja-build.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 Ninja。

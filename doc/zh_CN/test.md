@@ -3,6 +3,7 @@
 Blade对测试驱动开发提供了完善的支持 ，可以通过命令自动运行测试程序。
 
 ## 增量测试
+
 Blade test支持增量测试 ，可以加快tests的执行。
 
 已经Pass 的tests 在下一次构建和测试时不需要再跑，除非：
@@ -17,6 +18,7 @@ Blade test支持增量测试 ，可以加快tests的执行。
 
 如果需要使用全量测试，使用--full-test option, 如 blade test common/... --full-test ， 全部测试都需要跑。
 另外，cc_test 支持了 always_run 属性，用于在增量测试时，不管上次的执行结果，每次总是要跑。
+
 ```python
 cc_test(
     name = 'zookeeper_test',
@@ -32,7 +34,9 @@ blade test [targets] --test-jobs N
 -t, --test-jobs N 设置并发测试的并发数，Blade会让N个测试进程并行执行
 
 ## 非并行测试
+
 对于某些因为可能相互干扰而不能并行跑的测试，可以加上 exclusive 属性
+
 ```python
 cc_test(
     name = 'zookeeper_test',
@@ -41,13 +45,14 @@ cc_test(
 )
 ```
 
-
 ## 测试覆盖率
+
 构建和运行测试时，加上--coverage参数，blade 就会加入覆盖率相关的编译选项，并在运行时收集测试覆盖率数据，目前仅支持 C++、Java 和 Scala。
 
 C/C++测试覆盖率，是通过gcc的[gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)实现的。测试运行完后，需要自己执行gcov或者lcov之类的第三方工具生成测试覆盖报告。
 
-要生成 Java/Scala 测试覆盖率报告，你需要下载并解压[jacoco]()，然后进行配置：
+要生成 Java/Scala 测试覆盖率报告，你需要下载并解压[jacoco](https://www.jacoco.org/)，然后进行配置：
+
 ```python
 java_test_config(
     ...
@@ -55,11 +60,18 @@ java_test_config(
     ...
 )
 ```
+
 测试报告会生成到 build 目录下的 `jacoco_coverage_report` 目录里。
 
+如果调试符号级别（global\_config.debug\_info\_level）太低，低于或等于`low`，那么生成的覆盖率报告里会缺少行覆盖率。
+Jacoco 需要 `-g:line` 编译选项才能生成行覆盖率。
+
 ## 跳过指定的测试
+
 Blade支持通过--skip-tests参数显式地跳过指定的测试，当需要批量运行大量的测试，而又期望跳过某些测试时，这个选项就很有用。例如：
+
 ```bash
 blade test base/... --skip-tests=base/string,base/encoding:hex_test
 ```
+
 表示运行base目录下所有的测试，但是跳过base/string下所有的测试以及base/encoding:hex_test。

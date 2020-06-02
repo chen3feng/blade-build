@@ -1,6 +1,7 @@
 # 配置
 
 ## 配置文件
+
 Blade 只有一种配置文件格式，但是支持多重配置文件，按以下顺序依次查找和加载，后加载的配置文件里存在的配置项会覆盖前面已经加载过的配置项
 
 * blade 安装目录下的 blade.conf，这是全局配置。
@@ -11,6 +12,7 @@ Blade 只有一种配置文件格式，但是支持多重配置文件，按以�
 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
 
 配置的语法和构建规则一样，也类似函数调用，例如：
+
 ```python
 global_config(
     test_timeout = 600,
@@ -19,13 +21,14 @@ global_config(
 
 你可以用 `blade dump` 命令来输出当前的配置，并根据需要修改使用：
 
-```
+```bash
 blade dump --config --to-file my.config
 ```
 
 不加 `--to-file` 选项，则输出到标准输出。
 
 ### global\_config
+
 Blade全局配置
 
 | 参数                       | 类型   | 默认值  | 值域               | 说明                                                                       |
@@ -42,6 +45,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 用 ninja 速度比 scons 快很多，因此我们淘汰了对 scons 的支持。
 
 ### cc\_config
+
 所有c/c++目标的公共配置
 
 | 参数           | 类型   | 默认值   | 值域                                     | 说明                                                                |
@@ -60,6 +64,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。
 
 ### cc\_test\_config
+
 构建和运行测试所需的配置
 
 | 参数                     | 类型     | 默认值                | 值域                                                                                | 说明                                         |
@@ -78,6 +83,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest\_libs='//thirdparty/gtest:gtest'。
 
 ### java\_config
+
 Java构建相关的配置
 
 | 参数                              | 类型   | 默认值                      | 值域         | 说明                                 |
@@ -94,10 +100,12 @@ Java构建相关的配置
 | java\_home                        | string | 读取 '$JAVA\_HOME' 环境变量  |              | 设置JAVA_HOME                        |
 
 关于 Maven：
-- maven\_snapshot\_updata\_policy 允许的值："always", "daily"(默认), "interval",  "never"
-- maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
+
+* maven\_snapshot\_updata\_policy 允许的值："always", "daily"(默认), "interval",  "never"
+* maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
 
 ### proto\_library\_config
+
 编译protobuf需要的配置
 
 | 参数                    | 类型   | 默认值   | 值域 | 说明                                           |
@@ -108,6 +116,7 @@ Java构建相关的配置
 | protobuf\_include\_path | string |          |      | 编译 pb.cc 时额外的 -I 路径                    |
 
 ### thrift\_library\_config
+
 编译thrift需要的配置
 
 | 参数                | 类型   | 默认值                            | 值域 | 说明                                          |
@@ -143,10 +152,13 @@ Blade还支持以下环境变量：
 TOOLCHAIN\_DIR和CPP等组合起来，构成调用工具的完整路径，例如：
 
 调用/usr/bin下的gcc（开发机上的原版gcc）
+
 ```bash
 TOOLCHAIN_DIR=/usr/bin blade
 ```
+
 使用clang
+
 ```bash
 CPP='clang -E' CC=clang CXX=clang++ LD=clang++ blade
 ```
