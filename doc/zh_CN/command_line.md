@@ -1,11 +1,13 @@
 # 命令行参考
 
 ## 基本命令行语法
+
 ```bash
 blade <subcommand> [options]... [targets]...
 ```
 
 ## 子命令
+
 subcommand是一个子命令，目前有：
 
 * build 表示构建项目
@@ -15,6 +17,7 @@ subcommand是一个子命令，目前有：
 * run   构建并run一个单一目标
 
 ## Target语法
+
 targets是一个空格分开的列表，支持的格式：
 
 * path:name 表示path中的某个target
@@ -26,7 +29,8 @@ targets是一个空格分开的列表，支持的格式：
 当指定...作为结尾目标时，如果其路径存在，即使展开为空，也总不会失败。
 
 ## 子命令选项
-不同子命令支持的选项不一样，具体请执行blade <subcommand> --help查看
+
+不同子命令支持的选项不一样，具体请执行blade \<subcommand\> --help查看
 
 下面是一些常用的命令行选项
 
@@ -45,6 +49,7 @@ targets是一个空格分开的列表，支持的格式：
 * --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
 
 ## 示例
+
 ```bash
 
 # 构建当前目录下的所有目标，不包含子目录
@@ -65,3 +70,4 @@ blade test base/...
 blade test base:string_test
 ```
 
+对于 `...` 目标模式，Blade 会递归搜索 `BUILD` 文件，如果需要排除某些目录，在其中放一个空的 `.bladeskip` 文件即可。

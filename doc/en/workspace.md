@@ -11,10 +11,13 @@ Blade does not read this information from a configuration file or environment va
 The way the Blade gets the current workspace is to look up the BLADE_ROOT file from the current directory no matter which level of the subdirectory it is currently running from. The directory with this file is the workspace.
 
 In the development mode of a single code base, BLADE_ROOT is recommended to be unified in the code base. In the multi-warehouse development mode, you may need to create it yourself.
+
 ```bash
 touch BLADE_ROOT
 ```
+
 Finally, a workspace looks like this:
+
 ```bash
 $ ls -1
 BLADE_ROOT

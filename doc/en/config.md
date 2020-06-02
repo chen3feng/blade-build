@@ -1,6 +1,7 @@
 # Configuration
 
 ## configuration file
+
 Blade supports three configuration files, which are loaded in the following order. The loaded configuration will overwrite the previous configuration.
 
 * blade.conf in the blade installation directory, this is the global configuration.
@@ -12,18 +13,24 @@ Each configuration parameter of the configuration of all the multiple parameters
 
 You can run `blade dump` command to dump current configuration, and modify it as your need:
 
-```
+```bash
 blade dump --config --to-file my.config
 ```
 
 Without the `--to-file` option, the result will be dumped to stdout.
 
 ### global_config
+
 Blade global configuration
+
 ```python
+global_config(
+    backend_builder = 'ninja', # backend build system, only supports ninja now.
     duplicated_source_action = 'error', # When the same source file is found to belong to multiple targets, the default is warning
     test_timeout = 600 # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
+)
 ```
+
 | parameter                  | type   | default | values             | description                                                                                |
 |----------------------------|--------|---------|--------------------|----------------------------------------------------------------------------                |
 | backend\_builder           | string | ninja   | ninja              | Backend build system, only `ninja` currently                                               |
@@ -56,6 +63,7 @@ All options are optional and if they do not exist, the previous value is maintai
 The optimize flags is separate from other compile flags because it is ignored in debug mode.
 
 Example:
+
 ```python
 cc_config(
     extra_incs = ['thirdparty'], # extra -I, like thirdparty
@@ -65,6 +73,8 @@ cc_config(
     optimize = ['-O2'], # optimization level
 )
 ```
+
+All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
 
 ### cc_test_config
 
@@ -88,29 +98,31 @@ note:
 * Or include the source code in your source tree, such as thirdparty, you can write gtest_libs='//thirdparty/gtest:gtest'.
 
 ### java_config
+
 Java related configurations
 
-| param           | type   | default                   | value          | description |
-|-----------------|--------|---------------------------|----------------|-------------|
-| version         | string | empty                     | "6" "1.6", ... | Provide compatibility with specified release |
-| source_version  | string | take `version`            |                | Provide source compatibility with specified release |
-| target_version  | string | take `version`            |                | Generate class files for specific VM version |
-| maven           | string | 'mvn'                     |                | The command to run `mvn` |
-| maven_central   | string |                           |                | Maven repository URL
-| maven_snapshot_update_policy   | string | daily      |                | Update policy of snapshot version in maven repository   |
-| maven_snapshot_update_interval | int    | empty      |                | Update interval of snapshot version in maven repository |
-| warnings        | list   | ['-Werror', '-Xlint:all'] |                | Warning flags |
-| source_encoding | string | None                      |                | Specify character encoding used by source files |
-| java_home       | string | Take from '$JAVA_HOME'    |                | Set JAVA_HOME |
+| param                          | type   | default                   | value          | description                                             |
+|--------------------------------|--------|---------------------------|----------------|---------------------------------------------------------|
+| version                        | string | empty                     | "6" "1.6", ... | Provide compatibility with specified release            |
+| source_version                 | string | take `version`            |                | Provide source compatibility with specified release     |
+| target_version                 | string | take `version`            |                | Generate class files for specific VM version            |
+| maven                          | string | 'mvn'                     |                | The command to run `mvn`                                |
+| maven_central                  | string |                           |                | Maven repository URL                                    |
+| maven_snapshot_update_policy   | string | daily                     |                | Update policy of snapshot version in maven repository   |
+| maven_snapshot_update_interval | int    | empty                     |                | Update interval of snapshot version in maven repository |
+| warnings                       | list   | ['-Werror', '-Xlint:all'] |                | Warning flags                                           |
+| source_encoding                | string | None                      |                | Specify character encoding used by source files         |
+| java_home                      | string | Take from '$JAVA_HOME'    |                | Set JAVA_HOME                                           |
 
 About maven:
 
-- maven_snapshot_updata_policy values: "always", "daily"(default), "interval",  "never"
-- maven_snapshot_update_interval is in minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
-
+* maven_snapshot_updata_policy values: "always", "daily"(default), "interval",  "never"
+* maven_snapshot_update_interval is in minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
 
 ### proto_library_config
+
 Compile the configuration required by protobuf
+
 ```python
 proto_library_config(
     protoc='protoc', #protoc compiler path
@@ -121,7 +133,9 @@ proto_library_config(
 ```
 
 ### thrift_library_config
+
 Compile the configuration required by thrift
+
 ```python
 thrift_library_config(
     thrift='thrift', #protoc compiler path
@@ -158,10 +172,13 @@ Blade also supports the following environment variables:
 TOOLCHAIN_DIR and CPP are combined to form the full path of the calling tool, for example:
 
 Call gcc under /usr/bin (original gcc on development machine)
+
 ```bash
 TOOLCHAIN_DIR=/usr/bin blade
 ```
+
 Using clang
+
 ```bash
 CPP='clang -E' CC=clang CXX=clang++ LD=clang++ blade
 ```

@@ -3,6 +3,7 @@
 ## gen\_rule
 
 Used to customize your own construction rules, parameters:
+
 -outs: list, output file list
 -cmd: str, the called command line, may contain the following variables, which will be replaced with actual values before running:
     - $SRCS, space-separated list of source file names, relative to WORKSPACE
@@ -18,14 +19,16 @@ Used to customize your own construction rules, parameters:
   If a C/C ++ target depends on the gen\_rule target that generates header files, then these header files need to be generated before compilation can begin.
   gen\_rule will automatically analyze whether there are header files in `outs`, so there is no need to set it if all of the headers are listed in `outs`.
   This option will reduce the parallelism of compilation, because if a target can be divided into mutiple stages, such as:
-    - generating source code (including header files)
-    - compiling
-    - generating library
+  - generating source code (including header files)
+  - compiling
+  - generating library
   When the header file list is given accurately, after the first stage is generated, other targets can be built without waiting the whole target is built.
+- export\_incs: list, indicates the include path for generated header files, similar to `cc_library.export_incs`, but NOTE its relative to the target dir.
 - heavy: bool, indicates this a "heavy" target, that is, it will consume a lot of CPU or memory, making it impossible to parallel with other tasks or too much.
   Turning on this option will reduce build performance, but will help reduce build failures caused by insufficient resources.
 
 Example:
+
 ```python
 gen_rule(
     name='test_gen_target',
@@ -35,9 +38,9 @@ gen_rule(
 )
 ````
 
-NOTE: `gen_rule` only writes `outs` files in the subdir of BUILD_DIR, but when you use `gen_rule`
+NOTE: `gen_rule` only writes `outs` files in the subdir of BUILD\_DIR, but when you use `gen_rule`
 to generate source code and want to reference the generated source code in other targets, just
-consider them as if they are generated in the source tree, without the BUILD_DIR prefix.
+consider them as if they are generated in the source tree, without the BUILD\_DIR prefix.
 
 Multiple similar gen\_rule can be considered to be defined as an extension maintained in a separate
 `bld` file, and through [include] (../functions.md#include) function to reduce code redundancy and to keep better maintenance.
