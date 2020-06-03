@@ -343,20 +343,32 @@ class JavaTargetMixIn(object):
         self.data['java_pack_deps'] = (dep_jars, maven_jars)
         return dep_jars, maven_jars
 
+    def get_java_package_source_mapping(self):
+        """
+        Get java package_name/sourcefiles mapping
+        """
+        if not self.srcs:
+            return {}
+        # A dict of package : [source_path]
+        key = 'java_package_source_mapping'
+        if key in self.data:
+            return self.data[key]
+        mapping = collections.defaultdict(list)
+        for src in self.srcs:
+            src = self._source_file_path(src)
+            package = self._get_source_package_name(src)
+            if package:
+                mapping[package].append(src)
+        self.data[key] = mapping
+        return mapping
+
     def _get_java_package_names(self):
         """
-        Get java package name. Usually all the sources are within the same package.
+        Get java package names. Usually all the sources are within the same package.
         However, there are cases where BUILD is in the parent directory and sources
         are located in subdirectories each of which defines its own package.
         """
-        if not self.srcs:
-            return []
-        packages = set()
-        for src in self.srcs:
-            package = self._get_source_package_name(self._source_file_path(src))
-            if package:
-                packages.add(package)
-        return sorted(packages)
+        return self.get_java_package_source_mapping().keys()
 
     def _get_source_package_name(self, file_name):
         """Get the java package name from source file if it is specified. """
@@ -463,6 +475,8 @@ class JavaTargetMixIn(object):
         Note that the classes are still compiled from the sources in the
         source directory.
         """
+        if not self.blade.get_options().coverage:
+            return
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
             src = self._source_file_path(source)
@@ -668,8 +682,7 @@ class JavaLibrary(JavaTarget):
             if not binary_jar:
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
-        else:
-            self.data['jacoco_coverage'] = coverage and bool(srcs)
+        self.data['jacoco_coverage'] = coverage and bool(srcs)
 
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':

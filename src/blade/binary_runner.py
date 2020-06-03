@@ -83,12 +83,13 @@ class BinaryRunner(object):
         runfiles_dir = self._runfiles_dir(target)
         shutil.rmtree(runfiles_dir, ignore_errors=True)
         os.mkdir(runfiles_dir)
-        # Build profile symlink
-        profile_link_name = os.path.basename(self.build_dir)
+        # Make a symbolic link of build_dir because dynamic linked binary need to load shared
+        # libraries from this path
+        build_dir_name = os.path.basename(self.build_dir)
         os.symlink(os.path.abspath(self.build_dir),
-                   os.path.join(runfiles_dir, profile_link_name))
+                   os.path.join(runfiles_dir, build_dir_name))
 
-        # Prebuilt library symlink
+        # Also make symbolic links for prebuilt shared libraries
         for prebuilt_file in self._get_prebuilt_files(target):
             src = os.path.abspath(prebuilt_file[0])
             dst = os.path.join(runfiles_dir, prebuilt_file[1])
@@ -178,19 +179,19 @@ class BinaryRunner(object):
                 shutil.copy2(src, dst)
 
     def _clean_target(self, target):
-        """clean the test target environment. """
-        profile_link_name = os.path.basename(self.build_dir)
-        profile_link_path = os.path.join(self._runfiles_dir(target), profile_link_name)
-        if os.path.exists(profile_link_path):
-            os.remove(profile_link_path)
+        """Clean the executive environment."""
+        build_dir_name = os.path.basename(self.build_dir)
+        link_path = os.path.join(self._runfiles_dir(target), build_dir_name)
+        if os.path.exists(link_path):
+            os.remove(link_path)
 
-    def _clean_env(self):
-        """clean test environment. """
+    def _clean_for_coverage(self):
+        """Clean executive environment for coverage generating."""
         for target in self._build_targets.values():
             self._clean_target(target)
 
     def run_target(self, target_name):
-        """Run one single target. """
+        """Run one single target."""
         target_key = tuple(target_name.split(':'))
         target = self._build_targets[target_key]
         if target.type not in self.run_list:
@@ -205,5 +206,5 @@ class BinaryRunner(object):
 
         p = subprocess.Popen(cmd, env=run_env, close_fds=True, shell=shell)
         p.wait()
-        self._clean_env()
+        self._clean_for_coverage()
         return p.returncode
