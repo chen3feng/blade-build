@@ -159,6 +159,24 @@ All of these configuration items have default values, and you don't need to incl
 The default config values of libraries are assumed to be installed in the system directory.
 If you put these libraries into your own code in your project (such as our internals), please modify the corresponding configuration.
 
+### cc_library_config
+
+C/C++ library configuration
+
+| parameter                  | type   | default   | values             | description                                                                |
+|----------------------------|--------|-----------|--------------------|----------------------------------------------------------------------------|
+| prebuilt_libpath_pattern   | string |lib${bits} |                    | The pattern of prebuilt library subdirectory                               |
+
+Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
+So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:
+
+- ${bit}  Target bits, such as 32，64。
+- ${arch} Target CPU architecture name, such as i386, x86_64 等。
+
+In this way, library files of multiple target platforms can be stored in different subdirectories
+without conflict. This attribute can also be empty string, which means no subdirectory.
+If you only concern to one target platform, it is sure OK to have only one directory or have no directory at all.
+
 ## Environment Variable
 
 Blade also supports the following environment variables:
