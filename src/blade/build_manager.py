@@ -176,15 +176,15 @@ class Blade(object):
 
     def verify(self):
         """Verify specific targets after build is complete. """
+        if not config.get_item('cc_config', 'header_inclusion_dependencies'):
+            return True
+
         verify_history = self._load_verify_history()
-        error = 0
-        header_inclusion_dependencies = config.get_item('cc_config',
-                                                        'header_inclusion_dependencies')
         header_inclusion_history = verify_history['header_inclusion_dependencies']
+        error = 0
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            if (header_inclusion_dependencies and
-                    target.type == 'cc_library' and target.srcs):
+            if target.type.startswith('cc_') and target.srcs:
                 if not target.verify_header_inclusion_dependencies(header_inclusion_history):
                     error += 1
         self._dump_verify_history()
@@ -420,7 +420,6 @@ class Blade(object):
             blade_object.ninja_rules()
             rules = blade_object.get_rules()
             if rules:
-                rules_buf.append('\n')
                 rules_buf += rules
         return rules_buf
 

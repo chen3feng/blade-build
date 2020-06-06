@@ -521,6 +521,7 @@ class Target(object):
                     self._write_rule('  %s = %s' % (name, v))
                 else:
                     self._write_rule('  %s =' % name)
+        self._write_rule('')  # An empty line to improve readability
 
     def get_rules(self):
         """Return build rules. """

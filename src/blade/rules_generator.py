@@ -111,6 +111,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             self._add_rule('  rspfile_content = %s' % rspfile_content)
         if deps:
             self._add_rule('  deps = %s' % deps)
+        self._add_rule('')  # An empty line to improve readability
 
     def generate_file_header(self):
         self._add_rule(textwrap.dedent('''\

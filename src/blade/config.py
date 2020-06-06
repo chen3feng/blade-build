@@ -15,6 +15,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import pprint
 import re
 import sys
 
@@ -231,18 +232,17 @@ class BladeConfig(object):
         if not isinstance(append, dict):
             console.error('%s: %s: Append must be a dict' %
                           (self.current_file_name, section_name))
-        else:
-            for k in append:
-                if k in section:
-                    if isinstance(section[k], list):
-                        section[k] += var_to_list(append[k])
-                    else:
-                        console.warning('%s: %s: Config item %s is not a list' %
-                                        (self.current_file_name, section_name, k))
-
+        for k in append:
+            if k in section:
+                if isinstance(section[k], list):
+                    section[k] += var_to_list(append[k])
                 else:
-                    console.warning('%s: %s: Unknown config item name: %s' %
+                    console.warning('%s: %s: Config item %s is not a list' %
                                     (self.current_file_name, section_name, k))
+
+            else:
+                console.warning('%s: %s: Unknown config item name: %s' %
+                                (self.current_file_name, section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
@@ -280,10 +280,7 @@ class BladeConfig(object):
             doc = k + '__doc__'
             if doc in values:
                 print('    # %s' % values[doc], file=f)
-            if isinstance(v, str):
-                print('    %s = \'%s\',' % (k, v), file=f)
-            else:
-                print('    %s = %s,' % (k, v), file=f)
+            print('    %s = %s,' % (k, pprint.pformat(v, indent=8)), file=f)
         print(')\n', file=f)
 
 

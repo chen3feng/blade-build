@@ -28,7 +28,7 @@ from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
 
-def _is_hdr(filename):
+def is_header_file(filename):
     _, ext = os.path.splitext(filename)
     ext = ext[1:]  # Remove leading '.'
     return ext in ('h', 'hh', 'hpp', 'hxx', 'inc', 'tcc')
@@ -61,7 +61,7 @@ class CcTarget(Target):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
-        srcs = [src for src in srcs if not _is_hdr(src)]
+        srcs = [src for src in srcs if not is_header_file(src)]
         deps = var_to_list(deps)
         defs = var_to_list(defs)
         incs = var_to_list(incs)
@@ -258,7 +258,7 @@ class CcTarget(Target):
             if key not in keys:
                 keys.add(key)
                 t = self.target_database[key]
-                if t.data.get('generate_hdrs'):
+                if t.data.get('generated_incs'):
                     # We know it will generate header files but has no details, so we have to
                     # depends on the whole target
                     result.append(t._get_target_file())
@@ -395,7 +395,16 @@ class CcTarget(Target):
         return sys_libs, usr_libs, link_all_symbols_libs
 
     def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        pass
+        if not self._need_verify_generate_hdrs():
+            return
+
+        for key in ('c_warnings', 'cxx_warnings'):
+            if key in vars:
+                del vars[key]
+        for src, obj, rule in hdrs_inclusion_srcs:
+            output = '%s.H' % obj
+            rule = '%shdrs' % rule
+            self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
     def _cc_compile_deps_stamp_file(self):
         """Return a stamp which depends on targets which generate header files. """
@@ -498,60 +507,7 @@ class CcTarget(Target):
                          order_only_deps=order_only_deps,
                          variables=vars)
 
-
-class CcLibrary(CcTarget):
-    """
-    This class is derived from CcTarget and it generates the library
-    rules including dynamic library rules according to user option.
-    """
-
-    def __init__(self,
-                 name,
-                 srcs,
-                 hdrs,
-                 deps,
-                 visibility,
-                 warning,
-                 defs,
-                 incs,
-                 export_incs,
-                 optimize,
-                 always_optimize,
-                 link_all_symbols,
-                 deprecated,
-                 extra_cppflags,
-                 extra_linkflags,
-                 allow_undefined,
-                 secure,
-                 kwargs):
-        """Init method.
-
-        Init the cc library.
-
-        """
-        # pylint: disable=too-many-locals
-        super(CcLibrary, self).__init__(
-                name=name,
-                type='cc_library',
-                srcs=srcs,
-                deps=deps,
-                visibility=visibility,
-                warning=warning,
-                defs=defs,
-                incs=incs,
-                export_incs=export_incs,
-                optimize=optimize,
-                extra_cppflags=extra_cppflags,
-                extra_linkflags=extra_linkflags,
-                kwargs=kwargs)
-        self.data['link_all_symbols'] = link_all_symbols
-        self.data['always_optimize'] = always_optimize
-        self.data['deprecated'] = deprecated
-        self.data['allow_undefined'] = allow_undefined
-        self.data['hdrs'] = var_to_list(hdrs)
-        self.data['secure'] = secure
-
-    def _need_generate_hdrs(self):
+    def _need_verify_generate_hdrs(self):
         for path in self.blade.get_sources_keyword_list():
             if self.path.startswith(path):
                 return False
@@ -703,30 +659,40 @@ class CcLibrary(CcTarget):
 
         return path, stacks
 
+    @staticmethod
+    def _hdr_is_declared(hdr, declared_hdrs, declared_incs):
+        if hdr in declared_hdrs:
+            return True
+        for dir in declared_incs:
+            if hdr.startswith(dir):
+                return True
+        return False
+
     def verify_header_inclusion_dependencies(self, history):
         # pylint: disable=too-many-locals
-        if not self._need_generate_hdrs():
+        if not self._need_verify_generate_hdrs():
             return True
 
         build_targets = self.blade.get_build_targets()
         # TODO(wentingli): Check regular headers as well
         declared_hdrs = set()
+        declared_incs = set()
         for key in self.expanded_deps:
             dep = build_targets[key]
             declared_hdrs.update(dep.data.get('generated_hdrs', []))
-
+            declared_incs.update(dep.data.get('generated_incs', []))
         preprocess_paths, failed_preprocess_paths = set(), set()
         for src in self.srcs:
-            source = self._source_file_path(src)
             path, stacks = self._extract_generated_hdrs_inclusion_stacks(src, history)
             if not path:
                 continue
             preprocess_paths.add(path)
             for stack in stacks:
                 generated_hdr = stack[-1]
-                if generated_hdr not in declared_hdrs:
+                if not self._hdr_is_declared(generated_hdr, declared_hdrs, declared_incs):
                     failed_preprocess_paths.add(path)
                     stack.pop()
+                    source = self._source_file_path(src)
                     if not stack:
                         msg = ['In file included from %s' % source]
                     else:
@@ -745,17 +711,58 @@ class CcLibrary(CcTarget):
             history[preprocess] = int(os.path.getmtime(preprocess))
         return not failed_preprocess_paths
 
-    def _cc_hdrs_ninja(self, hdrs_inclusion_srcs, vars):
-        if not self._need_generate_hdrs():
-            return
 
-        for key in ('c_warnings', 'cxx_warnings'):
-            if key in vars:
-                del vars[key]
-        for src, obj, rule in hdrs_inclusion_srcs:
-            output = '%s.H' % obj
-            rule = '%shdrs' % rule
-            self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
+class CcLibrary(CcTarget):
+    """
+    This class is derived from CcTarget and it generates the library
+    rules including dynamic library rules according to user option.
+    """
+
+    def __init__(self,
+                 name,
+                 srcs,
+                 hdrs,
+                 deps,
+                 visibility,
+                 warning,
+                 defs,
+                 incs,
+                 export_incs,
+                 optimize,
+                 always_optimize,
+                 link_all_symbols,
+                 deprecated,
+                 extra_cppflags,
+                 extra_linkflags,
+                 allow_undefined,
+                 secure,
+                 kwargs):
+        """Init method.
+
+        Init the cc library.
+
+        """
+        # pylint: disable=too-many-locals
+        super(CcLibrary, self).__init__(
+                name=name,
+                type='cc_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=export_incs,
+                optimize=optimize,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
+        self.data['link_all_symbols'] = link_all_symbols
+        self.data['always_optimize'] = always_optimize
+        self.data['deprecated'] = deprecated
+        self.data['allow_undefined'] = allow_undefined
+        self.data['hdrs'] = var_to_list(hdrs)
+        self.data['secure'] = secure
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """

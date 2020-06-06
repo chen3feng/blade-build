@@ -15,6 +15,7 @@ import os
 
 from blade import build_manager
 from blade import build_rules
+from blade import cc_targets
 from blade import console
 from blade.blade_util import regular_variable_name
 from blade.blade_util import var_to_list
@@ -32,7 +33,8 @@ class GenRuleTarget(Target):
                  outs,
                  cmd,
                  cmd_name,
-                 generate_hdrs,
+                 generated_hdrs,
+                 generated_incs,
                  export_incs,
                  heavy,
                  kwargs):
@@ -55,11 +57,24 @@ class GenRuleTarget(Target):
         self.data['locations'] = []
         self.data['cmd'] = LOCATION_RE.sub(self._process_location_reference, cmd)
         self.data['cmd_name'] = cmd_name
-        if generate_hdrs is not None:
-            self.data['generate_hdrs'] = generate_hdrs
+        self.data['heavy'] = heavy
+
+        if generated_incs is not None:
+            generated_incs = var_to_list(generated_incs)
+            self.data['generated_incs'] = [self._target_file_path(inc) for inc in generated_incs]
+            var_to_list(generated_incs)
+        else:
+            if generated_hdrs is None:
+                # Auto judge
+                generated_hdrs = [o for o in outs if cc_targets.is_header_file(o)]
+            else:
+                generated_hdrs = var_to_list(generated_hdrs)
+            if generated_hdrs:
+                generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
+                self.data['generated_hdrs'] = generated_hdrs
+
         if export_incs:
             self.data['export_incs'] = self._expand_incs(var_to_list(export_incs))
-        self.data['heavy'] = heavy
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
@@ -138,7 +153,6 @@ class GenRuleTarget(Target):
                          variables=vars)
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
-        self.data['generated_hdrs'] = [o for o in outputs if o.endswith('.h')]
 
 
 def gen_rule(
@@ -149,13 +163,14 @@ def gen_rule(
         outs=[],
         cmd='',
         cmd_name='COMMAND',
-        generate_hdrs=None,
+        generated_hdrs=None,
+        generated_incs=None,
         export_incs=[],
         heavy=False,
         **kwargs):
     """General Build Rule
     Args:
-        generate_hdrs: Optional[bool],
+        generated_hdrs: Optional[bool],
             Specify whether this target will generate c/c++ header files.
             Defaultly, gen_rule will calculate a generated header files list automatically
             according to the names in the |outs|`
@@ -174,7 +189,8 @@ def gen_rule(
             outs=outs,
             cmd=cmd,
             cmd_name=cmd_name,
-            generate_hdrs=generate_hdrs,
+            generated_hdrs=generated_hdrs,
+            generated_incs=generated_incs,
             export_incs=export_incs,
             heavy=heavy,
             kwargs=kwargs)
