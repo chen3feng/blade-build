@@ -813,28 +813,30 @@ class PrebuiltCcLibrary(CcTarget):
         self.data['deprecated'] = deprecated
         self.data['hdrs'] = var_to_list(hdrs)
 
-    _default_prebuilt_libpath = None
+    _default_libpath = None
 
     def _library_source_path(self):
         """Library full path in source dir"""
         options = self.blade.get_options()
         bits, arch, profile = options.bits, options.arch, options.profile
-        if PrebuiltCcLibrary._default_prebuilt_libpath is None:
+        if PrebuiltCcLibrary._default_libpath is None:
             pattern = config.get_item('cc_library_config', 'prebuilt_libpath_pattern')
-            PrebuiltCcLibrary._default_prebuilt_libpath = Template(pattern).substitute(
+            PrebuiltCcLibrary._default_libpath = Template(pattern).substitute(
                 bits=bits, arch=arch, profile=profile)
 
         pattern = self.data.get('libpath_pattern')
-        if pattern:
+        if pattern is None:
+            libpath = PrebuiltCcLibrary._default_libpath
+        else:
             libpath = Template(pattern).substitute(bits=bits,
                                                    arch=arch,
                                                    profile=profile)
-        else:
-            libpath = PrebuiltCcLibrary._default_prebuilt_libpath
+
         if libpath.startswith('//'):
             libpath = libpath[2:]
         else:
             libpath = os.path.join(self.path, libpath)
+
         return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
                 for s in ['a', 'so']]
 

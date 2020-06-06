@@ -194,7 +194,7 @@ class BladeConfig(object):
                 'header_inclusion_dependencies': False,
             },
             'cc_library_config': {
-                'prebuilt_libpath_pattern': 'lib${bits}_${profile}',
+                'prebuilt_libpath_pattern': 'lib${bits}',
                 'generate_dynamic': None,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate

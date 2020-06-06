@@ -78,6 +78,11 @@ For libraries without source code, library should be put under the lib{32,64} su
 The attributes `deps`, `export_incs`, `link_all_symbols` is still avialiable, but other attributes,
 include compile and link related options, are not not present in prebuilt_cc_library.
 
+Attributes:
+
+* libpath_pattern The subdirectory which contains the library files. It default to `cc_library_config.prebuilt_libpath_pattern` config.
+  See [cc_library_config.prebuilt_libpath_pattern](../config.md#cc_library_config) for more details.
+
 Example:
 
 ```python
