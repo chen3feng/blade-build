@@ -7,7 +7,7 @@
 """
 This module defines various build functions for building
 targets from sources and custom parameters.
-The toolchain function is defined as follows:
+The build function is defined as follows:
 
     def build_function_name(kwargs..., args):
         pass
@@ -529,7 +529,7 @@ def generate_python_binary(pybin, basedir, mainentry, args):
     os.chmod(pybin, 0o755)
 
 
-toolchains = {
+_BUILTIN_TOOLS = {
     'scm': generate_scm,
     'package': generate_package,
     'securecc_object': generate_securecc_object,
@@ -548,13 +548,17 @@ toolchains = {
 }
 
 
-if __name__ == '__main__':
+def main():
     name = sys.argv[1]
     try:
         options, args = parse_command_line(sys.argv[2:])
-        ret = toolchains[name](args=args, **options)
+        ret = _BUILTIN_TOOLS[name](args=args, **options)
     except Exception as e:  # pylint: disable=broad-except
         ret = 1
         console.error('Blade build tool %s error: %s %s' % (name, str(e), traceback.format_exc()))
     if ret:
         sys.exit(ret)
+
+
+if __name__ == '__main__':
+    main()

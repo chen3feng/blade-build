@@ -198,7 +198,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                                        securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
                            description='SECURECC ${in}')
         self.generate_rule(name='securecc',
-                           command=self._toolchain_command('securecc_object'),
+                           command=self._builtin_command('securecc_object'),
                            description='SECURECC ${in}',
                            restat=True)
 
@@ -291,7 +291,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
         self.generate_rule(name='resource_index',
-                           command=self._toolchain_command('resource_index', suffix=args),
+                           command=self._builtin_command('resource_index', suffix=args),
                            description='RESOURCE INDEX ${out}')
         self.generate_rule(name='resource',
                            command='xxd -i ${in} | '
@@ -343,7 +343,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
 
     def generate_java_resource_rules(self):
         self.generate_rule(name='javaresource',
-                           command=self._toolchain_command('java_resource'),
+                           command=self._builtin_command('java_resource'),
                            description='JAVA RESOURCE ${in}')
 
     def generate_java_test_rules(self):
@@ -351,17 +351,17 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         args = ('--script=${out} --main_class=${mainclass} --jacocoagent=%s '
                 '--packages_under_test=${packages_under_test} ${in}') % jacocoagent
         self.generate_rule(name='javatest',
-                           command=self._toolchain_command('java_test', suffix=args),
+                           command=self._builtin_command('java_test', suffix=args),
                            description='JAVA TEST ${out}')
 
     def generate_java_binary_rules(self):
         bootjar = config.get_item('java_binary_config', 'one_jar_boot_jar')
         args = '--onejar=${out} --bootjar=%s --main_class=${mainclass} ${in}' % bootjar
         self.generate_rule(name='onejar',
-                           command=self._toolchain_command('java_onejar', suffix=args),
+                           command=self._builtin_command('java_onejar', suffix=args),
                            description='ONE JAR ${out}')
         self.generate_rule(name='javabinary',
-                           command=self._toolchain_command('java_binary'),
+                           command=self._builtin_command('java_binary'),
                            description='JAVA BIN ${out}')
 
     def generate_scalac_rule(self, java_config):
@@ -395,7 +395,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         jacocoagent = self.get_jacocoagent()
         args = ('--java=%s --scala=%s --jacocoagent=%s --packages_under_test=${packages_under_test} '
                 '--script=${out} ${in}') % (java, scala, jacocoagent)
-        self.generate_rule(name='scalatest', command=self._toolchain_command('scala_test',
+        self.generate_rule(name='scalatest', command=self._builtin_command('scala_test',
                                 suffix=args),
                            description='SCALA TEST ${out}')
 
@@ -406,11 +406,11 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         jar = self.get_java_command(java_config, 'jar')
         args = '%s ${out} ${in}' % jar
         self.generate_rule(name='javajar',
-                           command=self._toolchain_command('java_jar', suffix=args),
+                           command=self._builtin_command('java_jar', suffix=args),
                            description='JAVA JAR ${out}')
         self.generate_java_test_rules()
         self.generate_rule(name='fatjar',
-                           command=self._toolchain_command('java_fatjar'),
+                           command=self._builtin_command('java_fatjar'),
                            description='FAT JAR ${out}')
         self.generate_java_binary_rules()
         self.generate_scalac_rule(java_config)
@@ -434,11 +434,11 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     def generate_python_rules(self):
         args = '--basedir=${basedir} --pylib=${out} ${in}'
         self.generate_rule(name='pythonlibrary',
-                           command=self._toolchain_command('python_library', suffix=args),
+                           command=self._builtin_command('python_library', suffix=args),
                            description='PYTHON LIBRARY ${out}')
         args = '--basedir=${basedir} --mainentry=${mainentry} --pybin=${out} ${in}'
         self.generate_rule(name='pythonbinary',
-                           command=self._toolchain_command('python_binary', suffix=args),
+                           command=self._builtin_command('python_binary', suffix=args),
                            description='PYTHON BINARY ${out}')
 
     def generate_go_rules(self):
@@ -480,11 +480,11 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
 
     def generate_shell_rules(self):
         self.generate_rule(name='shelltest',
-                           command=self._toolchain_command('shell_test'),
+                           command=self._builtin_command('shell_test'),
                            description='SHELL TEST ${out}')
         args = '${out} ${in} ${testdata}'
         self.generate_rule(name='shelltestdata',
-                           command=self._toolchain_command('shell_testdata', suffix=args),
+                           command=self._builtin_command('shell_testdata', suffix=args),
                            description='SHELL TEST DATA ${out}')
 
     def generate_lex_yacc_rules(self):
@@ -498,7 +498,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
     def generate_package_rules(self):
         args = '${out} ${in} ${entries}'
         self.generate_rule(name='package',
-                           command=self._toolchain_command('package', suffix=args),
+                           command=self._builtin_command('package', suffix=args),
                            description='PACKAGE ${out}')
         self.generate_rule(name='package_tar',
                            command='tar -c -f ${out} ${tarflags} -C ${packageroot} ${entries}',
@@ -512,7 +512,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         revision, url = blade_util.load_scm(self.build_dir)
         args = '--scm=${out} --revision=${revision} --url=${url} --profile=${profile} --compiler="${compiler}"'
         self.generate_rule(name='scm',
-                           command=self._toolchain_command('scm', suffix=args),
+                           command=self._builtin_command('scm', suffix=args),
                            description='SCM ${out}')
         scm = os.path.join(self.build_dir, 'scm.cc')
         self._add_rule(textwrap.dedent('''\
@@ -528,11 +528,11 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                   cxx_warnings =
                 ''') % (scm + '.o', scm))
 
-    def _toolchain_command(self, builder, prefix='', suffix=''):
+    def _builtin_command(self, builder, prefix='', suffix=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         if prefix:
             cmd.append(prefix)
-        cmd.append('%s -m blade.toolchain %s' % (sys.executable, builder))
+        cmd.append('%s -m blade.builtin_tools %s' % (sys.executable, builder))
         if suffix:
             cmd.append(suffix)
         else:
