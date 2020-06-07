@@ -53,9 +53,10 @@ class BladeConfig(object):
                 'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
                 'test_timeout__doc__': 'In seconds',
-                'test_ignored_envs__doc__':
-                    'Ignored environments when run incremental tests, support regex',
-                'test_ignored_envs': [],
+                'test_related_envs__doc__':
+                    'Environment variables which need to see whether changed before incremental '
+                    'testing. regex is allowed',
+                'test_related_envs': [],
                 'backend_builder': 'ninja',
                 'debug_info_level': 'mid',
                 'build_jobs': 0,
@@ -316,16 +317,13 @@ def _check_kwarg_enum_value(kwargs, name, valid_values):
             _blade_config.current_file_name, name, value, valid_values))
 
 
-def _check_test_ignored_envs(kwargs):
-    names = kwargs.get('test_ignored_envs')
-    if not names:
-        return
-    for name in names:
+def _check_test_related_envs(kwargs):
+    for name in kwargs.get('test_related_envs', []):
         try:
             re.compile(name)
         except re.error as e:
             console.error_exit(
-                    '%s: "global_config.test_ignored_envs": Invalid env name or regex "%s", %s' % (
+                    '%s: "global_config.test_related_envs": Invalid env name or regex "%s", %s' % (
                         _blade_config.current_file_name, name, e))
 
 
@@ -368,7 +366,7 @@ def global_config(append=None, **kwargs):
     _check_kwarg_enum_value(kwargs, 'duplicated_source_action', _DUPLICATED_SOURCE_ACTION_VALUES)
     debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
-    _check_test_ignored_envs(kwargs)
+    _check_test_related_envs(kwargs)
     _blade_config.update_config('global_config', append, kwargs)
 
 

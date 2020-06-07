@@ -41,14 +41,14 @@ TestJob = namedtuple('TestJob',
 TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
 
 
-def _filter_out_ignored_envs(names):
-    """Filter out any names which matches `global_config.test_ignored_envs`"""
-    ignored_names = config.get_item('global_config', 'test_ignored_envs')
-    if not ignored_names:
-        return names
-    rx = '(' + '|'.join(['(%s)' % name for name in ignored_names]) + ')$'
+def _filter_envs(names):
+    """Filter names which matches `global_config.test_related_envs`"""
+    related_names = config.get_item('global_config', 'test_related_envs')
+    if not related_names:
+        return []
+    rx = '(' + '|'.join(['(%s)' % name for name in related_names]) + ')$'
     names_rx = re.compile(rx)
-    return set(name for name in names if not names_rx.match(name) )
+    return [name for name in names if names_rx.match(name)]
 
 
 def _diff_env(a, b):
@@ -109,7 +109,7 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _update_test_history(self):
         old_env = self.test_history.get('env', {})
-        env_keys = _filter_out_ignored_envs(os.environ.keys())
+        env_keys = _filter_envs(os.environ.keys())
         new_env = dict((key, os.environ[key]) for key in env_keys)
         if old_env and new_env != old_env:
             console.notice('Some tests will be run due to test environments changed:')
