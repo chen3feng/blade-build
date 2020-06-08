@@ -981,8 +981,8 @@ def cc_library(
                 link_all_symbols=link_all_symbols,
                 deprecated=deprecated,
                 **kwargs)
-        target.warning('"cc_library.prebuilt" is deprecated, please use the standalone '
-                       '"prebuilt_cc_library" rule')
+        # target.warning('"cc_library.prebuilt" is deprecated, please use the standalone '
+        #                '"prebuilt_cc_library" rule')
         return
     else:
         target = CcLibrary(
