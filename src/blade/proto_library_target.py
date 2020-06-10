@@ -321,7 +321,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path(self.name + '.pylib')
         self.ninja_build('pythonlibrary', pylib, inputs=generated_pys,
-                         variables={'pythonbasedir': self.build_dir})
+                         variables={'basedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
     def ninja_proto_go_rules(self):
