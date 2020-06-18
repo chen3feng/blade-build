@@ -182,13 +182,23 @@ class Blade(object):
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
-        for k in self.__sorted_targets_keys:
+        for k in self.__expanded_command_targets:
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
                 if not target.verify_header_inclusion_dependencies(header_inclusion_history):
                     error += 1
         self._dump_verify_history()
         return error == 0
+
+    def _load_verify_history(self):
+        if os.path.exists(self._verify_history_path):
+            with open(self._verify_history_path) as f:
+                self._verify_history = json.load(f)
+        return self._verify_history
+
+    def _dump_verify_history(self):
+        with open(self._verify_history_path, 'w') as f:
+            json.dump(self._verify_history, f)
 
     def run(self, target):
         """Run the target. """
@@ -437,16 +447,6 @@ class Blade(object):
         """
         keywords = ['thirdparty']
         return keywords
-
-    def _load_verify_history(self):
-        if os.path.exists(self._verify_history_path):
-            with open(self._verify_history_path) as f:
-                self._verify_history = json.load(f)
-        return self._verify_history
-
-    def _dump_verify_history(self):
-        with open(self._verify_history_path, 'w') as f:
-            json.dump(self._verify_history, f)
 
     def _build_jobs_num(self):
         """Calculate build jobs num."""

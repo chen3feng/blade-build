@@ -43,7 +43,7 @@ class GenRuleTarget(Target):
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
-        outs = var_to_list(outs)
+        outs = [os.path.normpath(o) for o in var_to_list(outs)]
 
         super(GenRuleTarget, self).__init__(
                 name=name,
@@ -62,7 +62,6 @@ class GenRuleTarget(Target):
         if generated_incs is not None:
             generated_incs = var_to_list(generated_incs)
             self.data['generated_incs'] = [self._target_file_path(inc) for inc in generated_incs]
-            var_to_list(generated_incs)
         else:
             if generated_hdrs is None:
                 # Auto judge
