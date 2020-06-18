@@ -161,6 +161,7 @@ def verbosity_ge(expected):
 
 # Fit with the 80 columns terminal, leave some spaces for other parts such as the numbers.
 _PROGRESS_BAR_WIDTH = 60
+_PROGRESS_REFRESH_INTERVAL = 1 if sys.stdout.isatty() else 10
 
 # TODO(chen3feng): Add lock
 _need_clear_line = False  # Whether the last output is progress bar
@@ -177,7 +178,8 @@ def _progress_bar(progress, current, total):
 
 
 def _need_refresh_pgogress_bar(progress, current, now):
-    return now - _last_progress_time >= 1 and _last_progress_value != current
+    return (now - _last_progress_time >= _PROGRESS_REFRESH_INTERVAL and
+            _last_progress_value != current)
 
 
 def show_progress_bar(current, total):

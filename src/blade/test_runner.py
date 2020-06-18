@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import datetime
 import os
 import re
 import time
@@ -38,7 +39,12 @@ _TEST_EXPIRE_TIME = 86400  # 1 day
 
 TestJob = namedtuple('TestJob',
         ['reason', 'binary_md5', 'testdata_md5', 'env_md5', 'args'])
-TestHistoryItem = namedtuple('TestHistoryItem', ['job', 'result'])
+TestHistoryItem = namedtuple('TestHistoryItem', [
+    'job',  # TestJob
+    'first_fail_time',
+    'fail_count',
+    'result',  # TestRunResult
+])
 
 
 def _filter_envs(names):
@@ -84,6 +90,9 @@ class TestRunner(binary_runner.BinaryRunner):
 
         self.skip_tests = skip_tests  # Tests to be skipped
         self.skipped_tests = []
+        self.unrepaired_tests = []
+        self.repaired_tests = []
+        self.new_failed_tests = []
 
         # Test history is the key to implement incremental test.
         # It will be loaded from file before test, compared with test jobs,
@@ -124,14 +133,41 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _save_test_history(self, passed_run_results, failed_run_results):
         """update test history and save it to file. """
-        self._merge_run_results_to_history(passed_run_results)
-        self._merge_run_results_to_history(failed_run_results)
+        self._merge_passed_run_results_to_history(passed_run_results)
+        self._merge_failed_run_results_to_history(failed_run_results)
         with open(self.test_history_file, 'w') as f:
             print(str(self.test_history), file=f)
 
-    def _merge_run_results_to_history(self, run_results):
+    def _merge_passed_run_results_to_history(self, run_results):
+        history_items = self.test_history['items']
         for key, run_result in iteritems(run_results):
-            self.test_history['items'][key] = TestHistoryItem(self.test_jobs[key], run_result)
+            old = history_items.get(key)
+            if old and old.result.exit_code != 0:
+                self.repaired_tests.append(key)
+            history_items[key] = TestHistoryItem(
+                    self.test_jobs[key],
+                    first_fail_time=0,
+                    fail_count=0,
+                    result=run_result)
+
+    def _merge_failed_run_results_to_history(self, run_results):
+        history_items = self.test_history['items']
+        for key, run_result in iteritems(run_results):
+            old = history_items.get(key)
+            if old:
+                first_fail_time = old.first_fail_time or run_result.start_time
+                fail_count = 1 if old.fail_count is None else old.fail_count + 1
+            else:
+                first_fail_time = run_result.start_time
+                fail_count = 1
+            if not old or old.result.exit_code == 0:
+                self.new_failed_tests.append(key)
+
+            history_items[key] = TestHistoryItem(
+                    self.test_jobs[key],
+                    first_fail_time=first_fail_time,
+                    fail_count=fail_count,
+                    result=run_result)
 
     def _get_test_target_md5sum(self, target):
         """Get test target md5sum. """
@@ -199,7 +235,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 return True
         return False
 
-    def _run_reason(self, target, binary_md5, testdata_md5):
+    def _run_reason(self, target, history, binary_md5, testdata_md5):
         """Return run reason for a given test"""
 
         if self._skip_test(target):
@@ -214,12 +250,8 @@ class TestRunner(binary_runner.BinaryRunner):
         if target.key in self.__direct_targets:
             return 'EXPLICIT'
 
-        history = self.test_history['items'].get(target.key)
         if not history:
             return 'NO_HISTORY'
-
-        if history.result.exit_code != 0:
-            return 'LAST_FAILED'
 
         last_time = history.result.start_time
         interval = time.time() - last_time
@@ -235,6 +267,10 @@ class TestRunner(binary_runner.BinaryRunner):
         if history.job.args != self.options.args:
             return 'ARGUMENT'
 
+        if history.result.exit_code != 0:
+            if history.fail_count <= 1:
+                return 'RETRY'
+
         return None
 
     def _collect_test_jobs(self):
@@ -243,7 +279,8 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target.type.endswith('_test'):
                 continue
             binary_md5, testdata_md5 = self._get_test_target_md5sum(target)
-            reason = self._run_reason(target, binary_md5, testdata_md5)
+            history = self.test_history['items'].get(target.key)
+            reason = self._run_reason(target, history, binary_md5, testdata_md5)
             if reason:
                 self.test_jobs[target.key] = TestJob(
                         reason=reason,
@@ -252,7 +289,12 @@ class TestRunner(binary_runner.BinaryRunner):
                         env_md5=self.env_md5,
                         args=self.options.args)
             else:
-                self.skipped_tests.append(target.key)
+                if history.result.exit_code == 0:
+                    self.skipped_tests.append(target.key)
+                else:
+                    self.unrepaired_tests.append(target.key)
+        self.unrepaired_tests.sort(key=lambda x: self.test_history['items'][x].first_fail_time,
+                                   reverse=True)
 
     def _generate_coverage_report(self):
         reporter = coverage.JacocoReporter(self.build_dir,
@@ -265,13 +307,16 @@ class TestRunner(binary_runner.BinaryRunner):
         pads = int((76 - len(text)) / 2)
         console.notice('{0} {1} {0}'.format('=' * pads, text), prefix=False)
 
-    def _show_skipped_tests(self):
+    def _is_full_success(self, passed_run_results):
+        return len(passed_run_results) == len(self.test_jobs) + len(self.unrepaired_tests)
+
+    def _show_tests_list(self, tests, kind, level='info'):
         """Show tests skipped. """
-        if self.skipped_tests:
-            console.info('%d skipped tests:' % len(self.skipped_tests))
-            self.skipped_tests.sort()
-            for key in self.skipped_tests:
-                console.info('//%s:%s' % key, prefix=False)
+        output = getattr(console, level)
+        if tests:
+            output('There are %d %s tests:' % (len(tests), kind))
+            for key in sorted(tests):
+                output('%s:%s' % key, prefix=False)
 
     def _show_run_results(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
@@ -284,6 +329,27 @@ class TestRunner(binary_runner.BinaryRunner):
         for key, costtime, reason, result in tests:
             output_function('%s:%s triggered by %s, exit(%s), cost %.2f s' % (
                             key[0], key[1], reason, result, costtime), prefix=False)
+
+    def _show_repaired_results(self, repaired_tests):
+        if not repaired_tests:
+            return
+        console.info('There are %d repaired tests:' % len(repaired_tests))
+        for tests in repaired_tests:
+            console.info('%s:%s' % tests, prefix=False)
+
+    def _show_unrepaired_results(self):
+        """Show the unrepaired tests"""
+        if not self.unrepaired_tests:
+            return
+        items = self.test_history['items']
+        console.error('There are still %d unrepaired tests:' % len(self.unrepaired_tests))
+        for key in self.unrepaired_tests:
+            test = items[key]
+            first_fail_time = time.strftime('%F %T %A', time.localtime(test.first_fail_time))
+            duration = datetime.timedelta(seconds=time.time() - test.first_fail_time)
+            console.error('%s:%s: result(%s), retry %s, since %s, duration %s' % (
+                key[0], key[1], test.result, test.fail_count, first_fail_time, duration),
+                prefix=False)
 
     def _collect_slow_tests(self, run_results):
         return [(result.cost_time, key) for key, result in iteritems(run_results)
@@ -308,11 +374,10 @@ class TestRunner(binary_runner.BinaryRunner):
 
         run_tests = len(passed_run_results) + len(failed_run_results)
 
-        if len(passed_run_results) == len(self.test_jobs):
-            console.notice('All %d tests passed!' % len(passed_run_results))
-            return
-
-        msg = ['Total %d tests' % len(self.test_jobs)]
+        total = len(self.test_jobs) + len(self.unrepaired_tests) + len(self.skipped_tests)
+        msg = ['Total %d tests' % total]
+        if self.skipped_tests:
+            msg.append('%d skipped' % len(self.skipped_tests))
         if passed_run_results:
             msg.append('%d passed' % len(passed_run_results))
         if failed_run_results:
@@ -320,21 +385,37 @@ class TestRunner(binary_runner.BinaryRunner):
         cancelled_tests = len(self.test_jobs) - run_tests
         if cancelled_tests:
             msg.append('%d cancelled' % cancelled_tests)
-        console.error(', '.join(msg) + '.')
+        if self.unrepaired_tests:
+            msg.append('%d unrepaired' % len(self.unrepaired_tests))
+        console.info(', '.join(msg) + '.')
+
+        msg = []
+        if self.repaired_tests:
+            msg.append('%d repaired' % len(self.repaired_tests))
+        if self.new_failed_tests:
+            msg.append('%d new failed' % len(self.new_failed_tests))
+        if msg:
+            console.info('Trend: '+ ', '.join(msg) + '.')
+        if self._is_full_success(passed_run_results):
+            console.notice('All %d tests passed!' % total)
 
     def _show_tests_result(self, passed_run_results, failed_run_results):
         """Show test details and summary according to the options. """
         if self.options.show_details:
             self._show_banner('Testing Details')
-            self._show_skipped_tests()
+            self._show_tests_list(self.skipped_tests, 'skipped')
             if passed_run_results:
-                console.info('passed tests:')
+                console.info('Passed tests:')
                 self._show_run_results(passed_run_results)
         if self.options.show_tests_slower_than is not None:
             self._show_slow_tests(passed_run_results, failed_run_results)
         if failed_run_results:  # Always show details of failed tests
-            console.error('failed tests:')
+            console.error('Failed tests:')
             self._show_run_results(failed_run_results, is_error=True)
+        self._show_tests_list(self.repaired_tests, 'repaired')
+        self._show_tests_list(self.new_failed_tests, 'new failed', 'error')
+        self._show_unrepaired_results()
+
         self._show_tests_summary(passed_run_results, failed_run_results)
 
     def run(self):
@@ -378,4 +459,4 @@ class TestRunner(binary_runner.BinaryRunner):
             self._generate_coverage_report()
 
 
-        return 0 if len(passed_run_results) == len(self.test_jobs) else 1
+        return 0 if self._is_full_success(passed_run_results) else 1

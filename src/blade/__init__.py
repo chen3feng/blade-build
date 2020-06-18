@@ -7,6 +7,12 @@ import blade.config
 import blade.console
 
 
+def workspace_root_dir():
+    """Get the root dir of current workspace"""
+    import blade.build_manager
+    return blade.build_manager.instance.get_root_dir()
+
+
 def current_source_dir():
     """Get current source dir (in which the current BUILD resides) relative to WORKSPACE root"""
     import blade.build_manager

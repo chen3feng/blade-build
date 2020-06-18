@@ -31,11 +31,22 @@ from blade import console
 
 TestRunResult = namedtuple('TestRunResult', ['exit_code', 'start_time', 'cost_time'])
 
+
+def _signal_map():
+    result = dict()
+    for name in dir(signal):
+        if not name.startswith('SIG') or name.startswith('SIG_'):
+            continue
+        # SIGIOT and SIGABRT has the same value under linux and mac, but SIGABRT is more common.
+        if signal.SIGABRT == signal.SIGIOT and name == 'SIGIOT':
+            continue
+        result[-getattr(signal, name)] = name
+
+    return result
+
+
 # dict{-signo : signame}
-_SIGNAL_MAP = dict([
-    (-getattr(signal, name), name) for name in dir(signal)
-    if name.startswith('SIG') and not name.startswith('SIG_')
-])
+_SIGNAL_MAP = _signal_map()
 
 
 class WorkerThread(threading.Thread):
