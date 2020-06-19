@@ -238,10 +238,6 @@ class TestRunner(binary_runner.BinaryRunner):
     def _run_reason(self, target, history, binary_md5, testdata_md5):
         """Return run reason for a given test"""
 
-        if self._skip_test(target):
-            console.info('//%s is skipped by --skip-test' % target.fullname)
-            return None
-
         if self.options.full_test:
             return 'FULL_TEST'
 
@@ -278,6 +274,10 @@ class TestRunner(binary_runner.BinaryRunner):
         for target in self._build_targets.values():
             if not target.type.endswith('_test'):
                 continue
+            if self._skip_test(target):
+                console.info('//%s is skipped by --skip-test' % target.fullname)
+                continue
+
             binary_md5, testdata_md5 = self._get_test_target_md5sum(target)
             history = self.test_history['items'].get(target.key)
             reason = self._run_reason(target, history, binary_md5, testdata_md5)
