@@ -307,8 +307,8 @@ class ParsedCommandLine(object):
             help='Run tests directly without build')
 
         parser.add_argument(
-            '--skip-tests', dest='skip_tests', default='', metavar='TARGET_LIST',
-            help='Skip tests which matches this comma seperated target list')
+            '--exclude-tests', dest='exclude_tests', default='', metavar='TARGET_LIST',
+            help='Exclude tests which matches this comma seperated target pattern list')
 
     def _add_run_arguments(self, parser):
         """Add run command arguments. """

@@ -66,12 +66,12 @@ java_test_config(
 如果调试符号级别（global\_config.debug\_info\_level）太低，低于或等于`low`，那么生成的覆盖率报告里会缺少行覆盖率。
 Jacoco 需要 `-g:line` 编译选项才能生成行覆盖率。
 
-## 跳过指定的测试
+## 排除指定的测试
 
-Blade支持通过--skip-tests参数显式地跳过指定的测试，当需要批量运行大量的测试，而又期望跳过某些测试时，这个选项就很有用。例如：
+Blade支持通过--exclude-tests参数显式地排除指定的测试，当需要批量运行大量的测试，而又期望排除某些测试时，这个选项就很有用。例如：
 
 ```bash
-blade test base/... --skip-tests=base/string,base/encoding:hex_test
+blade test base/... --exclude-tests=base/string,base/encoding:hex_test
 ```
 
-表示运行base目录下所有的测试，但是跳过base/string下所有的测试以及base/encoding:hex_test。
+表示运行base目录下所有的测试，但是排除base/string里所有的测试以及base/encoding:hex_test。

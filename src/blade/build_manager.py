@@ -207,16 +207,17 @@ class Blade(object):
 
     def test(self):
         """Run tests. """
-        skip_tests = []
-        if self.__options.skip_tests:
-            skip_tests = target.normalize(self.__options.skip_tests.split(','), self.__working_dir)
+        exclude_tests = []
+        if self.__options.exclude_tests:
+            exclude_tests = target.normalize(self.__options.exclude_tests.split(','),
+                                             self.__working_dir)
         test_runner = TestRunner(
                 self.__options,
                 self.__target_database,
                 self.__direct_targets,
                 self.__expanded_command_targets,
                 self.__build_targets,
-                skip_tests,
+                exclude_tests,
                 self.test_jobs_num())
         return test_runner.run()
 
@@ -411,7 +412,6 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
-        backend_builder = config.get_item('global_config', 'backend_builder')
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_real_target_type(target.type):
@@ -420,11 +420,9 @@ class Blade(object):
             if not blade_object:
                 console.warning('"%s" is not a registered blade object' % str(k))
                 continue
-            if (skip_test and target.type.endswith('_test')
-                    and k not in self.__direct_targets):
+            if skip_test and target.type.endswith('_test') and k not in self.__direct_targets:
                 continue
-            if (skip_package and target.type == 'package'
-                    and k not in self.__direct_targets):
+            if skip_package and target.type == 'package' and k not in self.__direct_targets:
                 continue
 
             blade_object.ninja_rules()
