@@ -376,7 +376,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.unrepaired_tests:
             return
         items = self.test_history['items']
-        console.error('There are still %d unrepaired tests:' % len(self.unrepaired_tests))
+        console.error('Skipped %d still unrepaired tests:' % len(self.unrepaired_tests))
         for key in self.unrepaired_tests:
             test = items[key]
             first_fail_time = time.strftime('%F %T %A', time.localtime(test.first_fail_time))
@@ -384,6 +384,7 @@ class TestRunner(binary_runner.BinaryRunner):
             console.error('  %s:%s: exit(%s), retry %s times, since %s, duration %s' % (
                 key[0], key[1], test.result.exit_code, test.fail_count, first_fail_time, duration),
                 prefix=False)
+        console.error('You can specify --run-unrepaired-tests to run them', prefix=False)
 
     def _collect_slow_tests(self, run_results):
         return [(result.cost_time, key) for key, result in iteritems(run_results)
