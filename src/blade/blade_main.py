@@ -469,7 +469,8 @@ def generate_scm(build_dir):
 
 def adjust_config_by_options(config, options):
     # Common options between config and command line
-    common_options = ('debug_info_level', 'backend_builder', 'build_jobs', 'test_jobs')
+    common_options = ('debug_info_level', 'backend_builder',
+                      'build_jobs', 'test_jobs', 'run_unrepaired_tests')
     for name in common_options:
         value = getattr(options, name, None)
         if value:

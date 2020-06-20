@@ -10,9 +10,16 @@ Tests that have already been PASSED do not need to run again in the next build a
 
 * Any dependency changes to tests cause it to regenerate.
 * Tests dependent test data changes, this dependency is explicitly dependent, the user needs to specify using a BUILD file, such as testdata.
-* Tests where the environment variable has changed.
+* Tests where the related environment variable has changed.
 * Test arguments change.
-* Fail's test cases will always be rerun.
+* Test expired.
+
+Test related environment variable names can be configureed in the `global_config.test_related_envs` config item, regex is allowed.
+
+Text expired time is 1 day.
+
+For any failed test, if it is the first time, it will run at the next time. but after the retry, it will not run again until it is rebuilt or expired.
+You can use `global_config.run_unchanged_tests` config item or `run-unchanged-tests` command line option to change the behavior.
 
 ## Full test
 
@@ -70,12 +77,12 @@ The java/scala test coverage report will be generated into the `jacoco_coverage_
 
 If `global_config.debug_info_level` is `low` or lower, line coverage will not be generated. because `-g:line` is required.
 
-## Skip specified tests
+## Exclude specified tests
 
-Blade supports explicitly skipping specified tests with the `--skip-tests parameter`, which is useful when you need to run a large number of tests in batches and expect to skip some tests. E.g:
+Blade supports explicitly excluding specified tests with the `--exclude-tests` parameter, which is useful when you need to run a large number of tests in batches and expect to exclude some ones. E.g:
 
 ```bash
-blade test base/... --skip-tests=base/string,base/encoding:hex_test
+blade test base/... --exclude-tests=base/string,base/encoding:hex_test
 ```
 
-Indicates to run all tests in the base directory, but skip all tests under `base/string` and `base/encoding:hex_test`.
+Indicates to run all tests in the base directory, but exclude all tests in `base/string` and `base/encoding:hex_test`.

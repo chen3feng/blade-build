@@ -32,7 +32,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         upper_depends_libs = self.findCommand('libuppercase.so')
 
         self.assertIn('test_prebuild_cc_library/liblowercase.so', copy_lower_line)
-        self.assertIn('lib64_release/liblowercase.so', copy_lower_line)
+        self.assertIn('lib64/liblowercase.so', copy_lower_line)
 
         self.assertIn('-Wall -Wextra', com_upper_line)
         self.assertIn('-Wframe-larger-than=69632', com_upper_line)

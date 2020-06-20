@@ -10,9 +10,16 @@ Blade test支持增量测试 ，可以加快tests的执行。
 
 * tests 的任何依赖变化导致其重新生成。
 * tests 依赖的测试数据改变，这种依赖为显式依赖，用户需要使用BUILD文件指定，如testdata。
-* tests 所在环境变量发生改变。
+* tests 所依赖的环境变量发生改变。
 * test arguments 改变。
-* Fail 的test cases ，每次都重跑。
+* 测试过期
+
+测试相关的环境变量名可以通过 `global_config.test_related_envs` 配置项设置，支持正则表达式。
+
+测试过期时间是一天。
+
+对于失败的测试，如果这是第一次失败，下次还会尝试重新运行。但是如果还是失败，就不会再运行，除非发生了重新构建或者过期。
+你可以用 `global_config.run_unchanged_tests` 配置项或者 `run-unchanged-tests` 命令行参数改变这个行为。
 
 ## 全量测试
 
@@ -66,12 +73,12 @@ java_test_config(
 如果调试符号级别（global\_config.debug\_info\_level）太低，低于或等于`low`，那么生成的覆盖率报告里会缺少行覆盖率。
 Jacoco 需要 `-g:line` 编译选项才能生成行覆盖率。
 
-## 跳过指定的测试
+## 排除指定的测试
 
-Blade支持通过--skip-tests参数显式地跳过指定的测试，当需要批量运行大量的测试，而又期望跳过某些测试时，这个选项就很有用。例如：
+Blade支持通过--exclude-tests参数显式地排除指定的测试，当需要批量运行大量的测试，而又期望排除某些测试时，这个选项就很有用。例如：
 
 ```bash
-blade test base/... --skip-tests=base/string,base/encoding:hex_test
+blade test base/... --exclude-tests=base/string,base/encoding:hex_test
 ```
 
-表示运行base目录下所有的测试，但是跳过base/string下所有的测试以及base/encoding:hex_test。
+表示运行base目录下所有的测试，但是排除base/string里所有的测试以及base/encoding:hex_test。

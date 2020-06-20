@@ -62,7 +62,10 @@ class BladeConfig(object):
                 'build_jobs': 0,
                 'build_jobs__doc__': 'The number of build jobs (commands) to run simultaneously',
                 'test_jobs': 0,
-                'test_jobs__doc__': 'The number of test jobs to run simultaneously'
+                'test_jobs__doc__': 'The number of test jobs to run simultaneously',
+                'run_unrepaired_tests': False,
+                'run_unrepaired_tests__doc__':
+                    'Whether run unrepaired(no changw after previous failure) tests during incremental test',
             },
 
             'cc_test_config': {
