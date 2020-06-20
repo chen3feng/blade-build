@@ -50,4 +50,4 @@ Example:
 ```
 
 
-Usually, it is an error for glob to return an empty result, but you can specify `allow=True` to eliminate this error if it is surely you expected.
+Usually, it is an error for glob to return an empty result, but you can specify `allow_empty=True` to eliminate this error if it is surely you expected.

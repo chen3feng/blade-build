@@ -30,6 +30,7 @@ syn keyword bladeArg test_timeout
 syn keyword bladeArg backend_builder
 syn keyword bladeArg build_jobs
 syn keyword bladeArg test_jobs
+syn keyword bladeArg run_unrepaired_tests
 
 syn keyword bladeTarget cc_test_config
 syn keyword bladeArg dynamic_link
