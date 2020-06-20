@@ -142,14 +142,29 @@ class TestRunner(binary_runner.BinaryRunner):
 
     def _save_test_summary(self, passed_run_results, failed_run_results):
         with open('blade-bin/.blade-test-summary.json', 'w') as f:
+            history_items = self.test_history['items']
+            def expand(tests):
+                ret = {}
+                for key in tests:
+                    history = history_items[key]
+                    result = history.result._asdict()
+                    history = history._asdict()
+                    history.pop('job')
+                    # flatten to upper level
+                    history.pop('result')
+                    history.update(result)
+                    ret['%s:%s' % key] = history
+                return ret
+
             def to_fullnames(keys):
                 return ['%s:%s' % key for key in keys]
+
             summary = {}
             summary['time'] = time.time()
-            summary['passed'] = to_fullnames(passed_run_results)
-            summary['failed'] = to_fullnames(failed_run_results)
+            summary['passed'] = expand(passed_run_results)
+            summary['failed'] = expand(failed_run_results)
+            summary['unrepaired'] = expand(self.unrepaired_tests)
             summary['repaired'] = to_fullnames(self.repaired_tests)
-            summary['unrepaired'] = to_fullnames(self.unrepaired_tests)
             summary['unchanged'] = to_fullnames(self.unchanged_tests)
             summary['excluded'] = to_fullnames(self.excluded_tests)
             json.dump(summary, f, indent=4)
