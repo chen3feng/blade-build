@@ -295,6 +295,8 @@ class TestRunner(binary_runner.BinaryRunner):
             return 'ARGUMENT'
 
         if history.result.exit_code != 0:
+            if config.get_item('global_config', 'run_unrepaired_tests'):
+                return 'FAILED'
             if history.fail_count <= 1:
                 return 'RETRY'
 

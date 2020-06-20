@@ -10,9 +10,16 @@ Blade test支持增量测试 ，可以加快tests的执行。
 
 * tests 的任何依赖变化导致其重新生成。
 * tests 依赖的测试数据改变，这种依赖为显式依赖，用户需要使用BUILD文件指定，如testdata。
-* tests 所在环境变量发生改变。
+* tests 所依赖的环境变量发生改变。
 * test arguments 改变。
-* Fail 的test cases ，每次都重跑。
+* 测试过期
+
+测试相关的环境变量名可以通过 `global_config.test_related_envs` 配置项设置，支持正则表达式。
+
+测试过期时间是一天。
+
+对于失败的测试，如果这是第一次失败，下次还会尝试重新运行。但是如果还是失败，就不会再运行，除非发生了重新构建或者过期。
+你可以用 `global_config.run_unchanged_tests` 配置项或者 `run-unchanged-tests` 命令行参数改变这个行为。
 
 ## 全量测试
 

@@ -39,6 +39,8 @@ Blade全局配置
 | debug\_info\_level         | string | mid     | no, low, mid, high | 生成的构建结果中调试符号的级别，支持四种级别，越高越详细，可执行文件也越大 |
 | build\_jobs                | int    | 0       | 0~CPU核数          | 并行构建的最大进程数量，默认会根据机器配置自动计算                         |
 | test\_jobs                 | int    | 0       | 0~CPU核数/2        | 并行测试的最大进程数量，默认会根据机器配置自动计算                         |
+| test\_related\_envs        | list   | []      | 字符串或正则表达式 | 是否影响增量测试的环境变量名                                               |
+| run_unrepaired_tests       | bool   | False   |                    | 增量测试时，是否运行未修复的（先前已经失败且未修改的）测试                 |
 
 Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，发现 ninja 更合适。
 [ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，

@@ -10,9 +10,16 @@ Tests that have already been PASSED do not need to run again in the next build a
 
 * Any dependency changes to tests cause it to regenerate.
 * Tests dependent test data changes, this dependency is explicitly dependent, the user needs to specify using a BUILD file, such as testdata.
-* Tests where the environment variable has changed.
+* Tests where the related environment variable has changed.
 * Test arguments change.
-* Fail's test cases will always be rerun.
+* Test expired.
+
+Test related environment variable names can be configureed in the `global_config.test_related_envs` config item, regex is allowed.
+
+Text expired time is 1 day.
+
+For any failed test, if it is the first time, it will run at the next time. but after the retry, it will not run again until it is rebuilt or expired.
+You can use `global_config.run_unchanged_tests` config item or `run-unchanged-tests` command line option to change the behavior.
 
 ## Full test
 

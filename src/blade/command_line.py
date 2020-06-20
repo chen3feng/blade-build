@@ -310,6 +310,10 @@ class ParsedCommandLine(object):
             '--exclude-tests', dest='exclude_tests', default='', metavar='TARGET_LIST',
             help='Exclude tests which matches this comma seperated target pattern list')
 
+        parser.add_argument(
+            '--run-unrepaired-tests', dest='run_unrepaired_tests', action='store_true',
+            help='Whether run unrepaired(no changw after previous failure) tests during incremental test')
+
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
         pass
