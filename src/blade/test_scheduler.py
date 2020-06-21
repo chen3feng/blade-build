@@ -150,9 +150,12 @@ class TestScheduler(object):
             result = '%s:%s' % (result, returncode)
         return result
 
+    def _progress(self, done=0):
+        return '[%s/%s/%s]' % (self.num_of_finished_tests + done,
+                self.num_of_running_tests - done, len(self.tests_list))
+
     def _show_progress(self, cmd):
-        console.info('[%s/%s/%s] Start %s' % (self.num_of_finished_tests,
-                self.num_of_running_tests, len(self.tests_list), cmd))
+        console.info('%s Start %s' % (self._progress(), cmd))
         if console.verbosity_le('quiet'):
             console.show_progress_bar(self.num_of_finished_tests, len(self.tests_list))
 
@@ -175,8 +178,8 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
         result = self._get_result(p.returncode)
-        msg = 'Output of //%s:\n%s\nTest //%s finished: %s\n' % (
-            test_name, stdout, test_name, result)
+        msg = 'Output of //%s:\n%s%s Test //%s finished: %s\n' % (
+            test_name, stdout, self._progress(done=1), test_name, result)
         if console.verbosity_le('quiet') and p.returncode != 0:
             console.error(msg, prefix=False)
         else:
@@ -198,7 +201,7 @@ class TestScheduler(object):
         job_thread.set_job_data(p, test_name, timeout)
         p.wait()
         result = self._get_result(p.returncode)
-        console.info('Test //%s finished : %s\n' % (test_name, result))
+        console.info('%s Test //%s finished : %s\n' % (self._progress(done=1), test_name, result))
 
         return p.returncode
 
