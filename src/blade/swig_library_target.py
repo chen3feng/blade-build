@@ -48,10 +48,6 @@ class SwigLibrary(CcTarget):
         self.data['cpperraswarn'] = warning
         self.data['java_package'] = java_package
         self.data['java_lib_packed'] = java_lib_packed
-        self.data['java_dep_var'] = []
-        self.data['java_sources_explict_dependency'] = []
-        self.data['python_vars'] = []
-        self.data['python_sources'] = []
         self.data['extra_swigflags'] = extra_swigflags
 
         build_platform = self.blade.get_build_platform()

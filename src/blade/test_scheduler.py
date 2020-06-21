@@ -63,12 +63,7 @@ class WorkerThread(threading.Thread):
         self.job_name = ''
         self.job_is_timeout = False
         self.job_lock = threading.Lock()
-        console.info('Test worker %d starts to work' % self.index)
-
-    def _process(self):
-        """Private handler to handle one job. """
-        console.info('Test worker %d starts to process' % self.index)
-        console.info('Test worker %d finish' % self.index)
+        console.debug('Test worker %d starts to work' % self.index)
 
     def terminate(self):
         """Terminate the worker. """
@@ -107,22 +102,19 @@ class WorkerThread(threading.Thread):
     def run(self):
         """executes and runs here. """
         try:
-            if self.job_handler:
-                job_queue = self.job_queue
-                while not job_queue.empty() and self.running:
-                    try:
-                        job = job_queue.get_nowait()
-                    except queue.Empty:
-                        continue
-                    self.job_start_time = time.time()
-                    self.job_handler(job, self.redirect, self)
-                    try:
-                        self.job_lock.acquire()
-                        self.cleanup_job()
-                    finally:
-                        self.job_lock.release()
-            else:
-                self._process()
+            job_queue = self.job_queue
+            while not job_queue.empty() and self.running:
+                try:
+                    job = job_queue.get_nowait()
+                except queue.Empty:
+                    continue
+                self.job_start_time = time.time()
+                self.job_handler(job, self.redirect, self)
+                try:
+                    self.job_lock.acquire()
+                    self.cleanup_job()
+                finally:
+                    self.job_lock.release()
         except:  # pylint: disable=bare-except
             traceback.print_exc()
 
@@ -148,7 +140,7 @@ class TestScheduler(object):
 
     def _get_workers_num(self):
         """get the number of thread workers. """
-        return min(len(self.tests_list), self.num_jobs)
+        return min(self.job_queue.qsize(), self.num_jobs)
 
     def _get_result(self, returncode):
         """translate result from returncode. """
@@ -159,7 +151,7 @@ class TestScheduler(object):
         return result
 
     def _show_progress(self, cmd):
-        console.info('[%s/%s/%s] Running %s' % (self.num_of_finished_tests,
+        console.info('[%s/%s/%s] Start %s' % (self.num_of_finished_tests,
                 self.num_of_running_tests, len(self.tests_list), cmd))
         if console.verbosity_le('quiet'):
             console.show_progress_bar(self.num_of_finished_tests, len(self.tests_list))
@@ -279,23 +271,26 @@ class TestScheduler(object):
         if not self.tests_list:
             return
 
-        num_of_workers = self._get_workers_num()
-        console.info('Spawn %d worker thread(s) to run tests' % num_of_workers)
-
         for i in self.tests_list:
             target = i[0]
             if target.data.get('exclusive'):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)
+
         quiet = console.verbosity_le('quiet')
-        redirect = num_of_workers > 1 or quiet
-        threads = []
-        for i in range(num_of_workers):
-            t = WorkerThread(i, self.job_queue, self._process_job, redirect)
-            t.start()
-            threads.append(t)
-        self._wait_worker_threads(threads)
+
+        if not self.job_queue.empty():
+            num_of_workers = self._get_workers_num()
+            console.info('Spawn %d worker thread(s) to run concurrent tests' % num_of_workers)
+
+            redirect = num_of_workers > 1 or quiet
+            threads = []
+            for i in range(num_of_workers):
+                t = WorkerThread(i, self.job_queue, self._process_job, redirect)
+                t.start()
+                threads.append(t)
+            self._wait_worker_threads(threads)
 
         if not self.exclusive_job_queue.empty():
             console.info('Spawn 1 worker thread to run exclusive tests')

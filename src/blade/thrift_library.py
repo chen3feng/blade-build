@@ -55,8 +55,6 @@ class ThriftLibrary(CcTarget):
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
-        self.data['python_vars'] = []
-        self.data['python_sources'] = []
 
         thrift_libs = config.get_item('thrift_config', 'thrift_libs')
         # Hardcode deps rule to thrift libraries.
@@ -65,7 +63,6 @@ class ThriftLibrary(CcTarget):
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
-        self.data['java_sources_explict_dependency'] = []
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.

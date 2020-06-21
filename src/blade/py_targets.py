@@ -53,7 +53,6 @@ class PythonTarget(Target):
                 self.error_exit('Invalid base directory %s. Option base should be a directory '
                                 'starting with \'//\' from BLADE_ROOT directory.' % base)
             self.data['python_base'] = base[2:]
-        self.data['python_sources'] = [self._source_file_path(s) for s in srcs]
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()

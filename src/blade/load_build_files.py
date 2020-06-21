@@ -84,8 +84,8 @@ def enable_if(cond, true_value, false_value=None):
 def glob(include, exclude=None, excludes=None, allow_empty=False):
     """This function can be called in BUILD to specify a set of files using patterns.
     Args:
-        include:List(str), file patterns to be matched.
-        exclude:List[str], file patterns to be removed from the result.
+        include:List[str], file patterns to be matched.
+        exclude:Optional[List[str]], file patterns to be removed from the result.
         allow_empty:bool: Whether a empty result is a error.
 
     Patterns may contain shell-like wildcards, such as * , ? , or [charset].
@@ -302,8 +302,8 @@ def load_targets(target_ids, blade_root_dir, blade):
     # dependent targets.  All these targets form related_targets,
     # which is a subset of target_databased created by loading  BUILD files.
     while cited_targets:
-        source_dir, target_name = cited_targets.pop()
-        target_id = (source_dir, target_name)
+        target_id = cited_targets.pop()
+        source_dir, target_name = target_id
         if target_id in related_targets:
             continue
 

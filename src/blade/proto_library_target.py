@@ -130,9 +130,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
         self.data['source_encoding'] = source_encoding
-        self.data['java_sources_explict_dependency'] = []
-        self.data['python_vars'] = []
-        self.data['python_sources'] = []
         self.data['generate_descriptors'] = generate_descriptors
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
