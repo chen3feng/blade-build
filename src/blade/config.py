@@ -474,7 +474,7 @@ def fbthrift_library_config(append=None, **kwargs):
 @config_rule
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
-    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['info', 'warning', 'error'])
+    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['debug', 'info', 'warning', 'error'])
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, str) and ' ' in extra_incs:

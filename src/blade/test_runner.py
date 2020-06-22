@@ -258,6 +258,7 @@ class TestRunner(binary_runner.BinaryRunner):
         for pattern in self.exclude_tests:
             if pattern == target.fullname:
                 return True
+            print(pattern)
             path, name = pattern.split(':')
             if path == target.path and name == '*':
                 return True
