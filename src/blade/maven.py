@@ -74,7 +74,7 @@ class MavenCache(object):
         if self.__snapshot_update_policy == 'interval':
             interval = java_config.get('maven_snapshot_update_interval')
             if not interval:
-                Console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
+                console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
                                    '"maven_snapshot_update_policy" is "interval"')
             self.__snapshot_update_interval = interval * 60  # minutes
         else:
@@ -141,7 +141,7 @@ class MavenCache(object):
 
         if classifier:
             id = '%s:%s' % (id, classifier)
-        console.info('Downloading %s from central repository...' % id)
+        target.info('Downloading %s from central repository...' % id)
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -151,12 +151,12 @@ class MavenCache(object):
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -e -X'  # More detailed debug message
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
-            console.warning('//%s: Error occurred when downloading %s from central '
-                            'repository. Check %s for details.' % (target, id, log_path))
+            target.warning('Error occurred when downloading %s from central '
+                           'repository. Check %s for details.' % (id, log_path))
             cmd += ' -Dtransitive=false'
             if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
                 return False
-            console.warning('//%s: Download standalone artifact %s successfully, but '
+            target.warning('Download standalone artifact %s successfully, but '
                             'its transitive dependencies are unavailable.' % (target, id))
         shutil.move(log_path, target_log)
         return True
@@ -180,7 +180,7 @@ class MavenCache(object):
         #         and os.path.exists(log)):
         #         return False
 
-        console.info('Downloading %s dependencies...' % id)
+        target.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
@@ -188,8 +188,8 @@ class MavenCache(object):
                         '-Dmdep.outputFile=%s' % classpath])
         cmd += ' -e -X -f %s > %s' % (pom, log)
         if subprocess.call(cmd, shell=True) != 0:
-            console.warning('//%s: Error occurred when resolving %s dependencies. '
-                            'Check %s for details.' % (target, id, log))
+            target.warning('Error occurred when resolving %s dependencies. '
+                           'Check %s for details.' % (id, log))
             return False
         return True
 
@@ -210,7 +210,7 @@ class MavenCache(object):
         """get_artifact_from_database. """
         if (id, classifier) not in self.__jar_database:
             if not self._download_artifact(id, classifier, target):
-                console.error_exit('//%s: Download %s failed' % (target, id))
+                target.error_exit('Download %s failed' % id)
         return self.__jar_database[(id, classifier)]
 
     def get_jar_path(self, id, classifier, target):

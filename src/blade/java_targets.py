@@ -61,7 +61,7 @@ class MavenJar(Target):
             self.data['binary_jar'] = binary_jar
             if self.data.get('transitive'):
                 deps_path = maven_cache.get_jar_deps_path(
-                    self.data['id'], self.data['classifier'], self.fullname)
+                    self.data['id'], self.data['classifier'], self)
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
 

@@ -17,7 +17,7 @@ import string
 
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list, iteritems
+from blade.blade_util import var_to_list, iteritems, source_location
 
 
 LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
@@ -88,6 +88,7 @@ class Target(object):
         self.fullname = '%s:%s' % self.key
         self.name = name
         self.path = current_source_path
+        self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
         self.type = type
         self.srcs = srcs
         self.deps = []
@@ -126,23 +127,23 @@ class Target(object):
 
     def debug(self, msg):
         """Print message with target full name prefix"""
-        console.debug('//%s: %s' % (self.fullname, msg))
+        console.debug('%s: %s' % (self.source_location, msg), prefix=False)
 
     def info(self, msg):
         """Print message with target full name prefix"""
-        console.info('//%s: %s' % (self.fullname, msg))
+        console.info('%s: %s' % (self.source_location, msg), prefix=False)
 
     def warning(self, msg):
         """Print message with target full name prefix"""
-        console.warning('//%s: %s' % (self.fullname, msg))
+        console.warning('%s: %s' % (self.source_location, msg), prefix=False)
 
     def error(self, msg):
         """Print message with target full name prefix"""
-        console.error('//%s: %s' % (self.fullname, msg))
+        console.error('%s: %s' % (self.source_location, msg), prefix=False)
 
     def error_exit(self, msg, code=1):
         """Print message with target full name prefix and exit"""
-        console.error_exit('//%s: %s' % (self.fullname, msg), code=code)
+        console.error_exit('%s: %s' % (self.source_location, msg), code=code, prefix=False)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """

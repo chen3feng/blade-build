@@ -23,7 +23,7 @@ import traceback
 from blade import build_attributes
 from blade import build_rules
 from blade import console
-from blade.blade_util import var_to_list, exec_
+from blade.blade_util import var_to_list, exec_, source_location
 from blade.pathlib import Path
 
 
@@ -93,10 +93,11 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     """
     from blade import build_manager
     source_dir = Path(build_manager.instance.get_current_source_path())
-
+    source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
     include = var_to_list(include)
     if excludes:
-        console.warning('//%s: "glob.excludes" is deprecated, use "exclude" instead' % source_dir)
+        console.warning('%s: "glob.excludes" is deprecated, use "exclude" instead' % source_loc,
+                        prefix=False)
     exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
@@ -133,8 +134,9 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        console.warning('//%s: "glob(%s)" got an empty result. If it is the expected behavior, '
-                        'specify "allow_empty=True" to eliminate this message' % (source_dir, args))
+        console.warning('%s: "glob(%s)" got an empty result. If it is the expected behavior, '
+                        'specify "allow_empty=True" to eliminate this message' % (source_loc, args),
+                        prefix=False)
 
     return result
 
