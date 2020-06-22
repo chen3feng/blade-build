@@ -21,9 +21,8 @@ import sys
 
 from blade import build_attributes
 from blade import console
-from blade.blade_util import var_to_list, iteritems, exec_
+from blade.blade_util import var_to_list, iteritems, exec_, source_location
 from blade.constants import HEAP_CHECK_VALUES
-
 
 
 _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES = ['always', 'daily', 'interval', 'never']
@@ -208,6 +207,26 @@ class BladeConfig(object):
             }
         }
 
+    def info(self, msg):
+        console.info('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def warning(self, msg):
+        console.warning('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def error(self, msg):
+        console.error('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def error_exit(self, msg):
+        console.error_exit('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def __source_location(self):
+        for frame in inspect.stack():
+            filename = frame[1]
+            lineno = frame[2]
+            if filename.endswith(self.current_file_name):
+                return '%s:%d' % (self.current_file_name, lineno)
+        return self.current_file_name
+
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
@@ -228,25 +247,22 @@ class BladeConfig(object):
                 self._append_config(section_name, section, append)
             self._replace_config(section_name, section, user_config)
         else:
-            console.error('%s: %s: Unknown config section name' % (
-                self.current_file_name, section_name))
+            self.error('%s: Unknown config section name' % section_name)
 
     def _append_config(self, section_name, section, append):
         """Append config section items"""
         if not isinstance(append, dict):
-            console.error('%s: %s: Append must be a dict' %
-                          (self.current_file_name, section_name))
+            self.error('%s: Append must be a dict' % section_name)
         for k in append:
             if k in section:
                 if isinstance(section[k], list):
                     section[k] += var_to_list(append[k])
                 else:
-                    console.warning('%s: %s: Config item %s is not a list' %
-                                    (self.current_file_name, section_name, k))
+                    self.warning('%s: Config item %s is not a list' %
+                                    (section_name, k))
 
             else:
-                console.warning('%s: %s: Unknown config item name: %s' %
-                                (self.current_file_name, section_name, k))
+                self.warning('%s: Unknown config item name: %s' % (section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
@@ -256,8 +272,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
-                console.warning('%s: %s: Unknown config item name: %s' %
-                                (self.current_file_name, section_name, k))
+                self.warning('%s: Unknown config item name: %s' % (section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:
             del user_config[k]
@@ -316,8 +331,8 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        console.error_exit('//%s: Invalid config item "%s" value "%s", can only be in %s' % (
-            _blade_config.current_file_name, name, value, valid_values))
+        _blade_config.error_exit('Invalid config item "%s" value "%s", can only be in %s' % (
+            name, value, valid_values))
 
 
 def _check_test_related_envs(kwargs):
@@ -325,9 +340,8 @@ def _check_test_related_envs(kwargs):
         try:
             re.compile(name)
         except re.error as e:
-            console.error_exit(
-                    '%s: "global_config.test_related_envs": Invalid env name or regex "%s", %s' % (
-                        _blade_config.current_file_name, name, e))
+            _blade_config.error_exit(
+                '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
 @config_rule
@@ -343,8 +357,7 @@ def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
-        console.error_exit('"cc_test_config.heap_check" can only be in %s' %
-                           HEAP_CHECK_VALUES)
+        _blade_config.error_exit('"cc_test_config.heap_check" can only be in %s' % HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -428,9 +441,8 @@ def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
     if path:
-        console.warning(('%s: proto_library_config: protobuf_include_path has '
-                         'been renamed to protobuf_incs, and become a list') %
-                        _blade_config.current_file_name)
+        _blade_config.warning('proto_library_config: protobuf_include_path has '
+                              'been renamed to protobuf_incs, and become a list')
         del kwargs['protobuf_include_path']
         if isinstance(path, str) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()
@@ -445,7 +457,7 @@ def protoc_plugin(**kwargs):
     """protoc_plugin. """
     from blade.proto_library_target import ProtocPlugin
     if 'name' not in kwargs:
-        console.error_exit('Missing "name" in protoc_plugin parameters: %s' % kwargs)
+        _blade_config.error_exit('Missing "name" in protoc_plugin parameters: %s' % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')
     section[kwargs['name']] = ProtocPlugin(**kwargs)
 
@@ -468,7 +480,6 @@ def cc_config(append=None, **kwargs):
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, str) and ' ' in extra_incs:
-            console.warning('//%s: "cc_config.extra_incs" has been changed to list' %
-                            _blade_config.current_file_name)
+            _blade_config.warning('"cc_config.extra_incs" has been changed to list')
             kwargs['extra_incs'] = extra_incs.split()
     _blade_config.update_config('cc_config', append, kwargs)

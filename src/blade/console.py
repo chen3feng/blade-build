@@ -235,9 +235,9 @@ def error(msg, prefix=True):
     _do_print(colored(msg, 'red'), file=sys.stderr)
 
 
-def error_exit(msg, code=1):
+def error_exit(msg, code=1, prefix=True):
     """dump error message and exit. """
-    error(msg)
+    error(msg, prefix=prefix)
     sys.exit(code)
 
 

@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import fcntl
+import inspect
 import os
 import json
 import sys
@@ -234,3 +235,12 @@ else:
 
 def exec_(filename, globals, locals):
     exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals)
+
+
+def source_location(filename):
+    for frame in inspect.stack():
+        fn = frame[1]
+        lineno = frame[2]
+        if fn.endswith(filename):
+            return '%s:%s' % (filename, lineno)
+    return filename
