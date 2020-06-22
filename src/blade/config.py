@@ -219,14 +219,6 @@ class BladeConfig(object):
     def error_exit(self, msg):
         console.error_exit('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
-    def __source_location(self):
-        for frame in inspect.stack():
-            filename = frame[1]
-            lineno = frame[2]
-            if filename.endswith(self.current_file_name):
-                return '%s:%d' % (self.current_file_name, lineno)
-        return self.current_file_name
-
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
