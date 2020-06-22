@@ -94,6 +94,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 deps=deps,
                 visibility=visibility,
                 warning='',
+                hdr_dep_missing_severity=None,
                 defs=[],
                 incs=[],
                 export_incs=[],

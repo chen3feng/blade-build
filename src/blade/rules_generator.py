@@ -180,14 +180,17 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            description='CXX ${in}',
                            depfile='${out}.d',
                            deps='gcc')
-        if config.get_item('cc_config', 'header_inclusion_dependencies'):
-            preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2>${out}'
-            self.generate_rule(name='cchdrs',
-                               command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
-                               description='CC HDRS ${in}')
-            self.generate_rule(name='cxxhdrs',
-                               command=preprocess % (cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
-                               description='CXX HDRS ${in}')
+
+        # Generate '.H' for cc file to check dependency missing, see
+        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
+        preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2>${out}'
+        self.generate_rule(name='cchdrs',
+                           command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
+                           description='CC HDRS ${in}')
+        self.generate_rule(name='cxxhdrs',
+                           command=preprocess % (cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                           description='CXX HDRS ${in}')
+
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self._add_rule(textwrap.dedent('''\
                 build __securecc_phony__ : phony

@@ -46,7 +46,7 @@ def _register_hdrs(target, hdrs):
         hdrs: list, the full path (based in workspace troot) of hdrs
     """
     for hdr in hdrs:
-        _hdr_targets_map[hdr].add(target.fullname)
+        _hdr_targets_map[hdr].add(target.key)
 
 
 class CcTarget(Target):
@@ -62,6 +62,7 @@ class CcTarget(Target):
                  deps,
                  visibility,
                  warning,
+                 hdr_dep_missing_severity,
                  defs,
                  incs,
                  export_incs,
@@ -91,6 +92,7 @@ class CcTarget(Target):
         self._check_incorrect_no_warning(warning)
 
         self.data['warning'] = warning
+        self.data['hdr_dep_missing_severity'] = hdr_dep_missing_severity
         self.data['defs'] = var_to_list(defs)
         self.data['incs'] = self._incs_to_fullpath(incs)
         self.data['export_incs'] = self._incs_to_fullpath(export_incs)
@@ -116,7 +118,7 @@ class CcTarget(Target):
 
     def _auto_set_hdrs(self, hdrs):
         """auto set `hdrs` according to the srcs."""
-        if hdrs is None and config.get_item('cc_config', 'auto_set_hdrs'):
+        if hdrs is None and config.get_item('cc_library_config', 'auto_set_hdrs'):
             hdrs = []
             for src in self.srcs:
                 hdr = self._source_file_path(os.path.splitext(src)[0] + '.h')
@@ -488,8 +490,7 @@ class CcTarget(Target):
             objs.append(obj)
 
         self.data['objs'] = objs
-        if (config.get_item('cc_config', 'header_inclusion_dependencies') and
-                hdrs_inclusion_srcs):
+        if hdrs_inclusion_srcs:
             self._cc_hdrs_ninja(hdrs_inclusion_srcs, vars)
 
     def _static_cc_library_ninja(self):
@@ -706,51 +707,46 @@ class CcTarget(Target):
         return False
 
     def _verify_direct_headers(self, src, direct_hdrs):
-        errors = 0
+        msg = []
         for hdr in direct_hdrs:
             libs = _hdr_targets_map.get(hdr)
             if not libs:
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):
-                if errors == 0:
-                    self.error('Missing dependency declaration in BUILD file for %s:' % src)
-                console.error('  For %s' % self._hdr_declaration_message(hdr),
-                              prefix=False)
-                errors += 1
-        return errors == 0
+                msg.append('    For %s' % self._hdr_declaration_message(hdr))
+        if msg:
+            msg.insert(0, '  In %s,' % src)
+        return msg
 
     @staticmethod
     def _hdr_declaration_message(hdr):
         libs = _hdr_targets_map.get(hdr)
         if not libs:
             return hdr
-        libs = ' or '.join(['//%s' % lib for lib in libs])
+        libs = ' or '.join(['//%s:%s' % lib for lib in libs])
         return '%s, which belongs to %s' % (hdr, libs)
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs):
-        printed = False
+        msg = []
         for stack in stacks:
             generated_hdr = stack[-1]
             if self._hdr_is_declared(generated_hdr, declared_hdrs, declared_incs):
                 continue
             stack.pop()
             source = self._source_file_path(src)
+            msg.append('  For %s' % generated_hdr)
             if not stack:
-                msg = ['    In file included from %s' % source]
+                msg.append('    In file included from %s' % source)
             else:
                 stack.reverse()
-                msg = ['    In file included from %s' % self._hdr_declaration_message(stack[0])]
+                msg.append('    In file included from %s' % self._hdr_declaration_message(stack[0]))
                 prefix = '                     from %s'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
                 msg.append(prefix % source)
-            if not printed:
-                self.error('Missing dependency declaration in BUILD file:')
-                printed = True
-            console.info('  For %s,\n%s' % (generated_hdr, '\n'.join(msg)), prefix=False)
-        return not printed
+        return msg
 
-    def verify_header_inclusion_dependencies(self, history):
+    def verify_hdr_dep_missing(self, history):
         """
         Verify whether included header files is declared in "deps" correctly.
 
@@ -774,6 +770,8 @@ class CcTarget(Target):
         # Verify
         preprocess_paths, failed_preprocess_paths = set(), set()
 
+        direct_verify_msg = []
+        generated_verify_msg = []
         for src in self.srcs:
             path = self._find_inclusion_file(src)
             if not path or (path in history and int(os.path.getmtime(path)) == history[path]):
@@ -781,11 +779,25 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-            if not self._verify_direct_headers(src, direct_hdrs):
+            msg = self._verify_direct_headers(src, direct_hdrs)
+            if msg:
                 failed_preprocess_paths.add(path)
+                direct_verify_msg += msg
+                # Direct headers verification can cover the under one
                 continue
-            if not self._verify_generated_headers(src, stacks, declared_hdrs, declared_incs):
+            # But can not cover all, so it is still useful
+            msg = self._verify_generated_headers(src, stacks, declared_hdrs, declared_incs)
+            if msg:
+                generated_verify_msg += msg
                 failed_preprocess_paths.add(path)
+
+        key = 'hdr_dep_missing_severity'
+        severity = self.data.get(key) or config.get_item('cc_config', key)
+        output = getattr(self, severity)
+        if direct_verify_msg:
+            output('Missing dependency declaration in BUILD file:\n%s' % '\n'.join(direct_verify_msg))
+        if generated_verify_msg:
+            output('Missing dependency declaration in BUILD file:\n%s' % '\n'.join(generated_verify_msg))
 
         # Update history
         for preprocess in failed_preprocess_paths:
@@ -794,7 +806,7 @@ class CcTarget(Target):
         for preprocess in preprocess_paths - failed_preprocess_paths:
             history[preprocess] = int(os.path.getmtime(preprocess))
 
-        return not failed_preprocess_paths
+        return not failed_preprocess_paths or severity != 'error'
 
 
 class CcLibrary(CcTarget):
@@ -810,6 +822,7 @@ class CcLibrary(CcTarget):
                  deps,
                  visibility,
                  warning,
+                 hdr_dep_missing_severity,
                  defs,
                  incs,
                  export_incs,
@@ -835,6 +848,7 @@ class CcLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
+                hdr_dep_missing_severity=hdr_dep_missing_severity,
                 defs=defs,
                 incs=incs,
                 export_incs=export_incs,
@@ -886,6 +900,7 @@ class PrebuiltCcLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning='no',
+                hdr_dep_missing_severity=None,
                 defs=[],
                 incs=[],
                 export_incs=export_incs,
@@ -1011,6 +1026,7 @@ def prebuilt_cc_library(
         name,
         deps=[],
         visibility=None,
+        hdr_dep_missing_severity=None,
         export_incs=[],
         hdrs=None,
         libpath_pattern=None,
@@ -1038,6 +1054,7 @@ def cc_library(
         deps=[],
         visibility=None,
         warning='yes',
+        hdr_dep_missing_severity=None,
         defs=[],
         incs=[],
         export_incs=[],
@@ -1077,6 +1094,7 @@ def cc_library(
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
+                hdr_dep_missing_severity=hdr_dep_missing_severity,
                 defs=defs,
                 incs=incs,
                 export_incs=export_incs,
@@ -1141,8 +1159,9 @@ class CcBinary(CcTarget):
                  name,
                  srcs,
                  deps,
-                 warning,
                  visibility,
+                 warning,
+                 hdr_dep_missing_severity,
                  defs,
                  incs,
                  embed_version,
@@ -1165,6 +1184,7 @@ class CcBinary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
+                hdr_dep_missing_severity=hdr_dep_missing_severity,
                 defs=defs,
                 incs=incs,
                 export_incs=[],
@@ -1251,6 +1271,7 @@ def cc_binary(name,
               deps=[],
               visibility=None,
               warning='yes',
+              hdr_dep_missing_severity=None,
               defs=[],
               incs=[],
               embed_version=True,
@@ -1267,6 +1288,7 @@ def cc_binary(name,
             deps=deps,
             visibility=visibility,
             warning=warning,
+            hdr_dep_missing_severity=hdr_dep_missing_severity,
             defs=defs,
             incs=incs,
             embed_version=embed_version,
@@ -1304,8 +1326,9 @@ class CcPlugin(CcTarget):
                  name,
                  srcs,
                  deps,
-                 warning,
                  visibility,
+                 warning,
+                 hdr_dep_missing_severity,
                  defs,
                  incs,
                  optimize,
@@ -1328,6 +1351,7 @@ class CcPlugin(CcTarget):
                   deps=deps,
                   visibility=visibility,
                   warning=warning,
+                  hdr_dep_missing_severity=hdr_dep_missing_severity,
                   defs=defs,
                   incs=incs,
                   export_incs=[],
@@ -1373,8 +1397,9 @@ def cc_plugin(
         name,
         srcs=[],
         deps=[],
-        warning='yes',
         visibility=None,
+        warning='yes',
+        hdr_dep_missing_severity=None,
         defs=[],
         incs=[],
         optimize=[],
@@ -1390,8 +1415,9 @@ def cc_plugin(
             name=name,
             srcs=srcs,
             deps=deps,
-            warning=warning,
             visibility=visibility,
+            warning=warning,
+            hdr_dep_missing_severity=hdr_dep_missing_severity,
             defs=defs,
             incs=incs,
             optimize=optimize,
@@ -1419,8 +1445,9 @@ class CcTest(CcBinary):
             name,
             srcs,
             deps,
-            warning,
             visibility,
+            warning,
+            hdr_dep_missing_severity,
             defs,
             incs,
             embed_version,
@@ -1445,8 +1472,9 @@ class CcTest(CcBinary):
                 name=name,
                 srcs=srcs,
                 deps=deps,
-                warning=warning,
                 visibility=visibility,
+                warning=warning,
+                hdr_dep_missing_severity=hdr_dep_missing_severity,
                 defs=defs,
                 incs=incs,
                 embed_version=embed_version,
@@ -1490,8 +1518,9 @@ class CcTest(CcBinary):
 def cc_test(name,
             srcs=[],
             deps=[],
-            warning='yes',
             visibility=None,
+            warning='yes',
+            hdr_dep_missing_severity=None,
             defs=[],
             incs=[],
             embed_version=False,
@@ -1512,8 +1541,9 @@ def cc_test(name,
             name=name,
             srcs=srcs,
             deps=deps,
-            warning=warning,
             visibility=visibility,
+            warning=warning,
+            hdr_dep_missing_severity=hdr_dep_missing_severity,
             defs=defs,
             incs=incs,
             embed_version=embed_version,

@@ -195,10 +195,9 @@ class BladeConfig(object):
                     'mid': ['-g'],
                     'high': ['-g3'],
                 },
-                'header_inclusion_dependencies': False,
-                'auto_set_hdrs':False,
-                'auto_set_hdrs__doc__': 'For files in "cc_library.srcs", Set corresponding ".h" '
-                    'file as "cc_library.hdrs" it is not set explicitly',
+                'hdr_dep_missing_severity': 'warning',
+                'hdr_dep_missing_severity__doc': 'The severity of the missing dependency on the '
+                    'library to which the header file belongs, can be "info", "warning", "error"',
             },
             'cc_library_config': {
                 'prebuilt_libpath_pattern': 'lib${bits}',
@@ -208,6 +207,9 @@ class BladeConfig(object):
                 # in deterministic mode discarding timestamps
                 'arflags': ['rcs'],
                 'ranlibflags': [],
+                'auto_set_hdrs':False,
+                'auto_set_hdrs__doc__': 'For files in "cc_library.srcs", set corresponding ".h" '
+                    'file as "cc_library.hdrs" it is not set explicitly',
             }
         }
 
@@ -468,6 +470,7 @@ def fbthrift_library_config(append=None, **kwargs):
 @config_rule
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
+    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['info', 'warning', 'error'])
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, str) and ' ' in extra_incs:

@@ -176,16 +176,13 @@ class Blade(object):
 
     def verify(self):
         """Verify specific targets after build is complete. """
-        if not config.get_item('cc_config', 'header_inclusion_dependencies'):
-            return True
-
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
         for k in self.__expanded_command_targets:
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
-                if not target.verify_header_inclusion_dependencies(header_inclusion_history):
+                if not target.verify_hdr_dep_missing(header_inclusion_history):
                     error += 1
         self._dump_verify_history()
         return error == 0
@@ -193,7 +190,12 @@ class Blade(object):
     def _load_verify_history(self):
         if os.path.exists(self._verify_history_path):
             with open(self._verify_history_path) as f:
-                self._verify_history = json.load(f)
+                try:
+                    self._verify_history = json.load(f)
+                except Exception as e:
+                    console.warning('Error loading %s, ignore. Reason: %s' % (
+                        self._verify_history_path, str(e)))
+                    pass
         return self._verify_history
 
     def _dump_verify_history(self):

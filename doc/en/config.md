@@ -63,6 +63,7 @@ Common configuration of all c/c++ targets
 | c\_warnings    | list   | 内置     |                                          | C only warnings          |
 | cxx\_warnings  | list   | 内置     |                                          | C++ only warnings        |
 | optimize       | list   | 内置     |                                          | optimize options         |
+| hdr\_dep\_missing\_severity | string | warning | info, warning, error         | The severity of the missing dependency on the library to which the header file belongs |
 
 All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
 The optimize flags is separate from other compile flags because it is ignored in debug mode.
