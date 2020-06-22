@@ -169,7 +169,7 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in CcTarget.__cxx_keyword_list:
-                self.warning('DO NOT define c++ keyword %s as macro' % macro)
+                self.warning('DO NOT define c++ keyword "%s" as macro' % macro)
 
     def _check_incorrect_no_warning(self, warning):
         """check if warning=no is correctly used or not. """
