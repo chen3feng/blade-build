@@ -380,6 +380,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self.data['generated_hdrs'].append(header)
             names = self._proto_gen_file_names(src)
             cpp_sources.append(names[1])
+        self._set_hdrs(self.data['generated_hdrs'])
         self._cc_objects_ninja(cpp_sources, True, generated_headers=cpp_headers)
         self._cc_library_ninja()
         self.ninja_proto_rules(self.blade.get_options())

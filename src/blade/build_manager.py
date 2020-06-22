@@ -198,7 +198,7 @@ class Blade(object):
 
     def _dump_verify_history(self):
         with open(self._verify_history_path, 'w') as f:
-            json.dump(self._verify_history, f)
+            json.dump(self._verify_history, f, indent=4)
 
     def run(self, target):
         """Run the target. """

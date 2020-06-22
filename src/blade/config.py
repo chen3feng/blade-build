@@ -196,6 +196,9 @@ class BladeConfig(object):
                     'high': ['-g3'],
                 },
                 'header_inclusion_dependencies': False,
+                'auto_set_hdrs':False,
+                'auto_set_hdrs__doc__': 'For files in "cc_library.srcs", Set corresponding ".h" '
+                    'file as "cc_library.hdrs" it is not set explicitly',
             },
             'cc_library_config': {
                 'prebuilt_libpath_pattern': 'lib${bits}',
