@@ -39,7 +39,7 @@ Attributes:
 
 * link_all_symbols=True
   If you depends on the global initialization to register something, but didn't access these
-  global object. it works for code in `srcs` of executable. but if it is in a library, it will be
+  global object directly. it works for code in `srcs` of executable. but if the global is in a library, it will be
   discarded at the link time because linker find it is unsed.
 
   This attribute tells the linker don't discard any unused symbols in this library even if it seems
