@@ -71,6 +71,7 @@ class GenRuleTarget(Target):
             if generated_hdrs:
                 generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
                 self.data['generated_hdrs'] = generated_hdrs
+                cc_targets._register_hdrs(self, generated_hdrs)
 
         if export_incs:
             self.data['export_incs'] = self._expand_incs(var_to_list(export_incs))

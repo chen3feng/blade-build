@@ -61,6 +61,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 | c\_warnings    | list   | 内置     |                                          | 编译C代码时的专用警告                                               |
 | cxx\_warnings  | list   | 内置     |                                          | 编译C++代码时的专用警告                                             |
 | optimize       | list   | 内置     |                                          | 优化专用选项，debug模式下会被忽略，比如 -O2，-omit-frame-pointer 等 |
+| hdr\_dep\_missing\_severity | string | warning | info, warning, error         | 对头文件所属的库的依赖的缺失的严重性                                |
 
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。

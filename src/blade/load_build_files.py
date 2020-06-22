@@ -233,7 +233,7 @@ def _is_load_excluded(root, d):
     # Exclude directories containing special files
     for skip_file in _SKIP_FILES:
         if os.path.exists(os.path.join(root, d, skip_file)):
-            console.info('Skip "%s"' % os.path.join(root, d))
+            console.info('Skip "%s" due to "%s" file' % (os.path.join(root, d)), skip_file)
             return True
 
     return False
