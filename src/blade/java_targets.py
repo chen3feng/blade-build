@@ -54,9 +54,7 @@ class MavenJar(Target):
 
     def ninja_rules(self):
         maven_cache = maven.MavenCache.instance(self.build_dir)
-        binary_jar = maven_cache.get_jar_path(self.data['id'],
-                                              self.data['classifier'],
-                                              self.fullname)
+        binary_jar = maven_cache.get_jar_path(self.data['id'], self.data['classifier'], self)
         if binary_jar:
             self.data['binary_jar'] = binary_jar
             if self.data.get('transitive'):
