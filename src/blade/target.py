@@ -12,11 +12,15 @@
 from __future__ import absolute_import
 
 import os
+import re
 import string
 
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list, iteritems
+from blade.blade_util import var_to_list, iteritems, source_location
+
+
+LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
 def _normalize_one(target, working_dir):
@@ -64,19 +68,19 @@ class Target(object):
 
     def __init__(self,
                  name,
-                 target_type,
+                 type,
                  srcs,
                  deps,
                  visibility,
-                 blade,
                  kwargs):
         """Init method.
 
         Init the target.
 
         """
-        self.blade = blade
-        self.build_path = self.blade.get_build_path()
+        from blade import build_manager
+        self.blade = build_manager.instance
+        self.build_dir = self.blade.get_build_dir()
         current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
 
@@ -84,7 +88,8 @@ class Target(object):
         self.fullname = '%s:%s' % self.key
         self.name = name
         self.path = current_source_path
-        self.type = target_type
+        self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
+        self.type = type
         self.srcs = srcs
         self.deps = []
         self.expanded_deps = []
@@ -122,27 +127,27 @@ class Target(object):
 
     def debug(self, msg):
         """Print message with target full name prefix"""
-        console.debug('//%s: %s' % (self.fullname, msg))
+        console.debug('%s: %s' % (self.source_location, msg), prefix=False)
 
     def info(self, msg):
         """Print message with target full name prefix"""
-        console.info('//%s: %s' % (self.fullname, msg))
+        console.info('%s: %s' % (self.source_location, msg), prefix=False)
 
     def warning(self, msg):
         """Print message with target full name prefix"""
-        console.warning('//%s: %s' % (self.fullname, msg))
+        console.warning('%s: %s' % (self.source_location, msg), prefix=False)
 
     def error(self, msg):
         """Print message with target full name prefix"""
-        console.error('//%s: %s' % (self.fullname, msg))
+        console.error('%s: %s' % (self.source_location, msg), prefix=False)
 
     def error_exit(self, msg, code=1):
         """Print message with target full name prefix and exit"""
-        console.error_exit('//%s: %s' % (self.fullname, msg), code=code)
+        console.error_exit('%s: %s' % (self.source_location, msg), code=code, prefix=False)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        console.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
+        self.error_exit('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
         if '/' in self.name:
@@ -150,7 +155,7 @@ class Target(object):
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            self.error_exit('unrecognized options %s' % kwargs)
+            self.error_exit('Unrecognized options %s' % kwargs)
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets"""
@@ -215,7 +220,7 @@ class Target(object):
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
         if key not in self.target_database:
-            lib = SystemLibrary(name, self.blade)
+            lib = SystemLibrary(name)
             self.blade.register_target(lib)
 
     def _add_location_reference_target(self, m):
@@ -415,7 +420,7 @@ class Target(object):
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        return os.path.join(self.build_path, self.path, file_name)
+        return os.path.join(self.build_dir, self.path, file_name)
 
     def _add_target_file(self, label, path):
         """
@@ -517,6 +522,7 @@ class Target(object):
                     self._write_rule('  %s = %s' % (name, v))
                 else:
                     self._write_rule('  %s =' % name)
+        self._write_rule('')  # An empty line to improve readability
 
     def get_rules(self):
         """Return build rules. """
@@ -537,15 +543,21 @@ class Target(object):
                     path = path[2:]
                 return (path, name.strip())
 
-        console.error_exit('invalid target lib format: %s, '
-                           'should be #lib_name or lib_path:lib_name' %
+        self.error_exit('Invalid target lib format: "%s", '
+                           'should be "#lib_name" or "//lib_path:lib_name"' %
                            target_string)
 
 
 class SystemLibrary(Target):
-    def __init__(self, name, blade):
+    def __init__(self, name):
         name = name[1:]
-        Target.__init__(self, name, 'system_library', [], [], None, blade, {})
+        super(SystemLibrary, self).__init__(
+                name=name,
+                type='system_library',
+                srcs=[],
+                deps=[],
+                visibility=['PUBLIC'],
+                kwargs={})
         self.key = ('#', name)
         self.fullname = '%s:%s' % self.key
         self.path = '#'

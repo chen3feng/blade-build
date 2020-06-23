@@ -23,6 +23,7 @@ class LexYaccLibrary(CcTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
@@ -31,7 +32,6 @@ class LexYaccLibrary(CcTarget):
                  prefix,
                  lexflags,
                  yaccflags,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -41,20 +41,23 @@ class LexYaccLibrary(CcTarget):
         if (len(srcs) != 2 or
                 (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
-            self.error_exit('srcs for lex_yacc_library must be a pair of [lex_file, yacc_file]')
+            self.error_exit('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
 
-        CcTarget.__init__(self,
-                          name,
-                          'lex_yacc_library',
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          defs,
-                          incs,
-                          [], [], [], [],
-                          blade,
-                          kwargs)
+        super(LexYaccLibrary, self).__init__(
+                name=name,
+                type='lex_yacc_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                hdr_dep_missing_severity=None,
+                defs=defs,
+                incs=incs,
+                export_incs=[],
+                optimize=None,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
 
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix
@@ -132,32 +135,35 @@ class LexYaccLibrary(CcTarget):
         self._cc_library_ninja()
 
 
-def lex_yacc_library(name,
-                     srcs=[],
-                     deps=[],
-                     warning='yes',
-                     defs=[],
-                     incs=[],
-                     allow_undefined=False,
-                     recursive=False,
-                     prefix=None,
-                     lexflags=[],
-                     yaccflags=[],
-                     **kwargs):
+def lex_yacc_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        warning='yes',
+        defs=[],
+        incs=[],
+        allow_undefined=False,
+        recursive=False,
+        prefix=None,
+        lexflags=[],
+        yaccflags=[],
+        **kwargs):
     """lex_yacc_library. """
-    target = LexYaccLibrary(name,
-                            srcs,
-                            deps,
-                            warning,
-                            defs,
-                            incs,
-                            allow_undefined,
-                            recursive,
-                            prefix,
-                            lexflags,
-                            yaccflags,
-                            build_manager.instance,
-                            kwargs)
+    target = LexYaccLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            warning=warning,
+            visibility=visibility,
+            defs=defs,
+            incs=incs,
+            allow_undefined=allow_undefined,
+            recursive=recursive,
+            prefix=prefix,
+            lexflags=lexflags,
+            yaccflags=yaccflags,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

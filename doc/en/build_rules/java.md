@@ -1,18 +1,14 @@
-# 构建Java目标
-
-blade 早期的开发主要是针对 C/C++/Protobuf 相关的后台服务项目，作为通用的构建系统，也逐步扩展了支持
-Java/Python 等的规则。第一版 Java 规则的实现（java_jar_target.py）比较简单，后由于项目需要，参考
-Maven/Buck/Bazel 的实现和 Java 语言项目构建习惯和运行场景，重写了新的 Java 构建规则（java_targets.py）
+# Build Java Targets
 
 ## java_library
 
-把java源代码编译为库（jar 包）。
+Build a jar from java source file。
 ```python
 java_library(
     name = 'rpc',
     srcs = glob([
         'src/main/java/**/*.java',
-    ], excludes = [
+    ], exclude = [
         '*Test.java'
     ]),
     resources = [
@@ -21,47 +17,33 @@ java_library(
         'resources/services.xml'
     ],
     deps = [
-        '//common/rpc:rpc_error_code_proto'         # 可以依赖proto_library生成的java文件一起编译打包
+        '//common/rpc:rpc_error_code_proto'         # Depends on proto_libraries
         '//common/rpc:rpc_options_proto',
-        '//poppy:poppy_client',                     # 可以依赖swig_library生成的java文件一起编译打包
-        '//common/net/http/java:http_utilities',    # 可以依赖别的 java_library 目标
-        '//thirdparty/java/deps:slf4j',             # 依赖第三方包
+        '//common/net/http/java:http_utilities',    # Depends on other java libraries
+        '//thirdparty/java/deps:slf4j',             # Depends on third party java libraries
         '//thirdparty/java/deps:guava',
         '//thirdparty/java/deps:netty-4.0.36.final',
     ]
 )
 ```
 
-- srcs 属性与 glob 函数
+- resources attribute
 
-srcs 属性和普通规则的 srcs 属性相同，可以指明源文件的路径，遵照 java 开发习惯，比如在 Maven 中无需
-指定源文件列表，所有源文件按照标准目录布局组织放于 src/main/java 目录下，因此在 blade 中提供了 glob
-函数用于自动获取文件列表并支持文件排除：
+resource file to be packed into this jar，you can also use glob function.
+Blade respect the [Maven Standard Directory Layout](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html),
+treats the `resources` dir as the root of resource files to be packed into the generated jar.
+So there are some mapping rules, for examples:
 
-```python
-glob([
-    '*.java',                           # * 表示匹配当前目录下的 java 文件
-    'src/main/java/**/*.java',          # ** 表示递归目录，规则与 python3 中的 pathlib 相同
-], excludes=['*Test.java'])             # excludes 排除文件列表
-```
+resources file path (str or tuple)|path in jar| description
+|:----|:----|----|
+resources/log4j.properties|log4j.properties | starts after the `resources` dir
+src/main/resources/runtime.conf|src/main/resources/runtime.conf | ditto
+('src/main/resources/runtime.conf', 'conf/runtime.conf')|conf/runtime.conf | manual rename the packed file
+//app/global/countries.xml|app/countries.xml | can't find the root
 
-- resources 属性
+- prebuilt attribute
 
-jar 包的资源列表，也可以使用 glob 函数获取一组资源，每个资源文件映射到 jar 包中的路径规则为：
-
-resources 路径（字符串或元组）|jar 包路径
-:----|:----
-resources/log4j.properties|log4j.properties
-src/main/resources/runtime.conf|src/main/resources/runtime.conf
-('src/main/resources/runtime.conf', 'conf/runtime.conf')|conf/runtime.conf
-//app/global/countries.xml|app/countries.xml
-
-上面表格的最后一行表示非当前目录下的某个资源文件，此外也可以使用目录作为资源，目录会被展开为文件列表，
-每一项也遵循上述表格的映射规则。
-
-- prebuilt 属性
-
-主要应用在已经编译打包好的 jar 包，作为一种变通的解决依赖的方式，通常对于外部依赖还是推荐使用 maven_jar 的方式。
+Used to describe a prebuilt jar file, but think twice before use it, usually `maven_jar` is more preferable.
 
 ```python
 java_library(
@@ -71,71 +53,79 @@ java_library(
 )
 ```
 
-### 多种依赖方式
+- coverage attribute
+  bool, Whether generate test coverage data for this library. It is useful to be False in some cases such as srcs are generated.
 
-为了适应 java 项目的需要，除了原有的 deps 依赖，新增了 exported_deps/provided_deps 依赖，这里首先
-需要强调的是 java_library 进行编译生成 class（jar 包）的时候**依赖不传递**，即如下 BUILD 文件中的
-C.java 中定义的符号对 A.java 不可见，即在写 java_library 的 deps 时，应按需添加，与源文件中的
-import 能够对应起来：deps what you imports。
+### Mutiple kinds of dependancy
 
+For java targets，except the normal `deps`, they also support `exported_deps`，`provided_deps`.
+There is a notable difference from C++ targets: for java_library, the dependancies are not **transtive** at the compile phrase.
+For example, in this BUILD file:
 ```python
 java_library(name = 'A', srcs = 'A.java', deps = ':B')
 java_library(name = 'B', srcs = 'B.java', deps = ':C')
 java_library(name = 'C', srcs = 'C.java')
 ```
+The symbols defined in `C.java` is invisible to `A.java`, so when you write the deps for a
+java_library, you must add all of the direct dependencies into the deps. you can see you import
+list, ensure each library you imported is in the deps list.
 
-- exported_deps 属性
+- exported_deps attribute
 
-和C++不同，Java（以及scala等JVM上的语言）的构建规则中，deps里描述的库只提供给编译当前库的源代码时使用，不会自动透传给库的使用者。
-如果库所依赖的类型出现在类的公有方法时，如果被依赖的库只出现在deps中，由于不会被透传给其使用者，就会因找不到符号而导致编译失败，需要使用exported_deps属性。
+Each dep in the list will be transitive for the user of this library.
 
-出现在exported_deps属性中的库，编译阶段会被透传给其使用者。
+As you already know, in the java (and also other JVM languages such as scala) build rules, `deps` are not transitve.
+If a type from dependency appears in the public interface of a library, the users may don't know
+they should depends one your dependency, use this attribute will be a help.
 
-比如上述例子中的 B.java，如果在其某个方法的参数中引入了 C.java 定义的符号，会导致依赖 B 的
-java_library 也不得不依赖 C，否则编译报错，这个时候可以将 C 作为 B 的导出依赖（exported_deps），
-这样依赖 B 的目标会自动传递依赖到 C。
+When a dependency appears in the `exported_deps`, it will be passed to the source file at the compile phrase.
+
+For the above example, if in B.java, some method used the type defined in C.java，the user of `B`,
+`A` also have to depends on `C`, or there will be a compile error. if you put `C` int the
+`exported_deps` of `B`, `A` will get `C` as as it compile dependency.
 
 ```python
 java_library(name = 'B', srcs = 'B.java', exported_deps = ':C')
 ```
 
-- provided_deps 属性
+- provided_deps attribute
 
-provided_deps 用于表示那些运行环境提供的依赖，类似 maven scope 中的 provided，这些依赖用于当前
-java_library 的编译，但是当这个 java_library 直接或者间接被 java_fat_library 依赖时，provided deps
-不会被打包到 fatjar 中，应用场景比如集群环境的依赖（hadoop，spark 等），可以有效减小 fatjar 的文件大小，并减少和运行环境已经提供的库冲突的风险。
+`provided_deps` is used to describe some libraries which will be provied by the runtime environment,
+same as the `provided` in maven scope，there dependencies will be used to compile，but they will
+not be packed into the final `fatjar`. The scenaio is hadoop or spark. this attribute can reduce
+the size of fatjar, and also reduces the conflict with the environment provided libraries.
 
 ## maven_jar
 
-从 maven 仓库获取第三方发布包（release/snapshot），这里的第三方是相对的概念，泛指本项目（java_library）的外部依赖。
+Use this rule to describe a jar in the maven repository.
 
 ```python
 maven_jar (
   name = 'hadoop-common-2.7.2-tdw',
-  id = 'org.apache.hadoop:hadoop-common:2.7.2-tdw-1.0.1',  # 完整的maven artifact id
+  id = 'org.apache.hadoop:hadoop-common:2.7.2-tdw-1.0.1',  # full maven artifact id
 )
 ```
 
-除了 name 和 id 属性，maven_jar 也提供了如下属性，兼容 maven 仓库中选取依赖的多种方式。
+Besides `name` and `id`, maven_jar also provides the following attributes to fit the use of maven repository.
 
-- classifier 属性
+- classifier attribute
 
-指定 classifier 值，对于同一组 id（group:artifact:version），可以用 classifier 来指定不同的 jar 包，
-如 hadoop-common-2.2.0.jar 和 hadoop-common-2.2.0-tests.jar。
+Specify `classifier`, for the same maven id(group:artifact:version), you can use classifier to locate different jar file.
+Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
 
-- transitive 属性
+- transitive attribute
 
-指定是否传递，默认是 True，下载 jar 包及其传递依赖，指定为 False 时表示只下载 id 对应的 standalone
-jar 包，不下载依赖，用于解决某些运行时依赖下载传递依赖时的失败。
+Whether use transitive maven dependency, the default value is True, blade will download jar and its
+transitive dependencies; otherwise only the jar file of this target will be downloaded.
 
 ## java_fat_library
 
-聚合所有依赖的 java_library/maven_jar，生成一个 fatjar 用于部署，类似 maven 的 jar-with-dependencies 功能。
+Merge all java_library/maven_jar, generate a fatjar, can be used for deploy, same as `jar-with-dependencies` in maven.
 
 ```python
 java_library(
     name = 'log_process',
-    srcs = glob(['**/*.java'], excludes = ['*Test.java']),
+    srcs = glob(['**/*.java'], exclude = ['*Test.java']),
     resources = glob(['resources/*']),
     deps = [
         ':log_proto',
@@ -169,16 +159,14 @@ java_fat_library(
 )
 
 ```
+- exclusions attribute
 
-- name/srcs/deps/resources 和 java_library 相同
-
-- exclusions 属性
-
-指定需要排除的 maven 依赖，形式为 maven id（group:artifact:version），支持通配符形式，
-如 com.google.protobuf:protobuf:\* 和 com.google.protobuf:\*:\*。
+Specify maven dependencies to be excludes. The syntax is a list of maven ids
+(group:artifact:version), also support wildcard, such as:
+`com.google.protobuf:protobuf:\*` and `com.google.protobuf:\*:\*`, but only the tail parts can be wildcard.
 
 ## java_binary
-把java源代码编译为可执行文件
+Build executable from java source files.
 
 ```python
 java_binary(
@@ -192,10 +180,11 @@ java_binary(
     ]
 )
 ```
-编译结果包括一个启动用的shell脚本文件和一个已经包含了相关依赖的fat-jar。
+The results include a fat jar with a wrapper shell script.
 
 ## java_test
-编译和运行java测试代码。
+Build and run tests.
+
 ```python
 java_test(
     name = 'poppy_java_test',
@@ -203,8 +192,8 @@ java_test(
         glob('test/com/soso/poppy/**/*Test.Java)'
     ],
     deps = [
-        '//poppy:poppy_java_client',
+        '//poppy:poppy_java',
         '//thirdparty/junit:junit',
-    ]
+    ],
 )
 ```

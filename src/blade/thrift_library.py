@@ -30,28 +30,32 @@ from blade.thrift_helper import ThriftHelper
 class ThriftLibrary(CcTarget):
     """A thrift library target derived from CcTarget. """
 
-    def __init__(self,
-                 name,
-                 srcs,
-                 deps,
-                 optimize,
-                 deprecated,
-                 blade,
-                 kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            optimize,
+            deprecated,
+            kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'thrift_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
-        self.data['python_vars'] = []
-        self.data['python_sources'] = []
+        super(ThriftLibrary, self).__init__(
+                name=name,
+                type='thrift_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning='',
+                hdr_dep_missing_severity=None,
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
 
         thrift_libs = config.get_item('thrift_config', 'thrift_libs')
         # Hardcode deps rule to thrift libraries.
@@ -60,7 +64,6 @@ class ThriftLibrary(CcTarget):
         # Link all the symbols by default
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
-        self.data['java_sources_explict_dependency'] = []
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.
@@ -98,33 +101,36 @@ class ThriftLibrary(CcTarget):
     def ninja_rules(self):
         if not self.srcs:
             return
-        build_path = os.path.join(self.build_path, self.path)
+        target_dir = os.path.join(self.build_dir, self.path)
         sources, headers = [], []
         for src in self.srcs:
             thrift_files = self._thrift_gen_cpp_files(src)
             self.ninja_build('thrift', thrift_files, inputs=self._source_file_path(src))
             headers += [h for h in thrift_files if h.endswith('.h')]
             thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
-            sources += [os.path.relpath(s, build_path) for s in thrift_cpp_sources]
+            sources += [os.path.relpath(s, target_dir) for s in thrift_cpp_sources]
         self.data['generated_hdrs'] = headers
         self._cc_objects_ninja(sources, True, generated_headers=headers)
         self._cc_library_ninja()
 
 
-def thrift_library(name,
-                   srcs=[],
-                   deps=[],
-                   optimize=[],
-                   deprecated=False,
-                   **kwargs):
+def thrift_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        optimize=[],
+        deprecated=False,
+        **kwargs):
     """thrift_library target. """
-    thrift_library_target = ThriftLibrary(name,
-                                          srcs,
-                                          deps,
-                                          optimize,
-                                          deprecated,
-                                          build_manager.instance,
-                                          kwargs)
+    thrift_library_target = ThriftLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            optimize=optimize,
+            deprecated=deprecated,
+            kwargs=kwargs)
     build_manager.instance.register_target(thrift_library_target)
 
 

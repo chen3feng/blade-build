@@ -28,11 +28,11 @@ from blade.blade_util import environ_add_path
 class BinaryRunner(object):
     """BinaryRunner. """
 
-    def __init__(self, targets, options, target_database):
+    def __init__(self, options, target_database, build_targets):
         """Init method. """
         from blade import build_manager
-        self.targets = targets
-        self.build_dir = build_manager.instance.get_build_path()
+        self._build_targets = build_targets
+        self.build_dir = build_manager.instance.get_build_dir()
         self.options = options
         self.run_list = ['cc_binary',
                          'cc_test',
@@ -75,27 +75,26 @@ class BinaryRunner(object):
                 long_path, short_path = dest_norm, item_norm
             else:
                 long_path, short_path = item_norm, dest_norm
-            if (long_path.startswith(short_path) and
-                    long_path[len(short_path)] == '/'):
-                console.error_exit('%s could not exist with %s in testdata of %s' % (
-                    dest, item, target.fullname))
+            if long_path.startswith(short_path) and long_path[len(short_path)] == '/':
+                target.error_exit('"%s" could not exist with "%s" in testdata' % (dest, item))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
         runfiles_dir = self._runfiles_dir(target)
         shutil.rmtree(runfiles_dir, ignore_errors=True)
         os.mkdir(runfiles_dir)
-        # Build profile symlink
-        profile_link_name = os.path.basename(self.build_dir)
+        # Make a symbolic link of build_dir because dynamic linked binary need to load shared
+        # libraries from this path
+        build_dir_name = os.path.basename(self.build_dir)
         os.symlink(os.path.abspath(self.build_dir),
-                   os.path.join(runfiles_dir, profile_link_name))
+                   os.path.join(runfiles_dir, build_dir_name))
 
-        # Prebuilt library symlink
+        # Also make symbolic links for prebuilt shared libraries
         for prebuilt_file in self._get_prebuilt_files(target):
             src = os.path.abspath(prebuilt_file[0])
             dst = os.path.join(runfiles_dir, prebuilt_file[1])
             if os.path.lexists(dst):
-                console.warning('trying to make duplicate prebuilt symlink:\n'
+                console.warning('Trying to make duplicate prebuilt symlink:\n'
                                 '%s -> %s\n'
                                 '%s -> %s already exists\n'
                                 'skipped, should check duplicate prebuilt '
@@ -146,7 +145,7 @@ class BinaryRunner(object):
             dest_list.append(dest)
             dest_path = os.path.join(runfiles_dir, dest)
             if os.path.exists(dest_path):
-                console.warning('//%s: %s already existed, could not prepare testdata.' %
+                console.warning('//%s: "%s" already existed, could not prepare testdata.' %
                                 (target.fullname, dest))
                 continue
             try:
@@ -180,24 +179,23 @@ class BinaryRunner(object):
                 shutil.copy2(src, dst)
 
     def _clean_target(self, target):
-        """clean the test target environment. """
-        profile_link_name = os.path.basename(self.build_dir)
-        profile_link_path = os.path.join(self._runfiles_dir(target), profile_link_name)
-        if os.path.exists(profile_link_path):
-            os.remove(profile_link_path)
+        """Clean the executive environment."""
+        build_dir_name = os.path.basename(self.build_dir)
+        link_path = os.path.join(self._runfiles_dir(target), build_dir_name)
+        if os.path.exists(link_path):
+            os.remove(link_path)
 
-    def _clean_env(self):
-        """clean test environment. """
-        for target in self.targets.values():
+    def _clean_for_coverage(self):
+        """Clean executive environment for coverage generating."""
+        for target in self._build_targets.values():
             self._clean_target(target)
 
     def run_target(self, target_name):
-        """Run one single target. """
+        """Run one single target."""
         target_key = tuple(target_name.split(':'))
-        target = self.targets[target_key]
+        target = self._build_targets[target_key]
         if target.type not in self.run_list:
-            console.error_exit('target %s:%s is not a target that could run' % (
-                target_key[0], target_key[1]))
+            target.error_exit('is not a executable target')
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         shell = target.data.get('run_in_shell', False)
@@ -208,5 +206,5 @@ class BinaryRunner(object):
 
         p = subprocess.Popen(cmd, env=run_env, close_fds=True, shell=shell)
         p.wait()
-        self._clean_env()
+        self._clean_for_coverage()
         return p.returncode

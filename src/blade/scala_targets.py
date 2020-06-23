@@ -31,6 +31,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                  type,
                  srcs,
                  deps,
+                 visibility,
                  resources,
                  source_encoding,
                  warnings,
@@ -44,14 +45,13 @@ class ScalaTarget(Target, JavaTargetMixIn):
         deps = var_to_list(deps)
         resources = var_to_list(resources)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(ScalaTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                kwargs=kwargs)
         self._process_resources(resources)
         if source_encoding:
             self.data['source_encoding'] = source_encoding
@@ -79,6 +79,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
         return flags
 
     def ninja_generate_jar(self):
+        self._generate_sources_dir_for_coverage()
         srcs = [self._source_file_path(s) for s in self.srcs]
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')
@@ -102,15 +103,34 @@ class ScalaTarget(Target, JavaTargetMixIn):
 class ScalaLibrary(ScalaTarget):
     """ScalaLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 exported_deps, provided_deps, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exported_deps,
+            provided_deps,
+            kwargs):
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
         all_deps = var_to_list(deps) + exported_deps + provided_deps
-        ScalaTarget.__init__(self, name, 'scala_library', srcs, all_deps,
-                             resources, source_encoding, warnings, kwargs)
+        super(ScalaLibrary, self).__init__(
+                name=name,
+                type='scala_library',
+                srcs=srcs,
+                deps=all_deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
+        self.data['jacoco_coverage'] = bool(srcs)
 
     def ninja_rules(self):
         jar = self.ninja_generate_jar()
@@ -121,10 +141,27 @@ class ScalaLibrary(ScalaTarget):
 class ScalaFatLibrary(ScalaTarget):
     """ScalaFatLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 exclusions, kwargs):
-        ScalaTarget.__init__(self, name, 'scala_fat_library', srcs, deps,
-                             resources, source_encoding, warnings, kwargs)
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exclusions,
+            kwargs):
+        super(ScalaFatLibrary, self).__init__(
+                name=name,
+                type='scala_fat_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -136,47 +173,74 @@ class ScalaFatLibrary(ScalaTarget):
 class ScalaTest(ScalaFatLibrary):
     """ScalaTest"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, exclusions, testdata, kwargs):
-        ScalaFatLibrary.__init__(self, name, srcs, deps, resources, source_encoding,
-                                 warnings, exclusions, kwargs)
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exclusions,
+            testdata,
+            kwargs):
+        super(ScalaTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                resources=resources,
+                visibility=visibility,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                exclusions=exclusions,
+                kwargs=kwargs)
         self.type = 'scala_test'
         self.data['testdata'] = var_to_list(testdata)
+
+        if not self.srcs:
+            self.warning('Empty scala test sources.')
+
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
             self._add_hardcode_java_library(scalatest_libs)
         else:
-            console.warning('scalatest jar was not configured')
+            console.warning('Config: "scala_test_config.scalatest_libs" is not configured')
 
     def ninja_rules(self):
         if not self.srcs:
-            self.warning('Empty scala test sources.')
             return
         jar = self.ninja_generate_jar()
         output = self._target_file_path(self.name)
         dep_jars, maven_jars = self._get_test_deps()
-        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars)
+        vars = {
+            'packages_under_test': self._packages_under_test()
+        }
+        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
 def scala_library(name,
                   srcs=[],
                   deps=[],
                   resources=[],
+                  visibility=None,
                   source_encoding=None,
                   warnings=None,
                   exported_deps=[],
                   provided_deps=[],
                   **kwargs):
     """Define scala_library target. """
-    target = ScalaLibrary(name,
-                          srcs,
-                          deps,
-                          resources,
-                          source_encoding,
-                          warnings,
-                          exported_deps,
-                          provided_deps,
-                          kwargs)
+    target = ScalaLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exported_deps=exported_deps,
+            provided_deps=provided_deps,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -184,19 +248,22 @@ def scala_fat_library(name,
                       srcs=[],
                       deps=[],
                       resources=[],
+                      visibility=None,
                       source_encoding=None,
                       warnings=None,
                       exclusions=[],
                       **kwargs):
     """Define scala_fat_library target. """
-    target = ScalaFatLibrary(name,
-                             srcs,
-                             deps,
-                             resources,
-                             source_encoding,
-                             warnings,
-                             exclusions,
-                             kwargs)
+    target = ScalaFatLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            resources=resources,
+            visibility=visibility,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -204,21 +271,26 @@ def scala_test(name,
                srcs,
                deps=[],
                resources=[],
+               visibility=None,
                source_encoding=None,
                warnings=None,
                exclusions=[],
                testdata=[],
                **kwargs):
-    """Define scala_test target. """
-    target = ScalaTest(name,
-                       srcs,
-                       deps,
-                       resources,
-                       source_encoding,
-                       warnings,
-                       exclusions,
-                       testdata,
-                       kwargs)
+    """Build a scala test target
+    Args:
+        Most attributes are similar to java_test.
+    """
+    target = ScalaTest(name=name,
+                       srcs=srcs,
+                       deps=deps,
+                       resources=resources,
+                       visibility=visibility,
+                       source_encoding=source_encoding,
+                       warnings=warnings,
+                       exclusions=exclusions,
+                       testdata=testdata,
+                       kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

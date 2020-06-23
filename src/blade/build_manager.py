@@ -44,18 +44,23 @@ class Blade(object):
                  load_targets,
                  blade_path,
                  working_dir,
-                 build_path,
+                 build_dir,
                  blade_root_dir,
                  blade_options,
                  command):
         """init method.
 
+        Args:
+            command_targets: List[str], target patterns are specified in command line.
+            load_targets: List[str], target patterns should be loaded from workspace. It usually should be same
+                as the command_targets, but in query dependents mode, all targets should be loaded.
+            blade_path: str, the path of the `blade` python module, used to be called by builtin tools.
         """
         self.__command_targets = command_targets
         self.__load_targets = load_targets
         self.__blade_path = blade_path
         self.__working_dir = working_dir
-        self.__build_path = build_path
+        self.__build_dir = build_dir
         self.__root_dir = blade_root_dir
         self.__options = blade_options
         self.__command = command
@@ -63,12 +68,11 @@ class Blade(object):
         # Source dir of current loading BUILD file
         self.__current_source_path = blade_root_dir
 
-        # The direct targets that are used for analyzing
+        # The targets which are specified in command line explicitly, not pattern expanded.
         self.__direct_targets = []
 
-        # All command targets, make sure that all targets specified with ...
-        # are all in the list now
-        self.__all_command_targets = []
+        # All command targets, includes direct targets and expanded target patterns.
+        self.__expanded_command_targets = []
 
         # Given some targets specified in the command line, Blade will load
         # BUILD files containing these command line targets; global target
@@ -79,7 +83,7 @@ class Blade(object):
         # command line targets.
         self.__target_database = {}
 
-        # targets to build after loading the build files.
+        # The targets to be build after loading the build files.
         self.__build_targets = {}
 
         # The targets keys list after sorting by topological sorting method.
@@ -96,27 +100,30 @@ class Blade(object):
 
         self.__build_platform = BuildPlatform()
         self.build_environment = BuildEnvironment(self.__root_dir)
+        self.__build_jobs_num = 0
+        self.__test_jobs_num = 0
 
         self.svn_root_dirs = []
 
-        self._verify_history_path = os.path.join(build_path, '.blade_verify.json')
+        self._verify_history_path = os.path.join(build_dir, '.blade_verify.json')
         self._verify_history = {
             'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
         }
+        self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
 
     def load_targets(self):
         """Load the targets. """
-        console.info('loading BUILDs...')
+        console.info('Loading BUILD files...')
         (self.__direct_targets,
-         self.__all_command_targets,
+         self.__expanded_command_targets,
          self.__build_targets) = load_targets(self.__load_targets,
                                               self.__root_dir,
                                               self)
         if self.__command_targets != self.__load_targets:
             # In query dependents mode, we must use command targets to execute query
-            self.__all_command_targets = self._expand_command_targets()
-        console.info('loading done.')
-        return self.__direct_targets, self.__all_command_targets  # For test
+            self.__expanded_command_targets = self._expand_command_targets()
+        console.info('Loading done.')
+        return self.__direct_targets, self.__expanded_command_targets  # For test
 
     def _expand_command_targets(self):
         """Expand command line targets to targets list"""
@@ -138,24 +145,28 @@ class Blade(object):
 
     def analyze_targets(self):
         """Expand the targets. """
-        console.info('analyzing dependency graph...')
+        console.info('Analyzing dependency graph...')
         (self.__sorted_targets_keys,
          self.__depended_targets) = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
 
-        console.info('analyzing done.')
+        console.info('Analyzing done.')
         return self.__build_targets  # For test
 
     def new_build_rules_generator(self):
-        return NinjaRulesGenerator('build.ninja', self.__blade_path, self)
+        return NinjaRulesGenerator(self.__build_script, self.__blade_path, self)
+
+    def build_script(self):
+        """Return build script file name"""
+        return self.__build_script
 
     def generate_build_rules(self):
         """Generate the constructing rules. """
-        console.info('generating build rules...')
+        console.info('Generating build rules...')
         generator = self.new_build_rules_generator()
         rules = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
-        console.info('generating done.')
+        console.info('Generating done.')
         return rules
 
     def generate(self):
@@ -166,36 +177,50 @@ class Blade(object):
     def verify(self):
         """Verify specific targets after build is complete. """
         verify_history = self._load_verify_history()
-        error = 0
-        header_inclusion_dependencies = config.get_item('cc_config',
-                                                        'header_inclusion_dependencies')
         header_inclusion_history = verify_history['header_inclusion_dependencies']
-        for k in self.__sorted_targets_keys:
+        error = 0
+        for k in self.__expanded_command_targets:
             target = self.__build_targets[k]
-            if (header_inclusion_dependencies and
-                    target.type == 'cc_library' and target.srcs):
-                if not target.verify_header_inclusion_dependencies(header_inclusion_history):
+            if target.type.startswith('cc_') and target.srcs:
+                if not target.verify_hdr_dep_missing(header_inclusion_history):
                     error += 1
         self._dump_verify_history()
         return error == 0
 
+    def _load_verify_history(self):
+        if os.path.exists(self._verify_history_path):
+            with open(self._verify_history_path) as f:
+                try:
+                    self._verify_history = json.load(f)
+                except Exception as e:
+                    console.warning('Error loading %s, ignore. Reason: %s' % (
+                        self._verify_history_path, str(e)))
+                    pass
+        return self._verify_history
+
+    def _dump_verify_history(self):
+        with open(self._verify_history_path, 'w') as f:
+            json.dump(self._verify_history, f, indent=4)
+
     def run(self, target):
         """Run the target. """
-        runner = BinaryRunner(self.__build_targets,
-                              self.__options,
-                              self.__target_database)
+        runner = BinaryRunner(self.__options, self.__target_database, self.__build_targets)
         return runner.run_target(target)
 
     def test(self):
         """Run tests. """
-        skip_tests = []
-        if self.__options.skip_tests:
-            skip_tests = target.normalize(self.__options.skip_tests.split(','), self.__working_dir)
-        test_runner = TestRunner(self.__build_targets,
-                                 self.__options,
-                                 self.__target_database,
-                                 self.__direct_targets,
-                                 skip_tests)
+        exclude_tests = []
+        if self.__options.exclude_tests:
+            exclude_tests = target.normalize(self.__options.exclude_tests.split(','),
+                                             self.__working_dir)
+        test_runner = TestRunner(
+                self.__options,
+                self.__target_database,
+                self.__direct_targets,
+                self.__expanded_command_targets,
+                self.__build_targets,
+                exclude_tests,
+                self.test_jobs_num())
         return test_runner.run()
 
     def query(self):
@@ -204,10 +229,10 @@ class Blade(object):
         if output_file_name:
             output_file_name = os.path.join(self.__working_dir, output_file_name)
             output_file = open(output_file_name, 'w')
-            console.info('query result will be written to file "%s"' % self.__options.output_file)
+            console.info('Query result will be written to file "%s"' % self.__options.output_file)
         else:
             output_file = sys.stdout
-            console.info('query result:')
+            console.info('Query result:')
 
         output_format = self.__options.output_format
         if output_format == 'dot':
@@ -274,7 +299,7 @@ class Blade(object):
     def query_helper(self):
         """Query the targets helper method. """
         all_targets = self.__build_targets
-        query_list = self.__all_command_targets
+        query_list = self.__expanded_command_targets
 
         result_map = {}
         for key in query_list:
@@ -287,9 +312,9 @@ class Blade(object):
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
         if self.__options.dependents:
-            console.error_exit('only query --deps can be output as tree format')
+            console.error_exit('Only query --deps can be output as tree format')
         print(file=output_file)
-        for key in self.__all_command_targets:
+        for key in self.__expanded_command_targets:
             self._query_dependency_tree(key, 0, self.__build_targets, output_file)
             print(file=output_file)
 
@@ -309,7 +334,7 @@ class Blade(object):
     def dump_targets(self, output_file_name):
         result = []
         with open(output_file_name, 'w') as f:
-            for target_key in self.__all_command_targets:
+            for target_key in self.__expanded_command_targets:
                 target = self.__target_database[target_key]
                 result.append(target.dump())
             json.dump(result, fp=f, indent=2)
@@ -318,9 +343,9 @@ class Blade(object):
     def get_build_time(self):
         return self.__build_time
 
-    def get_build_path(self):
-        """The current building path. """
-        return self.__build_path
+    def get_build_dir(self):
+        """The current building dir. """
+        return self.__build_dir
 
     def get_root_dir(self):
         """Return the blade root path. """
@@ -389,26 +414,22 @@ class Blade(object):
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
-        backend_builder = config.get_item('global_config', 'backend_builder')
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
             if not self._is_real_target_type(target.type):
                 continue
             blade_object = self.__target_database.get(k, None)
             if not blade_object:
-                console.warning('not registered blade object, key %s' % str(k))
+                console.warning('"%s" is not a registered blade object' % str(k))
                 continue
-            if (skip_test and target.type.endswith('_test')
-                    and k not in self.__direct_targets):
+            if skip_test and target.type.endswith('_test') and k not in self.__direct_targets:
                 continue
-            if (skip_package and target.type == 'package'
-                    and k not in self.__direct_targets):
+            if skip_package and target.type == 'package' and k not in self.__direct_targets:
                 continue
 
             blade_object.ninja_rules()
             rules = blade_object.get_rules()
             if rules:
-                rules_buf.append('\n')
                 rules_buf += rules
         return rules_buf
 
@@ -427,22 +448,12 @@ class Blade(object):
         keywords = ['thirdparty']
         return keywords
 
-    def _load_verify_history(self):
-        if os.path.exists(self._verify_history_path):
-            with open(self._verify_history_path) as f:
-                self._verify_history = json.load(f)
-        return self._verify_history
-
-    def _dump_verify_history(self):
-        with open(self._verify_history_path, 'w') as f:
-            json.dump(self._verify_history, f)
-
-    def parallel_jobs_num(self):
-        """Tune the jobs num. """
+    def _build_jobs_num(self):
+        """Calculate build jobs num."""
         # User has the highest priority
-        user_jobs_num = self.__options.jobs
-        if user_jobs_num > 0:
-            return user_jobs_num
+        jobs_num = config.get_item('global_config', 'build_jobs')
+        if jobs_num > 0:
+            return jobs_num
 
         # Calculate job numbers smartly
         distcc_enabled = config.get_item('distcc_config', 'enabled')
@@ -452,10 +463,33 @@ class Blade(object):
             jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
         else:
             cpu_core_num = cpu_count()
-            # machines with cpu_core_num > 4 is usually shared by multiple users,
+            # machines with cpu_core_num > 8 is usually shared by multiple users,
             # set an upper bound to avoid interfering other users
-            jobs_num = min(2 * cpu_core_num, 8)
-        console.info('tunes the parallel jobs number(-j N) to be %d' % jobs_num)
+            jobs_num = min(cpu_core_num, 8)
+        console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
+        return jobs_num
+
+    def build_jobs_num(self):
+        """The number of build jobs"""
+        if self.__build_jobs_num == 0:
+            self.__build_jobs_num = self._build_jobs_num()
+        return self.__build_jobs_num
+
+    def test_jobs_num(self):
+        """Calculate the number of test jobs"""
+        # User has the highest priority
+        jobs_num = config.get_item('global_config', 'test_jobs')
+        if jobs_num > 0:
+            return jobs_num
+        # In distcc enabled mode, the build_jobs_num may be quiet large, but we
+        # only support run test locally, so the test_jobs_num should be limited
+        # by local cpu mumber.
+        # WE limit the test_jobs_num to be half of build job number because test
+        # may be heavier than build (may be not, perhaps).
+        build_jobs_num = self.build_jobs_num()
+        cpu_core_num = cpu_count()
+        jobs_num = max(min(build_jobs_num, cpu_core_num) / 2, 1)
+        console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 
     def get_all_rule_names(self):
@@ -467,11 +501,11 @@ def initialize(
         load_targets,
         blade_path,
         working_dir,
-        build_path,
+        build_dir,
         blade_root_dir,
         blade_options,
         command):
     global instance
     instance = Blade(command_targets, load_targets,
-                     blade_path, working_dir, build_path, blade_root_dir,
+                     blade_path, working_dir, build_dir, blade_root_dir,
                      blade_options, command)

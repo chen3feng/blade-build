@@ -1,8 +1,8 @@
-# 构建Python目标
+# Build Python Targets
 
 ## py_library
 
-把py源代码编译为库。
+Build a python library from source code
 ```python
 py_library(
     name = 'protobuf_util',
@@ -10,7 +10,7 @@ py_library(
         'protobuf_util.py'
     ],
     deps = [
-        ':common',               # 可以依赖别的python库
+        ':common',               # Depends on other python library
     ]
 )
 ```

@@ -12,49 +12,66 @@ Implement java_library, java_binary, java_test and java_fat_library
 
 from __future__ import absolute_import
 
+import collections
 import os
 import re
 from distutils.version import LooseVersion
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 
 from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
 from blade import maven
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
 from blade.blade_util import iteritems
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 
 class MavenJar(Target):
-    """MavenJar"""
+    """Describe a maven jar"""
 
-    def __init__(self, name, id, classifier, transitive):
-        Target.__init__(self, name, 'maven_jar', [], [], None, build_manager.instance, {})
+    def __init__(self, name, id, classifier, transitive, visibility):
+        super(MavenJar, self).__init__(
+                name=name,
+                type='maven_jar',
+                srcs=[],
+                deps=[],
+                visibility=visibility,
+                kwargs={})
+        self._check_id(id)
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
+
+    def _check_id(self, id):
+        """Check if id is valid. """
+        if not maven.is_valid_id(id):
+            self.error_exit('Invalid id %s: Id should be group:artifact:version, '
+                            'such as jaxen:jaxen:1.1.6' % id)
 
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
 
     def ninja_rules(self):
-        maven_cache = maven.MavenCache.instance(build_manager.instance.get_build_path())
+        maven_cache = maven.MavenCache.instance(self.build_dir)
         binary_jar = maven_cache.get_jar_path(self.data['id'],
-                                              self.data['classifier'])
+                                              self.data['classifier'],
+                                              self.fullname)
         if binary_jar:
             self.data['binary_jar'] = binary_jar
             if self.data.get('transitive'):
                 deps_path = maven_cache.get_jar_deps_path(
-                    self.data['id'], self.data['classifier'])
+                    self.data['id'], self.data['classifier'], self)
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
+
+
+def debug_info_options():
+    """javac debug information options(-g)"""
+    global_config = config.get_section('global_config')
+    java_config = config.get_section('java_config')
+    debug_info_level = global_config['debug_info_level']
+    return java_config['debug_info_levels'][debug_info_level]
 
 
 _JAVA_SRC_PATH_SEGMENTS = (
@@ -80,20 +97,16 @@ class JavaTargetMixIn(object):
 
     def _expand_deps_java_generation(self):
         """Ensure that all multilingual dependencies such as proto_library generate java code."""
-        q = queue.Queue()
-        for k in self.deps:
-            q.put(k)
-
+        queue = collections.deque(self.deps)
         keys = set()
-        while not q.empty():
-            k = q.get()
+        while queue:
+            k = queue.popleft()
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
-                if 'generate_java' in dep.data:
+                if 'generate_java' in dep.data:  # Has this attribute
                     dep.data['generate_java'] = True
-                    for dkey in dep.deps:
-                        q.put(dkey)
+                    queue.extend(dep.deps)
 
     def _get_maven_dep_ids(self):
         maven_dep_ids = set()
@@ -173,7 +186,7 @@ class JavaTargetMixIn(object):
                 self.error_exit('Invalid resource %s. Resource should be either a str or a tuple.' %
                                 resource)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.data['location_resources'].append((key, type, dst))
@@ -188,7 +201,7 @@ class JavaTargetMixIn(object):
         """Return path of sources dir. """
         return self._target_file_path(self.name + '.sources')
 
-    def __extract_dep_jars(self, dkey, dep_jars, maven_jars):
+    def __collect_dep_jars(self, dkey, dep_jars, maven_jars):
         """Extract jar file built by the target with the specified dkey.
 
         dep_jars: a list of jars built by blade targets. Each item is a file path.
@@ -208,28 +221,25 @@ class JavaTargetMixIn(object):
         """Return a tuple of (target jars, maven jars). """
         dep_jars, maven_jars = [], []
         for d in deps:
-            self.__extract_dep_jars(d, dep_jars, maven_jars)
+            self.__collect_dep_jars(d, dep_jars, maven_jars)
         return dep_jars, maven_jars
 
-    def __get_exported_deps(self, deps):
+    def __get_exported_deps(self):
         """
         Recursively get exported dependencies and return a tuple of (target jars, maven jars)
         """
         dep_jars, maven_jars = [], []
-        q = queue.Queue(0)
-        for key in deps:
-            q.put(key)
-
+        queue = collections.deque(self.deps)
         keys = set()
-        while not q.empty():
-            key = q.get()
+        while queue:
+            key = queue.popleft()
             if key not in keys:
                 keys.add(key)
                 dep = self.target_database[key]
                 exported_deps = dep.data.get('exported_deps', [])
                 for edkey in exported_deps:
-                    self.__extract_dep_jars(edkey, dep_jars, maven_jars)
-                    q.put(edkey)
+                    self.__collect_dep_jars(edkey, dep_jars, maven_jars)
+                queue.extend(exported_deps)
 
         return list(set(dep_jars)), list(set(maven_jars))
 
@@ -297,7 +307,7 @@ class JavaTargetMixIn(object):
 
     def _get_compile_deps(self):
         dep_jars, maven_jars = self.__get_deps(self.deps)
-        exported_dep_jars, exported_maven_jars = self.__get_exported_deps(self.deps)
+        exported_dep_jars, exported_maven_jars = self.__get_exported_deps()
         maven_jars += self.__get_maven_transitive_deps(self.deps)
         dep_jars = sorted(set(dep_jars + exported_dep_jars))
         maven_jars = self._detect_maven_conflicted_deps('compile',
@@ -316,10 +326,10 @@ class JavaTargetMixIn(object):
         """
         Recursively scan direct dependencies and exclude provided dependencies.
         """
-        deps = set(self.deps)
-        provided_deps = self.data.get('provided_deps', [])
-        for provided_dep in provided_deps:
-            deps.discard(provided_dep)
+        if 'java_pack_deps' in self.data: # Cache result
+            return self.data['java_pack_deps']
+
+        deps = set(self.deps) - set(self.data.get('provided_deps', []))
         dep_jars, maven_jars = self.__get_deps(deps)
 
         for dep in deps:
@@ -328,24 +338,37 @@ class JavaTargetMixIn(object):
             dep_jars += pack_dep_jars
             maven_jars += pack_maven_jars
 
-        dep_jars, maven_jars = set(dep_jars), set(maven_jars)
-        maven_jars = self._process_pack_exclusions(maven_jars)
-        return sorted(dep_jars), sorted(maven_jars)
+        dep_jars = sorted(set(dep_jars))
+        maven_jars = sorted(self._process_pack_exclusions(set(maven_jars)))
+        self.data['java_pack_deps'] = (dep_jars, maven_jars)
+        return dep_jars, maven_jars
+
+    def get_java_package_source_mapping(self):
+        """
+        Get java package_name/sourcefiles mapping
+        """
+        if not self.srcs:
+            return {}
+        # A dict of package : [source_path]
+        key = 'java_package_source_mapping'
+        if key in self.data:
+            return self.data[key]
+        mapping = collections.defaultdict(list)
+        for src in self.srcs:
+            src = self._source_file_path(src)
+            package = self._get_source_package_name(src)
+            if package:
+                mapping[package].append(src)
+        self.data[key] = mapping
+        return mapping
 
     def _get_java_package_names(self):
         """
-        Get java package name. Usually all the sources are within the same package.
+        Get java package names. Usually all the sources are within the same package.
         However, there are cases where BUILD is in the parent directory and sources
         are located in subdirectories each of which defines its own package.
         """
-        if not self.srcs:
-            return []
-        packages = set()
-        for src in self.srcs:
-            package = self._get_source_package_name(self._source_file_path(src))
-            if package:
-                packages.add(package)
-        return sorted(packages)
+        return self.get_java_package_source_mapping().keys()
 
     def _get_source_package_name(self, file_name):
         """Get the java package name from source file if it is specified. """
@@ -432,16 +455,28 @@ class JavaTargetMixIn(object):
         for seg in segs:
             pos = resource.find(seg)
             if pos != -1:
-                return resource[pos + len(seg) + 1:]  # skip separator '/'
+                return resource[pos + len(seg) + 1:]  # skip the separator '/'
         return resource
 
-    def _generate_sources(self):
+    def _packages_under_test(self):
+        """Package names under test"""
+        packages = []
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            if not dep.data.get('jacoco_coverage'):
+                continue
+            packages += dep._get_java_package_names()
+        return ':'.join(packages)
+
+    def _generate_sources_dir_for_coverage(self):
         """
-        Generate java sources in the build directory for the subsequent
+        Generate a '<name>.sources' dir in the build directory for the subsequent
         code coverage. The layout is based on the package parsed from sources.
         Note that the classes are still compiled from the sources in the
         source directory.
         """
+        if not self.blade.get_options().coverage:
+            return
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
             src = self._source_file_path(source)
@@ -538,6 +573,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  type,
                  srcs,
                  deps,
+                 visibility,
                  resources,
                  source_encoding,
                  warnings,
@@ -551,14 +587,13 @@ class JavaTarget(Target, JavaTargetMixIn):
         deps = var_to_list(deps)
         resources = var_to_list(resources)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(JavaTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                kwargs=kwargs)
         self._process_resources(resources)
         self.data['source_encoding'] = source_encoding
         if warnings is not None:
@@ -571,14 +606,10 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._get_pack_deps()
 
     def javac_flags(self):
-        global_config = config.get_section('global_config')
-        java_config = config.get_section('java_config')
-        debug_info_level = global_config['debug_info_level']
-        debug_info_options = java_config['debug_info_levels'][debug_info_level]
         warnings = self.data.get('warnings')
         if not warnings:
-            warnings = java_config['warnings']
-        return debug_info_options + warnings
+            warnings = config.get_item('java_config', 'warnings')
+        return debug_info_options() + warnings
 
     def _java_full_path_srcs(self):
         """Expand srcs to full path"""
@@ -590,7 +621,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return srcs
 
     def ninja_generate_jar(self):
-        self._generate_sources()
+        self._generate_sources_dir_for_coverage()
         srcs = self._java_full_path_srcs()
         resources = self.ninja_generate_resources()
         jar = self._target_file_path(self.name + '.jar')
@@ -614,22 +645,44 @@ class JavaTarget(Target, JavaTargetMixIn):
 class JavaLibrary(JavaTarget):
     """JavaLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding, warnings,
-                 prebuilt, binary_jar, exported_deps, provided_deps, kwargs):
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            prebuilt,
+            binary_jar,
+            exported_deps,
+            provided_deps,
+            coverage,
+            kwargs):
         type = 'java_library'
         if prebuilt:
             type = 'prebuilt_java_library'
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
         all_deps = var_to_list(deps) + exported_deps + provided_deps
-        JavaTarget.__init__(self, name, type, srcs, all_deps, resources,
-                            source_encoding, warnings, kwargs)
+        super(JavaLibrary, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=all_deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['exported_deps'] = self._unify_deps(exported_deps)
         self.data['provided_deps'] = self._unify_deps(provided_deps)
         if prebuilt:
             if not binary_jar:
                 binary_jar = name + '.jar'
             self.data['binary_jar'] = self._source_file_path(binary_jar)
+        self.data['jacoco_coverage'] = coverage and bool(srcs)
 
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':
@@ -644,10 +697,28 @@ class JavaLibrary(JavaTarget):
 class JavaBinary(JavaTarget):
     """JavaBinary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, exclusions, kwargs):
-        JavaTarget.__init__(self, name, 'java_binary', srcs, deps, resources,
-                            source_encoding, warnings, kwargs)
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            main_class,
+            exclusions,
+            kwargs):
+        super(JavaBinary, self).__init__(
+                name=name,
+                type='java_binary',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
         if exclusions:
@@ -682,10 +753,27 @@ class JavaBinary(JavaTarget):
 class JavaFatLibrary(JavaTarget):
     """JavaFatLibrary"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, exclusions, kwargs):
-        JavaTarget.__init__(self, name, 'java_fat_library', srcs, deps,
-                            resources, source_encoding, warnings, kwargs)
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            exclusions,
+            kwargs):
+        super(JavaFatLibrary, self).__init__(
+                name=name,
+                type='java_fat_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                kwargs=kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -697,26 +785,41 @@ class JavaFatLibrary(JavaTarget):
 class JavaTest(JavaBinary):
     """JavaTest"""
 
-    def __init__(self, name, srcs, deps, resources, source_encoding,
-                 warnings, main_class, exclusions,
-                 testdata, target_under_test, kwargs):
-        JavaBinary.__init__(self, name, srcs, deps, resources,
-                            source_encoding, warnings, main_class, exclusions, kwargs)
+    def __init__(
+            self,
+            name,
+            srcs,
+            deps,
+            visibility,
+            resources,
+            source_encoding,
+            warnings,
+            main_class,
+            exclusions,
+            testdata,
+            target_under_test,
+            kwargs):
+        super(JavaTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                resources=resources,
+                source_encoding=source_encoding,
+                warnings=warnings,
+                main_class=main_class,
+                exclusions=exclusions,
+                kwargs=kwargs)
+        if target_under_test:
+            self.warning('"target_under_test" is deprecated, you can remove it safely')
         self.type = 'java_test'
         self.data['testdata'] = var_to_list(testdata)
-        if target_under_test:
-            self.data['target_under_test'] = self._unify_dep(target_under_test)
 
     def ninja_java_test_vars(self):
         vars = {
             'mainclass': self.data['main_class'],
+            'packages_under_test': self._packages_under_test()
         }
-        target_under_test = self.data.get('target_under_test')
-        if target_under_test:
-            target = self.target_database[target_under_test]
-            packages = target._get_java_package_names()
-            if packages:
-                vars['javatargetundertestpkg'] = ':'.join(packages)
         return vars
 
     def ninja_rules(self):
@@ -730,14 +833,15 @@ class JavaTest(JavaBinary):
         self.ninja_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
-def maven_jar(name, id, classifier='', transitive=True):
-    target = MavenJar(name, id, classifier, transitive)
+def maven_jar(name, id, classifier='', transitive=True, visibility=None):
+    target = MavenJar(name, id, classifier, transitive, visibility)
     build_manager.instance.register_target(target)
 
 
 def java_library(name,
                  srcs=[],
                  deps=[],
+                 visibility=None,
                  resources=[],
                  source_encoding=None,
                  warnings=None,
@@ -745,19 +849,28 @@ def java_library(name,
                  binary_jar='',
                  exported_deps=[],
                  provided_deps=[],
+                 coverage=True,
                  **kwargs):
-    """Define java_library target. """
-    target = JavaLibrary(name,
-                         srcs,
-                         deps,
-                         resources,
-                         source_encoding,
-                         warnings,
-                         prebuilt,
-                         binary_jar,
-                         exported_deps,
-                         provided_deps,
-                         kwargs)
+    """Define java_library target.
+
+    Args:
+        coverage: bool, Whether generate test coverage data for this library.
+            It is useful to be False in some cases such as srcs are generated.
+    """
+    target = JavaLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            prebuilt=prebuilt,
+            binary_jar=binary_jar,
+            exported_deps=exported_deps,
+            provided_deps=provided_deps,
+            coverage=coverage,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -765,67 +878,76 @@ def java_binary(name,
                 main_class,
                 srcs=[],
                 deps=[],
+                visibility=None,
                 resources=[],
                 source_encoding=None,
                 warnings=None,
                 exclusions=[],
                 **kwargs):
     """Define java_binary target. """
-    target = JavaBinary(name,
-                        srcs,
-                        deps,
-                        resources,
-                        source_encoding,
-                        warnings,
-                        main_class,
-                        exclusions,
-                        kwargs)
+    target = JavaBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            main_class=main_class,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
 def java_test(name,
               srcs,
               deps=[],
+              visibility=None,
               resources=[],
               source_encoding=None,
               warnings=None,
               main_class='org.junit.runner.JUnitCore',
               exclusions=[],
               testdata=[],
-              target_under_test='',
+              target_under_test=None,
               **kwargs):
-    """Define java_test target. """
-    target = JavaTest(name,
-                      srcs,
-                      deps,
-                      resources,
-                      source_encoding,
-                      warnings,
-                      main_class,
-                      exclusions,
-                      testdata,
-                      target_under_test,
-                      kwargs)
+    """Build a java test target"""
+    target = JavaTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            main_class=main_class,
+            exclusions=exclusions,
+            testdata=testdata,
+            target_under_test=target_under_test,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
 def java_fat_library(name,
                      srcs=[],
                      deps=[],
+                     visibility=None,
                      resources=[],
                      source_encoding=None,
                      warnings=None,
                      exclusions=[],
                      **kwargs):
     """Define java_fat_library target. """
-    target = JavaFatLibrary(name,
-                            srcs,
-                            deps,
-                            resources,
-                            source_encoding,
-                            warnings,
-                            exclusions,
-                            kwargs)
+    target = JavaFatLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            resources=resources,
+            source_encoding=source_encoding,
+            warnings=warnings,
+            exclusions=exclusions,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

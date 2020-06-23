@@ -78,20 +78,19 @@ import pstats
 import re
 import signal
 import subprocess
-import sys
 import time
 import traceback
 from string import Template
 
 from blade import build_attributes
 from blade import build_manager
+from blade import command_line
 from blade import config
 from blade import console
 from blade import target
 from blade.blade_util import find_blade_root_dir, find_file_bottom_up
-from blade.blade_util import get_cwd, iteritems
+from blade.blade_util import get_cwd, iteritems, to_string
 from blade.blade_util import lock_file, unlock_file
-from blade.command_args import CmdArguments
 
 # Run target
 _TARGETS = None
@@ -167,7 +166,7 @@ def _get_changed_files(targets, blade_root_dir, working_dir):
 def _check_code_style(targets):
     cpplint = config.get_item('cc_config', 'cpplint')
     if not cpplint:
-        console.info('cpplint disabled')
+        console.info('Cpplint is disabled')
         return 0
     changed_files = _get_changed_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
     if not changed_files:
@@ -192,6 +191,7 @@ def _check_code_style(targets):
 
 
 def _run_backend_builder(cmdstr):
+    console.debug('Run build command: ' + cmdstr)
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
@@ -212,7 +212,7 @@ def backend_builder_options(options):
 
 
 def _show_slow_builds(build_start_time, show_builds_slower_than):
-    build_dir = build_manager.instance.get_build_path()
+    build_dir = build_manager.instance.get_build_dir()
     with open(os.path.join(build_dir, '.ninja_log')) as f:
         head = f.readline()
         if '# ninja log v5' not in head:
@@ -267,10 +267,9 @@ def _run_ninja(cmd, options):
 
 
 def _ninja_build(options):
-    cmd = ['ninja']
+    cmd = ['ninja', '-f', build_manager.instance.build_script()]
     cmd += backend_builder_options(options)
-    # Ninja enable parallel building defaultly, but we still set it explicitly.
-    cmd.append('-j%s' % (options.jobs or build_manager.instance.parallel_jobs_num()))
+    cmd.append('-j%s' % build_manager.instance.build_jobs_num())
     if options.keep_going:
         cmd.append('-k0')
     if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
@@ -284,16 +283,16 @@ def _ninja_build(options):
 
 def build(options):
     _check_code_style(_TARGETS)
-    console.info('building...')
+    console.info('Building...')
     console.flush()
     returncode = _ninja_build(options)
-    if returncode != 0:
-        console.error('building failure.')
-        return returncode
     if not build_manager.instance.verify():
-        console.error('building failure.')
-        return 1
-    console.info('building done.')
+        if returncode == 0:
+            returncode = 1
+    if returncode != 0:
+        console.error('Build failure.')
+        return returncode
+    console.info('Build success.')
     return 0
 
 
@@ -314,18 +313,16 @@ def test(options):
 
 
 def clean(options):
-    console.info('cleaning...(hint: please specify --generate-dynamic to '
-                 'clean your so)')
+    console.info('Cleaning...(hint: You can specify --generate-dynamic to '
+                 'clean shared libraries)')
     backend_builder = config.get_item('global_config', 'backend_builder')
     cmd = [backend_builder]
     # cmd += backend_builder_options(options)
-    if backend_builder == 'ninja':
-        cmd += ['-t', 'clean']
-    else:
-        cmd += ['--duplicate=soft-copy', '-c', '-s', '--cache-show']
+    cmd.append('-f%s' % build_manager.instance.build_script())
+    cmd += ['-t', 'clean']
     cmdstr = subprocess.list2cmdline(cmd)
     returncode = _run_backend_builder(cmdstr)
-    console.info('cleaning done.')
+    console.info('Cleaning done.')
     return returncode
 
 
@@ -344,21 +341,22 @@ def dump(options):
 def _dump_compdb(options, output_file_name):
     backend_builder = config.get_item('global_config', 'backend_builder')
     if backend_builder != 'ninja':
-        console.error_exit('dump compdb only work when backend_builder is ninja')
+        console.error_exit('Dump compdb only work when backend_builder is ninja')
     rules = build_manager.instance.get_all_rule_names()
-    cmd = ['ninja', '-t', 'compdb'] + rules
+    cmd = ['ninja', '-f', build_manager.instance.build_script(), '-t', 'compdb']
+    cmd += rules
     cmdstr = subprocess.list2cmdline(cmd)
     cmdstr += ' > '
     cmdstr += output_file_name
     return _run_backend_builder(cmdstr)
 
 
-def lock_workspace():
-    lock_file_fd, ret_code = lock_file('.Building.lock')
+def lock_workspace(build_dir):
+    _BUILDING_LOCK_FILE ='.blade.building.lock'
+    lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
-            console.error_exit(
-                'There is already an active building in current source tree.')
+            console.error_exit('There is already an active building in current workspace.')
         else:
             console.error_exit('Lock exception, please try it later.')
     return lock_file_fd
@@ -366,14 +364,6 @@ def lock_workspace():
 
 def unlock_workspace(lock_file_fd):
     unlock_file(lock_file_fd)
-
-
-def parse_command_line(argv):
-    parsed_command_line = CmdArguments(argv)
-    command = parsed_command_line.get_command()
-    options = parsed_command_line.get_options()
-    targets = parsed_command_line.get_targets()
-    return command, options, targets
 
 
 def load_config(options, blade_root_dir):
@@ -419,9 +409,10 @@ def setup_log(build_dir, options):
 
 def generate_scm_svn():
     url = revision = 'unknown'
-    p = subprocess.Popen('svn info', shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
+    stdout = to_string(stdout)
+    stderr = to_string(stderr)
     if p.returncode != 0:
         console.debug('Failed to generate svn scm: %s' % stderr)
     else:
@@ -441,6 +432,8 @@ def generate_scm_git():
     def git(cmd):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
+        stdout = to_string(stdout)
+        stderr = to_string(stderr)
         if p.returncode != 0:
             console.debug('Failed to generate git scm: %s' % stderr)
             return ''
@@ -475,14 +468,17 @@ def generate_scm(build_dir):
 
 
 def adjust_config_by_options(config, options):
-    for name in ('debug_info_level', 'backend_builder'):
+    # Common options between config and command line
+    common_options = ('debug_info_level', 'backend_builder',
+                      'build_jobs', 'test_jobs', 'run_unrepaired_tests')
+    for name in common_options:
         value = getattr(options, name, None)
         if value:
             config.global_config(**{name: value})
 
 
 def clear_build_script():
-    scripts = ['build.ninja']
+    scripts = [build_manager.instance.build_script()]
     for script in scripts:
         script = os.path.join(_BLADE_ROOT_DIR, script)
         try:
@@ -561,7 +557,7 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
 
 def _main(blade_path, argv):
     """The main entry of blade. """
-    command, options, targets = parse_command_line(argv)
+    command, options, targets = command_line.parse(argv)
     setup_console(options)
 
     global _BLADE_ROOT_DIR
@@ -588,7 +584,7 @@ def _main(blade_path, argv):
 
     generate_scm(build_dir)
 
-    lock_file_fd = lock_workspace()
+    lock_file_fd = lock_workspace(build_dir)
     try:
         if options.profiling:
             return run_subcommand_profile(command, options, targets, blade_path, build_dir)
@@ -623,16 +619,16 @@ def main(blade_path, argv):
         exit_code = _main(blade_path, argv)
         cost_time = int(time.time() - start_time)
         if cost_time > 1:
-            console.info('cost time %s' % format_timedelta(cost_time))
+            console.info('Cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
         exit_code = e.code  # pylint: disable=redefined-variable-type
     except KeyboardInterrupt:
-        console.error('keyboard interrupted', -signal.SIGINT)
+        console.error('KeyboardInterrupt')
         exit_code = -signal.SIGINT
     except:  # pylint: disable=bare-except
         exit_code = 1
         console.error(traceback.format_exc())
     if exit_code != 0:
-        console.error('failure')
+        console.error('Failure')
     return exit_code

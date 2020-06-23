@@ -1,11 +1,13 @@
-# Command line reference
+# Command Line Reference
 
 ## Basic Command Line Syntax
+
 ```bash
 Blade <subcommand> [options]... [targets]...
 ```
 
-## subcommand
+## Subcommand
+
 Subcommand is a subcommand that currently has:
 
 * build means build project
@@ -14,7 +16,8 @@ Subcommand is a subcommand that currently has:
 * query query target dependencies and dependencies
 * run build and run a single target
 
-## Target syntax
+## Target Syntax
+
 Targets is a separate list of spaces, supported formats:
 
 * path:name represents a target in the path
@@ -25,8 +28,9 @@ Targets is a separate list of spaces, supported formats:
 If no target is specified, it defaults to all targets in the current directory (excluding subdirectories). If there is no BUILD file in the current directory, it will fail.
 When you specify ... as the end target, if its path exists, it will not fail even if the expansion is empty.
 
-## Subcommand options
-The options supported by different subcommands are different. Please run blade <subcommand> --help to view
+## Subcommand Options
+
+The options supported by different subcommands are different. Please run blade \<subcommand\> --help to view
 
 Here are some common command line options
 
@@ -44,9 +48,9 @@ Here are some common command line options
 * --gprof supports GNU gprof
 * --coverage supports generation of coverage and currently supports GNU gcov and Java jacoco
 
-## example
-```bash
+## Example
 
+```bash
 # Build all targets in the current directory, not including subdirectories
 blade build
 
@@ -64,3 +68,6 @@ blade test base/...
 # Build and test the target named `string_test` in the base subdirectory
 blade test base:string_test
 ```
+
+Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
+excluded from searching, you can put an empty `.bladeskip` under it.

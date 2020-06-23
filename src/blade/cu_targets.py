@@ -33,32 +33,32 @@ class CuTarget(CcTarget):
                  target_type,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
         extra_cppflags = var_to_list(extra_cppflags)
         extra_linkflags = var_to_list(extra_linkflags)
 
-        CcTarget.__init__(self,
-                          name,
-                          target_type,
-                          srcs,
-                          deps,
-                          None,
-                          warning,
-                          defs,
-                          incs,
-                          [], [],
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CuTarget, self).__init__(
+                name=name,
+                type=type,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                export_incs=[],
+                options=[],
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
 
     def _get_cu_flags(self):
         """Return the nvcc flags according to the BUILD file and other configs. """
@@ -93,49 +93,51 @@ class CuLibrary(CuTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
-        CuTarget.__init__(self,
-                          name,
-                          'cu_library',
-                          srcs,
-                          deps,
-                          warning,
-                          defs,
-                          incs,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CuLibrary, self).__init__(
+                name=name,
+                type='cu_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
 
     def ninja_rule(self):
-        self.error('to be implemented')
+        self.error('To be implemented')
 
 
 def cu_library(name,
                srcs=[],
                deps=[],
+               visibility=None,
                warning='yes',
                defs=[],
                incs=[],
                extra_cppflags=[],
                extra_linkflags=[],
                **kwargs):
-    target = CuLibrary(name,
-                       srcs,
-                       deps,
-                       warning,
-                       defs,
-                       incs,
-                       extra_cppflags,
-                       extra_linkflags,
-                       build_manager.instance,
-                       kwargs)
+    target = CuLibrary(
+            name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -152,49 +154,51 @@ class CuBinary(CuTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
                  extra_cppflags,
                  extra_linkflags,
-                 blade,
                  kwargs):
-        CuTarget.__init__(self,
-                          name,
-                          'cu_binary',
-                          srcs,
-                          deps,
-                          warning,
-                          defs,
-                          incs,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CuBinary, self).__init__(
+                name=name,
+                type='cu_binary',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
 
     def ninja_rule(self):
-        self.error('to be implemented')
+        self.error('To be implemented')
 
 
 def cu_binary(name,
               srcs=[],
               deps=[],
+              visibility=None,
               warning='yes',
               defs=[],
               incs=[],
               extra_cppflags=[],
               extra_linkflags=[],
               **kwargs):
-    target = CuBinary(name,
-                      srcs,
-                      deps,
-                      warning,
-                      defs,
-                      incs,
-                      extra_cppflags,
-                      extra_linkflags,
-                      build_manager.instance,
-                      kwargs)
+    target = CuBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -211,6 +215,7 @@ class CuTest(CuBinary):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  warning,
                  defs,
                  incs,
@@ -219,20 +224,19 @@ class CuTest(CuBinary):
                  testdata,
                  always_run,
                  exclusive,
-                 blade,
                  kwargs):
         # pylint: disable=too-many-locals
-        CuBinary.__init__(self,
-                          name,
-                          srcs,
-                          deps,
-                          warning,
-                          defs,
-                          incs,
-                          extra_cppflags,
-                          extra_linkflags,
-                          blade,
-                          kwargs)
+        super(CuTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
         self.type = 'cu_test'
         self.data['testdata'] = var_to_list(testdata)
         self.data['always_run'] = always_run
@@ -247,31 +251,34 @@ class CuTest(CuBinary):
         self._add_hardcode_library(gtest_main_lib)
 
 
-def cu_test(name,
-            srcs=[],
-            deps=[],
-            warning='yes',
-            defs=[],
-            incs=[],
-            extra_cppflags=[],
-            extra_linkflags=[],
-            testdata=[],
-            always_run=False,
-            exclusive=False,
-            **kwargs):
-    target = CuTest(name,
-                    srcs,
-                    deps,
-                    warning,
-                    defs,
-                    incs,
-                    extra_cppflags,
-                    extra_linkflags,
-                    testdata,
-                    always_run,
-                    exclusive,
-                    build_manager.instance,
-                    kwargs)
+def cu_test(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        warning='yes',
+        defs=[],
+        incs=[],
+        extra_cppflags=[],
+        extra_linkflags=[],
+        testdata=[],
+        always_run=False,
+        exclusive=False,
+        **kwargs):
+    target = CuTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            testdata=testdata,
+            always_run=always_run,
+            exclusive=exclusive,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

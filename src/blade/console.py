@@ -17,6 +17,7 @@ from __future__ import print_function
 
 import os
 import sys
+import time
 
 ##############################################################################
 # Color and screen
@@ -160,39 +161,48 @@ def verbosity_ge(expected):
 
 # Fit with the 80 columns terminal, leave some spaces for other parts such as the numbers.
 _PROGRESS_BAR_WIDTH = 60
+_PROGRESS_REFRESH_INTERVAL = 1 if sys.stdout.isatty() else 10
 
 # TODO(chen3feng): Add lock
 _need_clear_line = False  # Whether the last output is progress bar
-_last_progress = -1  # The last progress bar value, -1 means none
-
+_last_progress_value = -1  # The last progress bar value, -1 means none
+_last_progress_time = 0
 
 def _progress_bar(progress, current, total):
     """Progress bar drawing text, like this:
-    [============================================================-----] 46/50
+    [===========================================================----] 46/50 92%
     """
     width = progress * _PROGRESS_BAR_WIDTH // 100
     return '[%s%s] %s/%s %g%%' % ('=' * width, '-' * (_PROGRESS_BAR_WIDTH - width),
                                   current, total, progress)
 
 
+def _need_refresh_pgogress_bar(progress, current, now):
+    return (now - _last_progress_time >= _PROGRESS_REFRESH_INTERVAL and
+            _last_progress_value != current)
+
+
 def show_progress_bar(current, total):
-    global _need_clear_line, _last_progress
+    global _need_clear_line, _last_progress_value, _last_progress_time
     progress = current * 100 // total
-    if progress != _last_progress:
+    now = time.time()
+    if _need_refresh_pgogress_bar(progress, current, now):
         bar = _progress_bar(progress, current, total)
         bar += '\r' if _color_enabled else '\n'
         print(bar, end='')
-        _last_progress = progress
+        _last_progress_value = current
+        _last_progress_time = now
         _need_clear_line = True
 
 
 def clear_progress_bar():
-    global _need_clear_line, _last_progress
+    global _need_clear_line, _last_progress_value, _last_progress_time
     if _need_clear_line:
         if _color_enabled:
             print(_CLEAR_LINE, end='')
         _need_clear_line = False
-        _last_progress = -1
+        _last_progress_value = -1
+        _last_progress_time = 0
         sys.stdout.flush()
 
 
@@ -225,9 +235,9 @@ def error(msg, prefix=True):
     _do_print(colored(msg, 'red'), file=sys.stderr)
 
 
-def error_exit(msg, code=1):
+def error_exit(msg, code=1, prefix=True):
     """dump error message and exit. """
-    error(msg)
+    error(msg, prefix=prefix)
     sys.exit(code)
 
 

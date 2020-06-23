@@ -31,7 +31,7 @@ class ThriftParser(object):
     def __init__(self, path):
         self.path = path
         if not os.path.isfile(self.path):
-            console.error_exit('%s is not a valid file.' % self.path)
+            console.error_exit('"%s" is not a valid file.' % self.path)
 
         self.thrift_name = os.path.basename(self.path)[:-7]
         # Package name for each language.
@@ -118,7 +118,7 @@ class FBThriftHelper(ThriftParser):
 
 class ThriftHelper(ThriftParser):
     def __init__(self, dir, src):
-        ThriftParser.__init__(self, os.path.join(dir, src))
+        super(ThriftHelper, self).__init__(os.path.join(dir, src))
         self.src = src
 
     def get_generated_cpp_files(self):

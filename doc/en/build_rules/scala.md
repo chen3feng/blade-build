@@ -1,26 +1,13 @@
-# 构建Scala目标
+# Build Scala Targets
 
-## 规则
-scala_library scala_binary scala_test用法类似java，区别是编译器换成了scalac。
+## Rules
+The `scala_library`, `scala_binary`, `scala_test` are similar to the java rules,
+the key difference is that the compiler is changed to scalac, and with the scala runtime.
 
-和java一样，scala也是JVM上的语言，因此scala目标也可以依赖java目标。
+scala\_test using the [scalatest](https://www.scalatest.org) library.
 
-
-## java目标依赖scala_library
-
-java构建目标也可以依赖scala目标，不过需要注意scala目标中应该把scala-library纳入exported依赖。
-否则编译时javac会发出找不到ScalaSignature.bytes()符号的警告。
-
-```
-scala_library(
-    name = 'example',
-    srcs = 'Example.scala',
-    exported_deps = ['//path/to/:scala_library'],
-    provided_deps = ['//path/to/:scala_library'],
-)
-```
-
-scala_library可以通过maven_jar来定义：
+## Standard Runtime Library
+Scala targets always need the standard scala_library, it can be define by maven_jar:
 
 ```
 maven_jar(
@@ -29,7 +16,7 @@ maven_jar(
 )
 ```
 
-也可以通过prebuilt的java_library来定义：
+It can also be defined by a prebuilt java_library:
 ```
 java_library(
     name = 'scala_library',
@@ -37,3 +24,19 @@ java_library(
 )
 ```
 
+## interop between java and scala
+
+scala is also a JVM language like java, so scala target can depends on java targets, and vice versa.
+
+But note when java targets depends on a scala library, scala-library should be in the exported_deps
+of the scala library, or there will be a waring of something like 'Can't find ScalaSignature.bytes()'.
+It should also be a provided_deps to avoid being packed into a scala binary. but for java binary, it
+should be list in the final deps, or there will not be a scala runtime when the binary run.
+```
+scala_library(
+    name = 'example',
+    srcs = 'Example.scala',
+    exported_deps = ['//path/to/:scala_library'],
+    provided_deps = ['//path/to/:scala_library'],
+)
+```

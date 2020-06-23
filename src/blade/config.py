@@ -14,20 +14,18 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-try:
-    basestring
-except NameError:
-    basestring = str
-
 import os
+import pprint
 import re
 import sys
 
 from blade import build_attributes
 from blade import console
-from blade.blade_util import var_to_list, iteritems, exec_
+from blade.blade_util import var_to_list, iteritems, exec_, source_location
 from blade.constants import HEAP_CHECK_VALUES
 
+
+_MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES = ['always', 'daily', 'interval', 'never']
 
 _config_globals = {}
 
@@ -43,6 +41,9 @@ class BladeConfig(object):
 
     def __init__(self):
         self.current_file_name = ''  # For error reporting
+        # Support generate comments when dump the config by the special '__doc__' convention.
+        # __doc__ field is for section
+        # __doc__ suffix of items are for items.
         self.configs = {
             'global_config': {
                 '__doc__': 'Global configuration',
@@ -51,11 +52,19 @@ class BladeConfig(object):
                 'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
                 'test_timeout': None,
                 'test_timeout__doc__': 'In seconds',
-                'test_ignored_envs__doc__':
-                    'Ignored environments when run incremental tests, support regex',
-                'test_ignored_envs': [],
+                'test_related_envs__doc__':
+                    'Environment variables which need to see whether changed before incremental '
+                    'testing. regex is allowed',
+                'test_related_envs': [],
                 'backend_builder': 'ninja',
                 'debug_info_level': 'mid',
+                'build_jobs': 0,
+                'build_jobs__doc__': 'The number of build jobs (commands) to run simultaneously',
+                'test_jobs': 0,
+                'test_jobs__doc__': 'The number of test jobs to run simultaneously',
+                'run_unrepaired_tests': False,
+                'run_unrepaired_tests__doc__':
+                    'Whether run unrepaired(no changw after previous failure) tests during incremental test',
             },
 
             'cc_test_config': {
@@ -83,11 +92,16 @@ class BladeConfig(object):
             },
 
             'java_config': {
-                'version': '1.6',
+                'version': '1.8',
                 'source_version': '',
                 'target_version': '',
                 'maven': 'mvn',
                 'maven_central': '',
+                'maven_snapshot_update_policy': 'daily',
+                'maven_snapshot_update_policy__doc__':
+                    'Can be %s' % _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES,
+                'maven_snapshot_update_interval': 0,
+                'maven_snapshot_update_interval__doc__': 'When policy is interval, in minutes',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
                 'java_home': '',
@@ -105,7 +119,6 @@ class BladeConfig(object):
             'java_test_config': {
                 'junit_libs': [],
                 'jacoco_home': '',
-                'coverage_reporter': '',
             },
             'scala_config': {
                 'scala_home': '',
@@ -181,25 +194,42 @@ class BladeConfig(object):
                     'mid': ['-g'],
                     'high': ['-g3'],
                 },
-                'header_inclusion_dependencies': False,
+                'hdr_dep_missing_severity': 'warning',
+                'hdr_dep_missing_severity__doc': 'The severity of the missing dependency on the '
+                    'library to which the header file belongs, can be "info", "warning", "error"',
             },
             'cc_library_config': {
-                'prebuilt_libpath_pattern': 'lib${bits}_${profile}',
+                'prebuilt_libpath_pattern': 'lib${bits}',
                 'generate_dynamic': None,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
                 'arflags': ['rcs'],
                 'ranlibflags': [],
+                'auto_set_hdrs':False,
+                'auto_set_hdrs__doc__': 'For files in "cc_library.srcs", set corresponding ".h" '
+                    'file as "cc_library.hdrs" it is not set explicitly',
             }
         }
+
+    def info(self, msg):
+        console.info('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def warning(self, msg):
+        console.warning('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def error(self, msg):
+        console.error('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+
+    def error_exit(self, msg):
+        console.error_exit('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
-                console.info('loading config file "%s"' % filename)
+                console.info('Loading config file "%s"' % filename)
                 exec_(filename, _config_globals, None)
         except SystemExit:
             console.error_exit('Parse error in config file %s' % filename)
@@ -214,26 +244,22 @@ class BladeConfig(object):
                 self._append_config(section_name, section, append)
             self._replace_config(section_name, section, user_config)
         else:
-            console.error('%s: %s: unknown config section name' % (
-                self.current_file_name, section_name))
+            self.error('%s: Unknown config section name' % section_name)
 
     def _append_config(self, section_name, section, append):
         """Append config section items"""
         if not isinstance(append, dict):
-            console.error('%s: %s: append must be a dict' %
-                          (self.current_file_name, section_name))
-        else:
-            for k in append:
-                if k in section:
-                    if isinstance(section[k], list):
-                        section[k] += var_to_list(append[k])
-                    else:
-                        console.warning('//%s: %s: config item %s is not a list' %
-                                        (self.current_file_name, section_name, k))
-
+            self.error('%s: Append must be a dict' % section_name)
+        for k in append:
+            if k in section:
+                if isinstance(section[k], list):
+                    section[k] += var_to_list(append[k])
                 else:
-                    console.warning('//%s: %s: unknown config item name: %s' %
-                                    (self.current_file_name, section_name, k))
+                    self.warning('%s: Config item %s is not a list' %
+                                    (section_name, k))
+
+            else:
+                self.warning('%s: Unknown config item name: %s' % (section_name, k))
 
     def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
@@ -243,8 +269,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
             else:
-                console.warning('//%s: %s: unknown config item name: %s' %
-                                (self.current_file_name, section_name, k))
+                self.warning('%s: Unknown config item name: %s' % (section_name, k))
                 unknown_keys.append(k)
         for k in unknown_keys:
             del user_config[k]
@@ -271,10 +296,7 @@ class BladeConfig(object):
             doc = k + '__doc__'
             if doc in values:
                 print('    # %s' % values[doc], file=f)
-            if isinstance(v, str):
-                print('    %s = \'%s\',' % (k, v), file=f)
-            else:
-                print('    %s = %s,' % (k, v), file=f)
+            print('    %s = %s,' % (k, pprint.pformat(v, indent=8)), file=f)
         print(')\n', file=f)
 
 
@@ -306,21 +328,17 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        console.error_exit('//%s: Invalid %s value %s, can only be in %s' % (
-            _blade_config.current_file_name, name, value, valid_values))
+        _blade_config.error_exit('Invalid config item "%s" value "%s", can only be in %s' % (
+            name, value, valid_values))
 
 
-def _check_test_ignored_envs(kwargs):
-    names = kwargs.get('test_ignored_envs')
-    if not names:
-        return
-    for name in names:
+def _check_test_related_envs(kwargs):
+    for name in kwargs.get('test_related_envs', []):
         try:
             re.compile(name)
         except re.error as e:
-            console.error_exit(
-                '%s: global_config.test_ignored_envs: Invalid env name or regex "%s", %s' % (
-                _blade_config.current_file_name, name, e))
+            _blade_config.error_exit(
+                '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
 @config_rule
@@ -336,8 +354,7 @@ def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
-        console.error_exit('cc_test_config: heap_check can only be in %s' %
-                           HEAP_CHECK_VALUES)
+        _blade_config.error_exit('"cc_test_config.heap_check" can only be in %s' % HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -353,16 +370,16 @@ def cc_library_config(append=None, **kwargs):
     _blade_config.update_config('cc_library_config', append, kwargs)
 
 
-__DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+_DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
 
 
 @config_rule
 def global_config(append=None, **kwargs):
     """global_config section. """
-    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', __DUPLICATED_SOURCE_ACTION_VALUES)
+    _check_kwarg_enum_value(kwargs, 'duplicated_source_action', _DUPLICATED_SOURCE_ACTION_VALUES)
     debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
-    _check_test_ignored_envs(kwargs)
+    _check_test_related_envs(kwargs)
     _blade_config.update_config('global_config', append, kwargs)
 
 
@@ -381,6 +398,8 @@ def link_config(append=None, **kwargs):
 @config_rule
 def java_config(append=None, **kwargs):
     """java_config. """
+    _check_kwarg_enum_value(kwargs, 'maven_snapshot_update_policy',
+            _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES)
     _blade_config.update_config('java_config', append, kwargs)
 
 
@@ -419,11 +438,10 @@ def proto_library_config(append=None, **kwargs):
     """protoc config. """
     path = kwargs.get('protobuf_include_path')
     if path:
-        console.warning(('%s: proto_library_config: protobuf_include_path has '
-                         'been renamed to protobuf_incs, and become a list') %
-                        _blade_config.current_file_name)
+        _blade_config.warning('proto_library_config: protobuf_include_path has '
+                              'been renamed to protobuf_incs, and become a list')
         del kwargs['protobuf_include_path']
-        if isinstance(path, basestring) and ' ' in path:
+        if isinstance(path, str) and ' ' in path:
             kwargs['protobuf_incs'] = path.split()
         else:
             kwargs['protobuf_incs'] = [path]
@@ -436,7 +454,7 @@ def protoc_plugin(**kwargs):
     """protoc_plugin. """
     from blade.proto_library_target import ProtocPlugin
     if 'name' not in kwargs:
-        console.error_exit("Missing 'name' in protoc_plugin parameters: %s" % kwargs)
+        _blade_config.error_exit('Missing "name" in protoc_plugin parameters: %s' % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')
     section[kwargs['name']] = ProtocPlugin(**kwargs)
 
@@ -456,10 +474,10 @@ def fbthrift_library_config(append=None, **kwargs):
 @config_rule
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space. """
+    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['debug', 'info', 'warning', 'error'])
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
-        if isinstance(extra_incs, basestring) and ' ' in extra_incs:
-            console.warning('//%s: cc_config: extra_incs has been changed to list' %
-                            _blade_config.current_file_name)
+        if isinstance(extra_incs, str) and ' ' in extra_incs:
+            _blade_config.warning('"cc_config.extra_incs" has been changed to list')
             kwargs['extra_incs'] = extra_incs.split()
     _blade_config.update_config('cc_config', append, kwargs)

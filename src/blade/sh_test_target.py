@@ -17,9 +17,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 
 class ShellTest(Target):
@@ -39,20 +38,20 @@ class ShellTest(Target):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  testdata,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
         testdata = var_to_list(testdata)
 
-        Target.__init__(self,
-                        name,
-                        'sh_test',
-                        srcs,
-                        deps,
-                        None,
-                        build_manager.instance,
-                        kwargs)
+        super(ShellTest, self).__init__(
+                name=name,
+                type='sh_test',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                kwargs=kwargs)
 
         self._process_test_data(testdata)
 
@@ -70,13 +69,12 @@ class ShellTest(Target):
             else:
                 self.error_exit('Invalid testdata %s. Test data should be either str or tuple.' % td)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.data['locations'].append((key, type, dst))
             else:
                 self.data['testdata'].append(td)
-
 
     def ninja_rules(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
@@ -103,13 +101,16 @@ class ShellTest(Target):
 def sh_test(name,
             srcs,
             deps=[],
+            visibility=None,
             testdata=[],
             **kwargs):
-    build_manager.instance.register_target(ShellTest(name,
-                                                     srcs,
-                                                     deps,
-                                                     testdata,
-                                                     kwargs))
+    build_manager.instance.register_target(ShellTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            testdata=testdata,
+            kwargs=kwargs))
 
 
 build_rules.register_function(sh_test)

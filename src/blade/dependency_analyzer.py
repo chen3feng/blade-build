@@ -116,7 +116,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
             err_msg = ''
             for t in root_targets:
                 err_msg += '//%s:%s --> ' % (t[0], t[1])
-            console.error_exit('loop dependency found: //%s:%s --> [%s]' % (
+            console.error_exit('Loop dependency found: //%s:%s --> [%s]' % (
                 d[0], d[1], err_msg))
         _check_dep_visibility(target_id, d, targets)
         new_deps_list.append(d)

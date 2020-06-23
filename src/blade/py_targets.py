@@ -40,21 +40,19 @@ class PythonTarget(Target):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        Target.__init__(self,
-                        name,
-                        type,
-                        srcs,
-                        deps,
-                        visibility,
-                        build_manager.instance,
-                        kwargs)
+        super(PythonTarget, self).__init__(
+            name=name,
+            type=type,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            kwargs=kwargs)
 
         if base:
             if not base.startswith('//'):
                 self.error_exit('Invalid base directory %s. Option base should be a directory '
                                 'starting with \'//\' from BLADE_ROOT directory.' % base)
             self.data['python_base'] = base[2:]
-        self.data['python_sources'] = [self._source_file_path(s) for s in srcs]
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
@@ -66,7 +64,7 @@ class PythonTarget(Target):
         vars = {}
         basedir = self.data.get('python_base')
         if basedir:
-            vars['pythonbasedir'] = basedir
+            vars['basedir'] = basedir
         return vars
 
 
@@ -83,14 +81,14 @@ class PythonLibrary(PythonTarget):
                  visibility,
                  kwargs):
         """Init method. """
-        PythonTarget.__init__(self,
-                              name,
-                              'py_library',
-                              srcs,
-                              deps,
-                              base,
-                              visibility,
-                              kwargs)
+        super(PythonLibrary, self).__init__(
+                name=name,
+                type='py_library',
+                srcs=srcs,
+                deps=deps,
+                base=base,
+                visibility=visibility,
+                kwargs=kwargs)
 
     def _ninja_pylib(self):
         if not self.srcs:
@@ -111,18 +109,18 @@ class PrebuiltPythonLibrary(PythonTarget):
                  name,
                  srcs,
                  deps,
-                 base,
                  visibility,
+                 base,
                  kwargs):
         """Init method. """
-        PythonTarget.__init__(self,
-                              name,
-                              'prebuilt_py_library',
-                              srcs,
-                              deps,
-                              base,
-                              visibility,
-                              kwargs)
+        super(PrebuiltPythonLibrary, self).__init__(
+                name=name,
+                type='prebuilt_py_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                base=base,
+                kwargs=kwargs)
         if base:
             self.error_exit("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
@@ -130,7 +128,7 @@ class PrebuiltPythonLibrary(PythonTarget):
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
             console.error_exit(
-                '%s: Invalid file %s in srcs, prebuilt py_library only support egg and whl' %
+                '%s: Invalid file "%s" in srcs, prebuilt py_library only support egg and whl' %
                 (self.fullname, src))
 
     def ninja_rules(self):
@@ -140,26 +138,28 @@ class PrebuiltPythonLibrary(PythonTarget):
 def py_library(name,
                srcs=[],
                deps=[],
+               visibility=None,
                base=None,
                prebuilt=None,
-               visibility=None,
                **kwargs):
     """python library. """
     # pylint: disable=redefined-variable-type
     if prebuilt:
-        target = PrebuiltPythonLibrary(name,
-                                       srcs,
-                                       deps,
-                                       base,
-                                       visibility,
-                                       kwargs)
+        target = PrebuiltPythonLibrary(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                base=base,
+                kwargs=kwargs)
     else:
-        target = PythonLibrary(name,
-                               srcs,
-                               deps,
-                               base,
-                               visibility,
-                               kwargs)
+        target = PythonLibrary(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                base=base,
+                kwargs=kwargs)
 
     build_manager.instance.register_target(target)
 
@@ -176,6 +176,7 @@ class PythonBinary(PythonLibrary):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  main,
                  base,
                  kwargs):
@@ -183,13 +184,13 @@ class PythonBinary(PythonLibrary):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        PythonLibrary.__init__(self,
-                               name,
-                               srcs,
-                               deps,
-                               base,
-                               None,
-                               kwargs)
+        super(PythonBinary, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                base=base,
+                kwargs=kwargs)
 
         self.type = 'py_binary'
         self.data['run_in_shell'] = True
@@ -199,9 +200,9 @@ class PythonBinary(PythonLibrary):
             if len(srcs) == 1:
                 self.data['main'] = srcs[0]
             else:
-                console.error_exit(
-                    '%s: The entry file must be specified by the "main" '
-                    'argument if there are more than one srcs' % self.fullname)
+                self.error_exit(
+                    'The entry file must be specified by the "main" '
+                    'argument if there are more than one srcs')
 
     def _get_entry(self):
         main = self.data['main']
@@ -230,16 +231,19 @@ class PythonBinary(PythonLibrary):
 def py_binary(name,
               srcs=[],
               deps=[],
+              visibility=None,
               main=None,
               base=None,
               **kwargs):
     """python binary. """
-    target = PythonBinary(name,
-                          srcs,
-                          deps,
-                          main,
-                          base,
-                          kwargs)
+    target = PythonBinary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            main=main,
+            base=base,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -255,18 +259,20 @@ class PythonTest(PythonBinary):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  main,
                  base,
                  testdata,
                  kwargs):
         """Init method. """
-        PythonBinary.__init__(self,
-                              name,
-                              srcs,
-                              deps,
-                              main,
-                              base,
-                              kwargs)
+        super(PythonTest, self).__init__(
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                main=main,
+                base=base,
+                kwargs=kwargs)
         self.type = 'py_test'
         self.data['testdata'] = testdata
 
@@ -274,18 +280,21 @@ class PythonTest(PythonBinary):
 def py_test(name,
             srcs=[],
             deps=[],
+            visibility=None,
             main=None,
             base=None,
             testdata=[],
             **kwargs):
     """python test. """
-    target = PythonTest(name,
-                        srcs,
-                        deps,
-                        main,
-                        base,
-                        testdata,
-                        kwargs)
+    target = PythonTest(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            main=main,
+            base=base,
+            testdata=testdata,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

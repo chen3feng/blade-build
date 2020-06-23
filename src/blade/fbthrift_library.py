@@ -37,21 +37,25 @@ class FBThriftLibrary(CcTarget):
                  srcs,
                  deps,
                  optimize,
+                 visibility,
                  deprecated,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         self._check_thrift_srcs_name(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'fbthrift_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
+        super(FBThriftLibrary, self).__init__(
+                name=name,
+                type='fbthrift_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning='',
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
 
         fbthrift_config = config.get_section('fbthrift_config')
         fbthrift_libs = var_to_list(fbthrift_config['fbthrift_libs'])
@@ -76,14 +80,14 @@ class FBThriftLibrary(CcTarget):
             base_name = os.path.basename(src)
             pos = base_name.rfind('.')
             if pos == -1:
-                console.error('invalid thrift file name %s' % src)
+                console.error('Invalid thrift file name %s' % src)
                 error += 1
             file_suffix = base_name[pos + 1:]
             if file_suffix != 'thrift':
-                console.error('invalid thrift file name %s' % src)
+                console.error('Invalid thrift file name %s' % src)
                 error += 1
         if error > 0:
-            console.error_exit('invalid thrift file names found.')
+            console.error_exit('Invalid thrift file names found.')
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """
@@ -104,16 +108,18 @@ def fbthrift_library(name,
                      srcs=[],
                      deps=[],
                      optimize=[],
+                     visibility=None,
                      deprecated=False,
                      **kwargs):
     """fbthrift_library target. """
-    fbthrift_library_target = FBThriftLibrary(name,
-                                              srcs,
-                                              deps,
-                                              optimize,
-                                              deprecated,
-                                              build_manager.instance,
-                                              kwargs)
+    fbthrift_library_target = FBThriftLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            optimize=optimize,
+            visibility=visibility,
+            deprecated=deprecated,
+            kwargs=kwargs)
     build_manager.instance.register_target(fbthrift_library_target)
 
 

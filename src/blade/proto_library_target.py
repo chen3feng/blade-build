@@ -72,13 +72,13 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  optimize,
                  deprecated,
                  generate_descriptors,
                  target_languages,
                  plugins,
                  source_encoding,
-                 blade,
                  kwargs):
         """Init method.
 
@@ -87,16 +87,21 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
-        CcTarget.__init__(self,
-                          name,
-                          'proto_library',
-                          srcs,
-                          deps,
-                          None,
-                          '',
-                          [], [], [], optimize, [], [],
-                          blade,
-                          kwargs)
+        super(ProtoLibrary, self).__init__(
+                name=name,
+                type='proto_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                warning='',
+                hdr_dep_missing_severity=None,
+                defs=[],
+                incs=[],
+                export_incs=[],
+                optimize=optimize,
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
 
         self._check_proto_srcs_name(srcs)
         if srcs:
@@ -126,9 +131,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['link_all_symbols'] = True
         self.data['deprecated'] = deprecated
         self.data['source_encoding'] = source_encoding
-        self.data['java_sources_explict_dependency'] = []
-        self.data['python_vars'] = []
-        self.data['python_sources'] = []
         self.data['generate_descriptors'] = generate_descriptors
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
@@ -279,7 +281,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         for p in self.data['protoc_plugins']:
             if language in p.code_generation:
                 path = p.path
-                flag = p.protoc_plugin_flag(self.build_path)
+                flag = p.protoc_plugin_flag(self.build_dir)
                 vars = {'protoc%spluginflags' % language: flag}
                 break
         return path, vars
@@ -317,7 +319,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path(self.name + '.pylib')
         self.ninja_build('pythonlibrary', pylib, inputs=generated_pys,
-                         variables={'pythonbasedir': self.build_path})
+                         variables={'basedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
     def ninja_proto_go_rules(self):
@@ -379,21 +381,24 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self.data['generated_hdrs'].append(header)
             names = self._proto_gen_file_names(src)
             cpp_sources.append(names[1])
+        self._set_hdrs(self.data['generated_hdrs'])
         self._cc_objects_ninja(cpp_sources, True, generated_headers=cpp_headers)
         self._cc_library_ninja()
         self.ninja_proto_rules(self.blade.get_options())
 
 
-def proto_library(name,
-                  srcs=[],
-                  deps=[],
-                  optimize=[],
-                  deprecated=False,
-                  generate_descriptors=False,
-                  target_languages=None,
-                  plugins=[],
-                  source_encoding='iso-8859-1',
-                  **kwargs):
+def proto_library(
+        name,
+        srcs=[],
+        deps=[],
+        visibility=None,
+        optimize=[],
+        deprecated=False,
+        generate_descriptors=False,
+        target_languages=None,
+        plugins=[],
+        source_encoding='iso-8859-1',
+        **kwargs):
     """proto_library target.
     Args:
         generate_descriptors (bool): Whether generate binary protobuf descriptors.
@@ -401,17 +406,18 @@ def proto_library(name,
             `java`, `python`, see protoc's `--xx_out`s.
             NOTE: The `cpp` target code is always generated.
     """
-    proto_library_target = ProtoLibrary(name,
-                                        srcs,
-                                        deps,
-                                        optimize,
-                                        deprecated,
-                                        generate_descriptors,
-                                        target_languages,
-                                        plugins,
-                                        source_encoding,
-                                        build_manager.instance,
-                                        kwargs)
+    proto_library_target = ProtoLibrary(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            optimize=optimize,
+            deprecated=deprecated,
+            generate_descriptors=generate_descriptors,
+            target_languages=target_languages,
+            plugins=plugins,
+            source_encoding=source_encoding,
+            kwargs=kwargs)
     build_manager.instance.register_target(proto_library_target)
 
 

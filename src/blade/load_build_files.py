@@ -23,7 +23,7 @@ import traceback
 from blade import build_attributes
 from blade import build_rules
 from blade import console
-from blade.blade_util import var_to_list, exec_
+from blade.blade_util import var_to_list, exec_, source_location
 from blade.pathlib import Path
 
 
@@ -81,16 +81,28 @@ def enable_if(cond, true_value, false_value=None):
     return ret
 
 
-def glob(srcs, excludes=[]):
-    """A global function can be called in BUILD to specify a set of files using patterns"""
+def glob(include, exclude=None, excludes=None, allow_empty=False):
+    """This function can be called in BUILD to specify a set of files using patterns.
+    Args:
+        include:List[str], file patterns to be matched.
+        exclude:Optional[List[str]], file patterns to be removed from the result.
+        allow_empty:bool: Whether a empty result is a error.
+
+    Patterns may contain shell-like wildcards, such as * , ? , or [charset].
+    Additionally, the path element '**' matches any subpath.
+    """
     from blade import build_manager
-    srcs = var_to_list(srcs)
-    excludes = var_to_list(excludes)
     source_dir = Path(build_manager.instance.get_current_source_path())
+    source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
+    include = var_to_list(include)
+    if excludes:
+        console.warning('%s: "glob.excludes" is deprecated, use "exclude" instead' % source_loc,
+                        prefix=False)
+    exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
         results = []
-        for pattern in srcs:
+        for pattern in include:
             for path in source_dir.glob(pattern):
                 if path.is_file() and not path.name.startswith('.'):
                     results.append(path.relative_to(source_dir))
@@ -102,7 +114,7 @@ def glob(srcs, excludes=[]):
 
     non_special_excludes = set()
     match_excludes = set()
-    for pattern in excludes:
+    for pattern in exclude:
         if is_special(pattern):
             match_excludes.add(pattern)
         else:
@@ -117,7 +129,16 @@ def glob(srcs, excludes=[]):
                 return True
         return False
 
-    return sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+    result = sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+    if not result and not allow_empty:
+        args = repr(include)
+        if exclude:
+            args += ', exclude=%s' % repr(exclude)
+        console.warning('%s: "glob(%s)" got an empty result. If it is the expected behavior, '
+                        'specify "allow_empty=True" to eliminate this message' % (source_loc, args),
+                        prefix=False)
+
+    return result
 
 
 # Each include in a BUILD file can only affect itself
@@ -172,7 +193,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             __current_globles = build_rules.get_all()
             exec_(build_file, __current_globles, None)
         except SystemExit:
-            console.error_exit('%s: fatal error' % build_file)
+            console.error_exit('%s: Fatal error' % build_file)
         except:  # pylint: disable=bare-except
             console.error_exit('Parse error in %s\n%s' % (
                 build_file, traceback.format_exc()))
@@ -192,19 +213,29 @@ def _find_depender(dkey, blade):
     return None
 
 
-def _is_load_excluded(d):
-    """Whether exclude the directory when loading BUILD.
+# File names should be skipped
+_SKIP_FILES = ['BLADE_ROOT', '.bladeskip']
 
-        1. Exclude build directory and directories starting with
-           '.', e.g. .svn.
-        2. TODO(wentingli): Exclude directories matching patterns
-           configured globally
+
+def _is_load_excluded(root, d):
+    """Whether exclude the directory when loading BUILD.
     """
+    # TODO(wentingli): Exclude directories matching patterns configured globally
+
+    # Exclude directories starting with '.', e.g. '.', '..', '.svn', '.git'.
     if d.startswith('.'):
         return True
-    for build_path in ('build32_debug', 'build32_release',
+
+    # Exclude build dirs
+    for build_dir in ('build32_debug', 'build32_release',
                        'build64_debug', 'build64_release'):
-        if d.startswith(build_path):
+        if d.startswith(build_dir):
+            return True
+
+    # Exclude directories containing special files
+    for skip_file in _SKIP_FILES:
+        if os.path.exists(os.path.join(root, d, skip_file)):
+            console.info('Skip "%s" due to "%s" file' % (os.path.join(root, d), skip_file))
             return True
 
     return False
@@ -248,7 +279,7 @@ def load_targets(target_ids, blade_root_dir, blade):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                dirs[:] = [d for d in dirs if not _is_load_excluded(d)]
+                dirs[:] = [d for d in dirs if not _is_load_excluded(root, d)]
                 if 'BUILD' in files:
                     source_dirs.append(root)
         else:
@@ -273,8 +304,8 @@ def load_targets(target_ids, blade_root_dir, blade):
     # dependent targets.  All these targets form related_targets,
     # which is a subset of target_databased created by loading  BUILD files.
     while cited_targets:
-        source_dir, target_name = cited_targets.pop()
-        target_id = (source_dir, target_name)
+        target_id = cited_targets.pop()
+        source_dir, target_name = target_id
         if target_id in related_targets:
             continue
 

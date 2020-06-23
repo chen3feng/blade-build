@@ -7,6 +7,7 @@ The Blade passes a series of files named "BUILD" (all uppercase), which need to 
 Building a script is simple:
 
 Example: common/base/string/BUILD
+
 ```python
 cc_library(
     name = 'string',
@@ -20,9 +21,11 @@ cc_library(
     deps = ['//common/base:int']
 )
 ```
+
 It is also an explanation, just need to list the target name, source file name and dependency name (may not be).
 
 ## Style suggestion
+
 * Four spaces are indented, do not use tab characters
 * Always use single quotes
 * Target name is lowercase
@@ -34,9 +37,12 @@ It is also an explanation, just need to list the target name, source file name a
 ## Common Attributes
 Blade uses a set of target functions to define targets. The common properties of these targets are:
 
- * name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
- * srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
- * deps: list or string, other targets on which the object depends
+* name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
+* srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
+* deps: list or string, other targets on which the object depends
+* visibility: list or string, control visibility to the listed targets, there is a special value: 'PUBLIC', means visible to everyone.
+
+We also provide a [glob](functions.md#glob) function to generate the source files list.
 
 The allowed format of deps:
 
@@ -44,7 +50,7 @@ The allowed format of deps:
  * ":name" The target, path in the current BUILD file can be omitted.
  * "#name" system library. Write # with the name directly, such as #pthread, #z respectively equivalent to link -lpthread and -lz on the command line, but will be passed to other targets that depend on this library.
 
-## Building rules (IN CHINESE, TO BE TRANSLATED)
+## Building rules
 
 ### [Building C/C++ Goals](build_rules/cc.md)
 ### [Building protobuf and thrift](build_rules/idl.md)
@@ -59,4 +65,4 @@ The allowed format of deps:
 
 ## Other features
 
-### [Custom Build Rules](include.md)
+### Some [functions](functions.md) which can be called in BUILD files.

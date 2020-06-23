@@ -18,9 +18,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import console
-from blade.blade_util import location_re
 from blade.blade_util import var_to_list
-from blade.target import Target
+from blade.target import Target, LOCATION_RE
 
 _package_types = frozenset([
     'tar',
@@ -42,28 +41,28 @@ class PackageTarget(Target):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  type,
                  out,
                  shell,
-                 blade,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
-        Target.__init__(self,
-                        name,
-                        'package',
-                        [],
-                        deps,
-                        None,
-                        blade,
-                        kwargs)
+        super(PackageTarget, self).__init__(
+                name=name,
+                type='package',
+                srcs=[],
+                deps=deps,
+                visibility=visibility,
+                kwargs=kwargs)
 
         if type not in _package_types:
             self.error_exit('Invalid type %s. Types supported by the package are %s' % (
                             type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
-        self.data['sources'], self.data['locations'] = [], []
+        self.data['sources'] = []
+        self.data['locations'] = []
         self._process_srcs(srcs)
 
         if not out:
@@ -84,7 +83,7 @@ class PackageTarget(Target):
             else:
                 self.error_exit('Invalid src %s. src should be either str or tuple.' % s)
 
-            m = location_re.search(src)
+            m = LOCATION_RE.search(src)
             if m:
                 self._add_location_reference(m, dst)
             else:
@@ -188,18 +187,20 @@ class PackageTarget(Target):
 def package(name,
             srcs,
             deps=[],
+            visibility=None,
             type='tar',
             out=None,
             shell=False,
             **kwargs):
-    package_target = PackageTarget(name,
-                                   srcs,
-                                   deps,
-                                   type,
-                                   out,
-                                   shell,
-                                   build_manager.instance,
-                                   kwargs)
+    package_target = PackageTarget(
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            type=type,
+            out=out,
+            shell=shell,
+            kwargs=kwargs)
     build_manager.instance.register_target(package_target)
 
 

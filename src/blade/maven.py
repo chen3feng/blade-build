@@ -68,15 +68,25 @@ class MavenCache(object):
         java_config = config.get_section('java_config')
         self.__maven = java_config.get('maven')
         self.__central_repository = java_config.get('maven_central')
+        self._check_config()
+
+        self.__snapshot_update_policy = java_config.get('maven_snapshot_update_policy')
+        if self.__snapshot_update_policy == 'interval':
+            interval = java_config.get('maven_snapshot_update_interval')
+            if not interval:
+                console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
+                                   '"maven_snapshot_update_policy" is "interval"')
+            self.__snapshot_update_interval = interval * 60  # minutes
+        else:
+            self.__snapshot_update_interval = 86400
+
         # Local repository is set to the maven default directory
         # and could not be configured currently
         local_repository = '~/.m2/repository'
         self.__local_repository = os.path.expanduser(local_repository)
-        self.__need_check_config = True
 
         # Download the snapshot artifact daily
         self.__build_time = time.time()
-        self.__one_day_interval = 86400
 
     def _generate_jar_path(self, id):
         """Generate jar path within local repository. """
@@ -86,43 +96,52 @@ class MavenCache(object):
 
     def _check_config(self):
         """Check whether maven is configured correctly. """
-        if not self.__need_check_config:
-            return
         if not self.__maven:
-            console.error_exit('MavenCache was not configured')
-        self.__need_check_config = False
+            console.error_exit('MavenCache is not configured')
 
-    def _check_id(self, id):
-        """Check if id is valid. """
-        if not is_valid_id(id):
-            console.error_exit('Invalid id %s: Id should be group:artifact:version, '
-                               'such as jaxen:jaxen:1.1.6' % id)
+    def _is_file_expired(self, filename):
+        """Check if the modification time of file is expired relative to build time. """
+        return self.__build_time - os.path.getmtime(filename) > self.__snapshot_update_interval
 
-    def _is_log_expired(self, log):
-        """Check if the modification time of log file is expired relative to build time. """
-        return self.__build_time - os.path.getmtime(log) > self.__one_day_interval
+    def _need_download(self, filename, version, logfile):
+        if not os.path.isfile(os.path.join(filename)):
+            return True
+        if not version.endswith('-SNAPSHOT'):
+            return False
+        if self.__snapshot_update_policy == 'always':
+            return True
+        if self.__snapshot_update_policy == 'never':
+            return False
+        if not os.path.isfile(logfile):
+            return True
+        # Use the logfile's timestamp as the update time
+        return self._is_file_expired(logfile)
 
-    def _download_jar(self, id, classifier):
-        group, artifact, version = id.split(':')
-        pom = artifact + '-' + version + '.pom'
-        jar = artifact + '-' + version + '.jar'
-        log = artifact + '__download.log'
+    def _filename_base(self, artifact, version, classifier):
         if classifier:
-            jar = artifact + '-' + version + '-' + classifier + '.jar'
-            log = artifact + '-' + classifier + '__download.log'
-        log_path = os.path.join(self.__log_dir, log)
+            return artifact + '-' + version + '-' + classifier
+        return artifact + '-' + version
+
+    def _download_jar(self, id, classifier, target):
+        group, artifact, version = id.split(':')
+        basename = self._filename_base(artifact, version, classifier)
+        pom = basename + '.pom'
+        jar = basename + '.jar'
+
+        # Write log to build dir temporarily, and move it into the target_path after success.
+        log_path = os.path.join(self.__log_dir, basename + '_download.log')
         target_path = self._generate_jar_path(id)
-        target_log = os.path.join(target_path, log)
-        if (os.path.isfile(os.path.join(target_path, jar)) and
-                os.path.isfile(os.path.join(target_path, pom))):
-            if not version.endswith('-SNAPSHOT'):
-                return True
-            if os.path.isfile(target_log) and not self._is_log_expired(target_log):
-                return True
+        target_log = 'download.log'
+        if classifier:
+            target_log = classifier + '_download.log'
+        target_log = os.path.join(target_path, target_log)
+
+        if not self._need_download(os.path.join(target_path, jar), version, target_log):
+            return True
 
         if classifier:
             id = '%s:%s' % (id, classifier)
-        console.info('Downloading %s from central repository...' % id)
+        target.info('Downloading %s from central repository...' % id)
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -132,26 +151,24 @@ class MavenCache(object):
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -e -X'  # More detailed debug message
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
-            console.warning('Error occurred when downloading %s from central '
-                            'repository. Check %s for details.' % (id, log_path))
+            target.warning('Error occurred when downloading %s from central '
+                           'repository. Check %s for details.' % (id, log_path))
             cmd += ' -Dtransitive=false'
             if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
                 return False
-            console.warning('Download standalone artifact %s successfully, but '
-                            'its transitive dependencies are unavailable.' % id)
-        shutil.copy(log_path, target_log)
+            target.warning('Download standalone artifact %s successfully, but '
+                            'its transitive dependencies are unavailable.' % (target, id))
+        shutil.move(log_path, target_log)
         return True
 
-    def _download_dependency(self, id, classifier):
+    def _download_dependency(self, id, classifier, target):
         group, artifact, version = id.split(':')
         target_path = self._generate_jar_path(id)
-        log, classpath = artifact + '__classpath.log', 'classpath.txt'
+        classpath = 'classpath.txt'
+        log = 'classpath.log'
         log = os.path.join(target_path, log)
-        if os.path.isfile(os.path.join(target_path, classpath)):
-            if not version.endswith('-SNAPSHOT'):
-                return True
-            if os.path.isfile(log) and not self._is_log_expired(log):
-                return True
+        if not self._need_download(os.path.join(target_path, classpath), version, log):
+            return True
 
         # if classifier:
         #     id = '%s:%s' % (id, classifier)
@@ -163,7 +180,7 @@ class MavenCache(object):
         #         and os.path.exists(log)):
         #         return False
 
-        console.info('Downloading %s dependencies...' % id)
+        target.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
@@ -171,14 +188,14 @@ class MavenCache(object):
                         '-Dmdep.outputFile=%s' % classpath])
         cmd += ' -e -X -f %s > %s' % (pom, log)
         if subprocess.call(cmd, shell=True) != 0:
-            console.warning('Error occurred when resolving %s dependencies. '
-                            'Check %s for details.' % (id, log))
+            target.warning('Error occurred when resolving %s dependencies. '
+                           'Check %s for details.' % (id, log))
             return False
         return True
 
-    def _download_artifact(self, id, classifier):
+    def _download_artifact(self, id, classifier, target):
         """Download the specified jar and its transitive dependencies. """
-        if not self._download_jar(id, classifier):
+        if not self._download_jar(id, classifier, target):
             return False
 
         group, artifact, version = id.split(':')
@@ -189,16 +206,14 @@ class MavenCache(object):
         self.__jar_database[(id, classifier)] = MavenArtifact(os.path.join(path, jar))
         return True
 
-    def _get_artifact_from_database(self, id, classifier):
+    def _get_artifact_from_database(self, id, classifier, target):
         """get_artifact_from_database. """
-        self._check_config()
-        self._check_id(id)
         if (id, classifier) not in self.__jar_database:
-            if not self._download_artifact(id, classifier):
-                console.error_exit('Download %s failed' % id)
+            if not self._download_artifact(id, classifier, target):
+                target.error_exit('Download %s failed' % id)
         return self.__jar_database[(id, classifier)]
 
-    def get_jar_path(self, id, classifier):
+    def get_jar_path(self, id, classifier, target):
         """get_jar_path
 
         Return local jar path corresponding to the id specified in the
@@ -206,19 +221,19 @@ class MavenCache(object):
         Download jar files and its transitive dependencies if needed.
 
         """
-        artifact = self._get_artifact_from_database(id, classifier)
+        artifact = self._get_artifact_from_database(id, classifier, target)
         return artifact.path
 
-    def get_jar_deps_path(self, id, classifier):
+    def get_jar_deps_path(self, id, classifier, target):
         """get_jar_deps_path
 
         Return a string of the dependencies path separated by colon.
         This string can be used in java -cp later.
 
         """
-        artifact = self._get_artifact_from_database(id, classifier)
+        artifact = self._get_artifact_from_database(id, classifier, target)
         if artifact.deps is None:
-            if not self._download_dependency(id, classifier):
+            if not self._download_dependency(id, classifier, target):
                 # Ignore dependency download error
                 artifact.deps = ''
             else:

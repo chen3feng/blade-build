@@ -19,7 +19,7 @@ function cleanup() {
     rm -rf testdata/BLADE_ROOT
 
     # Cleanup generated files
-    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/,.blade.test.stamp,.Building.lock} build.ninja build_output.txt
+    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/} build_output.txt
     rm -f *.pyc ../blade/*.pyc
 }
 
