@@ -141,7 +141,7 @@ class MavenCache(object):
 
         if classifier:
             id = '%s:%s' % (id, classifier)
-        target.info('Downloading %s from central repository...' % id)
+        console.info('Downloading %s from central repository...' % id)
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -151,12 +151,12 @@ class MavenCache(object):
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -e -X'  # More detailed debug message
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
-            target.warning('Error occurred when downloading %s from central '
+            console.warning('Error occurred when downloading %s from central '
                            'repository. Check %s for details.' % (id, log_path))
             cmd += ' -Dtransitive=false'
             if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
                 return False
-            target.warning('Download standalone artifact %s successfully, but '
+            console.warning('Download standalone artifact %s successfully, but '
                             'its transitive dependencies are unavailable.' % (target, id))
         shutil.move(log_path, target_log)
         return True
@@ -180,7 +180,7 @@ class MavenCache(object):
         #         and os.path.exists(log)):
         #         return False
 
-        target.info('Downloading %s dependencies...' % id)
+        console.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
@@ -188,8 +188,8 @@ class MavenCache(object):
                         '-Dmdep.outputFile=%s' % classpath])
         cmd += ' -e -X -f %s > %s' % (pom, log)
         if subprocess.call(cmd, shell=True) != 0:
-            target.warning('Error occurred when resolving %s dependencies. '
-                           'Check %s for details.' % (id, log))
+            console.warning('Error occurred when resolving %s dependencies. '
+                            'Check %s for details.' % (id, log))
             return False
         return True
 
@@ -210,7 +210,7 @@ class MavenCache(object):
         """get_artifact_from_database. """
         if (id, classifier) not in self.__jar_database:
             if not self._download_artifact(id, classifier, target):
-                target.error_exit('Download %s failed' % id)
+                console.error_exit('Download %s failed' % id)
         return self.__jar_database[(id, classifier)]
 
     def get_jar_path(self, id, classifier, target):
