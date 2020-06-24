@@ -473,7 +473,7 @@ class JavaTargetMixIn(object):
         Note that the classes are still compiled from the sources in the
         source directory.
         """
-        if not self.blade.get_options().coverage:
+        if not getattr(self.blade.get_options(), 'coverage', False):
             return
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
