@@ -54,9 +54,7 @@ class MavenJar(Target):
 
     def ninja_rules(self):
         maven_cache = maven.MavenCache.instance(self.build_dir)
-        binary_jar = maven_cache.get_jar_path(self.data['id'],
-                                              self.data['classifier'],
-                                              self.fullname)
+        binary_jar = maven_cache.get_jar_path(self.data['id'], self.data['classifier'], self)
         if binary_jar:
             self.data['binary_jar'] = binary_jar
             if self.data.get('transitive'):
@@ -475,8 +473,8 @@ class JavaTargetMixIn(object):
         Note that the classes are still compiled from the sources in the
         source directory.
         """
-        if (not hasattr(self.blade.get_options(), 'coverage') or
-            not self.blade.get_options().coverage):
+
+        if not getattr(self.blade.get_options(), 'coverage', False):
             return
         sources_dir = self._get_sources_dir()
         for source in self.srcs:
