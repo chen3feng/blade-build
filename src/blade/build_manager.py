@@ -179,7 +179,8 @@ class Blade(object):
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
-        for k in self.__expanded_command_targets:
+        # Sorting helps reduce jumps between BUILD files when fixng reported problems
+        for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
                 if not target.verify_hdr_dep_missing(header_inclusion_history):
