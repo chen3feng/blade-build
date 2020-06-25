@@ -169,9 +169,10 @@ If you put these libraries into your own code in your project (such as our inter
 
 C/C++ library configuration
 
-| parameter                  | type   | default   | values             | description                                                                |
-|----------------------------|--------|-----------|--------------------|----------------------------------------------------------------------------|
-| prebuilt_libpath_pattern   | string |lib${bits} |                    | The pattern of prebuilt library subdirectory                               |
+| parameter                  | type   | default   | values                      | description                                                                |
+|----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------------------------|
+| prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory                               |
+| hdr_dep_missing_severity   | string | warning   | debug, info, warning, error | The severity of missing dependency when include a header file              |
 
 Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
 So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:

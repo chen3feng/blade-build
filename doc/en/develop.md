@@ -1,7 +1,7 @@
 # How it works
 
 ## Load configuration
-After the Blade starts, it will try to execute the configuration files in multiple paths through the `execfile` function. These configuration files are all Python source files, and the predefined configuration functions in the blade are called.
+After the Blade starts, it will try to load the configuration files in multiple paths through the `execfile` function. These configuration files are all Python source files, and the predefined configuration functions in the blade are called.
 Update the configuration item to the configuration dict of blade.config for later use.
 
 After the configuration file is loaded, the blade will also try to update the options in the command line options with the same name as global_config to the configuration, so that the configuration information from the command line has the highest priority.

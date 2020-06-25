@@ -39,7 +39,7 @@ Blade调用后端构建工具执行实际的构建，执行完毕后，删除后
 
 ## 调试与诊断
 
-大多数子命令支持`--stop-after`选项，可选的参数有{load, analyze, generate, build}，可以控制blade在完成的阶段后就结束。比如
+大多数子命令支持`--stop-after`选项，可选的参数有{load, analyze, generate, build}，可以控制blade在完成此阶段后就结束。比如
 ```bash
 blade build --stop-after generate
 ```

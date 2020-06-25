@@ -35,7 +35,21 @@ cc_library(
 
 属性：
 
-* link_all_symbols=True
+* hdrs : list(string)
+
+  声明库的公开接口头文件。
+  
+  在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。在 Blade 中，头文件也是 `cc_library` 的重要属性，
+  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题，问题的严重性可以通过 
+  [`cc_library.hdr_dep_missing_severity`](../config.md#cc_library_config) 配置项来控制。
+
+  对于构建期间生成头文件的规则，比如 `proto_library` 生成的 `pb.h` 或者 `gen_rule` 目标的 `outs` 里如果包含头文件，这些头文件也会被自动列入。
+  把头文件纳入到依赖管理中，可以避免包含了头文件但是没有加入依赖的库造成的编译或者链接问题，特别是对动态生成的头文件。
+
+  一个头文件可以属于多个 `cc_library`，`cc_library` 不会自动导出其 `deps` 里依赖的其他 `cc_library` 的 `hdrs`。
+  `hdrs` 里只应该列入公开的头文件，对于私有头文件，即使它被公有头文件包含，也不需要列入。私有头文件可以列入到它的 `srcs` 里。
+
+* link_all_symbols : bool
 
   如果你通过全局对象的构造函数执行一些动作（比如注册一些可以按运行期间字符串形式的名字动态创建的类），而这个全局变量本身没有被任何地方引用到。
   这在 cc_binary 中是没有问题的，但是如果是在库中，就有可能被整个丢弃从而达不到期望的效果。这是因为如果一个库中的符号（函数，全局变量）没有被可执行文件直接
@@ -49,16 +63,16 @@ cc_library(
 
   如还有疑问，可以进一步阅读[更多解答](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option)。
 
-* always_optimize
+* always_optimize : bool
 
   True: 不论debug版本还是release版本总是被优化。
   False: debug版本不作优化。
   默认为False。目前只对cc_library有效。
 
-* prebuilt=True
+* prebuilt : bool
   废弃，请使用 prebuilt_cc_library 构建规则。
 
-* export_incs
+* export_incs : list(str)
 
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
@@ -69,7 +83,8 @@ cc_library(
 
 属性：
 
-* libpath_pattern 库文件所在的子目录名。默认使用 `cc_library_config.prebuilt_libpath_pattern` 配置。
+* libpath_pattern : str
+  库文件所在的子目录名。默认使用 `cc_library_config.prebuilt_libpath_pattern` 配置。
   本属性是一个可替换的字符串模式，因此可以同时描述多个目标平台的库，比如不同 CPU 位数，等等。具体
   参见 [cc_library_config.prebuilt_libpath_pattern](../config.md#cc_library_config)，如果只构建一个平台的目标，可以只有一个目录。
   本属性可以为空，表示没有子目录（库文件就放在当前 BUILD 文件所在的目录）。
