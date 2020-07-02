@@ -157,7 +157,7 @@ class MavenCache(object):
             if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
                 return False
             target.warning('Download standalone artifact %s successfully, but '
-                            'its transitive dependencies are unavailable.' % (target, id))
+                           'its transitive dependencies are unavailable.' % id)
         shutil.move(log_path, target_log)
         return True
 
