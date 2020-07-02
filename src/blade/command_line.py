@@ -159,7 +159,7 @@ class ParsedCommandLine(object):
 
         parser.add_argument('--debug-info-level',
                             dest='debug_info_level',
-                            choices=['no', 'min', 'mid', 'high'],
+                            choices=['no', 'low', 'mid', 'high'],
                             help='Produces how much debug information')
 
         # DEPRECATED, see above
