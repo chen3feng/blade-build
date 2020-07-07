@@ -82,9 +82,10 @@ cc_library(
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
 ## prebuilt_cc_library
-  主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
-  除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
-  对应的库文件可以放在子目录中，子目录的名字通过 `libpath_pattern` 属性设置。
+
+主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
+除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
+对应的库文件可以放在子目录中，子目录的名字通过 `libpath_pattern` 属性设置。
 
 属性：
 
@@ -103,8 +104,119 @@ prebuilt_cc_library(
 )
 ```
 
+## foreign_cc_library
+
+注意：本特性目前还处于实验状态。
+
+世界上已经有大量已经存在的库，它们用一些不同的构建系统构建，如果要增加 Blade 构建，需要投入大量的时间成本和维护。
+foreign_cc_library 用于描述不是直接通过 Blade 构建而是其他构建工具产生的 C/C++ 库，比如 make 或 cmake 等。
+foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 Blade 在构建期间调用其他构建系统动态生成的，
+而 prebuilt_cc_library 所描述的库是构建前提前放置于源代码树中的。所以 foreign_cc_library 总是需要搭配 gen_rule 来使用。
+
+考虑到大量采用 [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html) 构建，foreign_cc_library 的默认参数适配其安装后的[目录布局](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html)。
+为了能正确找到库和头文件，foreign_cc_library 假设包构建后会安装到某一个目录下（也就是 `configure` 的 `--prefix` 参数所指定的路径），头文件在 `include` 子目录下，库文件安装到 `lib` 子目录下。
+
+属性：
+
+* name 库的名字
+* install_dir 包构建完成后的安装目录
+* lib_dir 库在安装目录下的子目录名
+
+### 示例1，zlib
+
+zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
+
+```python
+# 假设执行本规则后，会把构建好的包安装到 `build64_release/thirdparty/openssl` 下，那么头文件在 `include/openssl` 下，库文件则在 `lib` 下。
+# 我们为 autotools 和 cmake 开发了通用的构建规则，不过还处于实验状态，这里还是还是用 gen_rule 来构建。
+gen_rule(
+    name = 'zlib_build',
+    srcs = ['zlib-1.2.11.tar.gz'],
+    outs = ['lib/libz.a', 'include/zlib.h', 'include/zconf.h'],
+    cmd = '...',  # tar xf，configure, make, make install...
+    export_incs = 'include',
+)
+
+# 描述 zlib 安装后的库
+
+foreign_cc_library(
+    name = 'z',  # 库的名字为 libz.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/libz`
+    # lib_dir= 'lib', # 默认值满足要求，因此可以不写
+    deps = [':zlib_build'],
+)
+```
+
+使用上述库
+
+```python
+cc_binary(
+    name = 'use_zlib',
+    srcs = ['use_zlib.cc'],
+    deps = ['//thirdparty/openssl:ssl'],
+)
+```
+
+use_zlib.cc
+
+```cpp
+#include "thirdparty/zlib/include/zlib.h"
+// 或
+#include "zlib.h"
+// 因为 thirdparty/zlib/include/ 已经被导出
+```
+
+### 示例2，openssl：
+
+严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
+不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
+假设 openssl-1.1.0.tar.gz 在 thirparty/openssl 目录下，其 BUILD 文件则是 thirdparty/openssl/BUILD：
+
+```python
+# 假设执行本规则后，会把构建好的包安装到 `build64_release/thirdparty/openssl` 下，那么头文件在 `include/openssl` 下，库文件则在 `lib` 下。
+gen_rule(
+    name = 'openssl_build',
+    srcs = ['openssl-1.1.0.tar.gz'],
+    outs = ['lib/libcrypto.a', 'lib/libss.a'],
+    cmd = '...',  # tar xf，Config, make, make install...
+    export_incs = 'include', # 让编译器能找到 include 下的 openssl 子目录
+)
+
+# 描述 openssl 里包含的两个库
+
+foreign_cc_library(
+    name = 'crypto',  # 库的名字为 libcrypto.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/openssl`
+    deps = [':openssl_build'],
+)
+
+foreign_cc_library(
+    name = 'ssl',  # 库的名字为 libssl.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/openssl`
+    deps  = [':openssl_build', ':crypto'],
+)
+```
+
+使用上述库
+
+```python
+cc_binary(
+    name = 'use_openssl',
+    srcs = ['use_openssl.cc'],
+    deps = ['//thirdparty/openssl:ssl'],
+)
+```
+
+use_openssl.cc
+
+```cpp
+#include "openssl/ssl.h"  // 路径带包名
+```
+
 ## cc_binary
+
 定义C++可执行文件目标
+
 ```python
 cc_binary(
     name='prstr',
@@ -130,6 +242,7 @@ cc_binary(
   详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
 ## cc_test
+
 相当于cc_binary，再加上自动链接gtest和gtest_main。
 
 还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt

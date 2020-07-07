@@ -1112,8 +1112,8 @@ def cc_library(
 
 def foreign_cc_library(
         name,
-        package_name,
-        libdir='lib',
+        install_dir,
+        lib_dir='lib',
         hdrs=[],
         export_incs=[],
         deps=[],
@@ -1126,11 +1126,12 @@ def foreign_cc_library(
     prebuilt_cc_library is just a makeshift and should be refactored in the future.
 
     Args:
-        package_name: str, name of the belonging package.
-        libdir: str, the relative path of the lib dir under the `package_name` dir.
+        install_dir: str, the name of the directory where the package is installed,
+            relative to the output directory
+        lib_dir: str, the relative path of the lib dir under the `install_dir` dir.
     """
     import blade
-    libpath = '//' + os.path.join(blade.current_target_dir(), package_name, libdir)
+    libpath = '//' + os.path.join(blade.current_target_dir(), install_dir, lib_dir)
     current_source_path = build_manager.instance.get_current_source_path()
     prebuilt_cc_library(
             name=name,
