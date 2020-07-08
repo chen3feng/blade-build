@@ -141,7 +141,7 @@ class MavenCache(object):
 
         if classifier:
             id = '%s:%s' % (id, classifier)
-        target.info('Downloading %s from central repository...' % id)
+        console.info('Downloading %s from central repository...' % id)
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -180,7 +180,7 @@ class MavenCache(object):
         #         and os.path.exists(log)):
         #         return False
 
-        target.info('Downloading %s dependencies...' % id)
+        console.info('Downloading %s dependencies...' % id)
         pom = os.path.join(target_path, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',

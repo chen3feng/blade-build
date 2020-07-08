@@ -130,7 +130,7 @@ The main difference between foreign_cc_library and prebuilt_cc_library is that t
 The library described by prebuilt_cc_library is placed in the source tree before the build. So generally foreign_cc_library always needs to be used with gen_rule.
 
 Considering that a large number of C/C++ libraries are built with [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html),
-the default parameters of foreign_cc_library are adapted to the [autotools installation directory layout](https://www .gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html).
+the default parameters of foreign_cc_library are adapted to the [autotools installation directory layout](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html).
 In order to find the library and header files correctly, foreign_cc_library assumes that the package will be installed in a certain directory
 after the build (that is, the path specified by the `--prefix` parameter of `configure`), and the header file is in the `include` subdirectory,
 The library file is installed in the `lib` subdirectory.
@@ -147,7 +147,7 @@ zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zli
 zlib can be the simplest example of autotools package. Assuming that zlib-1.2.11.tar.gz is in the thirparty/zlib directory, its BUILD file is thirdparty/zlib/BUILD:
 
 ```python
-# Assume that after executing this rule, the built package will be installed under `build64_release/thirdparty/openssl`, 
+# Assume that after executing this rule, the built package will be installed under `build64_release/thirdparty/openssl`,
 # then the header file is under `include/openssl`, and the library file is under `lib`.
 # We have developed general build rules for autotools and cmake, but they are still in the experimental state.
 # Here we still use `gen_rule` to examplify.
@@ -187,7 +187,7 @@ use_openssl.cc
 // because `thirdparty/zlib/include` has been exported in the `foreign_cc_library` defaultly
 ```
 
-### 示例2，openssl：
+### 示例2，openssl
 
 Strictly speaking, openssl is not built with autotools, but it is generally compatible with autotools.
 Its autotools-like configure file is `Config`, and the directory layout after installation is compatible.
@@ -196,7 +196,7 @@ However, its header file paths have package name prefix, which is not directly u
 Suppose openssl-1.1.0.tar.gz is in the thirparty/openssl directory, and its BUILD file is thirdparty/openssl/BUILD:
 
 ```python
-# Assuming that after executing this rule, the built package will be installed under `build64_release/thirdparty/openssl`, 
+# Assuming that after executing this rule, the built package will be installed under `build64_release/thirdparty/openssl`,
 # then the header file is under `include/openssl` and the library file is under `lib`.
 gen_rule(
     name = 'openssl_build',
@@ -238,8 +238,11 @@ use_openssl.cc
 ```
 
 ## cc_binary
+
 Build executable from source.
+
 Example:
+
 ```python
 cc_binary(
     name='prstr',
@@ -266,22 +269,24 @@ cc_binary(
    for loaded shared libraries. for more details, see `--export-dynamic` in man ld(1).
 
 ## cc_test
+
 cc_binary, with gtest gtest_main be linked automatically,
 
 Test will be ran in a test sandbox, it can't access source code directly.
 If you want to pass some data files into it, you must need `testdata` attribute.
 
 * testdata=[]
-Copy test data files into the test sandbox, make them visible to the test code.
-This attribute supports the following forms:
- * 'file'
-Use the original filename in test code.
- * '//your_proj/path/file'
-Use "your_proj/path/file" form to access in test code.
- * ('//your_proj/path/file', "new_name")
-Use the "new_name" in test code.
+  Copy test data files into the test sandbox, make them visible to the test code.
+  This attribute supports the following forms:
+  * 'file'
+    Use the original filename in test code.
+  * '//your_proj/path/file'
+    Use "your_proj/path/file" form to access in test code.
+  * ('//your_proj/path/file', "new_name")
+    Use the "new_name" in test code.
 
 Example:
+
 ```python
 cc_test(
     name = 'textfile_test',
@@ -298,6 +303,7 @@ cc_test(
 ## cc_plugin
 
 Link all denendencies into the generated `so` file, make it can be easily loaded in other languages.
+
 ```python
 cc_plugin(
     name='mystring',
@@ -312,11 +318,13 @@ cc_plugin(
 cc_plugin is designed for create extension, such as JNI and python extension.
 
 ## resource_library
+
 Compile static data file to be resource, which can be accessed in the program directly.
 
 When we deploy a program, it often requires many other files to be deployed together. it's often boring.
 Blade support `resource_library`, make it quite easy to put resource files into the executable easily.
 For example, put there static pages into a library：
+
 ```python
 resource_library(
     name = 'static_resource',
@@ -331,15 +339,18 @@ resource_library(
     ]
 )
 ```
+
 It will generate a library `libstatic_resource.a`，and a header file `static_resource.h`(with full include path)。
 
 When you need tp use it, you need to include `static_resource.h`(with full path from workspace root)
 and also "common/base/static_resource.h"，
 
 Use STATIC_RESOURCE macro to simplify access to the data (defined in "common/base/static_resource.h"):
-```c
+
+```cpp
 StringPiece data = STATIC_RESOURCE(poppy_static_favicon_ico);
 ```
+
 The argument of STATIC_RESOURCE is the full path of the data file, and replace all of the
 non-alphanum and hyphen character to unserscore(`_`):
 

@@ -24,6 +24,7 @@ cc_library同时用于构建静态和动态库，默认只构建静态库，只�
 cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环境。如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用`cc_plugin`构建规则，这样生成的动态库已经静态链接的方式包含了其依赖。
 
 举例：
+
 ```python
 cc_library(
     name='lowercase',
@@ -40,7 +41,7 @@ cc_library(
   声明库的公开接口头文件。
   
   在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
-  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题，问题的严重性可以通过 
+  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题，问题的严重性可以通过
   [`cc_library.hdr_dep_missing_severity`](../config.md#cc_library_config) 配置项来控制。
 
   对于构建期间生成头文件的规则，比如 `proto_library` 生成的 `pb.h` 或者 `gen_rule` 目标的 `outs` 里如果包含头文件，这些头文件也会被自动列入。
@@ -128,7 +129,7 @@ zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zli
 
 ```python
 # 假设执行本规则后，会把构建好的包安装到 `build64_release/thirdparty/openssl` 下，那么头文件在 `include/openssl` 下，库文件则在 `lib` 下。
-# 我们为 autotools 和 cmake 开发了通用的构建规则，不过还处于实验状态，这里还是还是用 gen_rule 来构建。
+# 我们为 autotools 和 cmake 开发了通用的构建规则，不过还处于实验状态，这里还是假设用 gen_rule 来构建。
 gen_rule(
     name = 'zlib_build',
     srcs = ['zlib-1.2.11.tar.gz'],
@@ -166,7 +167,7 @@ use_zlib.cc
 // 因为 thirdparty/zlib/include/ 已经被导出
 ```
 
-### 示例2，openssl：
+### 示例2，openssl
 
 严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
 不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
@@ -300,6 +301,7 @@ lex_yacc_library(
 ## cc_plugin
 
 把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
+
 ```python
 cc_plugin(
     name='mystring',
@@ -314,11 +316,13 @@ cc_plugin(
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
 ## resource_library
+
 把数据文件编译成静态资源，可以在程序中中读取。
 
 大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
 blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
 比如poppy下的BUILD文件里用的静态资源：
+
 ```python
 resource_library(
     name = 'static_resource',
@@ -333,14 +337,17 @@ resource_library(
     ]
 )
 ```
+
 生成 static_resource.h 和 libstatic_resource.a 或者 libstatic_resource.so。
 就像一样protobuf那样，编译后后生成一个库 libstatic_resource.a，和一个相应的头文件 static_resource.h，带路径包含进来即可使用。
 
 在程序中需要包含static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.hpp"，
 用 STATIC_RESOURCE 宏来引用数据：
+
 ```c
 StringPiece data = STATIC_RESOURCE(poppy_static_favicon_ico);
 ```
+
 STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名，把所有非字母数字和下划线的字符都替换为_。
 
 得到的 data 在程序运行期间一直存在，只可读取，不可写入。
