@@ -24,6 +24,7 @@ cc_library同时用于构建静态和动态库，默认只构建静态库，只�
 cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环境。如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用`cc_plugin`构建规则，这样生成的动态库已经静态链接的方式包含了其依赖。
 
 举例：
+
 ```python
 cc_library(
     name='lowercase',
@@ -40,7 +41,7 @@ cc_library(
   声明库的公开接口头文件。
   
   在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
-  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题，问题的严重性可以通过 
+  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题，问题的严重性可以通过
   [`cc_library.hdr_dep_missing_severity`](../config.md#cc_library_config) 配置项来控制。
 
   对于构建期间生成头文件的规则，比如 `proto_library` 生成的 `pb.h` 或者 `gen_rule` 目标的 `outs` 里如果包含头文件，这些头文件也会被自动列入。
@@ -82,9 +83,10 @@ cc_library(
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
 ## prebuilt_cc_library
-  主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
-  除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
-  对应的库文件可以放在子目录中，子目录的名字通过 `libpath_pattern` 属性设置。
+
+主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
+除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
+对应的库文件可以放在子目录中，子目录的名字通过 `libpath_pattern` 属性设置。
 
 属性：
 
@@ -103,8 +105,119 @@ prebuilt_cc_library(
 )
 ```
 
+## foreign_cc_library
+
+注意：本特性目前还处于实验状态。
+
+世界上已经有大量已经存在的库，它们用一些不同的构建系统构建，如果要增加 Blade 构建，需要投入大量的时间成本和维护。
+foreign_cc_library 用于描述不是直接通过 Blade 构建而是其他构建工具产生的 C/C++ 库，比如 make 或 cmake 等。
+foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 Blade 在构建期间调用其他构建系统动态生成的，
+而 prebuilt_cc_library 所描述的库是构建前提前放置于源代码树中的。所以 foreign_cc_library 总是需要搭配 gen_rule 来使用。
+
+考虑到大量采用 [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html) 构建，foreign_cc_library 的默认参数适配其安装后的[目录布局](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html)。
+为了能正确找到库和头文件，foreign_cc_library 假设包构建后会安装到某一个目录下（也就是 `configure` 的 `--prefix` 参数所指定的路径），头文件在 `include` 子目录下，库文件安装到 `lib` 子目录下。
+
+属性：
+
+* name 库的名字
+* install_dir 包构建完成后的安装目录
+* lib_dir 库在安装目录下的子目录名
+
+### 示例1，zlib
+
+zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
+
+```python
+# 假设执行本规则后，会把构建好的包安装到 `build64_release/thirdparty/openssl` 下，那么头文件在 `include/openssl` 下，库文件则在 `lib` 下。
+# 我们为 autotools 和 cmake 开发了通用的构建规则，不过还处于实验状态，这里还是假设用 gen_rule 来构建。
+gen_rule(
+    name = 'zlib_build',
+    srcs = ['zlib-1.2.11.tar.gz'],
+    outs = ['lib/libz.a', 'include/zlib.h', 'include/zconf.h'],
+    cmd = '...',  # tar xf，configure, make, make install...
+    export_incs = 'include',
+)
+
+# 描述 zlib 安装后的库
+
+foreign_cc_library(
+    name = 'z',  # 库的名字为 libz.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/libz`
+    # lib_dir= 'lib', # 默认值满足要求，因此可以不写
+    deps = [':zlib_build'],
+)
+```
+
+使用上述库
+
+```python
+cc_binary(
+    name = 'use_zlib',
+    srcs = ['use_zlib.cc'],
+    deps = ['//thirdparty/openssl:ssl'],
+)
+```
+
+use_zlib.cc
+
+```cpp
+#include "thirdparty/zlib/include/zlib.h"
+// 或
+#include "zlib.h"
+// 因为 thirdparty/zlib/include/ 已经被导出
+```
+
+### 示例2，openssl
+
+严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
+不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
+假设 openssl-1.1.0.tar.gz 在 thirparty/openssl 目录下，其 BUILD 文件则是 thirdparty/openssl/BUILD：
+
+```python
+# 假设执行本规则后，会把构建好的包安装到 `build64_release/thirdparty/openssl` 下，那么头文件在 `include/openssl` 下，库文件则在 `lib` 下。
+gen_rule(
+    name = 'openssl_build',
+    srcs = ['openssl-1.1.0.tar.gz'],
+    outs = ['lib/libcrypto.a', 'lib/libss.a'],
+    cmd = '...',  # tar xf，Config, make, make install...
+    export_incs = 'include', # 让编译器能找到 include 下的 openssl 子目录
+)
+
+# 描述 openssl 里包含的两个库
+
+foreign_cc_library(
+    name = 'crypto',  # 库的名字为 libcrypto.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/openssl`
+    deps = [':openssl_build'],
+)
+
+foreign_cc_library(
+    name = 'ssl',  # 库的名字为 libssl.a，在 `lib` 子目录下
+    install_dir = '', # 包的安装目录是 `build64_release/thirdparty/openssl`
+    deps  = [':openssl_build', ':crypto'],
+)
+```
+
+使用上述库
+
+```python
+cc_binary(
+    name = 'use_openssl',
+    srcs = ['use_openssl.cc'],
+    deps = ['//thirdparty/openssl:ssl'],
+)
+```
+
+use_openssl.cc
+
+```cpp
+#include "openssl/ssl.h"  // 路径带包名
+```
+
 ## cc_binary
+
 定义C++可执行文件目标
+
 ```python
 cc_binary(
     name='prstr',
@@ -130,6 +243,7 @@ cc_binary(
   详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
 ## cc_test
+
 相当于cc_binary，再加上自动链接gtest和gtest_main。
 
 还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt
@@ -187,6 +301,7 @@ lex_yacc_library(
 ## cc_plugin
 
 把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
+
 ```python
 cc_plugin(
     name='mystring',
@@ -201,11 +316,13 @@ cc_plugin(
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
 ## resource_library
+
 把数据文件编译成静态资源，可以在程序中中读取。
 
 大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
 blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
 比如poppy下的BUILD文件里用的静态资源：
+
 ```python
 resource_library(
     name = 'static_resource',
@@ -220,14 +337,17 @@ resource_library(
     ]
 )
 ```
+
 生成 static_resource.h 和 libstatic_resource.a 或者 libstatic_resource.so。
 就像一样protobuf那样，编译后后生成一个库 libstatic_resource.a，和一个相应的头文件 static_resource.h，带路径包含进来即可使用。
 
 在程序中需要包含static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.hpp"，
 用 STATIC_RESOURCE 宏来引用数据：
+
 ```c
 StringPiece data = STATIC_RESOURCE(poppy_static_favicon_ico);
 ```
+
 STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名，把所有非字母数字和下划线的字符都替换为_。
 
 得到的 data 在程序运行期间一直存在，只可读取，不可写入。
