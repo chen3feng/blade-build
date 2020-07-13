@@ -31,22 +31,53 @@ from blade.target import Target
 def is_header_file(filename):
     _, ext = os.path.splitext(filename)
     ext = ext[1:]  # Remove leading '.'
-    return ext in ('h', 'hh', 'hpp', 'hxx', 'inc', 'tcc')
+    # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html
+    return ext in ('h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'tcc')
 
 
 # A dict[hdr, set(target)]
 # For a header file, which targets declared it.
 _hdr_targets_map = collections.defaultdict(set)
 
+# A dict[inc, set(target)]
+# For a include dir, which targets declared it.
+_hdr_dir_targets_map = collections.defaultdict(set)
 
-def _register_hdrs(target, hdrs):
-    """Set the `hdrs` field
+
+def _declare_hdrs(target, hdrs):
+    """Declare hdr to lib relationships
 
     Args:
-        hdrs: list, the full path (based in workspace troot) of hdrs
+        target: the target which owns the hdrs
+        hdrs:list, the full path (based in workspace troot) of hdrs
     """
     for hdr in hdrs:
         _hdr_targets_map[hdr].add(target.key)
+
+
+def _declare_hdr_dir(target, inc):
+    """Declare a inc:lib relationship
+
+    Args:
+        target: the target which owns the include dir
+        inc:str, the full path (based in workspace troot) of include dir
+    """
+    _hdr_dir_targets_map[inc].add(target.key)
+
+
+def _find_libs_by_header(hdr):
+    libs = _hdr_targets_map.get(hdr)
+    if libs:
+        return libs
+    hdr_dir = os.path.dirname(hdr)
+    while True:
+        libs = _hdr_dir_targets_map.get(hdr_dir)
+        if libs:
+            return libs
+        old_hdr_dir = hdr_dir
+        hdr_dir = os.path.dirname(hdr_dir)
+        if hdr_dir == old_hdr_dir:
+            return None
 
 
 class CcTarget(Target):
@@ -77,6 +108,7 @@ class CcTarget(Target):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
+        private_hdrs = [src for src in srcs if is_header_file(src)]
         srcs = [src for src in srcs if not is_header_file(src)]
         deps = var_to_list(deps)
 
@@ -92,6 +124,7 @@ class CcTarget(Target):
         self._check_incorrect_no_warning(warning)
 
         self.data['warning'] = warning
+        self.data['private_hdrs'] = private_hdrs
         self.data['hdr_dep_missing_severity'] = hdr_dep_missing_severity
         self.data['defs'] = var_to_list(defs)
         self.data['incs'] = self._incs_to_fullpath(incs)
@@ -116,22 +149,13 @@ class CcTarget(Target):
                 result.append(os.path.normpath(os.path.join(self.path, inc)))
         return result
 
-    def _auto_set_hdrs(self, hdrs):
-        """auto set `hdrs` according to the srcs."""
-        if hdrs is None and config.get_item('cc_library_config', 'auto_set_hdrs'):
-            hdrs = []
-            for src in self.srcs:
-                hdr = self._source_file_path(os.path.splitext(src)[0] + '.h')
-                if os.path.exists(hdr):
-                    hdrs.append(hdr)
-        else:
-            hdrs = [self._source_file_path(hdr) for hdr in var_to_list(hdrs)]
-        self._set_hdrs(hdrs)
-
     def _set_hdrs(self, hdrs):
         """Set The "hdrs" attribute properly, they should be full path"""
+        if not hdrs:
+            return
+        hdrs = [self._source_file_path(h) for h in var_to_list(hdrs)]
         self.data['hdrs'] = hdrs
-        _register_hdrs(self, hdrs)
+        _declare_hdrs(self, hdrs)
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
@@ -283,7 +307,7 @@ class CcTarget(Target):
                     generated_hdrs = t.data.get('generated_hdrs')
                     if generated_hdrs:
                         result += generated_hdrs
-                elif 'cc_compile_deps_file' in t.data:  # ninja only
+                elif 'cc_compile_deps_file' in t.data:
                     stamp = t.data['cc_compile_deps_file']
                     if stamp:
                         result.append(stamp)
@@ -640,7 +664,7 @@ class CcTarget(Target):
         with open(path) as f:
             for line in f:
                 line = line.rstrip()  # Strip `\n`
-                if line.startswith('Multiple include guards may be useful for'):
+                if not line.startswith('.'):
                     # The remaining lines are useless for us
                     break
                 level, hdr = self._parse_hdr_level(line)
@@ -672,30 +696,34 @@ class CcTarget(Target):
         return False
 
     def _verify_direct_headers(self, src, direct_hdrs):
+        verified_hdrs = set()
         msg = []
         for hdr in direct_hdrs:
-            libs = _hdr_targets_map.get(hdr)
+            libs = _find_libs_by_header(hdr)
             if not libs:
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):
                 msg.append('    For %s' % self._hdr_declaration_message(hdr))
+            verified_hdrs.add(hdr)
         if msg:
             msg.insert(0, '  In %s,' % src)
-        return msg
+        return verified_hdrs, msg
 
     @staticmethod
     def _hdr_declaration_message(hdr):
-        libs = _hdr_targets_map.get(hdr)
+        libs = _find_libs_by_header(hdr)
         if not libs:
             return hdr
         libs = ' or '.join(['//%s:%s' % lib for lib in libs])
         return '%s, which belongs to %s' % (hdr, libs)
 
-    def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs):
+    def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs, verified_hdrs):
         msg = []
         for stack in stacks:
             generated_hdr = stack[-1]
+            if generated_hdr in verified_hdrs:
+                continue
             if self._hdr_is_declared(generated_hdr, declared_hdrs, declared_incs):
                 continue
             stack.pop()
@@ -744,14 +772,15 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-            msg = self._verify_direct_headers(src, direct_hdrs)
+            verified_hdrs, msg = self._verify_direct_headers(src, direct_hdrs)
             if msg:
                 failed_preprocess_paths.add(path)
                 direct_verify_msg += msg
                 # Direct headers verification can cover the under one
                 continue
             # But can not cover all, so it is still useful
-            msg = self._verify_generated_headers(src, stacks, declared_hdrs, declared_incs)
+            msg = self._verify_generated_headers(src, stacks, declared_hdrs, declared_incs,
+                                                 verified_hdrs)
             if msg:
                 generated_verify_msg += msg
                 failed_preprocess_paths.add(path)
@@ -826,7 +855,7 @@ class CcLibrary(CcTarget):
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
         self.data['secure'] = secure
-        self._auto_set_hdrs(hdrs)
+        self._set_hdrs(hdrs)
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
@@ -838,25 +867,20 @@ class CcLibrary(CcTarget):
 
 class PrebuiltCcLibrary(CcTarget):
     """
-    This class is derived from CcTarget and it generates the library
-    rules including dynamic library rules according to user option.
+    This class describs a prebuilt cc_library target
     """
 
     def __init__(self,
                  name,
-                 hdrs,
                  deps,
+                 hdrs,
                  visibility,
                  export_incs,
                  libpath_pattern,
                  link_all_symbols,
                  deprecated,
                  kwargs):
-        """Init method.
-
-        Init the cc library.
-
-        """
+        """Init method."""
         # pylint: disable=too-many-locals
         super(PrebuiltCcLibrary, self).__init__(
                 name=name,
@@ -876,7 +900,7 @@ class PrebuiltCcLibrary(CcTarget):
         self.data['libpath_pattern'] = libpath_pattern
         self.data['link_all_symbols'] = link_all_symbols
         self.data['deprecated'] = deprecated
-        self._auto_set_hdrs(hdrs)
+        self._set_hdrs(hdrs)
 
     _default_libpath = None
 
@@ -897,10 +921,7 @@ class PrebuiltCcLibrary(CcTarget):
                                                    arch=arch,
                                                    profile=profile)
 
-        if libpath.startswith('//'):
-            libpath = libpath[2:]
-        else:
-            libpath = os.path.join(self.path, libpath)
+        libpath = os.path.join(self.path, libpath)
 
         return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
                 for s in ['a', 'so']]
@@ -940,7 +961,6 @@ class PrebuiltCcLibrary(CcTarget):
         except subprocess.CalledProcessError:
             pass
         return soname
-
 
     def _is_depended(self):
         """Does this library really be used"""
@@ -1028,7 +1048,7 @@ def prebuilt_cc_library(
         link_all_symbols=False,
         deprecated=False,
         **kwargs):
-    """prebuilt_cc_library target. """
+    """prebuilt_cc_library rule"""
     target = PrebuiltCcLibrary(
             name=name,
             deps=deps,
@@ -1041,6 +1061,7 @@ def prebuilt_cc_library(
             kwargs=kwargs)
     build_manager.instance.register_target(target)
     return target
+
 
 def cc_library(
         name,
@@ -1105,11 +1126,73 @@ def cc_library(
     build_manager.instance.register_target(target)
 
 
+class ForeignCcLibrary(CcTarget):
+    """
+    This class describs a foreign cc_library target
+    """
+
+    def __init__(self,
+                 name,
+                 deps,
+                 install_dir,
+                 hdrs,
+                 hdr_dir,
+                 visibility,
+                 export_incs,
+                 lib_dir,
+                 link_all_symbols,
+                 deprecated,
+                 kwargs):
+        """Init method."""
+        # pylint: disable=too-many-locals
+        super(ForeignCcLibrary, self).__init__(
+                name=name,
+                type='foreign_cc_library',
+                srcs=[],
+                deps=deps,
+                visibility=visibility,
+                warning='no',
+                hdr_dep_missing_severity=None,
+                defs=[],
+                incs=[],
+                export_incs=export_incs,
+                optimize=[],
+                extra_cppflags=[],
+                extra_linkflags=[],
+                kwargs=kwargs)
+        self.data['install_dir'] = install_dir
+        self.data['link_all_symbols'] = link_all_symbols
+        self.data['deprecated'] = deprecated
+        self.data['lib_dir'] = lib_dir
+
+        if hdrs:
+            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdr)]
+            self.data['hdrs'] = hdrs
+            self.data['generated_hdrs'] = hdrs
+            _declare_hdrs(self, hdrs)
+        else:
+            hdr_dir = self._target_file_path(os.path.join(install_dir, hdr_dir))
+            self.data['generated_incs'] = [hdr_dir]
+            _declare_hdr_dir(self, hdr_dir)
+
+    def _ninja_rules(self):
+        lib = self._target_file_path(os.path.join(self.data['install_dir'], self.data['lib_dir'],
+                                                  'lib%s.a' % self.name))
+        self._add_default_target_file('a', lib)
+        self._add_target_file('so', lib)
+
+    def ninja_rules(self):
+        """Generate ninja build rules for cc object/library. """
+        self._check_deprecated_deps()
+        self._ninja_rules()
+
+
 def foreign_cc_library(
         name,
-        install_dir,
+        install_dir='',
         lib_dir='lib',
         hdrs=[],
+        hdr_dir='',
         export_incs=[],
         deps=[],
         link_all_symbols=False,
@@ -1117,27 +1200,28 @@ def foreign_cc_library(
         deprecated=False,
         **kwargs):
     """Similar to a prebuilt cc_library, but it is built by a foreign build system,
-    such as autotools, cmake, etc. It is not really 'prebuilt', its relay on
-    prebuilt_cc_library is just a makeshift and should be refactored in the future.
+    such as autotools, cmake, etc.
 
     Args:
         install_dir: str, the name of the directory where the package is installed,
             relative to the output directory
+        hdrs: header files to be declared, always under the output directory
+        hdr_dir: header file directory to be declared, always under the output directory
         lib_dir: str, the relative path of the lib dir under the `install_dir` dir.
     """
-    import blade
-    libpath = '//' + os.path.join(blade.current_target_dir(), install_dir, lib_dir)
-    current_source_path = build_manager.instance.get_current_source_path()
-    prebuilt_cc_library(
+    target = ForeignCcLibrary(
             name=name,
-            libpath_pattern=libpath,
-            hdrs=hdrs,
-            export_incs=export_incs,
             deps=deps,
-            link_all_symbols=link_all_symbols,
             visibility=visibility,
+            export_incs=export_incs,
+            install_dir=install_dir,
+            hdrs=hdrs,
+            hdr_dir=hdr_dir,
+            lib_dir=lib_dir,
+            link_all_symbols=link_all_symbols,
             deprecated=deprecated,
-            **kwargs)
+            kwargs=kwargs)
+    build_manager.instance.register_target(target)
 
 
 build_rules.register_function(cc_library)

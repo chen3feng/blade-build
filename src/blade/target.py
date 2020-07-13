@@ -420,7 +420,7 @@ class Target(object):
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        return os.path.join(self.build_dir, self.path, file_name)
+        return os.path.normpath(os.path.join(self.build_dir, self.path, file_name))
 
     def _add_target_file(self, label, path):
         """
