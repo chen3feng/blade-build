@@ -50,24 +50,22 @@ def _load_build_rules():
     import blade.fbthrift_library
 
 
-def _find_dir_depender(dir, blade):
+def _find_dir_dependent(dir, blade):
     """Find which target depends on the dir. """
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]
         for dkey in target.expanded_deps:
             if dkey[0] == dir:
-                return '//%s' % target.fullname
+                return target
     return None
 
 
-def _report_not_exist(source_dir, path, blade):
+def _report_not_exist(source_dir, kind, path, blade):
     """Report dir or BUILD file does not exist. """
-    depender = _find_dir_depender(source_dir, blade)
-    if depender:
-        console.error_exit('//%s not found, required by %s' % (path, depender))
-    else:
-        console.error_exit('//%s not found' % path)
+    msg = '%s "//%s" does not exist' % (kind, path)
+    dependent = _find_dir_dependent(source_dir, blade)
+    (dependent or console).error_exit(msg)
 
 
 def enable_if(cond, true_value, false_value=None):
@@ -180,7 +178,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
     processed_source_dirs.add(source_dir)
 
     if not os.path.exists(source_dir):
-        _report_not_exist(source_dir, source_dir, blade)
+        _report_not_exist(source_dir, 'Directory', source_dir, blade)
 
     old_current_source_path = blade.get_current_source_path()
     blade.set_current_source_path(source_dir)
@@ -198,18 +196,18 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             console.error_exit('Parse error in %s\n%s' % (
                 build_file, traceback.format_exc()))
     else:
-        _report_not_exist(source_dir, build_file, blade)
+        _report_not_exist(source_dir, 'BUILD file', build_file, blade)
 
     blade.set_current_source_path(old_current_source_path)
 
 
-def _find_depender(dkey, blade):
+def _find_dependent(dkey, blade):
     """Find which target depends on the target with dkey. """
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]
         if dkey in target.expanded_deps:
-            return '//%s' % target.fullname
+            return target
     return None
 
 
@@ -314,8 +312,9 @@ def load_targets(target_ids, blade_root_dir, blade):
                          blade)
 
         if target_id not in target_database:
-            console.error_exit('%s: target //%s:%s does not exist' % (
-                _find_depender(target_id, blade), source_dir, target_name))
+            msg = 'Target "//%s:%s" does not exist' % target_id
+            dependent = _find_dependent(target_id, blade)
+            (dependent or console).error_exit(msg)
 
         related_targets[target_id] = target_database[target_id]
         for key in related_targets[target_id].expanded_deps:
