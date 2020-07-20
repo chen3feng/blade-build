@@ -9,8 +9,6 @@
 
 from __future__ import absolute_import
 
-import os
-
 from blade import build_manager
 from blade import build_rules
 from blade.blade_util import regular_variable_name

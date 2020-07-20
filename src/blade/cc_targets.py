@@ -703,7 +703,7 @@ class CcTarget(Target):
             if not libs:
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
-            if not (libs & deps):
+            if not (libs & deps):  # pylint: disable=superfluous-parens
                 msg.append('    For %s' % self._hdr_declaration_message(hdr))
             verified_hdrs.add(hdr)
         if msg:
@@ -1166,7 +1166,7 @@ class ForeignCcLibrary(CcTarget):
         self.data['lib_dir'] = lib_dir
 
         if hdrs:
-            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdr)]
+            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdrs)]
             self.data['hdrs'] = hdrs
             self.data['generated_hdrs'] = hdrs
             _declare_hdrs(self, hdrs)

@@ -143,7 +143,6 @@ def py_library(name,
                prebuilt=None,
                **kwargs):
     """python library. """
-    # pylint: disable=redefined-variable-type
     if prebuilt:
         target = PrebuiltPythonLibrary(
                 name=name,

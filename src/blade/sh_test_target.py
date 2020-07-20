@@ -16,7 +16,6 @@ import os
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
 

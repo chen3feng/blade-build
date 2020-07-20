@@ -13,7 +13,6 @@
 
 from __future__ import absolute_import
 
-import shlex
 import argparse
 
 from blade import console
@@ -78,7 +77,6 @@ class ParsedCommandLine(object):
 
     def _check_test_options(self):
         """check that test command options."""
-        pass
 
     def _check_plat_and_profile_options(self):
         """check platform and profile options. """
@@ -316,7 +314,6 @@ class ParsedCommandLine(object):
 
     def _add_run_arguments(self, parser):
         """Add run command arguments. """
-        pass
 
     def _add_build_arguments(self, *parsers):
         """Add building arguments for parsers. """
@@ -444,4 +441,3 @@ def parse(argv):
     """Parse argv into command, options and targets"""
     cmdline = ParsedCommandLine(argv)
     return cmdline.get_command(), cmdline.get_options(), cmdline.get_targets()
-

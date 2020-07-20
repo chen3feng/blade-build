@@ -13,7 +13,6 @@ from __future__ import absolute_import
 
 import os
 import re
-import string
 
 from blade import config
 from blade import console
@@ -78,7 +77,7 @@ class Target(object):
         Init the target.
 
         """
-        from blade import build_manager
+        from blade import build_manager  # pylint: disable=import-outside-toplevel
         self.blade = build_manager.instance
         self.build_dir = self.blade.get_build_dir()
         current_source_path = self.blade.get_current_source_path()
@@ -389,7 +388,6 @@ class Target(object):
         """check that whether it depends upon deprecated target.
         It should be overridden in subclass.
         """
-        pass
 
     def _expand_deps_generation(self):
         """Expand the generation process and generated rules of dependencies.
@@ -397,7 +395,6 @@ class Target(object):
         Such as, given a proto_library target, it should generate Java rules
         in addition to C++ rules once it's depended by a java_library target.
         """
-        pass
 
     def _get_java_pack_deps(self):
         """

@@ -267,7 +267,7 @@ def go_package(
         deps=[],
         testdata=[],
         visibility=None,
-        extra_goflags = None):
+        extra_goflags=None):
     path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:

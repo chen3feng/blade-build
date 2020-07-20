@@ -13,8 +13,6 @@ for cuda development.
 
 from __future__ import absolute_import
 
-import os
-
 from blade import build_manager
 from blade import build_rules
 from blade import config
@@ -30,7 +28,7 @@ class CuTarget(CcTarget):
 
     def __init__(self,
                  name,
-                 target_type,
+                 type,
                  srcs,
                  deps,
                  visibility,
@@ -52,10 +50,11 @@ class CuTarget(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
+                hdr_dep_missing_severity=None,
                 defs=defs,
                 incs=incs,
                 export_incs=[],
-                options=[],
+                optimize=None,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)

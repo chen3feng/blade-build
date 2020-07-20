@@ -22,7 +22,8 @@ from blade import console
 
 
 def analyze_deps(related_targets):
-    """analyze the dependency relationship between targets.
+    """
+    Analyze the dependency relationship between targets.
 
     Given the map of related targets, i.e., the subset of target_database
     that are dependencies of those targets speicifed in Blade command
@@ -42,7 +43,6 @@ def analyze_deps(related_targets):
             [all the targets keys] - sorted
         3. the targets successors dict which is the transpose of #1
             {(target_path, target_name) : [the depended target keys]}
-
     """
     _expand_deps(related_targets)
     return _topological_sort(related_targets)

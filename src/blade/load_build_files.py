@@ -32,7 +32,7 @@ from blade.pathlib import Path
 
 
 def _load_build_rules():
-    # pylint: disable=W0611
+    # pylint: disable=import-outside-toplevel,unused-import
     import blade.cc_targets
     import blade.cu_targets
     import blade.gen_rule_target
@@ -89,7 +89,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     Patterns may contain shell-like wildcards, such as * , ? , or [charset].
     Additionally, the path element '**' matches any subpath.
     """
-    from blade import build_manager
+    from blade import build_manager  # pylint: disable=import-outside-toplevel
     source_dir = Path(build_manager.instance.get_current_source_path())
     source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
     include = var_to_list(include)
@@ -145,7 +145,7 @@ __current_globles = None
 
 # Include a defination file in a BUILD file
 def include(name):
-    from blade import build_manager
+    from blade import build_manager  # pylint: disable=import-outside-toplevel
     if name.startswith('//'):
         dir = build_manager.instance.get_root_dir()
         name = name[2:]
@@ -322,7 +322,7 @@ def load_targets(target_ids, blade_root_dir, blade):
                 cited_targets.add(key)
 
     # Iterating to get svn root dirs
-    for path, name in related_targets:
+    for path, name in related_targets:  # pylint: disable=dict-iter-missing-items
         root_dir = path.split('/')[0].strip()
         if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
             blade.svn_root_dirs.append(root_dir)

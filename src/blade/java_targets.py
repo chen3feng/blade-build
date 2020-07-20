@@ -20,7 +20,6 @@ from distutils.version import LooseVersion
 from blade import build_manager
 from blade import build_rules
 from blade import config
-from blade import console
 from blade import maven
 from blade.blade_util import var_to_list
 from blade.blade_util import iteritems

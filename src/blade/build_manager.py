@@ -111,6 +111,8 @@ class Blade(object):
         }
         self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
 
+        self.__all_rule_names = []
+
     def load_targets(self):
         """Load the targets. """
         console.info('Loading BUILD files...')
@@ -193,10 +195,9 @@ class Blade(object):
             with open(self._verify_history_path) as f:
                 try:
                     self._verify_history = json.load(f)
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     console.warning('Error loading %s, ignore. Reason: %s' % (
                         self._verify_history_path, str(e)))
-                    pass
         return self._verify_history
 
     def _dump_verify_history(self):
@@ -288,7 +289,6 @@ class Blade(object):
         for i in nodes:
             self.print_dot_deps(output_file, i, nodes)
         print('}', file=output_file)
-        pass
 
     def query_dependency_dot(self, output_file):
         result_map = self.query_helper()

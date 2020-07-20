@@ -30,7 +30,7 @@ class BinaryRunner(object):
 
     def __init__(self, options, target_database, build_targets):
         """Init method. """
-        from blade import build_manager
+        from blade import build_manager  # pylint: disable=import-outside-toplevel
         self._build_targets = build_targets
         self.build_dir = build_manager.instance.get_build_dir()
         self.options = options

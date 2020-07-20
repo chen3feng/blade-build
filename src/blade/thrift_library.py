@@ -20,7 +20,6 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import config
-from blade import console
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 from blade.thrift_helper import ThriftHelper

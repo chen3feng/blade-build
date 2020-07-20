@@ -75,7 +75,7 @@ def lock_file(filename):
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return fd, 0
     except IOError as ex_value:
-        return -1, ex_value[0]
+        return -1, ex_value.errno
 
 
 def unlock_file(fd):
@@ -212,7 +212,7 @@ def environ_add_path(env, key, path):
 
 def cpu_count():
     try:
-        import multiprocessing
+        import multiprocessing  # pylint: disable=import-outside-toplevel
         return multiprocessing.cpu_count()
     except ImportError:
         return int(os.sysconf('SC_NPROCESSORS_ONLN'))
@@ -234,6 +234,7 @@ else:
 
 
 def exec_(filename, globals, locals):
+    # pylint: disable=exec-used
     exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals)
 
 

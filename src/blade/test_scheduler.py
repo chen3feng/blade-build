@@ -25,7 +25,6 @@ try:
 except ImportError:
     import Queue as queue
 
-from blade import blade_util
 from blade import config
 from blade import console
 

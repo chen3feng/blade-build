@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import os
 import sys
 import textwrap
-import time
 
 from blade import blade_util
 from blade import config
