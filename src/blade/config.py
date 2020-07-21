@@ -221,8 +221,8 @@ class BladeConfig(object):
     def error(self, msg):
         console.error('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
-    def error_exit(self, msg):
-        console.error_exit('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+    def fatal(self, msg):
+        console.fatal('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
@@ -232,7 +232,7 @@ class BladeConfig(object):
                 console.info('Loading config file "%s"' % filename)
                 exec_(filename, _config_globals, None)
         except SystemExit:
-            console.error_exit('Parse error in config file %s' % filename)
+            console.fatal('Parse error in config file %s' % filename)
         finally:
             self.current_file_name = ''
 
@@ -328,7 +328,7 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        _blade_config.error_exit('Invalid config item "%s" value "%s", can only be in %s' % (
+        _blade_config.fatal('Invalid config item "%s" value "%s", can only be in %s' % (
             name, value, valid_values))
 
 
@@ -337,7 +337,7 @@ def _check_test_related_envs(kwargs):
         try:
             re.compile(name)
         except re.error as e:
-            _blade_config.error_exit(
+            _blade_config.fatal(
                 '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
@@ -354,7 +354,7 @@ def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
     heap_check = kwargs.get('heap_check')
     if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
-        _blade_config.error_exit('"cc_test_config.heap_check" can only be in %s' % HEAP_CHECK_VALUES)
+        _blade_config.fatal('"cc_test_config.heap_check" can only be in %s' % HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 
@@ -454,7 +454,7 @@ def protoc_plugin(**kwargs):
     """protoc_plugin. """
     from blade.proto_library_target import ProtocPlugin  # pylint: disable=import-outside-toplevel
     if 'name' not in kwargs:
-        _blade_config.error_exit('Missing "name" in protoc_plugin parameters: %s' % kwargs)
+        _blade_config.fatal('Missing "name" in protoc_plugin parameters: %s' % kwargs)
     section = _blade_config.get_section('protoc_plugin_config')
     section[kwargs['name']] = ProtocPlugin(**kwargs)
 

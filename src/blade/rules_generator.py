@@ -274,7 +274,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             go_module_enabled = config.get_item('go_config', 'go_module_enabled')
             go_module_relpath = config.get_item('go_config', 'go_module_relpath')
             if not go_home:
-                console.error_exit('"go_config.go_home" is not configured')
+                console.fatal('"go_config.go_home" is not configured')
             if go_module_enabled and not go_module_relpath:
                 outdir = proto_config['protobuf_go_path']
             else:

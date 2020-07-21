@@ -341,7 +341,7 @@ def dump(options):
 def _dump_compdb(options, output_file_name):
     backend_builder = config.get_item('global_config', 'backend_builder')
     if backend_builder != 'ninja':
-        console.error_exit('Dump compdb only work when backend_builder is ninja')
+        console.fatal('Dump compdb only work when backend_builder is ninja')
     rules = build_manager.instance.get_all_rule_names()
     cmd = ['ninja', '-f', build_manager.instance.build_script(), '-t', 'compdb']
     cmd += rules
@@ -352,13 +352,13 @@ def _dump_compdb(options, output_file_name):
 
 
 def lock_workspace(build_dir):
-    _BUILDING_LOCK_FILE ='.blade.building.lock'
+    _BUILDING_LOCK_FILE = '.blade.building.lock'
     lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
     if lock_file_fd == -1:
         if ret_code == errno.EAGAIN:
-            console.error_exit('There is already an active building in current workspace.')
+            console.fatal('There is already an active building in current workspace.')
         else:
-            console.error_exit('Lock exception, please try it later.')
+            console.fatal('Lock exception, please try it later.')
     return lock_file_fd
 
 
@@ -622,7 +622,7 @@ def main(blade_path, argv):
             console.info('Cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
-        exit_code = e.code  # pylint: disable=redefined-variable-type
+        exit_code = e.code
     except KeyboardInterrupt:
         console.error('KeyboardInterrupt')
         exit_code = -signal.SIGINT

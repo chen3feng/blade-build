@@ -313,7 +313,7 @@ class Blade(object):
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
         if self.__options.dependents:
-            console.error_exit('Only query --deps can be output as tree format')
+            console.fatal('Only query --deps can be output as tree format')
         print(file=output_file)
         for key in self.__expanded_command_targets:
             self._query_dependency_tree(key, 0, self.__build_targets, output_file)
@@ -395,8 +395,7 @@ class Blade(object):
         key = target.key
         # Check whether there is already a key in database
         if key in self.__target_database:
-            console.error_exit('Target %s is duplicate in //%s/BUILD' % (
-                target.name, target.path))
+            console.fatal('Target %s is duplicate in //%s/BUILD' % (target.name, target.path))
         self.__target_database[key] = target
 
     def _is_real_target_type(self, target_type):

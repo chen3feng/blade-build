@@ -65,9 +65,8 @@ def _expand_deps(targets):
 def _check_dep_visibility(target, dep, targets):
     """Check whether target is able to depend on dep. """
     if dep not in targets:
-        console.error_exit('Target %s:%s depends on %s:%s, '
-                           'but it is missing, exit...' % (
-                               target[0], target[1], dep[0], dep[1]))
+        console.fatal('Target %s:%s depends on %s:%s, but it is missing, exit...' % (
+                      target[0], target[1], dep[0], dep[1]))
     # Targets are visible inside the same BUILD file by default
     if target[0] == dep[0]:
         return
@@ -77,9 +76,8 @@ def _check_dep_visibility(target, dep, targets):
     if visibility == 'PUBLIC':
         return
     if target not in visibility:
-        console.error_exit('%s:%s is not allowed to depend on %s '
-                           'because of visibility.' % (
-                               target[0], target[1], d.fullname))
+        console.fatal('%s:%s is not allowed to depend on %s because of visibility.' % (
+                      target[0], target[1], d.fullname))
 
 
 def _unique_deps(new_deps_list):
@@ -116,7 +114,7 @@ def _find_all_deps(target_id, targets, deps_map_cache, root_targets=None):
             err_msg = ''
             for t in root_targets:
                 err_msg += '//%s:%s --> ' % (t[0], t[1])
-            console.error_exit('Loop dependency found: //%s:%s --> [%s]' % (
+            console.fatal('Loop dependency found: //%s:%s --> [%s]' % (
                 d[0], d[1], err_msg))
         _check_dep_visibility(target_id, d, targets)
         new_deps_list.append(d)

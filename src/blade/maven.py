@@ -74,8 +74,8 @@ class MavenCache(object):
         if self.__snapshot_update_policy == 'interval':
             interval = java_config.get('maven_snapshot_update_interval')
             if not interval:
-                console.error_exit('java_config: "maven_snapshot_update_interval" is required when '
-                                   '"maven_snapshot_update_policy" is "interval"')
+                console.fatal('java_config: "maven_snapshot_update_interval" is required when '
+                              '"maven_snapshot_update_policy" is "interval"')
             self.__snapshot_update_interval = interval * 60  # minutes
         else:
             self.__snapshot_update_interval = 86400
@@ -97,7 +97,7 @@ class MavenCache(object):
     def _check_config(self):
         """Check whether maven is configured correctly. """
         if not self.__maven:
-            console.error_exit('MavenCache is not configured')
+            console.fatal('MavenCache is not configured')
 
     def _is_file_expired(self, filename):
         """Check if the modification time of file is expired relative to build time. """
@@ -210,7 +210,7 @@ class MavenCache(object):
         """get_artifact_from_database. """
         if (id, classifier) not in self.__jar_database:
             if not self._download_artifact(id, classifier, target):
-                target.error_exit('Download %s failed' % id)
+                target.fatal('Download %s failed' % id)
         return self.__jar_database[(id, classifier)]
 
     def get_jar_path(self, id, classifier, target):

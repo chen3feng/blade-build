@@ -65,7 +65,7 @@ def _report_not_exist(source_dir, kind, path, blade):
     """Report dir or BUILD file does not exist. """
     msg = '%s "//%s" does not exist' % (kind, path)
     dependent = _find_dir_dependent(source_dir, blade)
-    (dependent or console).error_exit(msg)
+    (dependent or console).fatal(msg)
 
 
 def enable_if(cond, true_value, false_value=None):
@@ -191,9 +191,9 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             __current_globles = build_rules.get_all()
             exec_(build_file, __current_globles, None)
         except SystemExit:
-            console.error_exit('%s: Fatal error' % build_file)
+            console.fatal('%s: Fatal error' % build_file)
         except:  # pylint: disable=bare-except
-            console.error_exit('Parse error in %s\n%s' % (
+            console.fatal('Parse error in %s\n%s' % (
                 build_file, traceback.format_exc()))
     else:
         _report_not_exist(source_dir, 'BUILD file', build_file, blade)
@@ -314,7 +314,7 @@ def load_targets(target_ids, blade_root_dir, blade):
         if target_id not in target_database:
             msg = 'Target "//%s:%s" does not exist' % target_id
             dependent = _find_dependent(target_id, blade)
-            (dependent or console).error_exit(msg)
+            (dependent or console).fatal(msg)
 
         related_targets[target_id] = target_database[target_id]
         for key in related_targets[target_id].expanded_deps:

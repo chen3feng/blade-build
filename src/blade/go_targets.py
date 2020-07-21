@@ -66,8 +66,8 @@ class GoTarget(Target):
         srcs = [self._source_file_path(s) for s in self.srcs]
         dirs = set([os.path.dirname(s) for s in srcs])
         if len(dirs) != 1:
-            self.error_exit('Go sources belonging to the same package should be in the same '
-                            'directory. Sources: %s' % ', '.join(self.srcs))
+            self.fatal('Go sources belonging to the same package should be in the same '
+                       'directory. Sources: %s' % ', '.join(self.srcs))
         go_home = config.get_item('go_config', 'go_home')
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         go_module_relpath = config.get_item('go_config', 'go_module_relpath')
@@ -86,7 +86,7 @@ class GoTarget(Target):
                                  universal_newlines=True)
             stdout, stderr = p.communicate()
             if p.returncode:
-                self.error_exit('Failed to initialize go environment: %s' % stderr)
+                self.fatal('Failed to initialize go environment: %s' % stderr)
             for line in stdout.splitlines():
                 if line.startswith('GOOS='):
                     GoTarget._go_os = line.replace('GOOS=', '').strip('"')
@@ -271,7 +271,7 @@ def go_package(
     path = build_manager.instance.get_current_source_path()
     srcs, tests = find_go_srcs(path)
     if not srcs and not tests:
-        console.error_exit('Empty go sources in %s' % path)
+        console.fatal('Empty go sources in %s' % path)
     if srcs:
         main = False
         for src in srcs:

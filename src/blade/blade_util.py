@@ -153,7 +153,7 @@ def find_blade_root_dir(working_dir=None):
     """
     blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
     if not blade_root:
-        console.error_exit(
+        console.fatal(
             "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
             "Blade need this file as a placeholder to locate the root source directory "
             "(aka the directory where you #include start from).\n"

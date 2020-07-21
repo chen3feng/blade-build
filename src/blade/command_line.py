@@ -50,8 +50,8 @@ class ParsedCommandLine(object):
 
         for t in self.targets:
             if t.startswith('-'):
-                console.error_exit('Unrecognized option %s, use blade [action] '
-                                   '--help to get all the options' % t)
+                console.fatal('Unrecognized option %s, use blade [action] '
+                              '--help to get all the options' % t)
 
         command = self.options.command
 
@@ -69,9 +69,9 @@ class ParsedCommandLine(object):
     def _check_run_targets(self):
         """check that run command should have only one target. """
         if not self.targets or ':' not in self.targets[0]:
-            console.error_exit('Please specify a single target to run: '
-                               'blade run //target_path:target_name (or '
-                               'a_path:target_name)')
+            console.fatal('Please specify a single target to run: '
+                          'blade run //target_path:target_name (or '
+                          'a_path:target_name)')
         if len(self.targets) > 1:
             console.warning('Run command will only take one target to build and run')
 
@@ -83,7 +83,7 @@ class ParsedCommandLine(object):
         compiler_arch = self._compiler_target_arch()
         arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
         if arch is None:
-            console.error_exit('Unknown architecture: %s' % compiler_arch)
+            console.fatal('Unknown architecture: %s' % compiler_arch)
 
         m = self.options.m
         if not m:
@@ -94,7 +94,7 @@ class ParsedCommandLine(object):
             self.options.bits = m
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
             if self.options.arch is None:
-                console.error_exit('"-m%s" is not supported by the architecture %s'
+                console.fatal('"-m%s" is not supported by the architecture %s'
                                    % (m, compiler_arch))
 
     def _check_clean_options(self):
@@ -104,8 +104,7 @@ class ParsedCommandLine(object):
     def _check_query_options(self):
         """check query action options. """
         if not self.options.deps and not self.options.dependents:
-            console.error_exit('Please specify --deps, --dependents or both to '
-                               'query target')
+            console.fatal('Please specify --deps, --dependents or both to query target')
 
     def _check_build_options(self):
         """check the building options. """
@@ -420,8 +419,7 @@ class ParsedCommandLine(object):
         arch = BuildPlatform._get_cc_target_arch()
         pos = arch.find('-')
         if pos == -1:
-            console.error_exit('Unknown target architecture %s from gcc.'
-                               % arch)
+            console.fatal('Unknown target architecture %s from gcc.' % arch)
         return arch[:pos]
 
     def get_command(self):

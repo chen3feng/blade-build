@@ -112,7 +112,7 @@ class GenRuleTarget(Target):
             for key, label in locations:
                 path = targets[key]._get_target_file(label)
                 if not path:
-                    self.error_exit('Invalid location reference %s %s' % (':'.join(key), label))
+                    self.fatal('Invalid location reference %s %s' % (':'.join(key), label))
                 locations_paths.append(path)
             cmd = cmd % tuple(locations_paths)
         return cmd

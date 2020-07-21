@@ -943,7 +943,7 @@ class PrebuiltCcLibrary(CcTarget):
                 break
         if not source:
             # TODO(chen3feng): Restore this error
-            # self.error_exit('Can not find either %s or %s' % (libs[0], libs[1]))
+            # self.fatal('Can not find either %s or %s' % (libs[0], libs[1]))
             source = a_src_path
         target = self._target_file_path(os.path.basename(source))
         return source, target
@@ -1580,7 +1580,7 @@ class CcTest(CcBinary):
             heap_check = cc_test_config.get('heap_check', '')
         else:
             if heap_check not in HEAP_CHECK_VALUES:
-                self.error_exit('heap_check can only be in %s' % HEAP_CHECK_VALUES)
+                self.fatal('heap_check can only be in %s' % HEAP_CHECK_VALUES)
 
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])
