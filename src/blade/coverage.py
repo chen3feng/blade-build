@@ -13,7 +13,6 @@ from __future__ import print_function
 
 import collections
 import os
-import re
 import subprocess
 import zipfile
 
@@ -122,7 +121,7 @@ class JacocoReporter(object):
 
     @staticmethod
     def _check_java_debug_options():
-        from blade import java_targets
+        from blade import java_targets  # pylint: disable=import-outside-toplevel
         options = java_targets.debug_info_options()
         for option in options:
             if 'line' in option:  # "-g:line" is required to generate line coverage
@@ -156,7 +155,7 @@ class JacocoReporter(object):
         with open(index_html) as f:
             content = f.read()
         for package, path in mapping.items():
-                content = content.replace('>%s</a>' % package, '>%s</a>' % path)
+            content = content.replace('>%s</a>' % package, '>%s</a>' % path)
         with open(index_html, 'w') as f:
             f.write(content)
         # Also generate a package_mapping file

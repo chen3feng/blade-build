@@ -49,6 +49,7 @@ class FBThriftLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning='',
+                hdr_dep_missing_severity=None,
                 defs=[],
                 incs=[],
                 export_incs=[],
@@ -87,7 +88,7 @@ class FBThriftLibrary(CcTarget):
                 console.error('Invalid thrift file name %s' % src)
                 error += 1
         if error > 0:
-            console.error_exit('Invalid thrift file names found.')
+            console.fatal('Invalid thrift file names found.')
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """

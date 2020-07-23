@@ -30,7 +30,7 @@ class BinaryRunner(object):
 
     def __init__(self, options, target_database, build_targets):
         """Init method. """
-        from blade import build_manager
+        from blade import build_manager  # pylint: disable=import-outside-toplevel
         self._build_targets = build_targets
         self.build_dir = build_manager.instance.get_build_dir()
         self.options = options
@@ -67,8 +67,7 @@ class BinaryRunner(object):
         """Check whether the destination of test data is valid or not. """
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
-            console.error_exit('Ambiguous testdata of %s: %s, exit...' % (
-                target.fullname, dest))
+            console.fatal('Ambiguous testdata of %s: %s, exit...' % (target.fullname, dest))
         for item in dest_list:
             item_norm = os.path.normpath(item)
             if len(dest_norm) >= len(item_norm):
@@ -76,7 +75,7 @@ class BinaryRunner(object):
             else:
                 long_path, short_path = item_norm, dest_norm
             if long_path.startswith(short_path) and long_path[len(short_path)] == '/':
-                target.error_exit('"%s" could not exist with "%s" in testdata' % (dest, item))
+                target.fatal('"%s" could not exist with "%s" in testdata' % (dest, item))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
@@ -195,7 +194,7 @@ class BinaryRunner(object):
         target_key = tuple(target_name.split(':'))
         target = self._build_targets[target_key]
         if target.type not in self.run_list:
-            target.error_exit('is not a executable target')
+            target.fatal('is not a executable target')
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         shell = target.data.get('run_in_shell', False)

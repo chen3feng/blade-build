@@ -60,8 +60,10 @@ class GenRuleTarget(Target):
         self.data['heavy'] = heavy
 
         if generated_incs is not None:
-            generated_incs = var_to_list(generated_incs)
-            self.data['generated_incs'] = [self._target_file_path(inc) for inc in generated_incs]
+            generated_incs = [self._target_file_path(inc) for inc in var_to_list(generated_incs)]
+            self.data['generated_incs'] = generated_incs
+            for inc in generated_incs:
+                cc_targets._declare_hdr_dir(self, inc)
         else:
             if generated_hdrs is None:
                 # Auto judge
@@ -71,7 +73,7 @@ class GenRuleTarget(Target):
             if generated_hdrs:
                 generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
                 self.data['generated_hdrs'] = generated_hdrs
-                cc_targets._register_hdrs(self, generated_hdrs)
+                cc_targets._declare_hdrs(self, generated_hdrs)
 
         if export_incs:
             self.data['export_incs'] = self._expand_incs(var_to_list(export_incs))
@@ -110,7 +112,7 @@ class GenRuleTarget(Target):
             for key, label in locations:
                 path = targets[key]._get_target_file(label)
                 if not path:
-                    self.error_exit('Invalid location reference %s %s' % (':'.join(key), label))
+                    self.fatal('Invalid location reference %s %s' % (':'.join(key), label))
                 locations_paths.append(path)
             cmd = cmd % tuple(locations_paths)
         return cmd

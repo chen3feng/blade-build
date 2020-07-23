@@ -32,11 +32,11 @@ function _warning() {
     fi
 }
 
-function _error_exit() {
+function _fatal() {
     if [ -t 2 ]; then
-        echo -e "\033[1;31mBlade(error): $@\nBlade (error): Blade will exit...\033[m" >&2
+        echo -e "\033[1;31mBlade(fatal): $@\nBlade (error): Blade will exit...\033[m" >&2
     else
-        echo -e "Blade(error): $@\nBlade (error): Blade will exit..." >&2
+        echo -e "Blade(fatal): $@\nBlade (fatal): Blade will exit..." >&2
     fi
     exit 1
 }
@@ -82,24 +82,24 @@ fi
 # version is under 2.7
 no_python=$(which python 2>&1 | grep 'which: no')
 if [[ -n "$no_python" ]]; then
-    _error_exit "Please install python 2.7 or above in your system"
+    _fatal "Please install python 2.7 or above in your system"
 fi
 
 python_ver=$(python -V 2>&1 | sed 's/Python //g')
 if [[ "$python_ver" < "2.7" ]]; then
     _info "Python version in your machine: $python_ver"
-    _error_exit "Please upgrade your python version to 2.7 or above"
+    _fatal "Please upgrade your python version to 2.7 or above"
 fi
 
 # Check ninja
 no_ninja=$(which ninja 2>&1 | grep 'which: no ninja in')
 if [[ -n "$no_ninja" ]]; then
-    _error_exit "Please install ninja v1.8+"
+    _fatal "Please install ninja v1.8+"
 fi
 
 # Check blade file
 if [[ ! -e "$blade_file" ]]; then
-    _error_exit "Cannot find the core file $blade_file"
+    _fatal "Cannot find the core file $blade_file"
 fi
 
 ${BLADE_PYTHON_INTERPRETER:-python} $blade_file "$@"

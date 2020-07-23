@@ -11,7 +11,6 @@ from __future__ import absolute_import
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 
@@ -41,7 +40,7 @@ class LexYaccLibrary(CcTarget):
         if (len(srcs) != 2 or
                 (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
-            self.error_exit('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
+            self.fatal('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
 
         super(LexYaccLibrary, self).__init__(
                 name=name,
@@ -92,7 +91,7 @@ class LexYaccLibrary(CcTarget):
         elif source.endswith('.ll') or source.endswith('.yy'):
             return source + '.cc'
         else:
-            self.error_exit('Unknown source %s' % source)
+            self.fatal('Unknown source %s' % source)
 
     def ninja_lex_vars(self):
         lex_flags = self._lex_flags()

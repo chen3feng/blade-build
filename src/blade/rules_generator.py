@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import os
 import sys
 import textwrap
-import time
 
 from blade import blade_util
 from blade import config
@@ -183,7 +182,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
 
         # Generate '.H' for cc file to check dependency missing, see
         # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2>${out}'
+        preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}'
         self.generate_rule(name='cchdrs',
                            command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
                            description='CC HDRS ${in}')
@@ -275,7 +274,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             go_module_enabled = config.get_item('go_config', 'go_module_enabled')
             go_module_relpath = config.get_item('go_config', 'go_module_relpath')
             if not go_home:
-                console.error_exit('"go_config.go_home" is not configured')
+                console.fatal('"go_config.go_home" is not configured')
             if go_module_enabled and not go_module_relpath:
                 outdir = proto_config['protobuf_go_path']
             else:

@@ -133,7 +133,7 @@ class BuildPlatform(object):
                 else:
                     version = line[pos + len('version') + 1:]
         if not version:
-            console.error_exit('Failed to obtain cc toolchain.')
+            console.fatal('Failed to obtain cc toolchain.')
         return cc, version
 
     @staticmethod

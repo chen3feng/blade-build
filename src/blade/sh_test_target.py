@@ -16,7 +16,6 @@ import os
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
 
@@ -67,7 +66,7 @@ class ShellTest(Target):
             elif isinstance(td, str):
                 src, dst = td, ''
             else:
-                self.error_exit('Invalid testdata %s. Test data should be either str or tuple.' % td)
+                self.fatal('Invalid testdata %s. Test data should be either str or tuple.' % td)
 
             m = LOCATION_RE.search(src)
             if m:

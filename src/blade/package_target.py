@@ -17,7 +17,6 @@ import os
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
 
@@ -58,8 +57,8 @@ class PackageTarget(Target):
                 kwargs=kwargs)
 
         if type not in _package_types:
-            self.error_exit('Invalid type %s. Types supported by the package are %s' % (
-                            type, ', '.join(sorted(_package_types))))
+            self.fatal('Invalid type %s. Types supported by the package are %s' % (
+                       type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
         self.data['sources'] = []
         self.data['locations'] = []
@@ -81,7 +80,7 @@ class PackageTarget(Target):
             elif isinstance(s, str):
                 src, dst = s, ''
             else:
-                self.error_exit('Invalid src %s. src should be either str or tuple.' % s)
+                self.fatal('Invalid src %s. src should be either str or tuple.' % s)
 
             m = LOCATION_RE.search(src)
             if m:
@@ -99,7 +98,7 @@ class PackageTarget(Target):
         Return src full path within the workspace and mapping path in the archive.
         """
         if '..' in src or '..' in dst:
-            self.error_exit('Invalid src (%s, %s). Relative path is not allowed.' % (src, dst))
+            self.fatal('Invalid src (%s, %s). Relative path is not allowed.' % (src, dst))
         elif src.startswith('//'):
             src = src[2:]
             path = src
@@ -114,7 +113,7 @@ class PackageTarget(Target):
         """Add regular file or directory. """
         src, dst = self._get_source_path(src, dst)
         if not os.path.exists(src):
-            self.error_exit('Package source %s does not exist.' % src)
+            self.fatal('Package source %s does not exist.' % src)
         elif os.path.isfile(src):
             self.data['sources'].append((src, dst))
         else:

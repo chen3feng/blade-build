@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import blade.config
 import blade.console
 
+#pylint: disable=import-outside-toplevel
 
 def workspace_root_dir():
     """Get the root dir of current workspace"""
@@ -24,4 +25,3 @@ def current_target_dir():
     import os
     import blade.build_manager
     return os.path.join(blade.build_manager.instance.get_build_dir(), current_source_dir())
-

@@ -50,8 +50,8 @@ class PythonTarget(Target):
 
         if base:
             if not base.startswith('//'):
-                self.error_exit('Invalid base directory %s. Option base should be a directory '
-                                'starting with \'//\' from BLADE_ROOT directory.' % base)
+                self.fatal('Invalid base directory %s. Option base should be a directory '
+                           'starting with \'//\' from BLADE_ROOT directory.' % base)
             self.data['python_base'] = base[2:]
 
     def _expand_deps_generation(self):
@@ -122,12 +122,12 @@ class PrebuiltPythonLibrary(PythonTarget):
                 base=base,
                 kwargs=kwargs)
         if base:
-            self.error_exit("Prebuilt py_library doesn't support base")
+            self.fatal("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
-            self.error_exit('There can only be 1 file in prebuilt py_library')
+            self.fatal('There can only be 1 file in prebuilt py_library')
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
-            console.error_exit(
+            console.fatal(
                 '%s: Invalid file "%s" in srcs, prebuilt py_library only support egg and whl' %
                 (self.fullname, src))
 
@@ -143,7 +143,6 @@ def py_library(name,
                prebuilt=None,
                **kwargs):
     """python library. """
-    # pylint: disable=redefined-variable-type
     if prebuilt:
         target = PrebuiltPythonLibrary(
                 name=name,
@@ -200,7 +199,7 @@ class PythonBinary(PythonLibrary):
             if len(srcs) == 1:
                 self.data['main'] = srcs[0]
             else:
-                self.error_exit(
+                self.fatal(
                     'The entry file must be specified by the "main" '
                     'argument if there are more than one srcs')
 

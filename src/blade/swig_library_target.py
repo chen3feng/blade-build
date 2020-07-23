@@ -13,7 +13,6 @@ import os
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade.cc_targets import CcTarget
 
 

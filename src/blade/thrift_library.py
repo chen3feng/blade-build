@@ -20,7 +20,6 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import config
-from blade import console
 from blade.blade_util import var_to_list
 from blade.cc_targets import CcTarget
 from blade.thrift_helper import ThriftHelper
@@ -75,7 +74,7 @@ class ThriftLibrary(CcTarget):
         """Check whether the thrift file's name ends with .thrift. """
         for src in srcs:
             if not src.endswith('.thrift'):
-                self.error_exit('Invalid thrift file %s' % src)
+                self.fatal('Invalid thrift file %s' % src)
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """

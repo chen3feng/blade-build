@@ -187,9 +187,9 @@ def show_progress_bar(current, total):
     progress = current * 100 // total
     now = time.time()
     if _need_refresh_pgogress_bar(progress, current, now):
-        bar = _progress_bar(progress, current, total)
-        bar += '\r' if _color_enabled else '\n'
-        print(bar, end='')
+        line = _progress_bar(progress, current, total)
+        line += '\r' if _color_enabled else '\n'
+        print(line, end='')
         _last_progress_value = current
         _last_progress_time = now
         _need_clear_line = True
@@ -235,7 +235,7 @@ def error(msg, prefix=True):
     _do_print(colored(msg, 'red'), file=sys.stderr)
 
 
-def error_exit(msg, code=1, prefix=True):
+def fatal(msg, code=1, prefix=True):
     """dump error message and exit. """
     error(msg, prefix=prefix)
     sys.exit(code)

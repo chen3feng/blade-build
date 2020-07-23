@@ -20,7 +20,6 @@ from distutils.version import LooseVersion
 from blade import build_manager
 from blade import build_rules
 from blade import config
-from blade import console
 from blade import maven
 from blade.blade_util import var_to_list
 from blade.blade_util import iteritems
@@ -46,8 +45,8 @@ class MavenJar(Target):
     def _check_id(self, id):
         """Check if id is valid. """
         if not maven.is_valid_id(id):
-            self.error_exit('Invalid id %s: Id should be group:artifact:version, '
-                            'such as jaxen:jaxen:1.1.6' % id)
+            self.fatal('Invalid id %s: Id should be group:artifact:version, '
+                       'such as jaxen:jaxen:1.1.6' % id)
 
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
@@ -181,8 +180,8 @@ class JavaTargetMixIn(object):
             elif isinstance(resource, str):
                 src, dst = resource, ''
             else:
-                self.error_exit('Invalid resource %s. Resource should be either a str or a tuple.' %
-                                resource)
+                self.fatal('Invalid resource %s. Resource should be either a str or a tuple.' %
+                           resource)
 
             m = LOCATION_RE.search(src)
             if m:
@@ -387,7 +386,7 @@ class JavaTargetMixIn(object):
         """
         full_path, res_path, jar_path = '', resource[0], resource[1]
         if '..' in res_path:
-            self.error_exit('Invalid resource %s. Relative path is not allowed.' % res_path)
+            self.fatal('Invalid resource %s. Relative path is not allowed.' % res_path)
         elif res_path.startswith('//'):
             res_path = res_path[2:]
             full_path = res_path
