@@ -124,25 +124,28 @@ class Target(object):
         target.update(self.data)
         return target
 
+    def _format_message(self, level, msg):
+        return '%s: %s: %s: %s' % (self.source_location, level, self.name, msg)
+
     def debug(self, msg):
         """Print message with target full name prefix"""
-        console.debug('%s: %s' % (self.source_location, msg), prefix=False)
+        console.debug(self._format_message('debug', msg), prefix=False)
 
     def info(self, msg):
         """Print message with target full name prefix"""
-        console.info('%s: %s' % (self.source_location, msg), prefix=False)
+        console.info(self._format_message('info', msg), prefix=False)
 
     def warning(self, msg):
         """Print message with target full name prefix"""
-        console.warning('%s: %s' % (self.source_location, msg), prefix=False)
+        console.warning(self._format_message('warning', msg), prefix=False)
 
     def error(self, msg):
         """Print message with target full name prefix"""
-        console.error('%s: %s' % (self.source_location, msg), prefix=False)
+        console.error(self._format_message('error', msg), prefix=False)
 
     def fatal(self, msg, code=1):
         """Print message with target full name prefix and exit"""
-        console.fatal('%s: %s' % (self.source_location, msg), code=code, prefix=False)
+        console.fatal(self._format_message('fatal', msg), code=code, prefix=False)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """

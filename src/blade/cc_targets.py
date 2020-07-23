@@ -728,7 +728,7 @@ class CcTarget(Target):
                 continue
             stack.pop()
             source = self._source_file_path(src)
-            msg.append('  For %s' % generated_hdr)
+            msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
             if not stack:
                 msg.append('    In file included from %s' % source)
             else:
