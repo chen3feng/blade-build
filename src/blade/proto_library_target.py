@@ -191,8 +191,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if self.data['generate_java']:
             self._expand_deps_java_generation()
 
-    def _proto_gen_files(self, src):
-        """_proto_gen_files. """
+    def _proto_gen_cpp_files(self, src):
+        """_proto_gen_cpp_files. """
         proto_name = src[:-6]
         return (self._target_file_path('%s.pb.cc' % proto_name),
                 self._target_file_path('%s.pb.h' % proto_name))
@@ -356,9 +356,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if self.data['generate_descriptors']:
             self.ninja_proto_descriptor_rules()
 
-    def _proto_gen_file_names(self, source):
+    def _proto_gen_cpp_file_names(self, source):
+        """Return just file names"""
         base = source[:-6]
-        return ['%s.pb.h' % base, '%s.pb.cc' % base]
+        return ['%s.pb.cc' % base, '%s.pb.h' % base]
 
     def ninja_rules(self):
         """Generate ninja rules for proto files. """
@@ -369,20 +370,23 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         plugin, vars = self.ninja_protoc_plugin_parameters('cpp')
         self.ninja_protoc_direct_dependencies(vars)
-        cpp_sources, cpp_headers, implicit_deps = [], [], []
+        implicit_deps = []
         if plugin:
             implicit_deps.append(plugin)
+        cpp_sources, cpp_headers = [], []
+        full_cpp_sources, full_cpp_headers = [], []
         for src in self.srcs:
-            source, header = self._proto_gen_files(src)
-            self.ninja_build('proto', [source, header],
+            full_source, full_header = self._proto_gen_cpp_files(src)
+            self.ninja_build('proto', [full_source, full_header],
                              inputs=self._source_file_path(src),
                              implicit_deps=implicit_deps, variables=vars)
+            full_cpp_headers.append(full_header)
+            source, header = self._proto_gen_cpp_file_names(src)
             cpp_headers.append(header)
-            self.data['generated_hdrs'].append(header)
-            names = self._proto_gen_file_names(src)
-            cpp_sources.append(names[1])
-        self._set_hdrs(self.data['generated_hdrs'])
-        self._cc_objects_ninja(cpp_sources, True, generated_headers=cpp_headers)
+            cpp_sources.append(source)
+        self.data['generated_hdrs'] = full_cpp_headers
+        self._set_hdrs(cpp_headers)
+        self._cc_objects_ninja(cpp_sources, True, generated_headers=full_cpp_headers)
         self._cc_library_ninja()
         self.ninja_proto_rules(self.blade.get_options())
 

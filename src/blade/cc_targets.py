@@ -153,9 +153,14 @@ class CcTarget(Target):
         """Set The "hdrs" attribute properly, they should be full path"""
         if not hdrs:
             return
-        hdrs = [self._source_file_path(h) for h in var_to_list(hdrs)]
-        self.data['hdrs'] = hdrs
-        _declare_hdrs(self, hdrs)
+        expanded_hdrs = []
+        for h in var_to_list(hdrs):
+            hdr = self._source_file_path(h)
+            if not os.path.exists(hdr):
+                hdr = self._target_file_path(h)
+            expanded_hdrs.append(hdr)
+        self.data['hdrs'] = expanded_hdrs
+        _declare_hdrs(self, expanded_hdrs)
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
@@ -789,9 +794,9 @@ class CcTarget(Target):
         severity = self.data.get(key) or config.get_item('cc_config', key)
         output = getattr(self, severity)
         if direct_verify_msg:
-            output('Missing dependency declaration in BUILD file:\n%s' % '\n'.join(direct_verify_msg))
+            output('Missing dependency declaration:\n%s' % '\n'.join(direct_verify_msg))
         if generated_verify_msg:
-            output('Missing dependency declaration in BUILD file:\n%s' % '\n'.join(generated_verify_msg))
+            output('Missing indirect dependency declaration:\n%s' % '\n'.join(generated_verify_msg))
 
         # Update history
         for preprocess in failed_preprocess_paths:
