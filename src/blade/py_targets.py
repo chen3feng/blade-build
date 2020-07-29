@@ -178,6 +178,7 @@ class PythonBinary(PythonLibrary):
                  visibility,
                  main,
                  base,
+                 exclusions,
                  kwargs):
         """Init method. """
         srcs = var_to_list(srcs)
@@ -202,6 +203,7 @@ class PythonBinary(PythonLibrary):
                 self.fatal(
                     'The entry file must be specified by the "main" '
                     'argument if there are more than one srcs')
+        self.data['exclusions'] = exclusions
 
     def _get_entry(self):
         main = self.data['main']
@@ -223,6 +225,7 @@ class PythonBinary(PythonLibrary):
             # TODO(wentingli): Add other dependencies if needed
         vars = self.ninja_vars()
         vars['mainentry'] = self._get_entry()
+        vars['exclusions'] = ','.join(self.data['exclusions'])
         self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)
         self._add_default_target_file('bin', output)
 
@@ -233,6 +236,7 @@ def py_binary(name,
               visibility=None,
               main=None,
               base=None,
+              exclusions=[],
               **kwargs):
     """python binary. """
     target = PythonBinary(
@@ -242,6 +246,7 @@ def py_binary(name,
             visibility=visibility,
             main=main,
             base=base,
+            exclusions=exclusions,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
@@ -271,6 +276,7 @@ class PythonTest(PythonBinary):
                 visibility=visibility,
                 main=main,
                 base=base,
+                exclusions=[],
                 kwargs=kwargs)
         self.type = 'py_test'
         self.data['testdata'] = testdata

@@ -26,6 +26,7 @@ The build function is defined as follows:
 from __future__ import absolute_import
 from __future__ import print_function
 
+import fnmatch
 import getpass
 import os
 import shutil
@@ -448,6 +449,13 @@ def generate_python_library(pylib, basedir, args):
         }), file=f)
 
 
+def _is_python_excluded_path(filename, exclusions):
+    for exclusion in exclusions:
+        if fnmatch.fnmatch(filename, exclusion):
+            return True
+    return False
+
+
 def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
     dir = os.path.dirname(arcname)
     if os.path.basename(arcname) == '__init__.py':
@@ -457,27 +465,28 @@ def _update_init_py_dirs(arcname, dirs, dirs_with_init_py):
         dir = os.path.dirname(dir)
 
 
-def _pybin_add_pylib(pybin, libname, dirs, dirs_with_init_py):
+def _pybin_add_pylib(pybin, libname, exclusions, dirs, dirs_with_init_py):
     with open(libname) as pylib:
         data = eval(pylib.read())  # pylint: disable=eval-used
         pylib_base_dir = data['base_dir']
         for libsrc, digest in data['srcs']:
             arcname = os.path.relpath(libsrc, pylib_base_dir)
-            _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
-            pybin.write(libsrc, arcname)
+            if not _is_python_excluded_path(arcname, exclusions):
+                _update_init_py_dirs(arcname, dirs, dirs_with_init_py)
+                pybin.write(libsrc, arcname)
 
 
-def _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py):
+def _pybin_add_zip(pybin, libname, filter, exclusions, dirs, dirs_with_init_py):
     with zipfile.ZipFile(libname, 'r') as lib:
         name_list = lib.namelist()
         for name in name_list:
-            if filter(name):
+            if filter(name) and not _is_python_excluded_path(name, exclusions):
                 if dirs is not None and dirs_with_init_py is not None:
                     _update_init_py_dirs(name, dirs, dirs_with_init_py)
                 pybin.writestr(name, lib.read(name))
 
 
-def _pybin_add_egg(pybin, libname):
+def _pybin_add_egg(pybin, libname, exclusions):
     def filter(name):
         if name.startswith('EGG-INFO'):
             return False
@@ -485,28 +494,29 @@ def _pybin_add_egg(pybin, libname):
             return False
         return True
 
-    _pybin_add_zip(pybin, libname, filter, None, None)
+    _pybin_add_zip(pybin, libname, filter, exclusions, None, None)
 
 
-def _pybin_add_whl(pybin, libname, dirs, dirs_with_init_py):
+def _pybin_add_whl(pybin, libname, exclusions, dirs, dirs_with_init_py):
     def filter(name):
         if '.dist-info/' in name:
             return False
         return True
 
-    _pybin_add_zip(pybin, libname, filter, dirs, dirs_with_init_py)
+    _pybin_add_zip(pybin, libname, filter, exclusions, dirs, dirs_with_init_py)
 
 
-def generate_python_binary(pybin, basedir, mainentry, args):
+def generate_python_binary(pybin, basedir, exclusions, mainentry, args):
     pybin_zip = zipfile.ZipFile(pybin, 'w', zipfile.ZIP_DEFLATED)
+    exclusions = exclusions.split(',')
     dirs, dirs_with_init_py = set(), set()
     for arg in args:
         if arg.endswith('.pylib'):
-            _pybin_add_pylib(pybin_zip, arg, dirs, dirs_with_init_py)
+            _pybin_add_pylib(pybin_zip, arg, exclusions, dirs, dirs_with_init_py)
         elif arg.endswith('.egg'):
-            _pybin_add_egg(pybin_zip, arg)
+            _pybin_add_egg(pybin_zip, arg, exclusions)
         elif arg.endswith('.whl'):
-            _pybin_add_whl(pybin_zip, arg, dirs, dirs_with_init_py)
+            _pybin_add_whl(pybin_zip, arg, exclusions, dirs, dirs_with_init_py)
         else:
             assert False, 'Unknown file type "%s" to build python_binary' % arg
 

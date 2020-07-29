@@ -438,7 +438,8 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         self.generate_rule(name='pythonlibrary',
                            command=self._builtin_command('python_library', suffix=args),
                            description='PYTHON LIBRARY ${out}')
-        args = '--basedir=${basedir} --mainentry=${mainentry} --pybin=${out} ${in}'
+        args = ('--basedir=${basedir} --exclusions=${exclusions} --mainentry=${mainentry} '
+                '--pybin=${out} ${in}')
         self.generate_rule(name='pythonbinary',
                            command=self._builtin_command('python_binary', suffix=args),
                            description='PYTHON BINARY ${out}')
