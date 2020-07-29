@@ -28,6 +28,9 @@ Targets is a separate list of spaces, supported formats:
 If no target is specified, it defaults to all targets in the current directory (excluding subdirectories). If there is no BUILD file in the current directory, it will fail.
 When you specify ... as the end target, if its path exists, it will not fail even if the expansion is empty.
 
+Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
+excluded from searching, you can put an empty `.bladeskip` under it.
+
 ## Subcommand Options
 
 The options supported by different subcommands are different. Please run blade \<subcommand\> --help to view
@@ -68,6 +71,3 @@ blade test base/...
 # Build and test the target named `string_test` in the base subdirectory
 blade test base:string_test
 ```
-
-Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
-excluded from searching, you can put an empty `.bladeskip` under it.
