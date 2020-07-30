@@ -286,14 +286,13 @@ def build(options):
     console.info('Building...')
     console.flush()
     returncode = _ninja_build(options)
-    if not build_manager.instance.verify():
-        if returncode == 0:
-            returncode = 1
+    if returncode == 0 and not build_manager.instance.verify():
+        returncode = 1
     if returncode != 0:
         console.error('Build failure.')
-        return returncode
-    console.info('Build success.')
-    return 0
+    else:
+        console.info('Build success.')
+    return returncode
 
 
 def run(options):
