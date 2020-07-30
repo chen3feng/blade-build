@@ -1,5 +1,10 @@
 # Blade Build System
 
+[![license NewBSD](https://img.shields.io/badge/License-NewBSD-yellow.svg)](COPYING)
+[![Python](https://img.shields.io/badge/language-python2,3-blue.svg)](https://www.python.org/)
+[![Code Style](https://img.shields.io/badge/code%20style-google-blue.svg)](https://google.github.io/styleguide/pyguide.html)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos-lightgrey.svg)](doc/zh_CN/prerequisites.md)
+
 ```
 ██████╗ ██╗      █████╗ ██████╗ ███████╗
 ██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝
@@ -18,6 +23,7 @@ Click here to read [README](README-en.md) in English.
 ## Build Status
 
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
+[![Coverage](https://coveralls.io/repos/chen3feng/blade-build/badge.svg?branch=master)](https://coveralls.io/github/chen3feng/blade-build)
 
 ## First, let's see the beautiful demo
 
