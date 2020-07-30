@@ -243,5 +243,6 @@ def source_location(filename):
         fn = frame[1]
         lineno = frame[2]
         if fn.endswith(filename):
-            return '%s:%s' % (filename, lineno)
+            # NOTE: The ':0:'(column) is required for VSCode problem matcher
+            return '%s:%s:0:' % (filename, lineno)
     return filename

@@ -132,7 +132,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        console.warning('%s: "glob(%s)" got an empty result. If it is the expected behavior, '
+        console.warning('%s warning: "glob(%s)" got an empty result. If it is the expected behavior, '
                         'specify "allow_empty=True" to eliminate this message' % (source_loc, args),
                         prefix=False)
 

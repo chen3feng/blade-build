@@ -213,16 +213,17 @@ class BladeConfig(object):
         }
 
     def info(self, msg):
-        console.info('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.info('%s info: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def warning(self, msg):
-        console.warning('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.warning('%s warning: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def error(self, msg):
-        console.error('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.error('%s error: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def fatal(self, msg):
-        console.fatal('%s: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        # NOTE: VSCode's problem matcher doesn't recognize 'fatal', use 'error' instead
+        console.fatal('%s error: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def try_parse_file(self, filename):
         """load the configuration file and parse. """
@@ -352,9 +353,7 @@ def config_items(**kwargs):
 @config_rule
 def cc_test_config(append=None, **kwargs):
     """cc_test_config section. """
-    heap_check = kwargs.get('heap_check')
-    if heap_check is not None and heap_check not in HEAP_CHECK_VALUES:
-        _blade_config.fatal('"cc_test_config.heap_check" can only be in %s' % HEAP_CHECK_VALUES)
+    _check_kwarg_enum_value(kwargs, 'heap_check', HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 

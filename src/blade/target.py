@@ -125,7 +125,7 @@ class Target(object):
         return target
 
     def _format_message(self, level, msg):
-        return '%s: %s: %s: %s' % (self.source_location, level, self.name, msg)
+        return '%s %s: %s: %s' % (self.source_location, level, self.name, msg)
 
     def debug(self, msg):
         """Print message with target full name prefix"""
@@ -145,7 +145,8 @@ class Target(object):
 
     def fatal(self, msg, code=1):
         """Print message with target full name prefix and exit"""
-        console.fatal(self._format_message('fatal', msg), code=code, prefix=False)
+        # NOTE: VSCode's problem matcher doesn't recognize 'fatal', use 'error' instead
+        console.fatal(self._format_message('error', msg), code=code, prefix=False)
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
