@@ -61,7 +61,7 @@ def _find_dir_dependent(dir, blade):
     return None
 
 
-def _report_not_exist(source_dir, kind, path, blade):
+def _report_not_exist(kind, path, source_dir, blade):
     """Report dir or BUILD file does not exist. """
     msg = '%s "//%s" does not exist' % (kind, path)
     dependent = _find_dir_dependent(source_dir, blade)
@@ -178,7 +178,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
     processed_source_dirs.add(source_dir)
 
     if not os.path.exists(source_dir):
-        _report_not_exist(source_dir, 'Directory', source_dir, blade)
+        _report_not_exist('Directory', source_dir, source_dir, blade)
 
     old_current_source_path = blade.get_current_source_path()
     blade.set_current_source_path(source_dir)
@@ -196,7 +196,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             console.fatal('Parse error in %s\n%s' % (
                 build_file, traceback.format_exc()))
     else:
-        _report_not_exist(source_dir, 'BUILD file', build_file, blade)
+        _report_not_exist('File', build_file, source_dir, blade)
 
     blade.set_current_source_path(old_current_source_path)
 
@@ -269,6 +269,8 @@ def load_targets(target_ids, blade_root_dir, blade):
     # but without <target>), record <path> into paths.
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
+        if not os.path.exists(source_dir):
+            _report_not_exist('Directory', source_dir, source_dir, blade)
 
         if target_name != '*' and target_name != '...':
             cited_targets.add((source_dir, target_name))
