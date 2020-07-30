@@ -1,8 +1,9 @@
-# Build Python Targets
+# Build Python Targets #
 
-## py_library
+## py_library ##
 
 Build a python library from source code
+
 ```python
 py_library(
     name = 'protobuf_util',
@@ -15,15 +16,22 @@ py_library(
 )
 ```
 
-当在代码中import python模块时，需要从workspace目录开始写起。可以通过base属性来改变这个行为，比如
+When importing the python module in your code, you need to start writing from the workspace directory.
+This behavior can be changed through the base attribute, for example:
+
 ```python
 base = '.'
 ```
-把模块的根路径改为当前BUILD文件所在的目录。
 
-py_library还支持
+Change the root path of the module to the directory where the current BUILD file is located.
+
+py_library also supports
+
 * prebuilt=True
-主要应用在已经编译打包好的java jar 包。
+  Mainly used in the zip package.
+
+Example:
+
 ```python
 python_library(
     name = 'protobuf-python',
@@ -31,10 +39,15 @@ python_library(
     srcs = 'protobuf-python-3.4.1.egg',
 )
 ```
-srcs是python包的文件名，只能有一个文件，支持whl和egg两种格式
 
-## py_binary
-把py源代码编译为可执行文件。
+`srcs` is the file name of the python package, there can only be one file, and it supports both `whl` and `egg` formats.
+
+## py_binary ##
+
+Compile the py source code into an executable file.
+
+Example:
+
 ```python
 py_binary(
     name = 'example',
@@ -46,14 +59,27 @@ py_binary(
     ]
 )
 ```
-当srcs多于一个时，需要用main属性指定入口文件。
 
-python_binary也支持base属性
+When there are more than one `srcs`, you need to specify the entry file with the `main` attribute.
 
-编译出来的可执行文件以及打包了所有的依赖，可以直接执行。可以用unzip -l查看其中包含的文件。
+python_binary also support the `base` attribute.
 
-## py_test
-编译和运行python测试代码。
+The generated executable file contains all dependencies and can be executed directly. You can use `unzip -l` to view the file content.
+
+Attributes:
+
+* exclusions: list(str)
+  When packaging the file into the executable file, the pattern list of the path to be excluded,
+  note that the path is the path after packaging, which can be viewed through `unzip -l`, example:
+
+  ```python
+  exclusions = ['google/protobuf/*'],
+  ```
+
+## py_test ##
+
+Compile and run the python test code.
+
 ```python
 py_test(
     name = 'common_test',
@@ -67,14 +93,17 @@ py_test(
 )
 ```
 
-我们一般使用unittest库进行python单元测试。
+We usually use the `unittest` library for python unit testing.
 
-## 使用protobuf
-proto文件首先需要用[proto_library](idl.md#proto_library)来描述，在py_* 的deps中引入。
-blade build时会自动生成相应的python protobuf编码解码库。
+## Using Protobuf ##
 
-在python代码中的import路径规则是，从workspace根出发，/替换为.，文件名结尾的.proto替换为_pb2，比如
+The proto file needs to be described by [proto_library](idl.md#proto_library), which is introduced in the deps of py_*.
+The corresponding python protobuf encoding and decoding code will be automatically generated during blade build.
+
+The import path rule in the python code is to start from the workspace root, replace `/` with `.`,
+and replace the `.proto` at the end of the file name with `_pb2`, for example:
+
 ```python
-# proto文件路径为 //common/base/user_info.proto
+# proto file's path is //common/base/user_info.proto
 import common.base.user_info_pb2
 ```
