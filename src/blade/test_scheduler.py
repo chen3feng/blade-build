@@ -282,8 +282,8 @@ class TestScheduler(object):
 
         quiet = console.verbosity_le('quiet')
 
+        num_of_workers = self._get_workers_num()
         if not self.job_queue.empty():
-            num_of_workers = self._get_workers_num()
             console.info('Spawn %d worker thread(s) to run concurrent tests' % num_of_workers)
 
             redirect = num_of_workers > 1 or quiet

@@ -94,7 +94,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
     include = var_to_list(include)
     if excludes:
-        console.warning('%s: "glob.excludes" is deprecated, use "exclude" instead' % source_loc,
+        console.warning('%s warning: "glob.excludes" is deprecated, use "exclude" instead' % source_loc,
                         prefix=False)
     exclude = var_to_list(exclude) + var_to_list(excludes)
 
