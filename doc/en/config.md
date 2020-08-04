@@ -177,8 +177,8 @@ C/C++ library configuration
 Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
 So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:
 
-- ${bit}  Target bits, such as 32，64。
-- ${arch} Target CPU architecture name, such as i386, x86_64 等。
+* ${bit}  Target bits, such as 32，64。
+* ${arch} Target CPU architecture name, such as i386, x86_64 等。
 
 In this way, library files of multiple target platforms can be stored in different subdirectories
 without conflict. This attribute can also be empty string, which means no subdirectory.

@@ -1,6 +1,6 @@
-# 配置
+# 配置 #
 
-## 配置文件
+## 配置文件 ##
 
 Blade 只有一种配置文件格式，但是支持多重配置文件，按以下顺序依次查找和加载，后加载的配置文件里存在的配置项会覆盖前面已经加载过的配置项
 
@@ -27,7 +27,7 @@ blade dump --config --to-file my.config
 
 不加 `--to-file` 选项，则输出到标准输出。
 
-### global\_config
+### global\_config ###
 
 Blade全局配置
 
@@ -46,7 +46,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 [ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，
 用 ninja 速度比 scons 快很多，因此我们淘汰了对 scons 的支持。
 
-### cc\_config
+### cc\_config ###
 
 所有c/c++目标的公共配置
 
@@ -66,7 +66,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。
 
-### cc_library_config
+### cc_library_config ###
 
 C/C++ 库的配置
 
@@ -78,13 +78,13 @@ C/C++ 库的配置
 Blade 支持生成多个目标平台的目标，比如在 x64 环境下，支持通过命令行参数的 -m 参数编译 32 位和 64 位 目标。
 因此 prebuilt_libpath_pattern 是一个模式，其中包含可替换的变量：
 
-- ${bit} 目标执行位数，比如 32，64。
-- ${arch} CPU 架构名，比如 i386, x86_64 等。
+* ${bit} 目标执行位数，比如 32，64。
+* ${arch} CPU 架构名，比如 i386, x86_64 等。
 
 这样就可以在不同的子目录中同时存放多个目标平台的库文件而不冲突。本属性也可以为空，表示没有子目录（库文件就放在当前 BUILD 文件所在的目录）。
 如果只构建一个平台的目标，可以只有一个目录甚至根本不用子目录。
 
-### cc\_test\_config
+### cc\_test\_config ###
 
 构建和运行测试所需的配置
 
@@ -103,7 +103,7 @@ Blade 支持生成多个目标平台的目标，比如在 x64 环境下，支持
 * gtest 库还依赖 pthread，因此gtest\_libs需要写成 ['#gtest', '#pthread']
 * 或者把源码纳入你的源码树，比如thirdparty下，就可以写成gtest\_libs='//thirdparty/gtest:gtest'。
 
-### java\_config
+### java\_config ###
 
 Java构建相关的配置
 
@@ -125,7 +125,7 @@ Java构建相关的配置
 * maven\_snapshot\_updata\_policy 允许的值："always", "daily"(默认), "interval",  "never"
 * maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
 
-### proto\_library\_config
+### proto\_library\_config ###
 
 编译protobuf需要的配置
 
@@ -136,7 +136,7 @@ Java构建相关的配置
 | protobuf\_path          | string |          |      | import 时的 proto 搜索路径，相对于 BLADE\_ROOT |
 | protobuf\_include\_path | string |          |      | 编译 pb.cc 时额外的 -I 路径                    |
 
-### thrift\_library\_config
+### thrift\_library\_config ###
 
 编译thrift需要的配置
 
@@ -160,7 +160,7 @@ cc_config(
 所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，
 如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
 
-## 环境变量
+## 环境变量 ##
 
 Blade还支持以下环境变量：
 

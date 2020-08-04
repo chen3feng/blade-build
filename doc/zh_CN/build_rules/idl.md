@@ -1,12 +1,13 @@
-# 构建protobuf和thrift
----
+# 构建protobuf 和 thrift #
 
-## proto_library
+## proto_library ##
+
 用于定义 protobuf 目标
 deps 为 import 所涉及的其他 proto_library
 自动依赖 protobuf 运行库，使用者不需要再显式指定。
 
 示例：
+
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -26,6 +27,7 @@ protobuf_library 支持生成多种语言的目标。
 因此同一个proto_library目标可以被多种语言所使用。
 
 如果需要强制生成某种语言的目标库，可以通过 `target_languages` 参数来指定：
+
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -34,9 +36,11 @@ proto_library(
     target_languages = ['java', 'python'],
 )
 ```
+
 C++ 代码总是会生成。
 
-## thrift_library
+## thrift_library ##
+
 用于定义thrift库目标
 deps 为import所涉及的其他thrift_library
 自动依赖thrift，使用者不需要再显式指定。
@@ -56,6 +60,6 @@ thrift_library(
 ```
 
 C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
- * thrift 0.9版（之前版本未测）有个[bug](https://issues.apache.org/jira/browse/THRIFT-1859)，
- 需要修正才能使用，此bug已经在开发版本中[修正](https://builds.apache.org/job/Thrift/633/changes#detail13)
 
+* thrift 0.9版（之前版本未测）有个[bug](https://issues.apache.org/jira/browse/THRIFT-1859)，
+  需要修正才能使用，此bug已经在开发版本中[修正](https://builds.apache.org/job/Thrift/633/changes#detail13)

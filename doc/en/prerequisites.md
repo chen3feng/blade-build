@@ -1,4 +1,4 @@
-# External software dependencies
+# External Software Dependencies #
 
 Blade requires the following dependencies:
 

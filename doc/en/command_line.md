@@ -1,12 +1,12 @@
-# Command Line Reference
+# Command Line Reference #
 
-## Basic Command Line Syntax
+## Basic Command Line Syntax ##
 
 ```bash
 Blade <subcommand> [options]... [targets]...
 ```
 
-## Subcommand
+## Subcommand ##
 
 Subcommand is a subcommand that currently has:
 
@@ -16,7 +16,7 @@ Subcommand is a subcommand that currently has:
 * query query target dependencies and dependencies
 * run build and run a single target
 
-## Target Syntax
+## Target Syntax ##
 
 Targets is a separate list of spaces, supported formats:
 
@@ -31,7 +31,7 @@ When you specify ... as the end target, if its path exists, it will not fail eve
 Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
 excluded from searching, you can put an empty `.bladeskip` under it.
 
-## Subcommand Options
+## Subcommand Options ##
 
 The options supported by different subcommands are different. Please run blade \<subcommand\> --help to view
 
@@ -51,7 +51,7 @@ Here are some common command line options
 * --gprof supports GNU gprof
 * --coverage supports generation of coverage and currently supports GNU gcov and Java jacoco
 
-## Example
+## Example ##
 
 ```bash
 # Build all targets in the current directory, not including subdirectories

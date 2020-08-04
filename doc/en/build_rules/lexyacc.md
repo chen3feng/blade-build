@@ -1,6 +1,7 @@
-# Build Lex and Yacc
+# Build Lex and Yacc #
 
-## lex_yacc_library
+## lex_yacc_library ##
+
 Used to describe a lex yacc target, generate a scanner and a grammer for a compiler.
 
 Lex and yacc are often be used together. when we compile a lex file, `yy.tab.h` is needed which is
@@ -29,6 +30,7 @@ lex_yacc_library(
 ```
 
 Attributes:
-- recursive=True Generate resursice C scanner。
+
+- recursive=True Generate resursice C scanner
 
 lex_yacc_library also support most cc_library attributes.

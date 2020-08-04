@@ -1,8 +1,9 @@
-# Build Java Targets
+# Build Java Targets #
 
-## java_library
+## java_library ##
 
 Build a jar from java source file。
+
 ```python
 java_library(
     name = 'rpc',
@@ -56,16 +57,18 @@ java_library(
 - coverage attribute
   bool, Whether generate test coverage data for this library. It is useful to be False in some cases such as srcs are generated.
 
-### Mutiple kinds of dependancy
+### Mutiple kinds of dependancy ###
 
 For java targets，except the normal `deps`, they also support `exported_deps`，`provided_deps`.
 There is a notable difference from C++ targets: for java_library, the dependancies are not **transtive** at the compile phrase.
 For example, in this BUILD file:
+
 ```python
 java_library(name = 'A', srcs = 'A.java', deps = ':B')
 java_library(name = 'B', srcs = 'B.java', deps = ':C')
 java_library(name = 'C', srcs = 'C.java')
 ```
+
 The symbols defined in `C.java` is invisible to `A.java`, so when you write the deps for a
 java_library, you must add all of the direct dependencies into the deps. you can see you import
 list, ensure each library you imported is in the deps list.
@@ -95,7 +98,7 @@ same as the `provided` in maven scope，there dependencies will be used to compi
 not be packed into the final `fatjar`. The scenaio is hadoop or spark. this attribute can reduce
 the size of fatjar, and also reduces the conflict with the environment provided libraries.
 
-## maven_jar
+## maven_jar ##
 
 Use this rule to describe a jar in the maven repository.
 
@@ -118,7 +121,7 @@ Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
 Whether use transitive maven dependency, the default value is True, blade will download jar and its
 transitive dependencies; otherwise only the jar file of this target will be downloaded.
 
-## java_fat_library
+## java_fat_library ##
 
 Merge all java_library/maven_jar, generate a fatjar, can be used for deploy, same as `jar-with-dependencies` in maven.
 
@@ -159,13 +162,15 @@ java_fat_library(
 )
 
 ```
+
 - exclusions attribute
 
 Specify maven dependencies to be excludes. The syntax is a list of maven ids
 (group:artifact:version), also support wildcard, such as:
 `com.google.protobuf:protobuf:\*` and `com.google.protobuf:\*:\*`, but only the tail parts can be wildcard.
 
-## java_binary
+## java_binary ##
+
 Build executable from java source files.
 
 ```python
@@ -180,9 +185,11 @@ java_binary(
     ]
 )
 ```
+
 The results include a fat jar with a wrapper shell script.
 
-## java_test
+## java_test ##
+
 Build and run tests.
 
 ```python

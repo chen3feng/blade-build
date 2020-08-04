@@ -1,8 +1,9 @@
-# Build protobuf and thrift
+# Build Protobuf and Thrift #
 
-## proto_library
+## proto_library ##
 
 Build protobuf targets
+
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -10,6 +11,7 @@ proto_library(
     deps = ':rpc_option_proto',
 )
 ```
+
 `deps` are other proto_library which are imported.
 protobuf runtime library will be depended automatically, needn't to be specified explicitly.
 
@@ -25,6 +27,7 @@ it is also similar to other target languages，such as python. so we only need o
 multiple target languages.
 
 If you want to generate code for specified languages unconditionly, you can use the `target_languages` argument:
+
 ```python
 proto_library(
     name = 'rpc_meta_info_proto',
@@ -33,9 +36,11 @@ proto_library(
     target_languages = ['java', 'python'],
 )
 ```
+
 The `cpp` target code is always generated.
 
-## thrift_library
+## thrift_library ##
+
 Can be used to generate thrift C++ library
 deps is the other thrift_library which are imported.
 thrift runtime will be depended automatically, needn't to be specified explicitly.

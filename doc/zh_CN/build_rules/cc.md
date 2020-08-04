@@ -1,4 +1,4 @@
-# C/C++规则
+# C/C++规则 #
 
 cc_`*` 目标
 CC 目标均支持的属性为：
@@ -15,7 +15,7 @@ CC 目标均支持的属性为：
 * optimize之所以需要单独提出来，是因为debug模式下需要忽略，optimize影响代码的可调试性。如果某些目标，例如性能相关又一般无需调试的库，比如hash，压缩，加解密之类的，可以加上`always_optimize = True`让他们总是开启优化。
 * C/C++程序的构建分为预处理，编译（把预处理后的源文件转化为.o文件）和链接（把.o, .a链接成可执行文件或者动态库）三个阶段，不同阶段用不同的编译参数。
 
-## cc_library
+## cc_library ##
 
 用于描述C++库目标。
 cc_library同时用于构建静态和动态库，默认只构建静态库，只有被dynamic_link=1的cc_binary依赖时或者命令行指定
@@ -82,7 +82,7 @@ cc_library(
 
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
 
-## prebuilt_cc_library
+## prebuilt_cc_library ##
 
 主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
 除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
@@ -105,7 +105,7 @@ prebuilt_cc_library(
 )
 ```
 
-## foreign_cc_library
+## foreign_cc_library ##
 
 注意：本特性目前还处于实验状态。
 
@@ -123,7 +123,7 @@ foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 
 * install_dir 包构建完成后的安装目录
 * lib_dir 库在安装目录下的子目录名
 
-### 示例1，zlib
+### 示例1，zlib ###
 
 zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
 
@@ -167,7 +167,7 @@ use_zlib.cc
 // 因为 thirdparty/zlib/include/ 已经被导出
 ```
 
-### 示例2，openssl
+### 示例2，openssl ###
 
 严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
 不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
@@ -214,7 +214,7 @@ use_openssl.cc
 #include "openssl/ssl.h"  // 路径带包名
 ```
 
-## cc_binary
+## cc_binary ##
 
 定义C++可执行文件目标
 
@@ -242,7 +242,7 @@ cc_binary(
 
   详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
-## cc_test
+## cc_test ##
 
 相当于cc_binary，再加上自动链接gtest和gtest_main。
 
@@ -275,7 +275,7 @@ cc_test(
 )
 ```
 
-## lex_yacc_library
+## lex_yacc_library ##
 
 srcs 必须为二元列表，后缀分别为ll和yy
 构建时自动调用flex和bison, 并且编译成对应的cc_library
@@ -298,7 +298,7 @@ lex_yacc_library(
 
   生成可重入的C scanner.
 
-## cc_plugin
+## cc_plugin ##
 
 把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
 
@@ -315,7 +315,7 @@ cc_plugin(
 
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
-## resource_library
+## resource_library ##
 
 把数据文件编译成静态资源，可以在程序中中读取。
 

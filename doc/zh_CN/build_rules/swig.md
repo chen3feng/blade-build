@@ -1,8 +1,8 @@
-# 构建SWIG
+# 构建SWIG #
 
 SWIG是个帮助使用C或者C++编写的软件能与其它各种高级编程语言进行嵌入联接的开发工具。
 
-##swig_library
+## swig_library ##
 
 根据.i文件生成相应的python, java 和php cxx模块代码，并且生成对应语言的代码。
 

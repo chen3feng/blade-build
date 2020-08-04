@@ -1,4 +1,4 @@
-# 安装
+# 安装 #
 
 执行install脚本即可安装到~/bin下，目前因还在开发阶段，变化还比较快，以软链方式安装，install后不能删除checkout出来的原始目录。
 Blade 用 ninja 做后端，还需要安装ninja。
@@ -8,6 +8,9 @@ install使得可以在任何目录下直接执行
 
 ```bash
 $ blade
+usage: blade [-h] [--version] {build,run,test,clean,query,dump} ...
+blade: error: too few arguments
+Blade(error): Failure
 ```
 
 命令。

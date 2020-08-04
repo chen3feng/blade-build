@@ -1,12 +1,12 @@
-# 命令行参考
+# 命令行参考 #
 
-## 基本命令行语法
+## 基本命令行语法 ##
 
 ```bash
 blade <subcommand> [options]... [targets]...
 ```
 
-## 子命令
+## 子命令 ##
 
 subcommand是一个子命令，目前有：
 
@@ -16,7 +16,7 @@ subcommand是一个子命令，目前有：
 * query 查询目标的依赖项与被依赖项
 * run   构建并run一个单一目标
 
-## Target语法
+## Target语法 ##
 
 targets是一个空格分开的列表，支持的格式：
 
@@ -30,7 +30,7 @@ targets是一个空格分开的列表，支持的格式：
 
 对于 `...` 目标模式，Blade 会递归搜索 `BUILD` 文件，如果需要排除某些目录，在其中放一个空的 `.bladeskip` 文件即可。
 
-## 子命令选项
+## 子命令选项 ##
 
 不同子命令支持的选项不一样，具体请执行blade \<subcommand\> --help查看
 
@@ -50,7 +50,7 @@ targets是一个空格分开的列表，支持的格式：
 * --gprof              支持 GNU gprof
 * --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
 
-## 示例
+## 示例 ##
 
 ```bash
 

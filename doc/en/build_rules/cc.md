@@ -1,4 +1,4 @@
-# C/C++ Rules
+# C/C++ Rules #
 
 cc_`*` targets
 The common CC attributes are：
@@ -19,7 +19,7 @@ The common CC attributes are：
 
 * There are 3 phrases in the C/C++ building: preprocessing, compiling, linking. with different flags.
 
-## cc_library
+## cc_library ##
 
 Build a C/C++ library
 
@@ -99,7 +99,7 @@ Attributes:
   If you want to build a shared library can be use in the environment, you should use `cc_plugin`,
   which will include the code from it dependencies.
 
-## prebuilt_cc_library
+## prebuilt_cc_library ##
 
 For libraries without source code, library should be put under the lib{32,64} sub dir accordingly.
 The attributes `deps`, `export_incs`, `link_all_symbols` is still avialiable, but other attributes,
@@ -119,7 +119,7 @@ prebuilt_cc_library(
 )
 ```
 
-## foreign_cc_library
+## foreign_cc_library ##
 
 NOTE: This feature is still experimental.
 
@@ -141,7 +141,7 @@ Attributes:
 * install_dir : The installation directory after the package is built
 * lib_dir : The subdirectory name of the library in the installation directory
 
-### Example1, zlib
+### Example1, zlib ###
 
 zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
 zlib can be the simplest example of autotools package. Assuming that zlib-1.2.11.tar.gz is in the thirparty/zlib directory, its BUILD file is thirdparty/zlib/BUILD:
@@ -187,7 +187,7 @@ use_openssl.cc
 // because `thirdparty/zlib/include` has been exported in the `foreign_cc_library` defaultly
 ```
 
-### 示例2，openssl
+### 示例2，openssl ###
 
 Strictly speaking, openssl is not built with autotools, but it is generally compatible with autotools.
 Its autotools-like configure file is `Config`, and the directory layout after installation is compatible.
@@ -237,7 +237,7 @@ use_openssl.cc
 #include "openssl/ssl.h"  // Contains package name
 ```
 
-## cc_binary
+## cc_binary ##
 
 Build executable from source.
 
@@ -268,7 +268,7 @@ cc_binary(
   This attribute tells linker to put all symbols into its dynamic symbol table. make them visible
    for loaded shared libraries. for more details, see `--export-dynamic` in man ld(1).
 
-## cc_test
+## cc_test ##
 
 cc_binary, with gtest gtest_main be linked automatically,
 
@@ -300,7 +300,7 @@ cc_test(
 )
 ```
 
-## cc_plugin
+## cc_plugin ##
 
 Link all denendencies into the generated `so` file, make it can be easily loaded in other languages.
 
@@ -317,7 +317,7 @@ cc_plugin(
 
 cc_plugin is designed for create extension, such as JNI and python extension.
 
-## resource_library
+## resource_library ##
 
 Compile static data file to be resource, which can be accessed in the program directly.
 

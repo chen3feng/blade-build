@@ -1,8 +1,8 @@
-# 测试支持
+# 测试支持 #
 
 Blade对测试驱动开发提供了完善的支持 ，可以通过命令自动运行测试程序。
 
-## 增量测试
+## 增量测试 ##
 
 Blade test支持增量测试 ，可以加快tests的执行。
 
@@ -21,7 +21,7 @@ Blade test支持增量测试 ，可以加快tests的执行。
 对于失败的测试，如果这是第一次失败，下次还会尝试重新运行。但是如果还是失败，就不会再运行，除非发生了重新构建或者过期。
 你可以用 `global_config.run_unchanged_tests` 配置项或者 `run-unchanged-tests` 命令行参数改变这个行为。
 
-## 全量测试
+## 全量测试 ##
 
 如果需要使用全量测试，使用--full-test option, 如 blade test common/... --full-test ， 全部测试都需要跑。
 另外，cc_test 支持了 always_run 属性，用于在增量测试时，不管上次的执行结果，每次总是要跑。
@@ -34,13 +34,13 @@ cc_test(
 )
 ```
 
-## 并行测试
+## 并行测试 ##
 
 Blade test支持并行测试，并行测试把这一次构建后需要跑的test cases并发地run。
 blade test [targets] --test-jobs N
 -t, --test-jobs N 设置并发测试的并发数，Blade会让N个测试进程并行执行
 
-## 非并行测试
+## 非并行测试 ##
 
 对于某些因为可能相互干扰而不能并行跑的测试，可以加上 exclusive 属性
 
@@ -52,7 +52,7 @@ cc_test(
 )
 ```
 
-## 测试覆盖率
+## 测试覆盖率 ##
 
 构建和运行测试时，加上--coverage参数，blade 就会加入覆盖率相关的编译选项，并在运行时收集测试覆盖率数据，目前仅支持 C++、Java 和 Scala。
 
@@ -73,7 +73,7 @@ java_test_config(
 如果调试符号级别（global\_config.debug\_info\_level）太低，低于或等于`low`，那么生成的覆盖率报告里会缺少行覆盖率。
 Jacoco 需要 `-g:line` 编译选项才能生成行覆盖率。
 
-## 排除指定的测试
+## 排除指定的测试 ##
 
 Blade支持通过--exclude-tests参数显式地排除指定的测试，当需要批量运行大量的测试，而又期望排除某些测试时，这个选项就很有用。例如：
 
