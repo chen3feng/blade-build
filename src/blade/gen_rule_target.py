@@ -43,8 +43,6 @@ class GenRuleTarget(Target):
         """
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
-        outs = [os.path.normpath(o) for o in var_to_list(outs)]
-
         super(GenRuleTarget, self).__init__(
                 name=name,
                 type='gen_rule',
@@ -52,6 +50,12 @@ class GenRuleTarget(Target):
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)
+
+        if not outs:
+            self.fatal('"outs" can not be empty')
+        if not cmd:
+            self.fatal('"cmd" can not be empty')
+        outs = [os.path.normpath(o) for o in var_to_list(outs)]
 
         self.data['outs'] = outs
         self.data['locations'] = []

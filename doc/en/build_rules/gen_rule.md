@@ -38,9 +38,17 @@ gen_rule(
 )
 ````
 
-NOTE: `gen_rule` only writes `outs` files in the subdir of BUILD\_DIR, but when you use `gen_rule`
+NOTE:
+
+ `gen_rule` only writes `outs` files in the subdir of BUILD\_DIR, but when you use `gen_rule`
 to generate source code and want to reference the generated source code in other targets, just
 consider them as if they are generated in the source tree, without the BUILD\_DIR prefix.
 
-Multiple similar gen\_rule can be considered to be defined as an extension maintained in a separate
-`bld` file, and through [include] (../functions.md#include) function to reduce code redundancy and to keep better maintenance.
+- `srcs` can be empty, but `outs` and `cmd` cannot be empty.
+- `gen_rule` should only generate output files in the corresponding result output directory, and will not pollute the source code tree. But if you reference in other targets
+  which generating source files with `gen_rule`, it is only necessary to assume that these files are generated in the source code directory, without considering the result directory prefix.
+- After the command is executed, the correct exit code must be returned, 0 means success, other values mean failure
+- Successful commands should not output irrelevant information, and failed commands should output concise and useful error messages.
+- When you need to use `$` in a command, such as expanding environment variables or executing command substitution, you need to double write it as `$$`, such as `$$(pwd)`.
+- Multiple duplicate or similar gen_rules should be considered as extensions and maintained in a separate `bld` file through [include](../functions.md#include)
+  Functions are introduced to reduce code redundancy and better maintenance.
