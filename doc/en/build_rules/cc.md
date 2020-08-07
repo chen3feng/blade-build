@@ -315,6 +315,15 @@ cc_plugin(
 )
 ```
 
+Attributes:
+
+* prefix:str, the file name prefix of the generated dynamic library, the default is `lib`
+* suffix:str, the file name prefix of the generated dynamic library, the default is `.so`
+* allow_undefined:bool, whether undefined symbols are allowed when linking. Because many plug-in libraries depend on the symbol names provided by the host process at runtime, the definition of these symbols does not exist in the link phase.
+* strip:bool, whether to remove the debugging symbol information. If enabled, the size of the generated library can be reduced, but symbolic debugging cannot be performed.
+
+`prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`, set `prefix=''`, then it becomes `file. so`.
+
 cc_plugin is designed for create extension, such as JNI and python extension.
 
 ## resource_library ##

@@ -313,6 +313,15 @@ cc_plugin(
 )
 ```
 
+属性：
+
+* prefix:str, 生成的动态库的文件名前缀，默认为 `lib`
+* suffix:str，生成的动态库的文件名前缀，默认为 `.so`
+* allow_undefined: bool, 链接时是否允许未定义的符号。因为很多插件库运行时依赖宿主进程提供的符号名，链接阶段并不存在这些符号的定义。
+* strip:bool, 是否去除调试符号信息，开启后可以减少生成的库的大小，但是无法进行符号化调试。
+
+`prefix` 和 `suffix` 控制生成的动态库的文件名，假设 `name='file'`，默认生成的库为 `libfile.so`，设置`prefix=''`，则变为 `file.so`。
+
 cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
 
 ## resource_library ##
