@@ -438,7 +438,7 @@ class Blade(object):
                 target_ninja = blade_object._target_file_path('%s.ninja' % blade_object.name)
                 with open(target_ninja, 'w') as f:
                     f.writelines(rules)
-                # Include it in the main file
+                # Include it in the main ninja file
                 rules_buf += 'include %s\n' % target_ninja
         return rules_buf
 
