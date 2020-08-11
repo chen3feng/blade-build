@@ -430,7 +430,16 @@ class Blade(object):
             blade_object.ninja_rules()
             rules = blade_object.get_rules()
             if rules:
-                rules_buf += rules
+                # Generate per-target ninja file
+                # TODO(chen3feng): Avoid regenerating ninja file when target is not changed.
+                target_dir = blade_object._target_file_path('')
+                if not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+                target_ninja = blade_object._target_file_path('%s.ninja' % blade_object.name)
+                with open(target_ninja, 'w') as f:
+                    f.writelines(rules)
+                # Include it in the main ninja file
+                rules_buf += 'include %s\n' % target_ninja
         return rules_buf
 
     def get_build_platform(self):
