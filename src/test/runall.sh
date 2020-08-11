@@ -8,4 +8,4 @@
 #
 # Script to setup, run and cleanup testing.
 
-exec `dirname $0`/runtest.sh blade_main_test.py $@
+exec `dirname $0`/run.sh blade_main_test.py $@

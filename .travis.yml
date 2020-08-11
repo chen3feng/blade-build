@@ -19,7 +19,7 @@ addons:
       - ninja-build
 
 script:
-  - src/test/runalltests.sh
+  - src/test/runall.sh
 
 after_success:
   - coveralls
