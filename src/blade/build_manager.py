@@ -430,7 +430,13 @@ class Blade(object):
             blade_object.ninja_rules()
             rules = blade_object.get_rules()
             if rules:
-                rules_buf += rules
+                target_dir = blade_object._target_file_path('')
+                if not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+                subninja = blade_object._target_file_path('%s.ninja' % blade_object.name)
+                with open(subninja, 'w') as f:
+                    f.writelines(rules)
+                rules_buf += 'include %s\n' % subninja
         return rules_buf
 
     def get_build_platform(self):
