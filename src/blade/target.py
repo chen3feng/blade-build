@@ -125,9 +125,9 @@ class Target(object):
         target.update(self.data)
         return target
 
-    def _rule_hash_factors(self):
+    def _rule_hash_entropy(self):
         """
-        Add more factors to rule hash.
+        Add more entropy to rule hash.
 
         Can be override in sub classes, must return a dict{string:value}.
 
@@ -141,7 +141,7 @@ class Target(object):
     def rule_hash(self):
         """Calculate a hash string to be used to judge whether regenerate per-target ninja file"""
         if self.__rule_hash is None:
-            factors = {
+            entropy = {
                 'type': self.type,
                 'name': self.name,
                 'srcs': self.srcs,
@@ -150,11 +150,11 @@ class Target(object):
             for dkey in self.deps:
                 dep = self.target_database[dkey]
                 deps.append(dep.rule_hash())
-            factors['deps'] = deps
-            factors.update(self._rule_hash_factors())
-            factors_str = str(sorted(factors.items()))
-            assert ' object at 0x' not in factors_str
-            self.__rule_hash = md5sum(factors_str)
+            entropy['deps'] = deps
+            entropy.update(self._rule_hash_entropy())
+            entropy_str = str(sorted(entropy.items()))
+            assert ' object at 0x' not in entropy_str
+            self.__rule_hash = md5sum(entropy_str)
         return self.__rule_hash
 
     def _format_message(self, level, msg):
