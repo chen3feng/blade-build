@@ -142,6 +142,7 @@ class Target(object):
         """Calculate a hash string to be used to judge whether regenerate per-target ninja file"""
         if self.__rule_hash is None:
             entropy = {
+                'blade_revision': self.blade.revision(),
                 'type': self.type,
                 'name': self.name,
                 'srcs': self.srcs,

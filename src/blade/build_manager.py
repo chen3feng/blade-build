@@ -24,7 +24,7 @@ from blade import console
 from blade import target
 from blade.binary_runner import BinaryRunner
 from blade.blade_platform import BuildPlatform
-from blade.blade_util import cpu_count
+from blade.blade_util import cpu_count, md5sum_file
 from blade.build_environment import BuildEnvironment
 from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
@@ -71,6 +71,8 @@ class Blade(object):
 
         # Source dir of current loading BUILD file
         self.__current_source_path = blade_root_dir
+
+        self.__blade_revision = None
 
         # The targets which are specified in command line explicitly, not pattern expanded.
         self.__direct_targets = []
@@ -207,6 +209,15 @@ class Blade(object):
     def _dump_verify_history(self):
         with open(self._verify_history_path, 'w') as f:
             json.dump(self._verify_history, f, indent=4)
+
+    def revision(self):
+        """Blade revision identifier"""
+        if self.__blade_revision is None:
+            if os.path.isfile(self.__blade_path):  # blade.zip
+                self.__blade_revision = md5sum_file(self.__blade_path)
+            else:
+                self.__blade_revision = 'developing'
+        return self.__blade_revision
 
     def run(self, target):
         """Run the target. """
@@ -438,10 +449,12 @@ class Blade(object):
         old_rule_hash = self._read_rule_hash(target_ninja)
         rule_hash = target.rule_hash()
         if rule_hash == old_rule_hash:
+            console.debug('Using cached %s' % target_ninja)
             return target_ninja
 
         rules = target.get_rules()
         if rules:
+            console.debug('Generating %s' % target_ninja)
             self._write_target_ninja_file(target, target_ninja, rules, rule_hash)
             return target_ninja
 

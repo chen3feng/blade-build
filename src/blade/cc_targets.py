@@ -312,8 +312,8 @@ class CcTarget(Target):
                     generated_hdrs = t.data.get('generated_hdrs')
                     if generated_hdrs:
                         result += generated_hdrs
-                elif 'cc_compile_deps_file' in t.data:
-                    stamp = t.data['cc_compile_deps_file']
+                elif 'cc_compile_deps_stamp' in t.data:
+                    stamp = t.data['cc_compile_deps_stamp']
                     if stamp:
                         result.append(stamp)
                 queue.extend(t.deps)
@@ -414,28 +414,16 @@ class CcTarget(Target):
             rule = '%shdrs' % rule
             self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
-    def _cc_compile_deps_stamp_file(self):
+    def _cc_compile_deps_stamp(self):
         """Return a stamp which depends on targets which generate header files. """
-        self.data['cc_compile_deps_file'] = None
+        self.data['cc_compile_deps_stamp'] = None
         deps = self._cc_compile_dep_files()
         if not deps:
             return None
         stamp = self._target_file_path(self.name + '__compile_deps__')
-        self.ninja_build('stamp', stamp, inputs=deps)
-        self.data['cc_compile_deps_file'] = stamp
+        self.ninja_build('phony', stamp, inputs=deps)
+        self.data['cc_compile_deps_stamp'] = stamp
         return stamp
-
-    def _securecc_object_ninja(self, obj, src, implicit_deps, vars):
-        assert obj.endswith('.o')
-        pos = obj.rfind('.', 0, -2)
-        assert pos != -1
-        secure_obj = '%s__securecc__.cc.o' % obj[:pos]
-        path = self._source_file_path(src)
-        if not os.path.exists(path):
-            path = self._target_file_path(src)
-        self.ninja_build('securecccompile', secure_obj, inputs=path,
-                         implicit_deps=implicit_deps, variables=vars)
-        self.ninja_build('securecc', obj, inputs=secure_obj)
 
     def _cc_objects_ninja(self, sources, generated=False, generated_headers=None):
         """Generate cc objects build rules in ninja. """
@@ -443,35 +431,28 @@ class CcTarget(Target):
         vars = {}
         self._setup_ninja_cc_vars(vars)
         implicit_deps = []
-        stamp = self._cc_compile_deps_stamp_file()
+        stamp = self._cc_compile_deps_stamp()
         if stamp:
             implicit_deps.append(stamp)
-        secure = self.data.get('secure')
-        if secure:
-            implicit_deps.append('__securecc_phony__')
-
         objs_dir = self._target_file_path(self.name + '.objs')
         objs, hdrs_inclusion_srcs = [], []
         for src in sources:
             obj = '%s.o' % os.path.join(objs_dir, src)
-            if secure:
-                self._securecc_object_ninja(obj, src, implicit_deps, vars)
+            rule = self._get_ninja_rule_from_suffix(src)
+            if generated:
+                input = self._target_file_path(src)
+                if generated_headers and len(generated_headers) > 1:
+                    implicit_deps += generated_headers
             else:
-                rule = self._get_ninja_rule_from_suffix(src)
-                if generated:
-                    input = self._target_file_path(src)
-                    if generated_headers and len(generated_headers) > 1:
-                        implicit_deps += generated_headers
+                path = self._source_file_path(src)
+                if os.path.exists(path):
+                    input = path
+                    hdrs_inclusion_srcs.append((path, obj, rule))
                 else:
-                    path = self._source_file_path(src)
-                    if os.path.exists(path):
-                        input = path
-                        hdrs_inclusion_srcs.append((path, obj, rule))
-                    else:
-                        input = self._target_file_path(src)
-                self.ninja_build(rule, obj, inputs=input,
-                                 implicit_deps=implicit_deps,
-                                 variables=vars)
+                    input = self._target_file_path(src)
+            self.ninja_build(rule, obj, inputs=input,
+                             implicit_deps=implicit_deps,
+                             variables=vars)
             objs.append(obj)
 
         self.data['objs'] = objs
@@ -850,29 +831,49 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
+        self.data['secure'] = secure
         self._set_hdrs(hdrs)
-        self._set_securecc(secure)
 
-    def _set_securecc(self, secure):
-        """Setup for secure cc library"""
-        if secure:
-            self.data['secure'] = secure
-            # Touch the source files needed by securecc, they will be deleted after compilation
-            # by our securecc implementation.
-            for src in self.srcs:
-                path = self._source_file_path(src)
-                if not os.path.exists(path):
-                    path = self._target_file_path(src)
-                    dir = os.path.dirname(path)
-                    if not os.path.isdir(dir):
-                        os.makedirs(dir)
-                    open(path, 'w').close()
+    def _securecc_object(self, obj, src, implicit_deps, vars):
+        assert obj.endswith('.o')
+        pos = obj.rfind('.', 0, -2)
+        assert pos != -1
+        secure_obj = '%s__securecc__.cc.o' % obj[:pos]
+        path = self._source_file_path(src)
+        if not os.path.exists(path):
+            path = self._target_file_path(src)
+            self.ninja_build('phony', path)
+        self.ninja_build('securecccompile', secure_obj, inputs=path,
+                         implicit_deps=implicit_deps, variables=vars)
+        self.ninja_build('securecc', obj, inputs=secure_obj)
+
+    def _securecc_objects_ninja(self, sources):
+        """Generate securecc objects build rules in ninja. """
+        vars = {}
+        self._setup_ninja_cc_vars(vars)
+        implicit_deps = []
+        stamp = self._cc_compile_deps_stamp()
+        if stamp:
+            implicit_deps.append(stamp)
+        implicit_deps.append('__securecc_phony__')
+
+        objs_dir = self._target_file_path(self.name + '.objs')
+        objs = []
+        for src in sources:
+            obj = '%s.o' % os.path.join(objs_dir, src)
+            self._securecc_object(obj, src, implicit_deps, vars)
+            objs.append(obj)
+
+        self.data['objs'] = objs
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
         if self.srcs:
-            self._cc_objects_ninja(self.srcs)
+            if self.data.get('secure'):
+                self._securecc_objects_ninja(self.srcs)
+            else:
+                self._cc_objects_ninja(self.srcs)
             self._cc_library_ninja()
 
 

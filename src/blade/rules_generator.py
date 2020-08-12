@@ -124,9 +124,6 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                 '''))
 
     def generate_common_rules(self):
-        self.generate_rule(name='stamp',
-                           command='touch ${out}',
-                           description='STAMP ${out}')
         self.generate_rule(name='copy',
                            command='cp -f ${in} ${out}',
                            description='COPY ${in} ${out}')
