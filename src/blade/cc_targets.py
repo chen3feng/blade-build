@@ -320,14 +320,6 @@ class CcTarget(Target):
 
         return result
 
-    def _securecc_object_rules(self, obj, src):
-        """Touch the source file if needed and generate specific object rules for securecc. """
-        if not os.path.exists(src):
-            dir = os.path.dirname(src)
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
-            open(src, 'w').close()
-
     def _get_ninja_rule_from_suffix(self, src):
         """
         Return cxx for C++ source files with suffix as .cc/.cpp/.cxx,
@@ -441,7 +433,6 @@ class CcTarget(Target):
         path = self._source_file_path(src)
         if not os.path.exists(path):
             path = self._target_file_path(src)
-            self._securecc_object_rules('', path)
         self.ninja_build('securecccompile', secure_obj, inputs=path,
                          implicit_deps=implicit_deps, variables=vars)
         self.ninja_build('securecc', obj, inputs=secure_obj)
@@ -859,8 +850,22 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
-        self.data['secure'] = secure
         self._set_hdrs(hdrs)
+        self._set_securecc(secure)
+
+    def _set_securecc(self, secure):
+        """Setup for secure cc library"""
+        if secure:
+            self.data['secure'] = secure
+            # Touch the source files needed for securecc.
+            for src in self.srcs:
+                path = self._source_file_path(src)
+                if not os.path.exists(path):
+                    path = self._target_file_path(src)
+                    dir = os.path.dirname(path)
+                    if not os.path.isdir(dir):
+                        os.makedirs(dir)
+                    open(path, 'w').close()
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
