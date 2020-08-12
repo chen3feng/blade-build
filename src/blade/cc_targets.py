@@ -855,7 +855,6 @@ class CcLibrary(CcTarget):
         stamp = self._cc_compile_deps_stamp()
         if stamp:
             implicit_deps.append(stamp)
-        implicit_deps.append('__securecc_phony__')
 
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []

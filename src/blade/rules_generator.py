@@ -188,9 +188,6 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            description='CXX HDRS ${in}')
 
         securecc = '%s %s' % (cc_config['securecc'], cxx)
-        self._add_rule(textwrap.dedent('''\
-                build __securecc_phony__ : phony
-                '''))
         self.generate_rule(name='securecccompile',
                            command='%s -o ${out} -c -fPIC '
                                    '%s %s ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
