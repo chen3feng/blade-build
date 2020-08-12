@@ -23,7 +23,7 @@ import traceback
 from blade import build_attributes
 from blade import build_rules
 from blade import console
-from blade.blade_util import var_to_list, exec_, source_location
+from blade.blade_util import var_to_list, exec_file, source_location
 from blade.pathlib import Path
 
 
@@ -151,7 +151,7 @@ def include(name):
         name = name[2:]
     else:
         dir = build_manager.instance.get_current_source_path()
-    exec_(os.path.join(dir, name), __current_globles, None)
+    exec_file(os.path.join(dir, name), __current_globles, None)
 
 
 build_rules.register_function(enable_if)
@@ -189,7 +189,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             # which can be loaded and executed by execfile().
             global __current_globles
             __current_globles = build_rules.get_all()
-            exec_(build_file, __current_globles, None)
+            exec_file(build_file, __current_globles, None)
         except SystemExit:
             console.fatal('%s: Fatal error' % build_file)
         except:  # pylint: disable=bare-except

@@ -19,6 +19,7 @@ from blade import console
 from blade.blade_util import var_to_list, iteritems, source_location, md5sum
 
 
+# Location reference macro regex
 LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
 
@@ -141,8 +142,10 @@ class Target(object):
     def rule_hash(self):
         """Calculate a hash string to be used to judge whether regenerate per-target ninja file"""
         if self.__rule_hash is None:
+            # All build related factors should be added to avoid outdated ninja file beeing used.
             entropy = {
                 'blade_revision': self.blade.revision(),
+                'config': config.digest(),
                 'type': self.type,
                 'name': self.name,
                 'srcs': self.srcs,
@@ -152,8 +155,17 @@ class Target(object):
                 dep = self.target_database[dkey]
                 deps.append(dep.rule_hash())
             entropy['deps'] = deps
+
+            # Add more entropy
             entropy.update(self._rule_hash_entropy())
+
+            # Sort to make the result stable
             entropy_str = str(sorted(entropy.items()))
+
+            # Entropy dict can't cantains normal object, because it's default repr contains address,
+            # which is changed in different build, so it should not be used as stable hash entropy.
+            # If this assert failed, remove the culprit element from entropy if it is unrelated or
+            # override it's `__repe__` if it is related.
             assert ' object at 0x' not in entropy_str
             self.__rule_hash = md5sum(entropy_str)
         return self.__rule_hash

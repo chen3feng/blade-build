@@ -19,9 +19,10 @@ import pprint
 import re
 import sys
 
+from blade import blade_util
 from blade import build_attributes
 from blade import console
-from blade.blade_util import var_to_list, iteritems, exec_, source_location
+from blade.blade_util import var_to_list, iteritems, exec_file_content, source_location
 from blade.constants import HEAP_CHECK_VALUES
 
 
@@ -41,6 +42,8 @@ class BladeConfig(object):
 
     def __init__(self):
         self.current_file_name = ''  # For error reporting
+        self.__md5 = blade_util.md5.md5()
+
         # Support generate comments when dump the config by the special '__doc__' convention.
         # __doc__ field is for section
         # __doc__ suffix of items are for items.
@@ -231,11 +234,18 @@ class BladeConfig(object):
             self.current_file_name = filename
             if os.path.exists(filename):
                 console.info('Loading config file "%s"' % filename)
-                exec_(filename, _config_globals, None)
+                with open(filename, 'rb') as f:
+                    content = f.read()
+                    self.__md5.update(content)
+                    exec_file_content(filename, content, _config_globals, None)
         except SystemExit:
             console.fatal('Parse error in config file %s' % filename)
         finally:
             self.current_file_name = ''
+
+    def digest(self):
+        """Hex md5 degest of all loaded config files"""
+        return self.__md5.hexdigest()
 
     def update_config(self, section_name, append, user_config):
         """update config section by name. """
@@ -312,6 +322,12 @@ def load_files(blade_root_dir, load_local_config):
     _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT'))
     if load_local_config:
         _blade_config.try_parse_file(os.path.join(blade_root_dir, 'BLADE_ROOT.local'))
+
+
+def digest():
+    """Hex md5 digest of all loaded config files"""
+    # Used in rule hash entropy
+    return _blade_config.digest()
 
 
 def dump(output_file_name):
