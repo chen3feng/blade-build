@@ -35,6 +35,10 @@ from blade.test_runner import TestRunner
 instance = None
 
 
+# Start of rule hash line in each per-target ninja file
+_NINJA_FILE_RULE_HASH_START = '#RuleHash='
+
+
 class Blade(object):
     """Blade. A blade manager class. """
 
@@ -409,6 +413,40 @@ class Blade(object):
         """
         return target_type != 'system_library'
 
+    def _read_rule_hash(self, ninja_file):
+        """Read rule hash from per-target ninja file"""
+        try:
+            with open(ninja_file) as f:
+                first_line = f.readline()
+                if first_line.startswith(_NINJA_FILE_RULE_HASH_START):
+                    return first_line[len(_NINJA_FILE_RULE_HASH_START):].strip()
+        except IOError:
+            pass
+        return None
+
+    def _write_target_ninja_file(self, target, ninja_file, rules, rule_hash):
+        """Generate per-target ninja file"""
+        target_dir = target._target_file_path('')
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        with open(ninja_file, 'w') as f:
+            f.write('%s%s\n' % (_NINJA_FILE_RULE_HASH_START, rule_hash))
+            f.writelines(rules)
+
+    def _find_or_generate_target_ninja_file(self, target):
+        target_ninja = target._target_file_path('%s.ninja' % target.name)
+        old_rule_hash = self._read_rule_hash(target_ninja)
+        rule_hash = target.rule_hash()
+        if rule_hash == old_rule_hash:
+            return target_ninja
+
+        rules = target.get_rules()
+        if rules:
+            self._write_target_ninja_file(target, target_ninja, rules, rule_hash)
+            return target_ninja
+
+        return None
+
     def gen_targets_rules(self):
         """Get the build rules and return to the object who queries this. """
         rules_buf = []
@@ -418,8 +456,8 @@ class Blade(object):
             target = self.__build_targets[k]
             if not self._is_real_target_type(target.type):
                 continue
-            blade_object = self.__target_database.get(k, None)
-            if not blade_object:
+            target = self.__target_database.get(k, None)
+            if not target:
                 console.warning('"%s" is not a registered blade object' % str(k))
                 continue
             if skip_test and target.type.endswith('_test') and k not in self.__direct_targets:
@@ -427,19 +465,10 @@ class Blade(object):
             if skip_package and target.type == 'package' and k not in self.__direct_targets:
                 continue
 
-            blade_object.ninja_rules()
-            rules = blade_object.get_rules()
-            if rules:
-                # Generate per-target ninja file
-                # TODO(chen3feng): Avoid regenerating ninja file when target is not changed.
-                target_dir = blade_object._target_file_path('')
-                if not os.path.exists(target_dir):
-                    os.makedirs(target_dir)
-                target_ninja = blade_object._target_file_path('%s.ninja' % blade_object.name)
-                with open(target_ninja, 'w') as f:
-                    f.writelines(rules)
-                # Include it in the main ninja file
+            target_ninja = self._find_or_generate_target_ninja_file(target)
+            if target_ninja:
                 rules_buf += 'include %s\n' % target_ninja
+
         return rules_buf
 
     def get_build_platform(self):

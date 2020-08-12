@@ -62,6 +62,10 @@ class ProtocPlugin(object):
         return '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
             self.name, self.path, self.name, out)
 
+    def __repr__(self):
+        # This object is a member of proto target's data, provide a textual repr here to make
+        # rule_hash reproducable between each build.
+        return 'ProtocPlugin(%s)' % self.__dict__
 
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     """
