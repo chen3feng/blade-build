@@ -857,7 +857,8 @@ class CcLibrary(CcTarget):
         """Setup for secure cc library"""
         if secure:
             self.data['secure'] = secure
-            # Touch the source files needed for securecc.
+            # Touch the source files needed by securecc, they will be deleted after compilation
+            # by our securecc implementation.
             for src in self.srcs:
                 path = self._source_file_path(src)
                 if not os.path.exists(path):
