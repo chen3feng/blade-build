@@ -445,9 +445,13 @@ class Blade(object):
             f.writelines(rules)
 
     def _find_or_generate_target_ninja_file(self, target):
-        target_ninja = target._target_file_path('%s.ninja' % target.name)
+        # The `.build.` infix is used to avoid the target ninja file with the
+        # same name as the main build.ninja file
+        target_ninja = target._target_file_path('%s.build.ninja' % target.name)
+
         old_rule_hash = self._read_rule_hash(target_ninja)
         rule_hash = target.rule_hash()
+
         if rule_hash == old_rule_hash:
             console.debug('Using cached %s' % target_ninja)
             return target_ninja
