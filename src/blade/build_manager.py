@@ -441,7 +441,7 @@ class Blade(object):
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
         with open(ninja_file, 'w') as f:
-            f.write('%s%s\n' % (_NINJA_FILE_RULE_HASH_START, rule_hash))
+            f.write('%s%s\n\n' % (_NINJA_FILE_RULE_HASH_START, rule_hash))
             f.writelines(rules)
 
     def _find_or_generate_target_ninja_file(self, target):
