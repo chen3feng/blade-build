@@ -446,7 +446,7 @@ class Blade(object):
 
     def _find_or_generate_target_ninja_file(self, target):
         # The `.build.` infix is used to avoid the target ninja file with the
-        # same name as the main build.ninja file
+        # same name as the main build.ninja file (when target.name == 'build')
         target_ninja = target._target_file_path('%s.build.ninja' % target.name)
 
         old_rule_hash = self._read_rule_hash(target_ninja)
