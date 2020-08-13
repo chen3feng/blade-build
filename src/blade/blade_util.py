@@ -233,12 +233,21 @@ else:
         return d.iteritems(**kw)
 
 
-def exec_(filename, globals, locals):
+def exec_file_content(filename, content, globals, locals):
+    """Execute code content as filename"""
     # pylint: disable=exec-used
-    exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals)
+    exec(compile(content, filename, 'exec'), globals, locals)
+
+
+def exec_file(filename, globals, locals):
+    """Same as python2's execfile builtin function, but python3 has no execfile"""
+    # pylint: disable=exec-used
+    with open(filename, 'rb') as f:
+        exec_file_content(filename, f.read(), globals, locals)
 
 
 def source_location(filename):
+    """Return source location of current call stack from filename"""
     for frame in inspect.stack():
         fn = frame[1]
         lineno = frame[2]
