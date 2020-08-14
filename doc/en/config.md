@@ -47,8 +47,9 @@ global_config(
     duplicated_source_action = 'error', # When the same source file is found to belong to multiple targets, the default is warning
     test_timeout = 600 # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
 )
+```
 
-`### cc_config
+### cc_config
 
 Common configuration of all c/c++ targets
 
@@ -64,9 +65,37 @@ Common configuration of all c/c++ targets
 | cxx\_warnings  | list   | 内置     |                                          | C++ only warnings        |
 | optimize       | list   | 内置     |                                          | optimize options         |
 | hdr\_dep\_missing\_severity | string | warning | info, warning, error         | The severity of the missing dependency on the library to which the header file belongs |
+| hdr_dep_missing_ignore     | dict   | {}        | see below                   | The ignored list when verify missing dependency for a included header file              |
 
 All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
 The optimize flags is separate from other compile flags because it is ignored in debug mode.
+
+The `hdr_dep_missing_severity` and `hdr_dep_missing_ignore` control the header file dependency missing verification behavior.
+
+The format of `hdr_dep_missing_ignore` is a dict like `{ target_label : {src : [headers] }`, for example:
+
+```python
+{
+    'common:rpc' : {'rpc_server.cc':['common/base64.h', 'common/list.h']},
+}
+```
+
+Which means, for `common:rpc`, in `rpc_server.cc`, if the libraries which declared `common/base64.h` 
+and `common/list.h` are not declared in the `deps`, this error will be ignored.
+
+This feature is to help upgrade old projects that do not properly declare and comply with header file dependencies.
+
+To make the upgrade process easier, for all header missing errors, we write them into `blade-bin/blade_hdr_verify.details` file, with this format.
+
+So you can copy it to somewhere and load it in you `BLADE_ROOT`:
+
+```python
+cc_config(
+    hdr_dep_missing_ignore = eval(open('blade_hdr_verify.details').read()),
+)
+```
+
+In this way, existing header file dependency missing errors will be blocked, but new ones will be reported normally.
 
 Example:
 
@@ -79,8 +108,6 @@ cc_config(
     optimize = ['-O2'], # optimization level
 )
 ```
-
-All options are optional and if they do not exist, the previous value is maintained. The warning options in the release of blade.conf are carefully selected and recommended to be maintained.
 
 ### cc_test_config
 
@@ -172,7 +199,6 @@ C/C++ library configuration
 | parameter                  | type   | default   | values                      | description                                                                |
 |----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------------------------|
 | prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory                               |
-| hdr_dep_missing_severity   | string | warning   | debug, info, warning, error | The severity of missing dependency when include a header file              |
 
 Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
 So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:

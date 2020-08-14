@@ -62,9 +62,34 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 | cxx\_warnings  | list   | 内置     |                                          | 编译C++代码时的专用警告                                             |
 | optimize       | list   | 内置     |                                          | 优化专用选项，debug模式下会被忽略，比如 -O2，-omit-frame-pointer 等 |
 | hdr\_dep\_missing\_severity | string | warning | info, warning, error         | 对头文件所属的库的依赖的缺失的严重性                                |
+| hdr_dep_missing_ignore     | dict   | {}        | 参见下面详情                  | 对头文件所属的库的依赖的缺失检查的忽略列表              |
 
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。
+
+`hdr_dep_missing_severity` 和 `hdr_dep_missing_ignore` 控制头文件依赖缺失检查的行为。
+
+`hdr_dep_missing_ignore` 的格式是一个字典，样子是 `{ 目标 : {源文件名 : [头文件列表] }`，例如：
+
+```python
+{
+    'common:rpc' : {'rpc_server.cc':['common/base64.h', 'common/list.h']},
+}
+```
+
+表示对于 `common:rpc`, 在 `rpc_server.cc` 中，如果声明了头文件 `common/base64.h` 和 `common/list.h` 的库没有出现在其 `deps` 中，这个错误也会被忽略。
+
+这个功能是为了帮助升级未正确声明和遵守头文件依赖的旧项目。为了让升级更容易，我们还头文件缺失错误的检查结果按照这个格式写入到了 `blade-bin/blade_hdr_verify.details` 文件中。
+
+因此你可以在把这个文件复制到某处，然后在 `BLADE_ROOT` 中加载:
+
+```python
+cc_config(
+    hdr_dep_missing_ignore = eval(open('blade_hdr_verify.details').read()),
+)
+```
+
+这样，现存的头文件依赖缺失错误都会被屏蔽掉，但是新增的则会正常报告出来。
 
 ### cc_library_config ###
 
@@ -73,7 +98,6 @@ C/C++ 库的配置
 | 参数                       | 类型   | 默认值    | 值域                        | 说明                                                                       |
 |----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------------------------|
 | prebuilt_libpath_pattern   | string |lib${bits} |                             | 预构建的库所在的子目录名的模式                                             |
-| hdr_dep_missing_severity   | string | warning   | debug, info, warning, error | 当检查到包含了头文件却缺少了对其所属库的依赖时，报错的严重性               |
 
 Blade 支持生成多个目标平台的目标，比如在 x64 环境下，支持通过命令行参数的 -m 参数编译 32 位和 64 位 目标。
 因此 prebuilt_libpath_pattern 是一个模式，其中包含可替换的变量：

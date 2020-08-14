@@ -130,6 +130,7 @@ syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
 syn keyword bladeArg securecc
 syn keyword bladeArg hdr_dep_missing_severity
+syn keyword bladeArg hdr_dep_missing_ignore
 
 syn keyword bladeTarget cc_library_config
 syn keyword bladeArg generate_dynamic

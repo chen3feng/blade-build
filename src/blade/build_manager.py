@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import json
 import os
+import pprint
 import sys
 import time
 
@@ -187,12 +188,20 @@ class Blade(object):
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
+        verify_details = {}
+        verify_ignore = config.get_item('cc_config', 'hdr_dep_missing_ignore')
         # Sorting helps reduce jumps between BUILD files when fixng reported problems
         for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
-                if not target.verify_hdr_dep_missing(header_inclusion_history):
+                ok, details = target.verify_hdr_dep_missing(
+                        header_inclusion_history,
+                        verify_ignore.get(target.fullname, {}))
+                if not ok:
                     error += 1
+                if details:
+                    verify_details[target.fullname] = details
+        self._dump_verify_details(verify_details)
         self._dump_verify_history()
         return error == 0
 
@@ -209,6 +218,11 @@ class Blade(object):
     def _dump_verify_history(self):
         with open(self._verify_history_path, 'w') as f:
             json.dump(self._verify_history, f, indent=4)
+
+    def _dump_verify_details(self, verify_details):
+        verify_details_file = os.path.join(self.__build_dir, 'blade_hdr_verify.details')
+        with open(verify_details_file, 'w') as f:
+            pprint.pprint(verify_details, stream=f)
 
     def revision(self):
         """Blade revision identifier"""
