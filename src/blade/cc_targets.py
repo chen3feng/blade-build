@@ -726,7 +726,7 @@ class CcTarget(Target):
         if not self._need_verify_generate_hdrs():
             return True
 
-        # Collect header /include declarations
+        # Collect header/include declarations
         declared_hdrs = set()
         declared_incs = set()
 
