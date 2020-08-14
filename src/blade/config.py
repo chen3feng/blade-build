@@ -209,9 +209,6 @@ class BladeConfig(object):
                 # in deterministic mode discarding timestamps
                 'arflags': ['rcs'],
                 'ranlibflags': [],
-                'auto_set_hdrs':False,
-                'auto_set_hdrs__doc__': 'For files in "cc_library.srcs", set corresponding ".h" '
-                    'file as "cc_library.hdrs" it is not set explicitly',
             }
         }
 
