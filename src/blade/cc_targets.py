@@ -737,7 +737,7 @@ class CcTarget(Target):
         """
         # pylint: disable=too-many-locals
         if not self._need_verify_generate_hdrs():
-            return True
+            return True, {}
 
         # Collect header/include declarations
         declared_hdrs = set()
