@@ -670,8 +670,9 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _verify_direct_headers(self, src, direct_hdrs):
+    def _verify_direct_headers(self, src, direct_hdrs, ignored_hdrs):
         verified_hdrs = set()
+        problematic_hdrs = set()
         msg = []
         for hdr in direct_hdrs:
             libs = _find_libs_by_header(hdr)
@@ -679,11 +680,18 @@ class CcTarget(Target):
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
-                msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
+                # NOTE:
+                # We just don't report a ignored hdr, but still need to record it as a failure.
+                # Because a passed src will not be verified again, even if we remove it from the
+                # ignore list.
+                # Same reason in the _verify_generated_headers.
+                problematic_hdrs.add(hdr)
+                if hdr not in ignored_hdrs:
+                    msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
             verified_hdrs.add(hdr)
         if msg:
             msg.insert(0, '  In %s,' % src)
-        return verified_hdrs, msg
+        return verified_hdrs, problematic_hdrs, msg
 
     @staticmethod
     def _hdr_declaration_message(hdr, libs=None):
@@ -694,15 +702,20 @@ class CcTarget(Target):
         libs = ' or '.join(['//%s:%s' % lib for lib in libs])
         return '%s, which belongs to %s' % (hdr, libs)
 
-    def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs, verified_hdrs):
+    def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,
+                                  ignored_hdrs, verified_hdrs):
+        problematic_hdrs = set()
         msg = []
         for stack in stacks:
             generated_hdr = stack[-1]
-            if generated_hdr in verified_hdrs:
+            if generated_hdr in verified_hdrs:  # Already verified as direct_hdrs
                 continue
             if self._hdr_is_declared(generated_hdr, declared_hdrs, declared_incs):
                 continue
             stack.pop()
+            problematic_hdrs.add(generated_hdr)
+            if generated_hdr in ignored_hdrs:
+                continue
             source = self._source_file_path(src)
             msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
             if not stack:
@@ -713,9 +726,9 @@ class CcTarget(Target):
                 prefix = '                     from %s'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
                 msg.append(prefix % source)
-        return msg
+        return problematic_hdrs, msg
 
-    def verify_hdr_dep_missing(self, history):
+    def verify_hdr_dep_missing(self, history, ignore):
         """
         Verify whether included header files is declared in "deps" correctly.
 
@@ -737,6 +750,7 @@ class CcTarget(Target):
             declared_incs.update(dep.data.get('generated_incs', []))
 
         # Verify
+        details = {}  # {src: list(hdrs)}
         preprocess_paths, failed_preprocess_paths = set(), set()
 
         direct_verify_msg = []
@@ -748,16 +762,22 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-            verified_hdrs, msg = self._verify_direct_headers(src, direct_hdrs)
-            if msg:
+            verified_hdrs, problematic_hdrs, msg = self._verify_direct_headers(
+                    src, direct_hdrs, ignore.get(src, []))
+            if problematic_hdrs:
+                details[src] = list(problematic_hdrs)
                 failed_preprocess_paths.add(path)
                 direct_verify_msg += msg
                 # Direct headers verification can cover the under one
                 continue
             # But can not cover all, so it is still useful
-            msg = self._verify_generated_headers(src, stacks, declared_hdrs, declared_incs,
-                                                 verified_hdrs)
-            if msg:
+            problematic_hdrs, msg = self._verify_generated_headers(
+                    src, stacks, declared_hdrs, declared_incs, ignore.get(src, []), verified_hdrs)
+            if problematic_hdrs:
+                if src in details:
+                    details[src] += problematic_hdrs
+                else:
+                    details[src] = list(problematic_hdrs)
                 generated_verify_msg += msg
                 failed_preprocess_paths.add(path)
 
@@ -774,8 +794,8 @@ class CcTarget(Target):
                 del history[preprocess]
         for preprocess in preprocess_paths - failed_preprocess_paths:
             history[preprocess] = int(os.path.getmtime(preprocess))
-
-        return not failed_preprocess_paths or severity != 'error'
+        failed = (direct_verify_msg or generated_verify_msg) and severity != 'error'
+        return not failed, details
 
 
 class CcLibrary(CcTarget):
