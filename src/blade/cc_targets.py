@@ -679,15 +679,16 @@ class CcTarget(Target):
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
-                msg.append('    For %s' % self._hdr_declaration_message(hdr))
+                msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
             verified_hdrs.add(hdr)
         if msg:
             msg.insert(0, '  In %s,' % src)
         return verified_hdrs, msg
 
     @staticmethod
-    def _hdr_declaration_message(hdr):
-        libs = _find_libs_by_header(hdr)
+    def _hdr_declaration_message(hdr, libs=None):
+        if libs is None:
+            libs = _find_libs_by_header(hdr)
         if not libs:
             return hdr
         libs = ' or '.join(['//%s:%s' % lib for lib in libs])
