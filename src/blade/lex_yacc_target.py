@@ -49,7 +49,6 @@ class LexYaccLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
-                hdr_dep_missing_severity=None,
                 defs=defs,
                 incs=incs,
                 export_incs=[],

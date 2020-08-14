@@ -49,7 +49,6 @@ class FBThriftLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning='',
-                hdr_dep_missing_severity=None,
                 defs=[],
                 incs=[],
                 export_incs=[],

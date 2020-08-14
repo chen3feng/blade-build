@@ -37,7 +37,6 @@ class SwigLibrary(CcTarget):
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
-                hdr_dep_missing_severity=None,
                 defs=[],
                 incs=[],
                 export_incs=[],
