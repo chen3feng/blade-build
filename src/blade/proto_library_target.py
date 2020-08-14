@@ -143,6 +143,17 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['generate_python'] = 'python' in target_languages
         self.data['generate_go'] = 'go' in target_languages
 
+        # Declare generated header files
+        full_cpp_headers = []
+        cpp_headers = []
+        for src in self.srcs:
+            full_source, full_header = self._proto_gen_cpp_files(src)
+            full_cpp_headers.append(full_header)
+            source, header = self._proto_gen_cpp_file_names(src)
+            cpp_headers.append(header)
+        self.data['generated_hdrs'] = full_cpp_headers
+        self._set_hdrs(cpp_headers)
+
     def _check_proto_srcs_name(self, srcs):
         """Checks whether the proto file's name ends with 'proto'. """
         for src in srcs:
@@ -377,20 +388,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         implicit_deps = []
         if plugin:
             implicit_deps.append(plugin)
-        cpp_sources, cpp_headers = [], []
-        full_cpp_sources, full_cpp_headers = [], []
+        cpp_sources = []
+        full_cpp_sources = []
         for src in self.srcs:
             full_source, full_header = self._proto_gen_cpp_files(src)
             self.ninja_build('proto', [full_source, full_header],
                              inputs=self._source_file_path(src),
                              implicit_deps=implicit_deps, variables=vars)
-            full_cpp_headers.append(full_header)
             source, header = self._proto_gen_cpp_file_names(src)
-            cpp_headers.append(header)
             cpp_sources.append(source)
-        self.data['generated_hdrs'] = full_cpp_headers
-        self._set_hdrs(cpp_headers)
-        self._cc_objects_ninja(cpp_sources, True, generated_headers=full_cpp_headers)
+        self._cc_objects_ninja(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
         self._cc_library_ninja()
         self.ninja_proto_rules(self.blade.get_options())
 

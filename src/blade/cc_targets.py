@@ -150,7 +150,7 @@ class CcTarget(Target):
         return result
 
     def _set_hdrs(self, hdrs):
-        """Set The "hdrs" attribute properly, they should be full path"""
+        """Set The "hdrs" attribute properly"""
         if not hdrs:
             return
         expanded_hdrs = []
