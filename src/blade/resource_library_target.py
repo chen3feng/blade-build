@@ -11,10 +11,10 @@ from __future__ import absolute_import
 
 from blade import build_manager
 from blade import build_rules
+from blade import cc_targets
 from blade.blade_util import regular_variable_name
-from blade.cc_targets import CcTarget
 
-class ResourceLibrary(CcTarget):
+class ResourceLibrary(cc_targets.CcTarget):
     """This class is used to generate C/C++ resource library rules."""
 
     def __init__(self,
@@ -44,6 +44,9 @@ class ResourceLibrary(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=[],
                 kwargs=kwargs)
+        hdrs = [self._target_file_path('%s.h' % self.name)]
+        self.data['generated_hdrs'] = hdrs
+        cc_targets._declare_hdrs(self, hdrs)
 
     def ninja_rules(self):
         self._check_deprecated_deps()
@@ -58,7 +61,6 @@ class ResourceLibrary(CcTarget):
                              'name': regular_variable_name(self.name),
                              'path': self.path
                          })
-        self.data['generated_hdrs'].append(index[0])
         sources = ['%s.c' % self.name]
         for resource in self.srcs:
             generated_source = '%s.c' % resource
