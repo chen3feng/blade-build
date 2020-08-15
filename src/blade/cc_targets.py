@@ -149,6 +149,12 @@ class CcTarget(Target):
 
     def _set_hdrs(self, hdrs):
         """Set The "hdrs" attribute properly"""
+        if hdrs is None:
+            suppress = config.get_item('cc_library_config', 'hdrs_missing_suppress')
+            if self.fullname not in suppress:
+                self.warning(
+                        'Missing "hdrs" declaration. The public header files should be declared '
+                        'explicitly, if it does not exist, set it to empty (hdrs = [])')
         if not hdrs:
             return
         expanded_hdrs = []
@@ -670,7 +676,7 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _verify_direct_headers(self, src, direct_hdrs, ignored_hdrs):
+    def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs):
         verified_hdrs = set()
         problematic_hdrs = set()
         msg = []
@@ -681,12 +687,12 @@ class CcTarget(Target):
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
                 # NOTE:
-                # We just don't report a ignored hdr, but still need to record it as a failure.
+                # We just don't report a suppressd hdr, but still need to record it as a failure.
                 # Because a passed src will not be verified again, even if we remove it from the
-                # ignore list.
+                # suppress list.
                 # Same reason in the _verify_generated_headers.
                 problematic_hdrs.add(hdr)
-                if hdr not in ignored_hdrs:
+                if hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
             verified_hdrs.add(hdr)
         if msg:
@@ -703,7 +709,7 @@ class CcTarget(Target):
         return '%s, which belongs to %s' % (hdr, libs)
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,
-                                  ignored_hdrs, verified_hdrs):
+                                  suppressd_hdrs, verified_hdrs):
         problematic_hdrs = set()
         msg = []
         for stack in stacks:
@@ -714,7 +720,7 @@ class CcTarget(Target):
                 continue
             stack.pop()
             problematic_hdrs.add(generated_hdr)
-            if generated_hdr in ignored_hdrs:
+            if generated_hdr in suppressd_hdrs:
                 continue
             source = self._source_file_path(src)
             msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
@@ -728,7 +734,7 @@ class CcTarget(Target):
                 msg.append(prefix % source)
         return problematic_hdrs, msg
 
-    def verify_hdr_dep_missing(self, history, ignore):
+    def verify_hdr_dep_missing(self, history, suppress):
         """
         Verify whether included header files is declared in "deps" correctly.
 
@@ -763,7 +769,7 @@ class CcTarget(Target):
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
             verified_hdrs, problematic_hdrs, msg = self._verify_direct_headers(
-                    src, direct_hdrs, ignore.get(src, []))
+                    src, direct_hdrs, suppress.get(src, []))
             if problematic_hdrs:
                 details[src] = list(problematic_hdrs)
                 failed_preprocess_paths.add(path)
@@ -772,7 +778,7 @@ class CcTarget(Target):
                 continue
             # But can not cover all, so it is still useful
             problematic_hdrs, msg = self._verify_generated_headers(
-                    src, stacks, declared_hdrs, declared_incs, ignore.get(src, []), verified_hdrs)
+                    src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
             if problematic_hdrs:
                 if src in details:
                     details[src] += problematic_hdrs

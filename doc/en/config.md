@@ -71,6 +71,7 @@ All options are optional and if they do not exist, the previous value is maintai
 The optimize flags is separate from other compile flags because it is ignored in debug mode.
 
 The `hdr_dep_missing_severity` and `hdr_dep_missing_ignore` control the header file dependency missing verification behavior.
+See [`cc_library.hdrs`](build_rules/cc.md#cc_library) for details.
 
 The format of `hdr_dep_missing_ignore` is a dict like `{ target_label : {src : [headers] }`, for example:
 
@@ -95,7 +96,7 @@ cc_config(
 )
 ```
 
-In this way, existing header file dependency missing errors will be blocked, but new ones will be reported normally.
+In this way, existing header file dependency missing errors will be suppressed, but new ones will be reported normally.
 
 Example:
 
@@ -196,9 +197,11 @@ If you put these libraries into your own code in your project (such as our inter
 
 C/C++ library configuration
 
-| parameter                  | type   | default   | values                      | description                                                                |
-|----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------------------------|
-| prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory                               |
+| parameter                  | type   | default   | values                      | description                                              |
+|----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------|
+| prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory             |
+| hdrs_missing_severity      | string | error     | debug, info, warning, error | The severity of missing `cc_library.hdrs`                |
+| hdrs_missing_suppress      | list   | []        | list of targets             | List of target labels to be suppressed for above problem |
 
 Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
 So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:
@@ -209,6 +212,16 @@ So, prebuilt_libpath_pattern is really a pattern, allow some variables which can
 In this way, library files of multiple target platforms can be stored in different subdirectories
 without conflict. This attribute can also be empty string, which means no subdirectory.
 If you only concern to one target platform, it is sure OK to have only one directory or have no directory at all.
+
+The format of `hdrs_missing_suppress` is a list of build targets (do not have a'//' at the beginning).
+We also provide an auxiliary tool [`collect-hdrs-missing.py`](../../tool) to easily generate this list.
+If there are too many entries, it is recommended to load them from a separated file:
+
+```python
+cc_library_config(
+    hdrs_missing_suppress = eval(open('blade_hdr_missing_spppress').read()),
+)
+```
 
 ## Environment Variable
 

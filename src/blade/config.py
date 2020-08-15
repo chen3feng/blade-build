@@ -200,8 +200,8 @@ class BladeConfig(object):
                 'hdr_dep_missing_severity': 'warning',
                 'hdr_dep_missing_severity__doc__': 'The severity of the missing dependency on the '
                     'library to which the header file belongs, can be "info", "warning", "error"',
-                'hdr_dep_missing_ignore': {},
-                'hdr_dep_missing_ignore__doc__': 'header deps missing ignored list, see docs for details',
+                'hdr_dep_missing_suppress': {},
+                'hdr_dep_missing_suppress__doc__': 'header deps missing suppress control, see docs for details',
             },
             'cc_library_config': {
                 'prebuilt_libpath_pattern': 'lib${bits}',
@@ -211,6 +211,8 @@ class BladeConfig(object):
                 # in deterministic mode discarding timestamps
                 'arflags': ['rcs'],
                 'ranlibflags': [],
+                'hdrs_missing_severity': 'error',
+                'hdrs_missing_suppress': set(),
             }
         }
 
@@ -278,6 +280,8 @@ class BladeConfig(object):
             if k in section:
                 if isinstance(section[k], list):
                     user_config[k] = var_to_list(user_config[k])
+                elif isinstance(section[k], set):  # Allow using `list` to config `set`
+                    user_config[k] = set(user_config[k])
             else:
                 self.warning('%s: Unknown config item name: %s' % (section_name, k))
                 unknown_keys.append(k)
