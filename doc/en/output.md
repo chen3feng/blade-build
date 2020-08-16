@@ -4,6 +4,8 @@
 
 The construction process is color-highlighted, and the error message is colored, which is convenient for positioning errors. Unless the command is in error, the information executed by the command is not scrolled, which helps to reduce the amount of screen output.
 
+The output also write to the `blade-bin/blade.log` file.
+
 ## Generated Files ##
 
 By default, the native arch executable is generated, and it is easy to specify 32/64-bit results, plus -m32/64.

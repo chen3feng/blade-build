@@ -189,14 +189,14 @@ class Blade(object):
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
         verify_details = {}
-        verify_ignore = config.get_item('cc_config', 'hdr_dep_missing_ignore')
+        verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         # Sorting helps reduce jumps between BUILD files when fixng reported problems
         for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
                 ok, details = target.verify_hdr_dep_missing(
                         header_inclusion_history,
-                        verify_ignore.get(target.fullname, {}))
+                        verify_suppress.get(target.fullname, {}))
                 if not ok:
                     error += 1
                 if details:
@@ -211,7 +211,7 @@ class Blade(object):
                 try:
                     self._verify_history = json.load(f)
                 except Exception as e:  # pylint: disable=broad-except
-                    console.warning('Error loading %s, ignore. Reason: %s' % (
+                    console.warning('Error loading %s, ignored. Reason: %s' % (
                         self._verify_history_path, str(e)))
         return self._verify_history
 

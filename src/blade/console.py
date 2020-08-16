@@ -227,12 +227,18 @@ def output(msg):
     log(msg)
 
 
+# Global Error Counter
+_error_count = 0
+
+
 def error(msg, prefix=True):
     """dump error message. """
     if prefix:
         msg = 'Blade(error): ' + msg
     log(msg)
     _do_print(colored(msg, 'red'), file=sys.stderr)
+    global _error_count
+    _error_count += 1
 
 
 def fatal(msg, code=1, prefix=True):

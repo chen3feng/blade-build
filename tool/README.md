@@ -20,3 +20,6 @@
 
 - setup-shared-ccache.py
 设置单机多个用户之间共用 ccache 编译缓存的辅助工具
+
+- collect-hdrs-missing.py
+  Collect the `cc_library.hdr` missing report and generate a suppress list.
