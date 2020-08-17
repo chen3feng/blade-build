@@ -800,7 +800,7 @@ class CcTarget(Target):
                 del history[preprocess]
         for preprocess in preprocess_paths - failed_preprocess_paths:
             history[preprocess] = int(os.path.getmtime(preprocess))
-        failed = (direct_verify_msg or generated_verify_msg) and severity != 'error'
+        failed = (direct_verify_msg or generated_verify_msg) and severity == 'error'
         return not failed, details
 
 
