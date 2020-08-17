@@ -853,8 +853,21 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
-        self.data['secure'] = secure
         self._set_hdrs(hdrs)
+        self._set_secure(secure)
+
+    def _set_secure(self, secure):
+        if secure:
+            self.data['secure'] = secure
+            for src in self.srcs:
+                path = self._source_file_path(src)
+                if not os.path.exists(path):
+                    # Touch a place holder file for securecc, will be deleted after securecc ran
+                    path = self._target_file_path(src)
+                    dirname = os.path.dirname(path)
+                    if not os.path.exists(dirname):
+                        os.makedirs()
+                    open(path, 'w').close()
 
     def _securecc_object(self, obj, src, implicit_deps, vars):
         assert obj.endswith('.o')
@@ -864,7 +877,6 @@ class CcLibrary(CcTarget):
         path = self._source_file_path(src)
         if not os.path.exists(path):
             path = self._target_file_path(src)
-            self.ninja_build('phony', path)
         self.ninja_build('securecccompile', secure_obj, inputs=path,
                          implicit_deps=implicit_deps, variables=vars)
         self.ninja_build('securecc', obj, inputs=secure_obj)
