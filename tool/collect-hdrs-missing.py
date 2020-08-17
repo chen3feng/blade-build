@@ -13,7 +13,7 @@ import re
 
 # Example:
 # thirdparty/glog/BUILD:3:0: warning: glog: Missing "hdrs" declaration.
-_PATTERN = re.compile(r'(?P<path>[^:]+):.*: (?P<name>\w+): Missing "hdrs" declaration')
+_PATTERN = re.compile(r'(?P<path>[^:]+):.*: (?P<name>[^ ]+): Missing "hdrs" declaration')
 
 def main():
     result = []
