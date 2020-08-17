@@ -45,11 +45,11 @@ Attributes:
   In Blade, the header files are also an important attribute of `cc_library`. When a CC library contains header files,
   they need to be declared in its `hdrs`, and when the source code in other cc targets include the header files, they should also
   put this cc_library into their `deps`, otherwise Blade will check and report the problem.
-  
+
   The severity of the problem can be changed by the  [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) configuration item.
   For problems that existed before `hdrs` were supported, they can be suppressed by [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config).
 
-  For normal CC libraries, `hdrs` should exist, otherwise the library may not be used. Therefore, this attribute is required, 
+  For normal CC libraries, `hdrs` should exist, otherwise the library may not be used. Therefore, this attribute is required,
   otherwise a diagnostic problem will be reported. If it surely does not exist, you should set it to empty([]) explicitly.
 
   The severity of the problem can be controlled by [`cc_library_config.hdrs_missing_severity`](../config.md#cc_library_config).

@@ -42,13 +42,13 @@ cc_library(
 
   在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
   当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题。
-  
+
   问题的严重性可以通过 [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) 配置项来控制。对于在支持 hdrs 前已经存在的问题，
   可以通过 [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config) 来抑制。
 
   对于通常的库，`hdrs` 都是应该存在的，否则这个库可能就无法被调用。因此这个属性是必选的，否则会报告出一个诊断问题，
   问题的严重性可以通过 [`cc_library_config.hdrs_missing_severity`](../config.md#cc_library_config) 来控制。
-  对于在支持 hdrs 前已经存在的问题，可以通过 [`cc_library_config.hdrs_missing_severity`](../config.md#cc_library_config) 来抑制。
+  对于在支持 hdrs 前已经存在的问题，可以通过 [`cc_library_config.hdrs_missing_suppress`](../config.md#cc_library_config) 来抑制。
 
   对于构建期间生成头文件的规则，比如 `proto_library` 生成的 `pb.h` 或者 `gen_rule` 目标的 `outs` 里如果包含头文件，这些头文件也会被自动列入。
   把头文件纳入到依赖管理中，可以避免包含了头文件但是没有加入依赖的库造成的编译或者链接问题，特别是对动态生成的头文件。
