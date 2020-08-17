@@ -79,7 +79,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 
 表示对于 `common:rpc`, 在 `rpc_server.cc` 中，如果声明了头文件 `common/base64.h` 和 `common/list.h` 的库没有出现在其 `deps` 中，这个错误也会被抑制。
 
-这个功能是为了帮助升级未正确声明和遵守头文件依赖的旧项目。为了让升级更容易，我们还头文件缺失错误的检查结果按照这个格式写入到了 `blade-bin/blade_hdr_verify.details` 文件中。
+这个功能是为了帮助升级未正确声明和遵守头文件依赖的旧项目。为了让升级更容易，我们还将头文件缺失错误的检查结果按照这个格式写入到了 `blade-bin/blade_hdr_verify.details` 文件中。
 
 因此你可以在把这个文件复制到某处，然后在 `BLADE_ROOT` 中加载:
 
