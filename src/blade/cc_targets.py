@@ -862,11 +862,11 @@ class CcLibrary(CcTarget):
             for src in self.srcs:
                 path = self._source_file_path(src)
                 if not os.path.exists(path):
-                    # Touch a place holder file for securecc, will be deleted after securecc ran
+                    # Touch a place holder file for securecc, will be deleted by securecc
                     path = self._target_file_path(src)
                     dirname = os.path.dirname(path)
                     if not os.path.exists(dirname):
-                        os.makedirs()
+                        os.makedirs(dirname)
                     open(path, 'w').close()
 
     def _securecc_object(self, obj, src, implicit_deps, vars):
