@@ -41,14 +41,6 @@ Attributes:
 * hdrs
   Declares the public interface header files of the library.
 
-  In large-scale C++ projects, dependency management is important, and header files have not been considered tradionally.
-  In Blade, the header files are also an important attribute of `cc_library`. When a CC library contains header files,
-  they need to be declared in its `hdrs`, and when the source code in other cc targets include the header files, they should also
-  put this cc_library into their `deps`, otherwise Blade will check and report the problem.
-
-  The severity of the problem can be changed by the  [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) configuration item.
-  For problems that existed before `hdrs` were supported, they can be suppressed by [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config).
-
   For normal CC libraries, `hdrs` should exist, otherwise the library may not be used. Therefore, this attribute is required,
   otherwise a diagnostic problem will be reported. If it surely does not exist, you should set it to empty([]) explicitly.
 
@@ -106,6 +98,36 @@ Attributes:
   These libraries can just be used locally (such as run tests)，not fit for the production environment.
   If you want to build a shared library can be use in the environment, you should use `cc_plugin`,
   which will include the code from it dependencies.
+
+### Fix missing dependencies errors caused by `hdrs` ###
+
+In large-scale C++ projects, dependency management is very important, and header files have not been included in it for a long time.
+Starting with Blade 2.0, header files have also been included in dependency management.
+When a cc target includes a header file, it also needs to put the `cc_library` it belongs to in its own `deps`, otherwise Blade will check and report the problem.
+
+The severity of the problem can be controlled by the [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) configuration item.
+For problems that existed before hdrs were supported, It can be suppressed by [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config).
+
+Blade can detect two kind of missing dependencies:
+
+-`Missing dependenvy`
+  The source file in `srcs` includes a header file, but the library to which it belongs is not declared in `deps`.
+  In this case, just add the missing library to the `deps`.
+-`Missing indirect dependency`
+  One of the indirect included header file(included in the header file) does not appear in the `deps` of this target and its transitive dependencies.
+  We only do this check for the header files generated during compilation.
+
+  Because for the rules for generating header files (such as `proto_library` or possibly `gen_rule`), if the dependencies are missing,
+  it may cause these header files to be ungenerated or outdated when compiling the current target, resulting in compilation errors.
+  Fixing this error is a little more troublesome. You need to analyze the include stack reported by the error message, starting from the source file,
+  and searching upwards in the library to which each header file belongs, whether it depends on the library to which the included header file belongs.
+
+  At this time, you may encounter a situation, that is, some libraries with pure header files have no implementation files, so there is no corresponding
+  `cc_library` to describe it. To fix this issue, you need to write a new `cc_library` for it, add header files in the `hdrs`, add the
+  implementation dependencies in its `deps`, and add it to the `deps` of which library depends on it.
+
+  This can solve the root cause, but it does require some effort. The simple and rude solution is to add the reported missing library to the current
+  target `deps`, which is equivalent to relying on the implementation details of some libraries, which is not recommended.
 
 ## prebuilt_cc_library ##
 

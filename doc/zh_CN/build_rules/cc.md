@@ -40,12 +40,6 @@ cc_library(
 
   声明库的公开接口头文件。
 
-  在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
-  当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题。
-
-  问题的严重性可以通过 [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) 配置项来控制。对于在支持 hdrs 前已经存在的问题，
-  可以通过 [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config) 来抑制。
-
   对于通常的库，`hdrs` 都是应该存在的，否则这个库可能就无法被调用。因此这个属性是必选的，否则会报告出一个诊断问题，
   问题的严重性可以通过 [`cc_library_config.hdrs_missing_severity`](../config.md#cc_library_config) 来控制。
   对于在支持 hdrs 前已经存在的问题，可以通过 [`cc_library_config.hdrs_missing_suppress`](../config.md#cc_library_config) 来抑制。
@@ -87,6 +81,28 @@ cc_library(
 * export_incs : list(str)
 
   类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
+
+### 修复 `hdrs` 引发的依赖缺失的检查问题 ###
+
+在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
+当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题。
+
+问题的严重性可以通过 [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) 配置项来控制。对于在支持 hdrs 前已经存在的问题，
+可以通过 [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config) 来抑制。
+
+Blade 能检查到两种缺失情况：
+
+* `Missing dependenvy` 直接依赖缺失
+  `srcs` 中 `#include` 指令包含了头文件，但是其所属的库没有在 `deps` 里声明。这种情况直接把报告缺失的库加入到 `deps` 里即可。
+* `Missing indirect dependency` 间接依赖缺失
+  `#include` 指令包含头文件中包含的其他头文件中的所属的库，没有出现在本目标及其传递依赖的 `deps` 里。我们只对编译期间生成的头文件做这个检查。
+
+  因为对于生成头文件的规则（比如 `proto_library` 或者可能是 `gen_rule`），如果依赖缺失，可能会导致在编译当前目标时，这些头文件可能还没生成或者是过时的，导致编译错误。
+  修复这个错误麻烦一些，你需要顺着错误信息报告的包含栈，从源文件开始，依次向上查找各个头文件所属的库中，是否依赖了其包含的头文件所属的库。
+  这时可能遇到一种情况，就是某些纯头文件的库没有实现文件，因此根本没有对应的 `cc_library` 描述它，这时候就需要为它写一个新的 `cc_library`，在 `hdrs` 中列出头文件，`deps`
+  中列入其实现所需要的依赖。然后把它加入到使用到它的库的依赖中。
+
+  这样能解决根本问题，不过确实需要花一些精力。简单粗暴的解决方式则是把报告缺失的库加入到当前目标的 `deps` 中，这相当于依赖了某些库的实现细节，非常不推荐。
 
 ## prebuilt_cc_library ##
 
