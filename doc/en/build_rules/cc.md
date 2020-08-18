@@ -113,10 +113,11 @@ Blade can detect two kind of missing dependencies:
 -`Missing dependenvy`
   The source file in `srcs` includes a header file, but the library to which it belongs is not declared in `deps`.
   In this case, just add the missing library to the `deps`.
+
 -`Missing indirect dependency`
   One of the indirect included header file(included in the header file) does not appear in the `deps` of this target and its transitive dependencies.
-  We only do this check for the header files generated during compilation.
 
+  We only do this check for the header files generated during compilation.
   Because for the rules for generating header files (such as `proto_library` or possibly `gen_rule`), if the dependencies are missing,
   it may cause these header files to be ungenerated or outdated when compiling the current target, resulting in compilation errors.
   Fixing this error is a little more troublesome. You need to analyze the include stack reported by the error message, starting from the source file,
