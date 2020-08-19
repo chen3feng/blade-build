@@ -92,7 +92,7 @@ cc_library(
 
 Blade 能检查到两种缺失情况：
 
-* `Missing dependenvy` 直接依赖缺失
+* `Missing dependency` 直接依赖缺失
   `srcs` 中 `#include` 指令包含了头文件，但是其所属的库没有在 `deps` 里声明。这种情况直接把报告缺失的库加入到 `deps` 里即可。
 
 * `Missing indirect dependency` 间接依赖缺失
