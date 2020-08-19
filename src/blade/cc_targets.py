@@ -131,12 +131,6 @@ class CcTarget(Target):
         self.data['extra_cppflags'] = var_to_list(extra_cppflags)
         self.data['extra_linkflags'] = var_to_list(extra_linkflags)
 
-        # When a prebuilt shared library with a 'soname' is linked into a program
-        # Its name appears in the program's DT_NEEDED tag without full path.
-        # So we need to make a symbolic link let the program find the library.
-        # Type: tuple(target_path, soname)
-        self.file_and_link = None
-
     def _incs_to_fullpath(self, incs):
         """Expand incs to full path"""
         result = []
@@ -945,10 +939,52 @@ class PrebuiltCcLibrary(CcTarget):
         self.data['link_all_symbols'] = link_all_symbols
         self.data['deprecated'] = deprecated
         self._set_hdrs(hdrs)
+        self._setup()
+
+    def _setup(self):
+        # There are 3 cases for prebuilt library as below:
+        #   1. Only static library(.a) exists
+        #   2. Only dynamic library(.so) exists
+        #   3. Both static and dynamic libraries exist
+        # If there is only one kind of library, we have to use it any way.
+        # But in the third case, we use static library for static linking,
+        # and use dynamic library for dynamic linking.
+        static_source = self._library_source_path('a')
+        dynamic_source = self._library_source_path('so')
+        has_static = os.path.exists(static_source)
+        has_dynamic = os.path.exists(dynamic_source)
+
+        if not has_static and not has_dynamic:
+            self.fatal('Can not find either %s or %s' % (static_source, dynamic_source))
+
+        # When a prebuilt shared library with a 'soname' is linked into a program
+        # Its name appears in the program's DT_NEEDED tag without full path.
+        # So we need to make a symbolic link let the program find the library.
+        # Type: tuple(target_path, soname)
+        # TODO(): bad naming
+        self.file_and_link = None
+
+        if has_static:
+            self._add_default_target_file('a', static_source)
+            if not has_dynamic:
+                # Using static library for dynamic linking
+                self._add_target_file('so', static_source)
+
+        if has_dynamic:
+            dynamic_target = self._target_file_path(os.path.basename(dynamic_source))
+            self._add_target_file('so', dynamic_target)
+            soname = self._soname(dynamic_source)
+            if soname:
+                self.file_and_link = (dynamic_target, soname)
+                self.data['copy_source_path'] = dynamic_source
+                self.data['copy_target_path'] = dynamic_target
+            if not has_static:
+                # Using dynamic library for static linking
+                self._add_default_target_file('a', dynamic_target)
 
     _default_libpath = None
 
-    def _library_source_path(self):
+    def _library_source_path(self, suffix):
         """Library full path in source dir"""
         options = self.blade.get_options()
         bits, arch, profile = options.bits, options.arch, options.profile
@@ -967,30 +1003,7 @@ class PrebuiltCcLibrary(CcTarget):
 
         libpath = os.path.join(self.path, libpath)
 
-        return [os.path.join(libpath, 'lib%s.%s' % (self.name, s))
-                for s in ['a', 'so']]
-
-    def _library_paths(self, prefer_dynamic):
-        """
-        Return source and target path of the prebuilt cc library.
-        When both .so and .a exist, return .so if prefer_dynamic is True.
-        Otherwise return the existing one.
-        """
-        a_src_path, so_src_path = self._library_source_path()
-        libs = (a_src_path, so_src_path)  # Ordered by priority
-        if prefer_dynamic:
-            libs = (so_src_path, a_src_path)
-        source = ''
-        for lib in libs:
-            if os.path.exists(lib):
-                source = lib
-                break
-        if not source:
-            # TODO(chen3feng): Restore this error
-            # self.fatal('Can not find either %s or %s' % (libs[0], libs[1]))
-            source = a_src_path
-        target = self._target_file_path(os.path.basename(source))
-        return source, target
+        return os.path.join(libpath, 'lib%s.%s' % (self.name, suffix))
 
     def _soname(self, so):
         """Get the soname of prebuilt shared library."""
@@ -1016,57 +1029,11 @@ class PrebuiltCcLibrary(CcTarget):
                 return True
         return False
 
-    def _prepare_symbolic_link(
-            self, static_lib_source, static_lib_target,
-            dynamic_lib_source, dynamic_lib_target):
-        """Make a symbolic link if either static or dynamic library is so. """
-        so_src, so_target = '', ''
-        if static_lib_target.endswith('.so'):
-            so_src = static_lib_source
-            so_target = static_lib_target
-        elif dynamic_lib_target.endswith('.so'):
-            so_src = dynamic_lib_source
-            so_target = dynamic_lib_target
-        if so_src:
-            soname = self._soname(so_src)
-            if soname:
-                self.file_and_link = (so_target, soname)
-
     def _rpath_link(self, dynamic):
-        path = self._library_source_path()[1]
-        if path.endswith('.so'):
+        path = self._library_source_path('so')
+        if os.path.exists(path):
             return os.path.dirname(path)
         return None
-
-    def _ninja_rules(self):
-        """Prebuilt cc library ninja rules.
-
-        There are 3 cases for prebuilt library as below:
-
-            1. Only static library(.a) exists
-            2. Only dynamic library(.so) exists
-            3. Both static and dynamic libraries exist
-        """
-        static_src_path, static_target_path = self._library_paths(prefer_dynamic=False)
-        if static_src_path.endswith('.a'):
-            path = static_src_path
-        else:
-            self.ninja_build('copy', static_target_path, inputs=static_src_path)
-            path = static_target_path
-        self._add_default_target_file('a', path)
-
-        dynamic_src_path, dynamic_target_path = '', ''
-        if self._need_dynamic_library():
-            dynamic_src_path, dynamic_target_path = self._library_paths(prefer_dynamic=True)
-            if dynamic_target_path != static_target_path:
-                assert static_src_path.endswith('.a')
-                assert dynamic_src_path.endswith('.so')
-                self.ninja_build('copy', dynamic_target_path, inputs=dynamic_src_path)
-                path = dynamic_target_path
-            self._add_target_file('so', path)
-
-        return (static_src_path, static_target_path,
-                dynamic_src_path, dynamic_target_path)
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
@@ -1076,10 +1043,10 @@ class PrebuiltCcLibrary(CcTarget):
         # rule to avoid runtime error and also avoid unnecessary runtime cost.
         if not self._is_depended():
             return
-
-        paths = self._ninja_rules()
-        self._prepare_symbolic_link(*paths)
-
+        source_path = self.data.get('copy_source_path')
+        target_path = self.data.get('copy_target_path')
+        if source_path and target_path:
+            self.ninja_build('copy', target_path, inputs=source_path)
 
 def prebuilt_cc_library(
         name,
