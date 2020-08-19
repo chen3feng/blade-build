@@ -965,22 +965,25 @@ class PrebuiltCcLibrary(CcTarget):
         self.file_and_link = None
 
         if has_static:
-            self._add_default_target_file('a', static_source)
+            self.data['static_source'] = static_source
+            self._add_target_file('a', static_source)
             if not has_dynamic:
                 # Using static library for dynamic linking
                 self._add_target_file('so', static_source)
 
         if has_dynamic:
             dynamic_target = self._target_file_path(os.path.basename(dynamic_source))
+            self.data['dynamic_source'] = dynamic_source
+            self.data['dynamic_target'] = dynamic_target
             self._add_target_file('so', dynamic_target)
+
             soname = self._soname(dynamic_source)
             if soname:
                 self.file_and_link = (dynamic_target, soname)
-                self.data['copy_source_path'] = dynamic_source
-                self.data['copy_target_path'] = dynamic_target
+
             if not has_static:
                 # Using dynamic library for static linking
-                self._add_default_target_file('a', dynamic_target)
+                self._add_target_file('a', dynamic_target)
 
     _default_libpath = None
 
@@ -1043,10 +1046,10 @@ class PrebuiltCcLibrary(CcTarget):
         # rule to avoid runtime error and also avoid unnecessary runtime cost.
         if not self._is_depended():
             return
-        source_path = self.data.get('copy_source_path')
-        target_path = self.data.get('copy_target_path')
-        if source_path and target_path:
-            self.ninja_build('copy', target_path, inputs=source_path)
+        dynamic_source = self.data.get('dynamic_source')
+        dynamic_target = self.data.get('dynamic_target')
+        if dynamic_source and dynamic_target:
+            self.ninja_build('copy', dynamic_target, inputs=dynamic_source)
 
 def prebuilt_cc_library(
         name,
