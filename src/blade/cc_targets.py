@@ -409,7 +409,7 @@ class CcTarget(Target):
             if key in vars:
                 del vars[key]
         for src, obj, rule in hdrs_inclusion_srcs:
-            output = '%s.H' % obj
+            output = obj[:-2] + '.H'  # Replace '.o' suffix with '.H'
             rule = '%shdrs' % rule
             self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
@@ -455,8 +455,7 @@ class CcTarget(Target):
             objs.append(obj)
 
         self.data['objs'] = objs
-        if hdrs_inclusion_srcs:
-            self._cc_hdrs_ninja(hdrs_inclusion_srcs, vars)
+        self._cc_hdrs_ninja(hdrs_inclusion_srcs, vars)
 
     def _static_cc_library_ninja(self):
         output = self._target_file_path('lib%s.a' % self.name)
@@ -550,9 +549,9 @@ class CcTarget(Target):
         return self_hdr_patterns
 
     def _extract_cc_hdrs(self, src):
-        """Extract headers included by .cc/.h directly. """
+        """Extract headers included by .cc/.h directly"""
         objs_dir = self._target_file_path(self.name + '.objs')
-        path = '%s.o.H' % os.path.join(objs_dir, src)
+        path = '%s.H' % os.path.join(objs_dir, src)
         if not os.path.exists(path):
             return []
         hdrs, level_two_hdrs = self._extract_cc_hdrs_from_stack(path)
@@ -586,7 +585,7 @@ class CcTarget(Target):
         for details.
         """
         objs_dir = self._target_file_path(self.name + '.objs')
-        path = '%s.o.H' % os.path.join(objs_dir, src)
+        path = '%s.H' % os.path.join(objs_dir, src)
         if not os.path.exists(path):
             return ''
         return path
@@ -594,7 +593,7 @@ class CcTarget(Target):
     def _parse_inclusion_stacks(self, path):
         """Parae headers inclusion stacks from file.
 
-        Given the following inclusions found in the app/example/foo.cc.o.H:
+        Given the following inclusions found in the app/example/foo.cc.H:
 
             . ./app/example/foo.h
             .. build64_release/app/example/proto/foo.pb.h

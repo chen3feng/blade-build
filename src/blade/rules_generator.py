@@ -178,7 +178,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            depfile='${out}.d',
                            deps='gcc')
 
-        # Generate '.H' for cc file to check dependency missing, see
+        # Generate '.H' for cc file to check dependency missing, see '-H' part in
         # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
         preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}'
         self.generate_rule(name='cchdrs',

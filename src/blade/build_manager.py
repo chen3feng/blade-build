@@ -225,12 +225,14 @@ class Blade(object):
             pprint.pprint(verify_details, stream=f)
 
     def revision(self):
-        """Blade revision identifier"""
+        """Blade revision to identify changes"""
         if self.__blade_revision is None:
             if os.path.isfile(self.__blade_path):  # blade.zip
                 self.__blade_revision = md5sum_file(self.__blade_path)
             else:
-                self.__blade_revision = 'developing'
+                # In develop mode, take the mtime of the `blade` directory
+                self.__blade_revision = str(os.path.getmtime(
+                    os.path.join(self.__blade_path, 'blade')))
         return self.__blade_revision
 
     def run(self, target):
