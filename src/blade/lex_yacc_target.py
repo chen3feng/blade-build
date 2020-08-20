@@ -117,7 +117,7 @@ class LexYaccLibrary(CcTarget):
         if cc_path.endswith('.c'):
             h_path = '%s.h' % cc_path[:-2]
         else:
-            h_path = '%s.h' % cc_path[:-3]
+            h_path = '%s.hh' % cc_path[:-3]
         self.ninja_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
         return cc, cc_path, h_path
 
