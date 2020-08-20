@@ -50,8 +50,9 @@ class PythonTarget(Target):
 
         if base:
             if not base.startswith('//'):
-                self.fatal('Invalid base directory %s. Option base should be a directory '
+                self.error('Invalid base directory %s. Option base should be a directory '
                            'starting with \'//\' from BLADE_ROOT directory.' % base)
+                return
             self.data['python_base'] = base[2:]
 
     def _expand_deps_generation(self):
@@ -122,12 +123,12 @@ class PrebuiltPythonLibrary(PythonTarget):
                 base=base,
                 kwargs=kwargs)
         if base:
-            self.fatal("Prebuilt py_library doesn't support base")
+            self.error("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
-            self.fatal('There can only be 1 file in prebuilt py_library')
+            self.error('There can only be 1 file in prebuilt py_library')
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
-            console.fatal(
+            console.error(
                 '%s: Invalid file "%s" in srcs, prebuilt py_library only support egg and whl' %
                 (self.fullname, src))
 
@@ -200,7 +201,7 @@ class PythonBinary(PythonLibrary):
             if len(srcs) == 1:
                 self.data['main'] = srcs[0]
             else:
-                self.fatal(
+                self.error(
                     'The entry file must be specified by the "main" '
                     'argument if there are more than one srcs')
         self.data['exclusions'] = exclusions

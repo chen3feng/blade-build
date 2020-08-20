@@ -22,6 +22,7 @@ import traceback
 
 from blade import build_attributes
 from blade import build_rules
+from blade import config
 from blade import console
 from blade.blade_util import var_to_list, exec_file, source_location
 from blade.pathlib import Path
@@ -93,9 +94,11 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     source_dir = Path(build_manager.instance.get_current_source_path())
     source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
     include = var_to_list(include)
+    severity = config.get_item('global_config', 'glob_error_severity')
+    output = getattr(console, severity)
     if excludes:
-        console.warning('%s warning: "glob.excludes" is deprecated, use "exclude" instead' % source_loc,
-                        prefix=False)
+        output('%s %s: "excludes" is deprecated, use "exclude" instead' % (source_loc, severity),
+               prefix=False)
     exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
@@ -132,9 +135,9 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        console.warning('%s warning: "glob(%s)" got an empty result. If it is the expected behavior, '
-                        'specify "allow_empty=True" to eliminate this message' % (source_loc, args),
-                        prefix=False)
+        output('%s %s: "glob(%s)" got an empty result. If it is the expected behavior, '
+               'specify "allow_empty=True" to eliminate this message' % (source_loc, severity, args),
+               prefix=False)
 
     return result
 
@@ -179,26 +182,28 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
 
     if not os.path.exists(source_dir):
         _report_not_exist('Directory', source_dir, source_dir, blade)
+        return
 
     old_current_source_path = blade.get_current_source_path()
-    blade.set_current_source_path(source_dir)
-    build_file = os.path.join(source_dir, 'BUILD')
-    if os.path.exists(build_file) and not os.path.isdir(build_file):
-        try:
-            # The magic here is that a BUILD file is a Python script,
-            # which can be loaded and executed by execfile().
-            global __current_globles
-            __current_globles = build_rules.get_all()
-            exec_file(build_file, __current_globles, None)
-        except SystemExit:
-            console.fatal('%s: Fatal error' % build_file)
-        except:  # pylint: disable=bare-except
-            console.fatal('Parse error in %s\n%s' % (
-                build_file, traceback.format_exc()))
-    else:
-        _report_not_exist('File', build_file, source_dir, blade)
-
-    blade.set_current_source_path(old_current_source_path)
+    try:
+        blade.set_current_source_path(source_dir)
+        build_file = os.path.join(source_dir, 'BUILD')
+        if os.path.exists(build_file) and not os.path.isdir(build_file):
+            try:
+                # The magic here is that a BUILD file is a Python script,
+                # which can be loaded and executed by execfile().
+                global __current_globles
+                __current_globles = build_rules.get_all()
+                exec_file(build_file, __current_globles, None)
+            except SystemExit:
+                console.fatal('%s: Fatal error' % build_file)
+            except:  # pylint: disable=bare-except
+                console.fatal('Parse error in %s\n%s' % (
+                    build_file, traceback.format_exc()))
+        else:
+            _report_not_exist('File', build_file, source_dir, blade)
+    finally:
+        blade.set_current_source_path(old_current_source_path)
 
 
 def _find_dependent(dkey, blade):
@@ -316,7 +321,8 @@ def load_targets(target_ids, blade_root_dir, blade):
         if target_id not in target_database:
             msg = 'Target "//%s:%s" does not exist' % target_id
             dependent = _find_dependent(target_id, blade)
-            (dependent or console).fatal(msg)
+            (dependent or console).error(msg)
+            continue
 
         related_targets[target_id] = target_database[target_id]
         for key in related_targets[target_id].expanded_deps:

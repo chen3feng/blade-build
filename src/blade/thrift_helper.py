@@ -31,7 +31,7 @@ class ThriftParser(object):
     def __init__(self, path):
         self.path = path
         if not os.path.isfile(self.path):
-            console.fatal('"%s" is not a valid file.' % self.path)
+            console.error('"%s" is not a valid file.' % self.path)
 
         self.thrift_name = os.path.basename(self.path)[:-7]
         # Package name for each language.
@@ -85,7 +85,7 @@ class ThriftParser(object):
                 self.exceptions or self.services:
             pass
         else:
-            console.fatal('%s is an empty thrift file.' % self.path)
+            console.error('%s is an empty thrift file.' % self.path)
 
 
 class FBThriftHelper(ThriftParser):

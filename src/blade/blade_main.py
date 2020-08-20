@@ -486,13 +486,21 @@ def clear_build_script():
             pass
 
 
+def _check_error_log(stage):
+    error_count = console.error_count()
+    if error_count > 0:
+        console.error('There are %s errors in the %s stage' %(error_count, stage))
+        return 1
+    return 0
+
+
 def run_subcommand(command, options, targets, blade_path, build_dir):
     """Run particular commands before loading"""
     # The 'dump' command is special, some kind of dump items should be ran before loading.
     if command == 'dump' and options.dump_config:
         output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
         config.dump(output_file_name)
-        return 0
+        return _check_error_log('dump')
 
     load_targets = targets
     if command == 'query' and options.dependents:
@@ -509,12 +517,20 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
 
     # Build the targets
     build_manager.instance.load_targets()
+    if _check_error_log('load'):
+        return 1
     if options.stop_after == 'load':
         return 0
+
     build_manager.instance.analyze_targets()
+    if _check_error_log('analyze'):
+        return 1
     if options.stop_after == 'analyze':
         return 0
+
     build_manager.instance.generate()
+    if _check_error_log('generate'):
+        return 1
     if options.stop_after == 'generate':
         return 0
 
@@ -532,7 +548,9 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     finally:
         clear_build_script()
 
-    return returncode
+    if returncode != 0:
+        return returncode
+    return _check_error_log(command)
 
 
 def run_subcommand_profile(command, options, targets, blade_path, build_dir):
@@ -571,6 +589,8 @@ def _main(blade_path, argv):
 
     load_config(options, _BLADE_ROOT_DIR)
     adjust_config_by_options(config, options)
+    if _check_error_log('config'):
+        return 1
 
     global _TARGETS
     if not targets:

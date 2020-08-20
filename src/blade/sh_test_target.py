@@ -66,7 +66,8 @@ class ShellTest(Target):
             elif isinstance(td, str):
                 src, dst = td, ''
             else:
-                self.fatal('Invalid testdata %s. Test data should be either str or tuple.' % td)
+                self.error('Invalid testdata %s. Test data should be either str or tuple.' % td)
+                continue
 
             m = LOCATION_RE.search(src)
             if m:
