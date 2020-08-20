@@ -45,7 +45,7 @@ class MavenJar(Target):
     def _check_id(self, id):
         """Check if id is valid. """
         if not maven.is_valid_id(id):
-            self.fatal('Invalid id %s: Id should be group:artifact:version, '
+            self.error('Invalid id %s: Id should be group:artifact:version, '
                        'such as jaxen:jaxen:1.1.6' % id)
 
     def _get_java_pack_deps(self):
@@ -180,8 +180,9 @@ class JavaTargetMixIn(object):
             elif isinstance(resource, str):
                 src, dst = resource, ''
             else:
-                self.fatal('Invalid resource %s. Resource should be either a str or a tuple.' %
+                self.error('Invalid resource %s. Resource should be either a str or a tuple.' %
                            resource)
+                continue
 
             m = LOCATION_RE.search(src)
             if m:
@@ -386,7 +387,7 @@ class JavaTargetMixIn(object):
         """
         full_path, res_path, jar_path = '', resource[0], resource[1]
         if '..' in res_path:
-            self.fatal('Invalid resource %s. Relative path is not allowed.' % res_path)
+            self.error('Invalid resource %s. Relative path is not allowed.' % res_path)
         elif res_path.startswith('//'):
             res_path = res_path[2:]
             full_path = res_path

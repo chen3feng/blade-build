@@ -146,7 +146,8 @@ class CcTarget(Target):
         if hdrs is None:
             suppress = config.get_item('cc_library_config', 'hdrs_missing_suppress')
             if self.fullname not in suppress:
-                self.warning(
+                severity = config.get_item('cc_library_config', 'hdrs_missing_severity')
+                getattr(self, severity)(
                         'Missing "hdrs" declaration. The public header files should be declared '
                         'explicitly, if it does not exist, set it to empty (hdrs = [])')
         if not hdrs:
@@ -955,7 +956,8 @@ class PrebuiltCcLibrary(CcTarget):
         has_dynamic = os.path.exists(dynamic_source)
 
         if not has_static and not has_dynamic:
-            self.fatal('Can not find either %s or %s' % (static_source, dynamic_source))
+            self.error('Can not find either %s or %s' % (static_source, dynamic_source))
+            return
 
         # When a prebuilt shared library with a 'soname' is linked into a program
         # Its name appears in the program's DT_NEEDED tag without full path.
@@ -1580,7 +1582,8 @@ class CcTest(CcBinary):
             heap_check = cc_test_config.get('heap_check', '')
         else:
             if heap_check not in HEAP_CHECK_VALUES:
-                self.fatal('heap_check can only be in %s' % HEAP_CHECK_VALUES)
+                self.error('heap_check can only be in %s' % HEAP_CHECK_VALUES)
+                heap_check = ''
 
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])

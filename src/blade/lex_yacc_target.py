@@ -37,11 +37,6 @@ class LexYaccLibrary(CcTarget):
         Init the cc lex yacc target
 
         """
-        if (len(srcs) != 2 or
-                (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
-                (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
-            self.fatal('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
-
         super(LexYaccLibrary, self).__init__(
                 name=name,
                 type='lex_yacc_library',
@@ -56,6 +51,11 @@ class LexYaccLibrary(CcTarget):
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
+
+        if (len(srcs) != 2 or
+                (not (srcs[0].endswith('.l') or srcs[0].endswith('.ll'))) or
+                (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
+            self.error('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
 
         self.data['recursive'] = recursive
         self.data['prefix'] = prefix
@@ -89,8 +89,7 @@ class LexYaccLibrary(CcTarget):
             return source + '.c'
         elif source.endswith('.ll') or source.endswith('.yy'):
             return source + '.cc'
-        else:
-            self.fatal('Unknown source %s' % source)
+        assert False, 'Unknown source %s' % source
 
     def ninja_lex_vars(self):
         lex_flags = self._lex_flags()

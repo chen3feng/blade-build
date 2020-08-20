@@ -67,7 +67,7 @@ class BinaryRunner(object):
         """Check whether the destination of test data is valid or not. """
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
-            console.fatal('Ambiguous testdata of %s: %s, exit...' % (target.fullname, dest))
+            console.error('Ambiguous testdata of %s: %s, exit...' % (target.fullname, dest))
         for item in dest_list:
             item_norm = os.path.normpath(item)
             if len(dest_norm) >= len(item_norm):
@@ -75,7 +75,7 @@ class BinaryRunner(object):
             else:
                 long_path, short_path = item_norm, dest_norm
             if long_path.startswith(short_path) and long_path[len(short_path)] == '/':
-                target.fatal('"%s" could not exist with "%s" in testdata' % (dest, item))
+                target.error('"%s" could not exist with "%s" in testdata' % (dest, item))
 
     def _prepare_env(self, target):
         """Prepare the test environment. """
@@ -194,7 +194,8 @@ class BinaryRunner(object):
         target_key = tuple(target_name.split(':'))
         target = self._build_targets[target_key]
         if target.type not in self.run_list:
-            target.fatal('is not a executable target')
+            target.error('is not a executable target')
+            return 126
         run_env = self._prepare_env(target)
         cmd = [os.path.abspath(self._executable(target))] + self.options.args
         shell = target.data.get('run_in_shell', False)

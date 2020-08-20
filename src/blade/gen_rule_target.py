@@ -52,9 +52,9 @@ class GenRuleTarget(Target):
                 kwargs=kwargs)
 
         if not outs:
-            self.fatal('"outs" can not be empty')
+            self.error('"outs" can not be empty')
         if not cmd:
-            self.fatal('"cmd" can not be empty')
+            self.error('"cmd" can not be empty')
         outs = [os.path.normpath(o) for o in var_to_list(outs)]
 
         self.data['outs'] = outs
@@ -116,7 +116,8 @@ class GenRuleTarget(Target):
             for key, label in locations:
                 path = targets[key]._get_target_file(label)
                 if not path:
-                    self.fatal('Invalid location reference %s %s' % (':'.join(key), label))
+                    self.error('Invalid location reference %s %s' % (':'.join(key), label))
+                    continue
                 locations_paths.append(path)
             cmd = cmd % tuple(locations_paths)
         return cmd

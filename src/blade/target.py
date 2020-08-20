@@ -35,7 +35,7 @@ def _normalize_one(target, working_dir):
     if target.startswith('//'):
         target = target[2:]
     elif target.startswith('/'):
-        console.fatal('Invalid target "%s" starting from root path.' % target)
+        console.error('Invalid target "%s" starting from root path.' % target)
     else:
         if working_dir != '.':
             target = os.path.join(working_dir, target)
@@ -198,15 +198,15 @@ class Target(object):
 
     def _prepare_to_generate_rule(self):
         """Should be overridden. """
-        self.fatal('_prepare_to_generate_rule should be overridden in subclasses')
+        self.error('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
         if '/' in self.name:
-            self.fatal('Invalid target name, should not contain dir part')
+            self.error('Invalid target name, should not contain dir part')
 
     def _check_kwargs(self, kwargs):
         if kwargs:
-            self.fatal('Unrecognized options %s' % kwargs)
+            self.error('Unrecognized options %s' % kwargs)
 
     def _allow_duplicate_source(self):
         """Whether the target allows duplicate source file with other targets"""
@@ -229,13 +229,13 @@ class Target(object):
             else:
                 srcset.add(s)
         if dups:
-            self.fatal('Duplicate source file paths: %s ' % dups)
+            self.error('Duplicate source file paths: %s ' % dups)
 
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
         for s in self.srcs:
             if '..' in s or s.startswith('/'):
-                self.fatal('Invalid source file path: %s. can only be relative path, and must '
+                self.error('Invalid source file path: %s. can only be relative path, and must '
                            'in current directory or subdirectories.' % s)
 
             src = os.path.normpath(os.path.join(self.path, s))
@@ -255,7 +255,7 @@ class Target(object):
                         message = 'Source file %s belongs to {%s, %s}' % (
                             s, target_existed[0], target[0])
                         if action == 'error':
-                            console.fatal(message)
+                            console.error(message)
                         elif action == 'warning':
                             console.warning(message)
 
@@ -384,9 +384,9 @@ class Target(object):
         """
         if not (t.startswith(':') or t.startswith('#') or
                 t.startswith('//') or t.startswith('./')):
-            self.fatal('Invalid format %s.' % t)
+            self.error('Invalid format %s.' % t)
         if t.count(':') > 1:
-            self.fatal("Invalid format %s, missing ',' between labels?" % t)
+            self.error("Invalid format %s, missing ',' between labels?" % t)
 
     def _check_deps(self, deps):
         """_check_deps
@@ -598,7 +598,7 @@ class Target(object):
                     path = path[2:]
                 return (path, name.strip())
 
-        self.fatal('Invalid target lib format: "%s", '
+        self.error('Invalid target lib format: "%s", '
                    'should be "#lib_name" or "//lib_path:lib_name"' %
                    target_string)
 

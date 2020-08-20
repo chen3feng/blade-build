@@ -86,8 +86,6 @@ class FBThriftLibrary(CcTarget):
             if file_suffix != 'thrift':
                 console.error('Invalid thrift file name %s' % src)
                 error += 1
-        if error > 0:
-            console.fatal('Invalid thrift file names found.')
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """

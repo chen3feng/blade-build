@@ -43,9 +43,10 @@ class ProtocPlugin(object):
         self.code_generation = {}
         for language, v in iteritems(code_generation):
             if language not in self.__languages:
-                console.fatal('%s: Language %s is invalid. '
+                console.error('%s: Language %s is invalid. '
                               'Protoc plugins in %s are supported by blade currently.' % (
                                   name, language, ', '.join(self.__languages)))
+                continue
             self.code_generation[language] = {}
             # Note that each plugin dep should be in the global target format
             # since protoc plugin is defined in the global scope
@@ -157,7 +158,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """Checks whether the proto file's name ends with 'proto'. """
         for src in srcs:
             if not src.endswith('.proto'):
-                self.fatal('Invalid proto file name %s' % src)
+                self.error('Invalid proto file name %s' % src)
 
     def _check_proto_deps(self):
         """Only proto_library or gen_rule target is allowed as deps. """
@@ -171,8 +172,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 continue
             dep = self.target_database[dkey]
             if dep.type != 'proto_library' and dep.type != 'gen_rule':
-                self.fatal('Invalid dep %s. Proto_library can only depend on proto_library '
-                                'or gen_rule.' % dep.fullname)
+                self.error('Invalid dep %s. Proto_library can only depend on proto_library '
+                           'or gen_rule.' % dep.fullname)
 
     def _handle_protoc_plugins(self, plugins):
         """Handle protoc plugins and corresponding dependencies. """
@@ -181,7 +182,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protoc_plugin_deps, protoc_plugin_java_deps = set(), set()
         for plugin in plugins:
             if plugin not in protoc_plugin_config:
-                self.fatal('Unknown plugin %s' % plugin)
+                self.error('Unknown plugin %s' % plugin)
+                continue
             p = protoc_plugin_config[plugin]
             protoc_plugins.append(p)
             for language, v in iteritems(p.code_generation):
@@ -255,8 +257,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if m:
             return m.group(1)
         else:
-            self.fatal('"go_package" is mandatory to generate golang code '
-                            'in protocol buffers but is missing in %s.' % path)
+            self.error('"go_package" is mandatory to generate golang code '
+                       'in protocol buffers but is missing in %s.' % path)
+            return ''
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
@@ -343,6 +346,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         for src in self.srcs:
             path = self._source_file_path(src)
             package = self._get_go_package_name(path)
+            if not package:
+                continue
             if not package.startswith(protobuf_go_path):
                 self.warning('go_package "%s" is not starting with "%s" in %s' % (
                              package, protobuf_go_path, src))

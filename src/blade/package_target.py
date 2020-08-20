@@ -57,7 +57,7 @@ class PackageTarget(Target):
                 kwargs=kwargs)
 
         if type not in _package_types:
-            self.fatal('Invalid type %s. Types supported by the package are %s' % (
+            self.error('Invalid type %s. Types supported by the package are %s' % (
                        type, ', '.join(sorted(_package_types))))
         self.data['type'] = type
         self.data['sources'] = []
@@ -80,7 +80,8 @@ class PackageTarget(Target):
             elif isinstance(s, str):
                 src, dst = s, ''
             else:
-                self.fatal('Invalid src %s. src should be either str or tuple.' % s)
+                self.error('Invalid src %s. src should be either str or tuple.' % s)
+                continue
 
             m = LOCATION_RE.search(src)
             if m:
@@ -98,8 +99,9 @@ class PackageTarget(Target):
         Return src full path within the workspace and mapping path in the archive.
         """
         if '..' in src or '..' in dst:
-            self.fatal('Invalid src (%s, %s). Relative path is not allowed.' % (src, dst))
-        elif src.startswith('//'):
+            self.error('Invalid src (%s, %s). Relative path is not allowed.' % (src, dst))
+
+        if src.startswith('//'):
             src = src[2:]
             path = src
         else:
@@ -113,7 +115,7 @@ class PackageTarget(Target):
         """Add regular file or directory. """
         src, dst = self._get_source_path(src, dst)
         if not os.path.exists(src):
-            self.fatal('Package source %s does not exist.' % src)
+            self.error('Package source %s does not exist.' % src)
         elif os.path.isfile(src):
             self.data['sources'].append((src, dst))
         else:

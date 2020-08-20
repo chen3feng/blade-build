@@ -73,7 +73,7 @@ class ThriftLibrary(CcTarget):
         """Check whether the thrift file's name ends with .thrift. """
         for src in srcs:
             if not src.endswith('.thrift'):
-                self.fatal('Invalid thrift file %s' % src)
+                self.error('Invalid thrift file %s' % src)
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file. """

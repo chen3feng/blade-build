@@ -231,6 +231,11 @@ def output(msg):
 _error_count = 0
 
 
+def error_count():
+    """Return error log count"""
+    return _error_count
+
+
 def error(msg, prefix=True):
     """dump error message. """
     if prefix:

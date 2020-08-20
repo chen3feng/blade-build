@@ -68,6 +68,8 @@ class BladeConfig(object):
                 'run_unrepaired_tests': False,
                 'run_unrepaired_tests__doc__':
                     'Whether run unrepaired(no changw after previous failure) tests during incremental test',
+                'glob_error_severity': 'warning',
+                'glob_error_severity__doc__': 'The severity of glob error, can be debug, info, warning, error',
             },
 
             'cc_config': {
@@ -261,7 +263,7 @@ class BladeConfig(object):
                     self.__md5.update(content)
                     exec_file_content(filename, content, _config_globals, None)
         except SystemExit:
-            console.fatal('Parse error in config file %s' % filename)
+            console.error('Parse error in config file %s' % filename)
         finally:
             self.current_file_name = ''
 
@@ -369,7 +371,7 @@ def get_item(section_name, item_name):
 def _check_kwarg_enum_value(kwargs, name, valid_values):
     value = kwargs.get(name)
     if value is not None and value not in valid_values:
-        _blade_config.fatal('Invalid config item "%s" value "%s", can only be in %s' % (
+        _blade_config.error('Invalid config item "%s" value "%s", can only be in %s' % (
             name, value, valid_values))
 
 
@@ -378,7 +380,7 @@ def _check_test_related_envs(kwargs):
         try:
             re.compile(name)
         except re.error as e:
-            _blade_config.fatal(
+            _blade_config.error(
                 '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
@@ -505,7 +507,8 @@ def protoc_plugin(**kwargs):
     """protoc_plugin. """
     from blade.proto_library_target import ProtocPlugin  # pylint: disable=import-outside-toplevel
     if 'name' not in kwargs:
-        _blade_config.fatal('Missing "name" in protoc_plugin parameters: %s' % kwargs)
+        _blade_config.error('Missing "name" in protoc_plugin parameters: %s' % kwargs)
+        return
     section = _blade_config.get_section('protoc_plugin_config')
     section[kwargs['name']] = ProtocPlugin(**kwargs)
 
