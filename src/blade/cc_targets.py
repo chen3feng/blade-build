@@ -729,6 +729,15 @@ class CcTarget(Target):
                 msg.append(prefix % source)
         return problematic_hdrs, msg
 
+    def _cleanup_target_files(self):
+        """Clean up built result files"""
+        for f in self._get_target_files():
+            try:
+                os.remove(f)
+                console.debug('Remove %s due to hdr dep missing' % f)
+            except OSError:
+                pass
+
     def verify_hdr_dep_missing(self, history, suppress):
         """
         Verify whether included header files is declared in "deps" correctly.
@@ -756,6 +765,7 @@ class CcTarget(Target):
 
         direct_verify_msg = []
         generated_verify_msg = []
+
         for src in self.srcs:
             path = self._find_inclusion_file(src)
             if not path or (path in history and int(os.path.getmtime(path)) == history[path]):
@@ -763,6 +773,7 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
+
             verified_hdrs, problematic_hdrs, msg = self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []))
             if problematic_hdrs:
@@ -771,7 +782,8 @@ class CcTarget(Target):
                 direct_verify_msg += msg
                 # Direct headers verification can cover the under one
                 continue
-            # But can not cover all, so it is still useful
+
+            # But direct headers can not cover all, so it is still useful
             problematic_hdrs, msg = self._verify_generated_headers(
                     src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
             if problematic_hdrs:
@@ -795,7 +807,11 @@ class CcTarget(Target):
                 del history[preprocess]
         for preprocess in preprocess_paths - failed_preprocess_paths:
             history[preprocess] = int(os.path.getmtime(preprocess))
+
         failed = (direct_verify_msg or generated_verify_msg) and severity == 'error'
+        if failed:
+            self._cleanup_target_files()
+
         return not failed, details
 
 
