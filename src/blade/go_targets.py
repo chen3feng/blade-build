@@ -101,7 +101,7 @@ class GoTarget(Target):
             d = build_targets[dep]
             d.data['generate_go'] = True
 
-    def ninja_go_dependencies(self):
+    def _go_dependencies(self):
         targets = self.blade.get_build_targets()
         srcs = [self._source_file_path(s) for s in self.srcs]
         implicit_deps = []
@@ -124,7 +124,7 @@ class GoTarget(Target):
         return self._target_file_path(self.name)
 
     def ninja_rules(self):
-        implicit_deps = self.ninja_go_dependencies()
+        implicit_deps = self._go_dependencies()
         output = self._go_target_path()
         variables = {'package': self.data['go_package']}
         if self.data['extra_goflags']:

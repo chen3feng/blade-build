@@ -100,7 +100,7 @@ class GenRuleTarget(Target):
     def _allow_duplicate_source(self):
         return True
 
-    def ninja_command(self):
+    def _command(self):
         cmd = self.data['cmd']
         cmd = cmd.replace('$SRCS', '${in}')
         cmd = cmd.replace('$OUTS', '${out}')
@@ -141,7 +141,7 @@ class GenRuleTarget(Target):
 
     def ninja_rules(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
-        cmd = self.ninja_command()
+        cmd = self._command()
         description = console.colored('%s //%s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
