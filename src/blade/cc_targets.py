@@ -1356,9 +1356,9 @@ class CcBinary(CcTarget):
         extra_ldflags += ['-l%s' % lib for lib in sys_libs]
         output = self._target_file_path(self.name)
         self._cc_link(output, 'link', deps=usr_libs,
-                            ldflags=ldflags, extra_ldflags=extra_ldflags,
-                            implicit_deps=implicit_deps,
-                            order_only_deps=order_only_deps)
+                      ldflags=ldflags, extra_ldflags=extra_ldflags,
+                      implicit_deps=implicit_deps,
+                      order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
 
     def ninja_rules(self):
@@ -1484,8 +1484,8 @@ class CcPlugin(CcTarget):
             else:
                 link_output = output
             self._cc_link(link_output, 'solink', deps=usr_libs,
-                                ldflags=ldflags, extra_ldflags=extra_ldflags,
-                                implicit_deps=implicit_deps)
+                          ldflags=ldflags, extra_ldflags=extra_ldflags,
+                          implicit_deps=implicit_deps)
             if self.data['strip']:
                 self.ninja_build('strip', output, inputs=link_output)
             self._add_default_target_file('so', output)
