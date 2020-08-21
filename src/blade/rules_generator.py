@@ -70,8 +70,7 @@ class ScriptHeaderGenerator(object):
         """A helper method: append prefix to building var if condition is True."""
         if condition:
             return '%s %s' % (prefix, building_var)
-        else:
-            return building_var
+        return building_var
 
 
 class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):

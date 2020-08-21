@@ -78,19 +78,19 @@ class ScalaTarget(Target, JavaTargetMixIn):
             flags.append(global_warnings)
         return flags
 
-    def ninja_generate_jar(self):
+    def _generate_jar(self):
         self._generate_sources_dir_for_coverage()
         srcs = [self._source_file_path(s) for s in self.srcs]
-        resources = self.ninja_generate_resources()
+        resources = self._generate_resources()
         jar = self._target_file_path(self.name + '.jar')
         if srcs and resources:
             classes_jar = self._target_file_path(self.name + '__classes__.jar')
             scalacflags = self.scalac_flags()
-            self.ninja_build_jar(classes_jar, inputs=srcs, scala=True, scalacflags=scalacflags)
+            self._build_jar(classes_jar, inputs=srcs, scala=True, scalacflags=scalacflags)
             self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
         elif srcs:
             scalacflags = self.scalac_flags()
-            self.ninja_build_jar(jar, inputs=srcs, scala=True, scalacflags=scalacflags)
+            self._build_jar(jar, inputs=srcs, scala=True, scalacflags=scalacflags)
         elif resources:
             self.ninja_build('javajar', jar, inputs=resources)
         else:
@@ -133,7 +133,7 @@ class ScalaLibrary(ScalaTarget):
         self.data['jacoco_coverage'] = bool(srcs)
 
     def ninja_rules(self):
-        jar = self.ninja_generate_jar()
+        jar = self._generate_jar()
         if jar:
             self._add_default_target_file('jar', jar)
 
@@ -166,7 +166,7 @@ class ScalaFatLibrary(ScalaTarget):
             self._set_pack_exclusions(exclusions)
 
     def ninja_rules(self):
-        jar = self.ninja_generate_fat_jar()
+        jar = self._generate_fat_jar()
         self._add_default_target_file('fatjar', jar)
 
 
@@ -210,7 +210,7 @@ class ScalaTest(ScalaFatLibrary):
     def ninja_rules(self):
         if not self.srcs:
             return
-        jar = self.ninja_generate_jar()
+        jar = self._generate_jar()
         output = self._target_file_path(self.name)
         dep_jars, maven_jars = self._get_test_deps()
         vars = {

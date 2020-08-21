@@ -257,10 +257,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         m = re.search(pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
-        else:
-            self.error('"go_package" is mandatory to generate golang code '
-                       'in protocol buffers but is missing in %s.' % path)
-            return ''
+        self.error('"go_package" is mandatory to generate golang code '
+                   'in protocol buffers but is missing in %s.' % path)
+        return ''
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""
@@ -288,12 +287,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             protos += dep.data.get('public_protos', [])
         return protos
 
-    def ninja_proto_descriptor_rules(self):
+    def _proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
         self.ninja_build('protodescriptors', output, inputs=inputs, variables={'first': inputs[0]})
 
-    def ninja_protoc_plugin_parameters(self, language):
+    def _protoc_plugin_parameters(self, language):
         """Return a tuple of (plugin path, vars) used as parameters for ninja build. """
         path, vars = '', {}
         for p in self.data['protoc_plugins']:
@@ -304,15 +303,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 break
         return path, vars
 
-    def ninja_protoc_direct_dependencies(self, vars):
+    def _protoc_direct_dependencies(self, vars):
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
             dependencies += config.get_item('proto_library_config', 'well_known_protos')
             vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
-    def ninja_proto_java_rules(self):
+    def _proto_java_rules(self):
         java_sources, implicit_deps = [], []
-        plugin, vars = self.ninja_protoc_plugin_parameters('java')
+        plugin, vars = self._protoc_plugin_parameters('java')
         if plugin:
             implicit_deps.append(plugin)
         for src in self.srcs:
@@ -323,12 +322,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                              implicit_deps=implicit_deps, variables=vars)
             java_sources.append(output)
 
-        jar = self.ninja_build_jar(inputs=java_sources,
+        jar = self._build_jar(inputs=java_sources,
                                    source_encoding=self.data.get('source_encoding'))
         self._add_target_file('jar', jar)
 
-    def ninja_proto_python_rules(self):
-        # plugin, vars = self.ninja_protoc_plugin_parameters('python')
+    def _proto_python_rules(self):
+        # plugin, vars = self._protoc_plugin_parameters('python')
         generated_pys = []
         for proto in self.srcs:
             input = self._source_file_path(proto)
@@ -340,7 +339,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                          variables={'basedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
-    def ninja_proto_go_rules(self):
+    def _proto_go_rules(self):
         go_home = config.get_item('go_config', 'go_home')
         protobuf_go_path = config.get_item('proto_library_config', 'protobuf_go_path')
         generated_goes = []
@@ -358,19 +357,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_goes.append(output)
         self._add_target_file('gopkg', generated_goes)
 
-    def ninja_proto_rules(self):
+    def _proto_rules(self):
         """Generate ninja rules for other languages if needed. """
         if self.data.get('generate_java') or self.data.get('generate_scala'):
-            self.ninja_proto_java_rules()
+            self._proto_java_rules()
 
         if self.data.get('generate_python'):
-            self.ninja_proto_python_rules()
+            self._proto_python_rules()
 
         if self.data.get('generate_go'):
-            self.ninja_proto_go_rules()
+            self._proto_go_rules()
 
         if self.data['generate_descriptors']:
-            self.ninja_proto_descriptor_rules()
+            self._proto_descriptor_rules()
 
     def _proto_gen_cpp_file_names(self, source):
         """Return just file names"""
@@ -384,8 +383,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if not self.srcs:
             return
 
-        plugin, vars = self.ninja_protoc_plugin_parameters('cpp')
-        self.ninja_protoc_direct_dependencies(vars)
+        plugin, vars = self._protoc_plugin_parameters('cpp')
+        self._protoc_direct_dependencies(vars)
         implicit_deps = []
         if plugin:
             implicit_deps.append(plugin)
@@ -398,9 +397,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                              implicit_deps=implicit_deps, variables=vars)
             source, header = self._proto_gen_cpp_file_names(src)
             cpp_sources.append(source)
-        self._cc_objects_ninja(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
-        self._cc_library_ninja()
-        self.ninja_proto_rules()
+        self._cc_objects(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
+        self._cc_library()
+        self._proto_rules()
 
 
 def proto_library(

@@ -60,8 +60,8 @@ def _filter_envs(names):
 
 def _diff_env(a, b):
     """Return difference of two environments dict"""
-    seta = set([(k, a[k]) for k in a])
-    setb = set([(k, b[k]) for k in b])
+    seta = set(a.items())
+    setb = set(b.items())
     return dict(seta - setb), dict(setb - seta)
 
 

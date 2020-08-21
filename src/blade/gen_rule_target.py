@@ -95,12 +95,13 @@ class GenRuleTarget(Target):
         """Process target location reference in the command. """
         key, type = self._add_location_reference_target(m)
         self.data['locations'].append((key, type))
-        return '%s'
+        return '%s'  # Will be expanded in `_expand_command`
 
     def _allow_duplicate_source(self):
         return True
 
-    def ninja_command(self):
+    def _expand_command(self):
+        """Expand vars and location references in command"""
         cmd = self.data['cmd']
         cmd = cmd.replace('$SRCS', '${in}')
         cmd = cmd.replace('$OUTS', '${out}')
@@ -141,7 +142,7 @@ class GenRuleTarget(Target):
 
     def ninja_rules(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
-        cmd = self.ninja_command()
+        cmd = self._expand_command()
         description = console.colored('%s //%s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null

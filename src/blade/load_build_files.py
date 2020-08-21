@@ -130,7 +130,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
                 return True
         return False
 
-    result = sorted(set([str(p) for p in includes_iterator() if not exclusion(p)]))
+    result = sorted({str(p) for p in includes_iterator() if not exclusion(p)})
     if not result and not allow_empty:
         args = repr(include)
         if exclude:
@@ -277,7 +277,7 @@ def load_targets(target_ids, blade_root_dir, blade):
         if not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
 
-        if target_name != '*' and target_name != '...':
+        if target_name not in ('*', '...'):
             cited_targets.add((source_dir, target_name))
         elif target_name == '...':
             for root, dirs, files in os.walk(source_dir):

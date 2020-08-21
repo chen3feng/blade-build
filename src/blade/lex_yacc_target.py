@@ -84,34 +84,34 @@ class LexYaccLibrary(CcTarget):
             yacc_flags.append('-p %s' % prefix)
         return yacc_flags
 
-    def ninja_cc_source(self, source):
+    def _cc_source(self, source):
         if source.endswith('.l') or source.endswith('.y'):
             return source + '.c'
-        elif source.endswith('.ll') or source.endswith('.yy'):
+        if source.endswith('.ll') or source.endswith('.yy'):
             return source + '.cc'
-        assert False, 'Unknown source %s' % source
+        raise ValueError('Unknown source %s' % source)
 
-    def ninja_lex_vars(self):
+    def _lex_vars(self):
         lex_flags = self._lex_flags()
         if lex_flags:
             return {'lexflags': ' '.join(lex_flags)}
         return {}
 
-    def ninja_yacc_vars(self):
+    def _yacc_vars(self):
         yacc_flags = self._yacc_flags()
         if yacc_flags:
             return {'yaccflags': ' '.join(yacc_flags)}
         return {}
 
-    def ninja_lex_rules(self, source, implicit_deps, vars):
-        cc = self.ninja_cc_source(source)
+    def _lex_rules(self, source, implicit_deps, vars):
+        cc = self._cc_source(source)
         cc_path = self._target_file_path(cc)
         input = self._source_file_path(source)
         self.ninja_build('lex', cc_path, inputs=input, implicit_deps=implicit_deps, variables=vars)
         return cc, cc_path
 
-    def ninja_yacc_rules(self, source, rule, vars):
-        cc = self.ninja_cc_source(source)
+    def _yacc_rules(self, source, rule, vars):
+        cc = self._cc_source(source)
         cc_path = self._target_file_path(cc)
         input = self._source_file_path(source)
         if cc_path.endswith('.c'):
@@ -123,13 +123,13 @@ class LexYaccLibrary(CcTarget):
 
     def ninja_rules(self):
         lex_file, yacc_file = self.srcs
-        yacc_cc, yacc_cc_path, yacc_h_path = self.ninja_yacc_rules(yacc_file, 'yacc',
-                                                                   vars=self.ninja_yacc_vars())
-        lex_cc, lex_cc_path = self.ninja_lex_rules(lex_file, implicit_deps=[yacc_cc_path],
-                                                   vars=self.ninja_lex_vars())
+        yacc_cc, yacc_cc_path, yacc_h_path = self._yacc_rules(yacc_file, 'yacc',
+                                                              vars=self._yacc_vars())
+        lex_cc, lex_cc_path = self._lex_rules(lex_file, implicit_deps=[yacc_cc_path],
+                                              vars=self._lex_vars())
         self.data['generated_hdrs'].append(yacc_h_path)
-        self._cc_objects_ninja([lex_cc, yacc_cc], True)
-        self._cc_library_ninja()
+        self._cc_objects([lex_cc, yacc_cc], True)
+        self._cc_library()
 
 
 def lex_yacc_library(

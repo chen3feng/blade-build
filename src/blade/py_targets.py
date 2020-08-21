@@ -61,7 +61,7 @@ class PythonTarget(Target):
             d = build_targets[dep]
             d.data['generate_python'] = True
 
-    def ninja_vars(self):
+    def _vars(self):
         vars = {}
         basedir = self.data.get('python_base')
         if basedir:
@@ -91,18 +91,18 @@ class PythonLibrary(PythonTarget):
                 visibility=visibility,
                 kwargs=kwargs)
 
-    def _ninja_pylib(self):
+    def _pylib(self):
         if not self.srcs:
             return ''
         output = self._target_file_path(self.name + '.pylib')
         inputs = [self._source_file_path(s) for s in self.srcs]
-        vars = self.ninja_vars()
+        vars = self._vars()
         self.ninja_build('pythonlibrary', output, inputs=inputs, variables=vars)
         self._add_target_file('pylib', output)
         return output
 
     def ninja_rules(self):
-        self._ninja_pylib()
+        self._pylib()
 
 
 class PrebuiltPythonLibrary(PythonTarget):
@@ -215,7 +215,7 @@ class PythonBinary(PythonLibrary):
 
     def ninja_rules(self):
         output = self._target_file_path(self.name)
-        pylib = self._ninja_pylib()
+        pylib = self._pylib()
         inputs = [pylib] if pylib else []
         targets = self.blade.get_build_targets()
         for key in self.expanded_deps:
@@ -224,7 +224,7 @@ class PythonBinary(PythonLibrary):
             if pylib:
                 inputs.append(pylib)
             # TODO(wentingli): Add other dependencies if needed
-        vars = self.ninja_vars()
+        vars = self._vars()
         vars['mainentry'] = self._get_entry()
         vars['exclusions'] = ','.join(self.data['exclusions'])
         self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)

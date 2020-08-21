@@ -149,10 +149,10 @@ class PackageTarget(Target):
             self.ninja_build('package', output, inputs=inputs,
                              variables={'entries': ' '.join(entries)})
         else:
-            self.ninja_package_in_shell(output, inputs, entries)
+            self._package_in_shell(output, inputs, entries)
 
     @staticmethod
-    def ninja_rule_from_package_type(t):
+    def _rule_from_package_type(t):
         if t == 'zip':
             return 'package_zip'
         return 'package_tar'
@@ -167,7 +167,7 @@ class PackageTarget(Target):
             'tbz': '-j',
         }[t]
 
-    def ninja_package_in_shell(self, output, inputs, entries):
+    def _package_in_shell(self, output, inputs, entries):
         packageroot = self._target_file_path(self.name + '.sources')
         package_sources = []
         for src, dst in zip(inputs, entries):
@@ -179,7 +179,7 @@ class PackageTarget(Target):
             'packageroot': packageroot,
         }
         type = self.data['type']
-        rule = self.ninja_rule_from_package_type(type)
+        rule = self._rule_from_package_type(type)
         if type != 'zip':
             vars['tarflags'] = self.tar_flags(type)
         self.ninja_build(rule, output, inputs=package_sources, variables=vars)
