@@ -64,7 +64,7 @@ class ThriftLibrary(CcTarget):
         self.data['deprecated'] = deprecated
         options = self.blade.get_options()
         # TODO(chen3feng): Reuse CcLibrary
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic') or
+        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
 
         # For each thrift file initialize a ThriftHelper, which will be used

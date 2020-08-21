@@ -858,7 +858,7 @@ class CcLibrary(CcTarget):
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
         options = self.blade.get_options()
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic') or
+        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
         self._set_hdrs(hdrs)
         self._set_secure(secure)

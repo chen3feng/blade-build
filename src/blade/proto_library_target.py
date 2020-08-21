@@ -140,11 +140,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
         target_languages = set(var_to_list(target_languages))
         options = self.blade.get_options()
-        self.data['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java')
-        self.data['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python')
-        self.data['generate_go'] = 'go' in target_languages or getattr(options, 'generate_go')
+        self.data['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java', False)
+        self.data['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python', False)
+        self.data['generate_go'] = 'go' in target_languages or getattr(options, 'generate_go', False)
         # TODO(chen3feng): Reuse CcLibrary
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic') or
+        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
 
         # Declare generated header files
