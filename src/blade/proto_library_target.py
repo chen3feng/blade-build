@@ -172,8 +172,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             if dkey in proto_deps:
                 continue
             dep = self.target_database[dkey]
-            if dep.type != 'proto_library' and dep.type != 'gen_rule':
-                self.error('Invalid dep %s. Proto_library can only depend on proto_library '
+            if dep.type not in ('proto_library', 'gen_rule'):
+                self.error('Invalid dep %s. proto_library can only depend on proto_library '
                            'or gen_rule.' % dep.fullname)
 
     def _handle_protoc_plugins(self, plugins):
@@ -309,6 +309,24 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             dependencies += config.get_item('proto_library_config', 'well_known_protos')
             vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
+    def _proto_cpp_rules(self):
+        plugin, vars = self._protoc_plugin_parameters('cpp')
+        self._protoc_direct_dependencies(vars)
+        implicit_deps = []
+        if plugin:
+            implicit_deps.append(plugin)
+        cpp_sources = []
+        full_cpp_sources = []
+        for src in self.srcs:
+            full_source, full_header = self._proto_gen_cpp_files(src)
+            self.ninja_build('proto', [full_source, full_header],
+                             inputs=self._source_file_path(src),
+                             implicit_deps=implicit_deps, variables=vars)
+            source, header = self._proto_gen_cpp_file_names(src)
+            cpp_sources.append(source)
+        self._cc_objects(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
+        self._cc_library()
+
     def _proto_java_rules(self):
         java_sources, implicit_deps = [], []
         plugin, vars = self._protoc_plugin_parameters('java')
@@ -359,6 +377,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_rules(self):
         """Generate ninja rules for other languages if needed. """
+        self._proto_cpp_rules()
+
         if self.data.get('generate_java') or self.data.get('generate_scala'):
             self._proto_java_rules()
 
@@ -383,22 +403,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if not self.srcs:
             return
 
-        plugin, vars = self._protoc_plugin_parameters('cpp')
-        self._protoc_direct_dependencies(vars)
-        implicit_deps = []
-        if plugin:
-            implicit_deps.append(plugin)
-        cpp_sources = []
-        full_cpp_sources = []
-        for src in self.srcs:
-            full_source, full_header = self._proto_gen_cpp_files(src)
-            self.ninja_build('proto', [full_source, full_header],
-                             inputs=self._source_file_path(src),
-                             implicit_deps=implicit_deps, variables=vars)
-            source, header = self._proto_gen_cpp_file_names(src)
-            cpp_sources.append(source)
-        self._cc_objects(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
-        self._cc_library()
         self._proto_rules()
 
 

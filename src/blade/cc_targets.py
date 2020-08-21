@@ -287,7 +287,7 @@ class CcTarget(Target):
 
         NOTE: Here is an optimization: If we know the detaild generated header files, depends on
               them explicitly rather than depends on the whole target improves the parallelism.
-         """
+        """
         queue = collections.deque(self.deps)
 
         keys = set()
