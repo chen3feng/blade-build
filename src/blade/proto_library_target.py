@@ -139,9 +139,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
         target_languages = set(var_to_list(target_languages))
-        self.data['generate_java'] = 'java' in target_languages
-        self.data['generate_python'] = 'python' in target_languages
-        self.data['generate_go'] = 'go' in target_languages
+        options = self.blade.get_options()
+        self.data['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java')
+        self.data['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python')
+        self.data['generate_go'] = 'go' in target_languages or getattr(options, 'generate_go')
 
         # Declare generated header files
         full_cpp_headers = []
@@ -357,19 +358,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_goes.append(output)
         self._add_target_file('gopkg', generated_goes)
 
-    def ninja_proto_rules(self, options):
+    def ninja_proto_rules(self):
         """Generate ninja rules for other languages if needed. """
-        if (getattr(options, 'generate_java', False) or
-                self.data.get('generate_java') or
-                self.data.get('generate_scala')):
+        if self.data.get('generate_java') or self.data.get('generate_scala'):
             self.ninja_proto_java_rules()
 
-        if (getattr(options, 'generate_python', False) or
-                self.data.get('generate_python')):
+        if self.data.get('generate_python'):
             self.ninja_proto_python_rules()
 
-        if (getattr(options, 'generate_go', False) or
-                self.data.get('generate_go')):
+        if self.data.get('generate_go'):
             self.ninja_proto_go_rules()
 
         if self.data['generate_descriptors']:
@@ -403,7 +400,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             cpp_sources.append(source)
         self._cc_objects_ninja(cpp_sources, True, generated_headers=self.data['generated_hdrs'])
         self._cc_library_ninja()
-        self.ninja_proto_rules(self.blade.get_options())
+        self.ninja_proto_rules()
 
 
 def proto_library(

@@ -279,12 +279,6 @@ class CcTarget(Target):
         incs = stable_unique(incs)
         return incs
 
-    def _need_dynamic_library(self):
-        options = self.blade.get_options()
-        return (getattr(options, 'generate_dynamic') or
-                self.data.get('build_dynamic') or
-                config.get_item('cc_library_config', 'generate_dynamic'))
-
     def _cc_compile_dep_files(self):
         """Calculate the dependencies which generate header files.
 
@@ -474,7 +468,7 @@ class CcTarget(Target):
 
     def _cc_library_ninja(self):
         self._static_cc_library_ninja()
-        if self._need_dynamic_library():
+        if self.data.get('generate_dynamic'):
             self._dynamic_cc_library_ninja()
 
     def _cc_link_ninja(self, output, rule, deps,
@@ -863,6 +857,9 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
+        options = self.blade.get_options()
+        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic') or
+                                         config.get_item('cc_library_config', 'generate_dynamic'))
         self._set_hdrs(hdrs)
         self._set_secure(secure)
 
@@ -1312,7 +1309,7 @@ class CcBinary(CcTarget):
         if self.data.get('dynamic_link'):
             build_targets = self.blade.get_build_targets()
             for dep in self.expanded_deps:
-                build_targets[dep].data['build_dynamic'] = True
+                build_targets[dep].data['generate_dynamic'] = True
 
     def _get_rpath_links(self):
         """Get rpath_links from dependencies"""
