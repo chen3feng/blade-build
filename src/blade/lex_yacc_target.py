@@ -87,9 +87,9 @@ class LexYaccLibrary(CcTarget):
     def _cc_source(self, source):
         if source.endswith('.l') or source.endswith('.y'):
             return source + '.c'
-        elif source.endswith('.ll') or source.endswith('.yy'):
+        if source.endswith('.ll') or source.endswith('.yy'):
             return source + '.cc'
-        assert False, 'Unknown source %s' % source
+        raise ValueError('Unknown source %s' % source)
 
     def _lex_vars(self):
         lex_flags = self._lex_flags()

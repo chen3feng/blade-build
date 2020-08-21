@@ -263,6 +263,8 @@ class Target(object):
         """Add hardcode dep list to key's deps. """
         for dep in hardcode_dep_list:
             dkey = self._convert_string_to_target_helper(dep)
+            if not dkey:
+                continue
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
             if dkey not in self.expanded_deps:
@@ -311,17 +313,18 @@ class Target(object):
                 # Not a location reference
 
         """
-        if m:
-            key, type = m.groups()
-            if not type:
-                type = ''
-            type = type.strip()
-            key = self._unify_dep(key)
-            if key not in self.expanded_deps:
-                self.expanded_deps.append(key)
-            if key not in self.deps:
-                self.deps.append(key)
-            return key, type
+        assert m
+
+        key, type = m.groups()
+        if not type:
+            type = ''
+        type = type.strip()
+        key = self._unify_dep(key)
+        if key not in self.expanded_deps:
+            self.expanded_deps.append(key)
+        if key not in self.deps:
+            self.deps.append(key)
+        return key, type
 
     def _unify_dep(self, dep):
         """Unify dep to key"""
@@ -591,7 +594,7 @@ class Target(object):
         if target_string:
             if target_string.startswith('#'):
                 return ('#', target_string[1:])
-            elif target_string.find(':') != -1:
+            if target_string.find(':') != -1:
                 path, name = target_string.split(':')
                 path = path.strip()
                 if path.startswith('//'):
@@ -601,6 +604,7 @@ class Target(object):
         self.error('Invalid target lib format: "%s", '
                    'should be "#lib_name" or "//lib_path:lib_name"' %
                    target_string)
+        return None
 
 
 class SystemLibrary(Target):

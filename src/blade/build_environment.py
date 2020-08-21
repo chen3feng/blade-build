@@ -83,6 +83,7 @@ class BuildEnvironment(object):
             if version_line and version_line.find('distcc') != -1:
                 console.debug('Distcc found')
                 return True
+        return False
 
     def setup_build_cache(self, options):
         if self.ccache_installed:

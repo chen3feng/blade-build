@@ -463,7 +463,7 @@ class CcTarget(Target):
         sys_libs, usr_libs = self._dynamic_dependencies()
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         self._cc_link(output, 'solink', deps=usr_libs,
-                            ldflags=ldflags, extra_ldflags=extra_ldflags)
+                      ldflags=ldflags, extra_ldflags=extra_ldflags)
         self._add_target_file('so', output)
 
     def _cc_library(self):
@@ -472,8 +472,8 @@ class CcTarget(Target):
             self._dynamic_cc_library()
 
     def _cc_link(self, output, rule, deps,
-                       ldflags=None, extra_ldflags=None,
-                       implicit_deps=None, order_only_deps=None):
+                 ldflags=None, extra_ldflags=None,
+                 implicit_deps=None, order_only_deps=None):
         objs = self.data.get('objs', [])
         vars = {}
         if ldflags:
@@ -1128,26 +1128,25 @@ def cc_library(
         # target.warning('"cc_library.prebuilt" is deprecated, please use the standalone '
         #                '"prebuilt_cc_library" rule')
         return
-    else:
-        target = CcLibrary(
-                name=name,
-                srcs=srcs,
-                hdrs=hdrs,
-                deps=deps,
-                visibility=visibility,
-                warning=warning,
-                defs=defs,
-                incs=incs,
-                export_incs=export_incs,
-                optimize=optimize,
-                always_optimize=always_optimize,
-                link_all_symbols=link_all_symbols,
-                deprecated=deprecated,
-                extra_cppflags=extra_cppflags,
-                extra_linkflags=extra_linkflags,
-                allow_undefined=allow_undefined,
-                secure=secure,
-                kwargs=kwargs)
+    target = CcLibrary(
+            name=name,
+            srcs=srcs,
+            hdrs=hdrs,
+            deps=deps,
+            visibility=visibility,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            export_incs=export_incs,
+            optimize=optimize,
+            always_optimize=always_optimize,
+            link_all_symbols=link_all_symbols,
+            deprecated=deprecated,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            allow_undefined=allow_undefined,
+            secure=secure,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 

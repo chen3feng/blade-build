@@ -64,7 +64,7 @@ class GoTarget(Target):
         should be in the same directory.
         """
         srcs = [self._source_file_path(s) for s in self.srcs]
-        dirs = set([os.path.dirname(s) for s in srcs])
+        dirs = {os.path.dirname(s) for s in srcs}
         if len(dirs) != 1:
             self.error('Go sources belonging to the same package should be in the same '
                        'directory. Sources: %s' % ', '.join(self.srcs))

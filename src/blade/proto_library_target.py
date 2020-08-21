@@ -257,10 +257,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         m = re.search(pattern, content, re.MULTILINE)
         if m:
             return m.group(1)
-        else:
-            self.error('"go_package" is mandatory to generate golang code '
-                       'in protocol buffers but is missing in %s.' % path)
-            return ''
+        self.error('"go_package" is mandatory to generate golang code '
+                   'in protocol buffers but is missing in %s.' % path)
+        return ''
 
     def _proto_java_gen_class_name(self, src, content):
         """Get generated java class name"""

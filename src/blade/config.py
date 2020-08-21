@@ -523,4 +523,3 @@ def thrift_library_config(append=None, **kwargs):
 def fbthrift_library_config(append=None, **kwargs):
     """fbthrift config. """
     _blade_config.update_config('fbthrift_config', append, kwargs)
-

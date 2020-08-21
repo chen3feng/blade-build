@@ -61,9 +61,9 @@ def md5sum(obj):
     """Calculate md5sum of a string-like object"""
     if isinstance(obj, bytes):
         return md5sum_bytes(obj)
-    elif isinstance(obj, str):
+    if isinstance(obj, str):
         return md5sum_str(obj)
-    assert False, 'Invalid type %s' % type(str)
+    raise TypeError('Invalid type %s' % type(str))
 
 
 def lock_file(filename):
@@ -111,7 +111,7 @@ def to_string(text):
         return text
     if isinstance(text, bytes):
         return text.decode('utf-8')
-    assert False, 'Unknown type %s' % type(text)
+    raise TypeError('Unknown type %s' % type(text))
 
 
 def get_cwd():
