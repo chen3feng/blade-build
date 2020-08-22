@@ -115,7 +115,7 @@ class CuLibrary(CuTarget):
         self.error('To be implemented')
 
 
-def cu_library(name,
+def cu_library(name=None,
                srcs=[],
                deps=[],
                visibility=None,
@@ -176,7 +176,7 @@ class CuBinary(CuTarget):
         self.error('To be implemented')
 
 
-def cu_binary(name,
+def cu_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,

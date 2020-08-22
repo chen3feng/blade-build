@@ -219,7 +219,7 @@ class ScalaTest(ScalaFatLibrary):
         self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
-def scala_library(name,
+def scala_library(name=None,
                   srcs=[],
                   deps=[],
                   resources=[],
@@ -244,7 +244,7 @@ def scala_library(name,
     build_manager.instance.register_target(target)
 
 
-def scala_fat_library(name,
+def scala_fat_library(name=None,
                       srcs=[],
                       deps=[],
                       resources=[],
@@ -267,8 +267,8 @@ def scala_fat_library(name,
     build_manager.instance.register_target(target)
 
 
-def scala_test(name,
-               srcs,
+def scala_test(name=None,
+               srcs=None,
                deps=[],
                resources=[],
                visibility=None,

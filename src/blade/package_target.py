@@ -185,8 +185,8 @@ class PackageTarget(Target):
         self.ninja_build(rule, output, inputs=package_sources, variables=vars)
 
 
-def package(name,
-            srcs,
+def package(name=None,
+            srcs=[],
             deps=[],
             visibility=None,
             type='tar',

@@ -134,7 +134,7 @@ class PrebuiltPythonLibrary(PythonTarget):
         self._add_target_file('pylib', self._source_file_path(self.srcs[0]))
 
 
-def py_library(name,
+def py_library(name=None,
                srcs=[],
                deps=[],
                visibility=None,
@@ -229,7 +229,7 @@ class PythonBinary(PythonLibrary):
         self._add_default_target_file('bin', output)
 
 
-def py_binary(name,
+def py_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,
@@ -281,7 +281,7 @@ class PythonTest(PythonBinary):
         self.data['testdata'] = testdata
 
 
-def py_test(name,
+def py_test(name=None,
             srcs=[],
             deps=[],
             visibility=None,

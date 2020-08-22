@@ -98,8 +98,8 @@ class ShellTest(Target):
                              variables={'testdata': ' '.join(testdata)})
 
 
-def sh_test(name,
-            srcs,
+def sh_test(name=None,
+            srcs=None,
             deps=[],
             visibility=None,
             testdata=[],

@@ -1368,7 +1368,7 @@ class CcBinary(CcTarget):
         self._cc_binary(self.data['dynamic_link'])
 
 
-def cc_binary(name,
+def cc_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,
@@ -1404,7 +1404,7 @@ def cc_binary(name,
 build_rules.register_function(cc_binary)
 
 
-def cc_benchmark(name, deps=[], **kwargs):
+def cc_benchmark(name=None, deps=[], **kwargs):
     """cc_benchmark target. """
     cc_config = config.get_section('cc_config')
     benchmark_libs = cc_config['benchmark_libs']
@@ -1610,7 +1610,7 @@ class CcTest(CcBinary):
             self._add_hardcode_library(perftools_lib_list)
 
 
-def cc_test(name,
+def cc_test(name=None,
             srcs=[],
             deps=[],
             visibility=None,

@@ -102,7 +102,7 @@ class FBThriftLibrary(CcTarget):
         # (don't forget `generated_hdrs`)
 
 
-def fbthrift_library(name,
+def fbthrift_library(name=None,
                      srcs=[],
                      deps=[],
                      optimize=[],

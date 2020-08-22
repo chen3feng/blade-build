@@ -44,6 +44,8 @@ class MavenJar(Target):
 
     def _check_id(self, id):
         """Check if id is valid. """
+        if id is None:
+            self.error('Missing "id"')
         if not maven.is_valid_id(id):
             self.error('Invalid id %s: Id should be group:artifact:version, '
                        'such as jaxen:jaxen:1.1.6' % id)
@@ -719,6 +721,8 @@ class JavaBinary(JavaTarget):
                 kwargs=kwargs)
         self.data['main_class'] = main_class
         self.data['run_in_shell'] = True
+        if not main_class:
+            self.warning('Missing "main_class", program may not run')
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -831,12 +835,12 @@ class JavaTest(JavaBinary):
         self.ninja_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
-def maven_jar(name, id, classifier='', transitive=True, visibility=None):
+def maven_jar(name=None, id=None, classifier='', transitive=True, visibility=None):
     target = MavenJar(name, id, classifier, transitive, visibility)
     build_manager.instance.register_target(target)
 
 
-def java_library(name,
+def java_library(name=None,
                  srcs=[],
                  deps=[],
                  visibility=None,
@@ -872,8 +876,8 @@ def java_library(name,
     build_manager.instance.register_target(target)
 
 
-def java_binary(name,
-                main_class,
+def java_binary(name=None,
+                main_class='',
                 srcs=[],
                 deps=[],
                 visibility=None,
@@ -897,8 +901,8 @@ def java_binary(name,
     build_manager.instance.register_target(target)
 
 
-def java_test(name,
-              srcs,
+def java_test(name=None,
+              srcs=None,
               deps=[],
               visibility=None,
               resources=[],
@@ -926,7 +930,7 @@ def java_test(name,
     build_manager.instance.register_target(target)
 
 
-def java_fat_library(name,
+def java_fat_library(name=None,
                      srcs=[],
                      deps=[],
                      visibility=None,

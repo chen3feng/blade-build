@@ -70,7 +70,7 @@ class ResourceLibrary(cc_targets.CcTarget):
         self._cc_library()
 
 
-def resource_library(name,
+def resource_library(name=None,
                      srcs=[],
                      deps=[],
                      optimize=[],
