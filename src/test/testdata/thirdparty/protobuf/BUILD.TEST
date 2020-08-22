@@ -1,8 +1,10 @@
 cc_library(
     name = 'protobuf',
+    hdrs = ['protobuf.h'],
 )
 
 cc_library(
     name = 'protoc',
+    hdrs = ['protoc.h']
 )
 

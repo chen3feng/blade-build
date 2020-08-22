@@ -130,6 +130,10 @@ class CcTarget(Target):
         self.data['optimize'] = var_to_list(optimize)
         self.data['extra_cppflags'] = var_to_list(extra_cppflags)
         self.data['extra_linkflags'] = var_to_list(extra_linkflags)
+        # TODO(chen3feng): Move to CcLibrary
+        options = self.blade.get_options()
+        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
+                                         config.get_item('cc_library_config', 'generate_dynamic'))
 
     def _incs_to_fullpath(self, incs):
         """Expand incs to full path"""
@@ -857,9 +861,6 @@ class CcLibrary(CcTarget):
         self.data['always_optimize'] = always_optimize
         self.data['deprecated'] = deprecated
         self.data['allow_undefined'] = allow_undefined
-        options = self.blade.get_options()
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
-                                         config.get_item('cc_library_config', 'generate_dynamic'))
         self._set_hdrs(hdrs)
         self._set_secure(secure)
 

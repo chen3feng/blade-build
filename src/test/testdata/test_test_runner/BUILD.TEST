@@ -1,8 +1,7 @@
 cc_library(
     name='lowercase',
-    srcs=[
-         'plowercase.cpp'
-         ],
+    srcs=['plowercase.cpp'],
+    hdrs=['plowercase.h'],
     deps=['#pthread'],
     warning='yes',
     defs=['LOWER_DEF'],
@@ -15,13 +14,11 @@ cc_library(
 
 cc_library(
     name='uppercase',
-    srcs=[
-         'puppercase.cpp'
-         ],
+    srcs=['puppercase.cpp'],
+    hdrs=['puppercase.h'],
     deps=['#dl'],
     link_all_symbols=1
 )
-
 
 cc_test(
     name='string_test_main',

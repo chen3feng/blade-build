@@ -1,11 +1,10 @@
 cc_library(
     name='lowercase',
-    srcs=[
-         'plowercase.cpp'
-         ],
+    srcs=['plowercase.cpp'],
+    hdrs=['plowercase.h'],
     deps=[
-          '#pthread',
-          ':static_resource'
+        '#pthread',
+        ':static_resource'
     ],
     warning='yes',
     defs=['LOWER_DEF'],

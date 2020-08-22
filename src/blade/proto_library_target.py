@@ -142,9 +142,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java', False)
         self.data['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python', False)
         self.data['generate_go'] = 'go' in target_languages or getattr(options, 'generate_go', False)
-        # TODO(chen3feng): Reuse CcLibrary
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
-                                         config.get_item('cc_library_config', 'generate_dynamic'))
 
         # Declare generated header files
         full_cpp_headers = []
