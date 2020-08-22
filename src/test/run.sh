@@ -45,6 +45,6 @@ python -B $@
 exit_code=$?
 
 coverage report --rcfile=$ROOT/.coveragerc
-cleanup
+# cleanup
 
 exit $exit_code

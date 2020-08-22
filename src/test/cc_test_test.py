@@ -22,12 +22,13 @@ class TestCcTest(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.assertTrue(self.runBlade())
+        self.assertTrue(self.runBlade('--show-details'))
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
         com_string_line = self.findCommand(['string_test.cpp.o', '-c'])
         string_main_depends_libs = self.findCommand('string_test_main ')
+        self.assertTrue(self.findCommand('Test Passed'))
 
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_upper_line)
