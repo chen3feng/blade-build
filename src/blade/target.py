@@ -247,26 +247,26 @@ class Target(object):
 
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
-        for s in self.srcs:
-            if '..' in s or s.startswith('/'):
+        for src in self.srcs:
+            if '..' in src or src.startswith('/'):
                 self.error('Invalid source file path: %s. can only be relative path, and must '
-                           'in current directory or subdirectories.' % s)
+                           'in current directory or subdirectories.' % src)
 
-            src = os.path.normpath(os.path.join(self.path, s))
+            full_src = os.path.normpath(os.path.join(self.path, src))
             target = self.fullname, self._allow_duplicate_source()
-            if src not in Target.__src_target_map:
-                Target.__src_target_map[src] = target
+            if full_src not in Target.__src_target_map:
+                Target.__src_target_map[full_src] = target
             else:
-                target_existed = Target.__src_target_map[src]
+                target_existed = Target.__src_target_map[full_src]
                 if target_existed != target:
                     # Always preserve the target which disallows
                     # duplicate source files in the map
                     if target_existed[1]:
-                        Target.__src_target_map[src] = target
+                        Target.__src_target_map[full_src] = target
                     elif target[1]:
                         pass
                     else:
-                        message = '"%s" is already in srcs of "%s"' % ( s, target_existed[0])
+                        message = '"%s" is already in srcs of "%s"' % (src, target_existed[0])
                         if action == 'error':
                             self.error(message)
                         elif action == 'warning':

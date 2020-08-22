@@ -67,7 +67,7 @@ class BinaryRunner(object):
         """Check whether the destination of test data is valid or not. """
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
-            target.error('Ambiguous testdata "%s", exit...' % dest)
+            target.error('Ambiguous testdata "%s"' % dest)
         for item in dest_list:
             item_norm = os.path.normpath(item)
             if len(dest_norm) >= len(item_norm):

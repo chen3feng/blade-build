@@ -245,6 +245,7 @@ def exec_file(filename, globals, locals):
     with open(filename, 'rb') as f:
         exec_file_content(filename, f.read(), globals, locals)
 
+
 def source_location(filename):
     """Return source location of current call stack from filename"""
     lineno = 1
