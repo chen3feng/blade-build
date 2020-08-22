@@ -245,13 +245,16 @@ def exec_file(filename, globals, locals):
     with open(filename, 'rb') as f:
         exec_file_content(filename, f.read(), globals, locals)
 
-
 def source_location(filename):
     """Return source location of current call stack from filename"""
-    for frame in inspect.stack():
-        fn = frame[1]
-        lineno = frame[2]
-        if fn.endswith(filename):
-            # NOTE: The ':0:'(column) is required for VSCode problem matcher
-            return '%s:%s:0:' % (filename, lineno)
-    return filename
+    lineno = 1
+
+    See https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
+    frame = inspect.currentframe()
+    while frame:
+        if frame.f_code.co_filename.endswith(filename):
+            lineno = frame.f_lineno
+            break
+        frame = frame.f_back
+    # NOTE: The ':0:'(column) is required for VSCode problem matcher
+    return '%s:%s:0:' % (filename, lineno)

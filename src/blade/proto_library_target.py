@@ -54,9 +54,8 @@ class ProtocPlugin(object):
             for dep in var_to_list(v['deps']):
                 if dep.startswith('//'):
                     dep = dep[2:]
-                key = tuple(dep.split(':'))
-                if key not in deps:
-                    deps.append(key)
+                if dep not in deps:
+                    deps.append(dep)
             self.code_generation[language]['deps'] = deps
 
     def protoc_plugin_flag(self, out):

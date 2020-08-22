@@ -363,8 +363,8 @@ class CcTarget(Target):
             dep = targets[key]
             if dep.type == 'cc_library' and not dep.srcs:
                 continue
-            if key[0] == '#':
-                sys_libs.append(key[1])
+            if dep.path == '#':
+                sys_libs.append(dep.name)
             else:
                 lib = dep._get_target_file('so')
                 if lib:
@@ -384,8 +384,8 @@ class CcTarget(Target):
             dep = targets[key]
             if dep.type == 'cc_library' and not dep.srcs:
                 continue
-            if key[0] == '#':
-                sys_libs.append(key[1])
+            if dep.path == '#':
+                sys_libs.append(dep.name)
             else:
                 lib = dep._get_target_file('a')
                 if lib:
