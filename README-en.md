@@ -18,9 +18,10 @@ An easy-to-use, fast and modern build system for trunk based development in larg
 
 NOTE: The English Documentation is still under construction, sorry for the incompleteness.
 
-## Build status
+## Build Status
 
 [![Build Status](https://travis-ci.org/chen3feng/blade-build.svg?branch=master)](https://travis-ci.org/chen3feng/blade-build)
+[![codebeat badge](https://codebeat.co/badges/e0d861b7-47cc-4023-9784-7d54246a3576)](https://codebeat.co/projects/github-com-chen3feng-blade-build-master)
 [![Coverage](https://coveralls.io/repos/chen3feng/blade-build/badge.svg?branch=master)](https://coveralls.io/github/chen3feng/blade-build)
 
 ## Brief
