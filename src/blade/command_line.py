@@ -68,12 +68,10 @@ class ParsedCommandLine(object):
 
     def _check_run_targets(self):
         """check that run command should have only one target. """
-        if not self.targets or ':' not in self.targets[0]:
+        if len(self.targets) !=1 or ':' not in self.targets[0] or self.targets[0].endswith('...'):
             console.fatal('Please specify a single target to run: '
                           'blade run //target_path:target_name (or '
                           'a_path:target_name)')
-        if len(self.targets) > 1:
-            console.warning('Run command will only take one target to build and run')
 
     def _check_test_options(self):
         """check that test command options."""

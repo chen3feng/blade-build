@@ -10,6 +10,7 @@
 
 import io
 import os
+import shutil
 import subprocess
 import sys
 import unittest
@@ -42,18 +43,18 @@ class TargetTest(unittest.TestCase):
     def tearDown(self):
         """tear down method. """
         try:
-            os.remove(self.build_output_file)
-            os.remove('build64_release/build.ninja')
-        except OSError:
+            shutil.rmtree('build64_release', ignore_errors=True)
+        except OSError as e:
+            print(e)
             pass
 
         os.chdir(self.cur_dir)
 
-    def dryRun(self, extra_args=''):
+    def runBlade(self, extra_args=''):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
         p = subprocess.Popen(
-            '../../../blade %s %s --generate-dynamic --verbose --dry-run %s > %s' % (
+            '../../../blade %s %s --generate-dynamic --verbose %s > %s' % (
                 self.command, self.targets, extra_args, self.build_output_file),
             shell=True)
         try:
@@ -64,6 +65,9 @@ class TargetTest(unittest.TestCase):
         except:
             sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
         return False
+
+    def dryRun(self, extra_args=''):
+        return self.runBlade('--dry-run ' + extra_args)
 
     def printOutput(self):
         """Helper method for debugging"""

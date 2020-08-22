@@ -189,8 +189,7 @@ class BinaryRunner(object):
 
     def run_target(self, target_name):
         """Run one single target."""
-        target_key = tuple(target_name.split(':'))
-        target = self._build_targets[target_key]
+        target = self._build_targets[target_name]
         if target.type not in self.run_list:
             target.error('is not a executable target')
             return 126

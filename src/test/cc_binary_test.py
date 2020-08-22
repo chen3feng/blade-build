@@ -18,11 +18,11 @@ class TestCcBinary(blade_test.TargetTest):
     """Test cc_binary """
     def setUp(self):
         """setup method. """
-        self.doSetUp('cc')
+        self.doSetUp('cc', command='run', target='string_main_prog')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.assertTrue(self.dryRun())
+        self.assertTrue(self.runBlade())
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
@@ -36,6 +36,7 @@ class TestCcBinary(blade_test.TargetTest):
         self.assertLinkFlags(string_main_depends_libs)
         self.assertIn('liblowercase.a', string_main_depends_libs)
         self.assertIn('libuppercase.a', string_main_depends_libs)
+        self.assertTrue(self.findCommand(['Hello, world']))
 
 
 if __name__ == '__main__':
