@@ -283,40 +283,6 @@ class CcTarget(Target):
         incs = stable_unique(incs)
         return incs
 
-    def _cc_compile_dep_files(self):
-        """Calculate the dependencies which generate header files.
-
-        If a dependency will generate c/c++ header files, we must depends on it during the
-        compiling stage, otherwise, the 'Missing header file' error will occurs.
-
-        NOTE: Here is an optimization: If we know the detaild generated header files, depends on
-              them explicitly rather than depends on the whole target improves the parallelism.
-        """
-        queue = collections.deque(self.deps)
-
-        keys = set()
-        result = []
-        while queue:
-            key = queue.popleft()
-            if key not in keys:
-                keys.add(key)
-                t = self.target_database[key]
-                if t.data.get('generated_incs'):
-                    # We know it will generate header files but has no details, so we have to
-                    # depends on the whole target
-                    result.append(t._get_target_file())
-                elif 'generated_hdrs' in t.data:
-                    generated_hdrs = t.data.get('generated_hdrs')
-                    if generated_hdrs:
-                        result += generated_hdrs
-                elif 'cc_compile_deps_stamp' in t.data:
-                    stamp = t.data['cc_compile_deps_stamp']
-                    if stamp:
-                        result.append(stamp)
-                queue.extend(t.deps)
-
-        return result
-
     def _get_rule_from_suffix(self, src):
         """
         Return cxx for C++ source files with suffix as .cc/.cpp/.cxx,
@@ -400,6 +366,7 @@ class CcTarget(Target):
         return sys_libs, usr_libs, link_all_symbols_libs
 
     def _cc_hdrs(self, hdrs_inclusion_srcs, vars):
+        """Generate header inclusion stack files"""
         if not self._need_verify_generate_hdrs():
             return
 
@@ -411,16 +378,56 @@ class CcTarget(Target):
             rule = '%shdrs' % rule
             self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
-    def _cc_compile_deps_stamp(self):
+    def _cc_compile_deps(self):
         """Return a stamp which depends on targets which generate header files. """
-        self.data['cc_compile_deps_stamp'] = None
-        deps = self._cc_compile_dep_files()
-        if not deps:
-            return None
-        stamp = self._target_file_path(self.name + '__compile_deps__')
-        self.ninja_build('phony', stamp, inputs=deps)
-        self.data['cc_compile_deps_stamp'] = stamp
-        return stamp
+        deps = self.data.get('cc_compile_deps')
+        if deps is None:
+            deps = self._collect_cc_compile_deps()
+            if len(deps) > 1:
+                # If there are more deps, we generate a phony stamp as an alias # to simplify
+                # the generated ninja file. For more details, see:
+                # https://ninja-build.org/manual.html#_the_literal_phony_literal_rule
+                stamp = self._target_file_path(self.name + '__compile_deps__')
+                self.ninja_build('phony', stamp, inputs=deps)
+                deps = [stamp]
+            self.data['cc_compile_deps'] = deps
+        return deps
+
+    def _collect_cc_compile_deps(self):
+        """Calculate the dependencies which generate header files.
+
+        If a dependency will generate c/c++ header files, we must depends on it during the
+        compiling stage, otherwise, the 'Missing header file' error will occurs.
+        """
+        queue = collections.deque(self.deps)
+
+        processed = set()
+        result = set()
+        while queue:
+            key = queue.popleft()
+            if key in processed:
+                continue
+            processed.add(key)
+            t = self.target_database[key]
+            if 'cc_compile_deps' in t.data:
+                # Already has cc_compile_deps attribute, just depends on it
+                result.update(t.data['cc_compile_deps'])
+                continue
+            if 'generated_hdrs' in t.data:
+                # NOTE: Here is an optimization: If we know the detaild generated header files,
+                # depends on them explicitly rather than depending on the whole target improves
+                # the parallelism.
+                # For example, if we depends on a proto_library, we can compile once its pb.h
+                # is updated, no need to wait for the library.
+                result.update(t.data.get('generated_hdrs'))
+                # But its deps' headers maybe updated later, so we need to add them  as our
+                # compile dependency.
+                queue.extend(t.deps)
+                continue
+            # Any other cases, depends on it's default output
+            result.add(t._get_target_file())
+
+        return list(result)
 
     def _cc_objects(self, sources, generated=False, generated_headers=None):
         """Generate cc objects build rules in ninja. """
@@ -428,9 +435,7 @@ class CcTarget(Target):
         vars = {}
         self._setup_cc_vars(vars)
         implicit_deps = []
-        stamp = self._cc_compile_deps_stamp()
-        if stamp:
-            implicit_deps.append(stamp)
+        implicit_deps += self._cc_compile_deps()
         objs_dir = self._target_file_path(self.name + '.objs')
         objs, hdrs_inclusion_srcs = [], []
         for src in sources:
@@ -496,72 +501,8 @@ class CcTarget(Target):
                 return False
         return True
 
-    def _extract_cc_hdrs_from_stack(self, path):
-        """Extract headers from header stack(.H) generated during preprocessing. """
-        hdrs = []
-        level_two_hdrs = {}
-        with open(path) as f:
-            current_hdr = ''
-            for line in f.read().splitlines():
-                if line.startswith('Multiple include guards may be useful for'):
-                    break
-                if line.startswith('. '):
-                    hdr = line[2:]
-                    if hdr[0] == '/':
-                        current_hdr = ''
-                    else:
-                        if hdr.startswith('./'):
-                            hdr = hdr[2:]
-                        current_hdr = hdr
-                        level_two_hdrs[current_hdr] = []
-                        hdrs.append(hdr)
-                elif line.startswith('.. ') and current_hdr:
-                    hdr = line[3:]
-                    if hdr[0] != '/':
-                        if hdr.startswith('./'):
-                            hdr = hdr[2:]
-                        level_two_hdrs[current_hdr].append(hdr)
-
-        return hdrs, level_two_hdrs
-
-    def _cc_self_hdr_patterns(self, src):
-        """Given src(dir/src/foo.cc), return the possible corresponding header paths.
-
-        Although the header(foo.h) may sometimes be in different directories
-        depending on various styles and layouts of different projects,
-        Currently tries the following common patterns:
-
-            1. dir/src/foo.h
-            2. dir/include/foo.h
-            3. dir/inc/foo.h
-        """
-        path = self._source_file_path(src)
-        dir, base = os.path.split(path)
-        pos = base.rindex('.')
-        hdr_base = '%s.h' % base[:pos]
-        self_hdr_patterns = [os.path.join(dir, hdr_base)]
-        parent_dir = os.path.dirname(dir)
-        if parent_dir:
-            self_hdr_patterns.append(os.path.join(parent_dir, 'include', hdr_base))
-            self_hdr_patterns.append(os.path.join(parent_dir, 'inc', hdr_base))
-        return self_hdr_patterns
-
-    def _extract_cc_hdrs(self, src):
-        """Extract headers included by .cc/.h directly"""
-        objs_dir = self._target_file_path(self.name + '.objs')
-        path = '%s.H' % os.path.join(objs_dir, src)
-        if not os.path.exists(path):
-            return []
-        hdrs, level_two_hdrs = self._extract_cc_hdrs_from_stack(path)
-        self_hdr_patterns = self._cc_self_hdr_patterns(src)
-        for i, hdr in enumerate(hdrs):
-            if hdr in self_hdr_patterns:
-                return hdrs[:i] + level_two_hdrs[hdr] + hdrs[i + 1:]
-
-        return hdrs
-
     @staticmethod
-    def _parse_hdr_level(line):
+    def _parse_hdr_level_line(line):
         """Parse a normal line of a header stack file
 
         Example:
@@ -640,7 +581,7 @@ class CcTarget(Target):
                 if not line.startswith('.'):
                     # The remaining lines are useless for us
                     break
-                level, hdr = self._parse_hdr_level(line)
+                level, hdr = self._parse_hdr_level_line(line)
                 if level == -1:
                     console.log('%s: Unrecognized line %s' % (path, line))
                     break
@@ -893,10 +834,7 @@ class CcLibrary(CcTarget):
         """Generate securecc objects build rules in ninja. """
         vars = {}
         self._setup_cc_vars(vars)
-        implicit_deps = []
-        stamp = self._cc_compile_deps_stamp()
-        if stamp:
-            implicit_deps.append(stamp)
+        implicit_deps = self._cc_compile_deps()
 
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
