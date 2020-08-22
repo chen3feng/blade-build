@@ -26,7 +26,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         Scons can use the rules for dry running.
 
         """
-        self.assertTrue(self.dryRun())
+        self.assertTrue(self.runBlade())
         copy_lower_line = self.findCommand('cp ')
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
         upper_depends_libs = self.findCommand('libuppercase.so')

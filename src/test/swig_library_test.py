@@ -12,6 +12,7 @@
 
 
 import blade_test
+import unittest
 
 
 class TestSwigLibrary(blade_test.TargetTest):
@@ -20,6 +21,7 @@ class TestSwigLibrary(blade_test.TargetTest):
         """setup method. """
         self.doSetUp('test_swig_library', generate_php=False)
 
+    @unittest.skip('TODO: swig is not implemented`')
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun('--generate-java'))

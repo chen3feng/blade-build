@@ -26,7 +26,7 @@ class TestCcLibrary(blade_test.TargetTest):
         Scons can use the rules for dry running.
 
         """
-        self.assertTrue(self.dryRun())
+        self.assertTrue(self.runBlade())
 
         com_lower_line = self.findCommand(['-c', 'plowercase.cpp.o'])
         com_upper_line = self.findCommand(['-c', 'puppercase.cpp.o'])

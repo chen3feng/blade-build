@@ -22,7 +22,7 @@ class TestGenRule(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
-        self.assertTrue(self.dryRun())
+        self.assertTrue(self.runBlade())
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_use_line = self.findCommand(['use_media.cpp.o', '-c'])
 
