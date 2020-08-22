@@ -11,15 +11,15 @@ proto_library(
 
 cc_library(
     name = 'poppy',
-    srcs = [
-        'rpc_server.cc'
-    ],
+    srcs = ['rpc_server.cc'],
+    hdrs = ['rpc_server.h'],
     deps = [
         ':rpc_meta_info_proto',
         ':rpc_option_proto'
     ]
 )
 
+"""
 swig_library(
     name = 'poppy_client',
     srcs = [
@@ -32,3 +32,4 @@ swig_library(
     java_package = 'com.soso.poppy.swig',
     java_lib_packed = 1
 )
+"""

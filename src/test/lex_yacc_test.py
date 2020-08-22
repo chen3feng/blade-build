@@ -23,7 +23,6 @@ class TestLexYacc(blade_test.TargetTest):
     def testGenerateRules(self):
         """Test that rules are generated correctly. """
         self.assertTrue(self.dryRun())
-
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_bison_line = self.findCommand(['bison', '-d', '-o'])
         com_flex_line = self.findCommand(['flex', '-R', '-o'])

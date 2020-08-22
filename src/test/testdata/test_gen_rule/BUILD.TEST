@@ -1,8 +1,7 @@
 cc_library(
     name='lowercase',
-    srcs=[
-         'plowercase.cpp'
-         ],
+    srcs=['plowercase.cpp'],
+    hdrs=['plowercase.h'],
     deps=['#pthread'],
     warning='yes',
     defs=['LOWER_DEF'],
@@ -22,9 +21,8 @@ gen_rule(
 
 cc_library(
     name='uppercase',
-    srcs=[
-         'puppercase.cpp'
-         ],
+    srcs=['puppercase.cpp'],
+    hdrs=['puppercase.h'],
     deps=['#dl',
           ':process_media'
     ]

@@ -143,7 +143,7 @@ class GenRuleTarget(Target):
     def ninja_rules(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self._expand_command()
-        description = console.colored('%s //%s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
+        description = console.colored('%s %s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
   description = %s

@@ -153,20 +153,17 @@ class TestRunner(binary_runner.BinaryRunner):
                     # flatten to upper level
                     history.pop('result')
                     history.update(result)
-                    ret['%s:%s' % key] = history
+                    ret[key] = history
                 return ret
-
-            def to_fullnames(keys):
-                return ['%s:%s' % key for key in keys]
 
             summary = {}
             summary['time'] = time.time()
             summary['passed'] = expand(passed_run_results)
             summary['failed'] = expand(failed_run_results)
             summary['unrepaired'] = expand(self.unrepaired_tests)
-            summary['repaired'] = to_fullnames(self.repaired_tests)
-            summary['unchanged'] = to_fullnames(self.unchanged_tests)
-            summary['excluded'] = to_fullnames(self.excluded_tests)
+            summary['repaired'] = self.repaired_tests
+            summary['unchanged'] = self.unchanged_tests
+            summary['excluded'] = self.excluded_tests
             json.dump(summary, f, indent=4)
 
     def _merge_passed_run_results_to_history(self, run_results):
@@ -256,7 +253,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.exclude_tests:
             return False
         for pattern in self.exclude_tests:
-            if pattern == target.fullname:
+            if pattern == target.key:
                 return True
             path, name = pattern.split(':')
             if path == target.path and name == '*':
@@ -308,7 +305,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target.type.endswith('_test'):
                 continue
             if self._exclude_test(target):
-                console.info('//%s is skipped due to --exclude-test' % target.fullname)
+                target.info('is skipped due to --exclude-test')
                 self.excluded_tests.append(target.key)
                 continue
 
@@ -350,7 +347,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if tests:
             output('There are %d %s tests:' % (len(tests), kind))
             for key in sorted(tests):
-                output('  %s:%s' % key, prefix=False)
+                output('  %s' % key, prefix=False)
 
     def _show_run_results(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
@@ -361,15 +358,15 @@ class TestRunner(binary_runner.BinaryRunner):
         tests.sort(key=lambda x: x[1])
         output_function = console.error if is_error else console.info
         for key, costtime, reason, result in tests:
-            output_function('  %s:%s triggered by %s, exit(%s), cost %.2f s' % (
-                            key[0], key[1], reason, result, costtime), prefix=False)
+            output_function('  %s triggered by %s, exit(%s), cost %.2f s' % (
+                            key, reason, result, costtime), prefix=False)
 
     def _show_repaired_results(self, repaired_tests):
         if not repaired_tests:
             return
         console.info('There are %d repaired tests:' % len(repaired_tests))
         for tests in repaired_tests:
-            console.info('%s:%s' % tests, prefix=False)
+            console.info('%s' % tests, prefix=False)
 
     def _show_unrepaired_results(self):
         """Show the unrepaired tests"""
@@ -381,8 +378,8 @@ class TestRunner(binary_runner.BinaryRunner):
             test = items[key]
             first_fail_time = time.strftime('%F %T %A', time.localtime(test.first_fail_time))
             duration = datetime.timedelta(seconds=int(time.time() - test.first_fail_time))
-            console.error('  %s:%s: exit(%s), retry %s times, since %s, duration %s' % (
-                key[0], key[1], test.result.exit_code, test.fail_count, first_fail_time, duration),
+            console.error('  %s: exit(%s), retry %s times, since %s, duration %s' % (
+                key, test.result.exit_code, test.fail_count, first_fail_time, duration),
                 prefix=False)
         console.error('You can specify --run-unrepaired-tests to run them', prefix=False)
 
@@ -396,7 +393,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if slow_tests:
             console.warning('Found %d slow tests:' % len(slow_tests))
             for cost_time, key in sorted(slow_tests):
-                console.warning('  %.4gs\t//%s:%s' % (cost_time, key[0], key[1]), prefix=False)
+                console.warning('  %.4gs\t//%s' % (cost_time, key), prefix=False)
 
     def _show_tests_summary(self, passed_run_results, failed_run_results):
         """Show tests summary. """

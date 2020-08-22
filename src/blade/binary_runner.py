@@ -67,7 +67,7 @@ class BinaryRunner(object):
         """Check whether the destination of test data is valid or not. """
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
-            console.error('Ambiguous testdata of %s: %s, exit...' % (target.fullname, dest))
+            target.error('Ambiguous testdata "%s"' % dest)
         for item in dest_list:
             item_norm = os.path.normpath(item)
             if len(dest_norm) >= len(item_norm):
@@ -130,8 +130,7 @@ class BinaryRunner(object):
             else:
                 src = dest = i
             if '..' in src:
-                console.warning('//%s: Relative path is not allowed in testdata source. '
-                                'Ignored %s.' % (target.fullname, src))
+                target.warning('Relative path is not allowed in testdata. Ignored %s.' % src)
                 continue
             if src.startswith('//'):
                 src = src[2:]
@@ -144,8 +143,7 @@ class BinaryRunner(object):
             dest_list.append(dest)
             dest_path = os.path.join(runfiles_dir, dest)
             if os.path.exists(dest_path):
-                console.warning('//%s: "%s" already existed, could not prepare testdata.' %
-                                (target.fullname, dest))
+                target.warning('"%s" already existed, could not prepare testdata.' % dest)
                 continue
             try:
                 os.makedirs(os.path.dirname(dest_path))

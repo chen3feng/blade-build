@@ -11,9 +11,8 @@ proto_library(
 
 cc_library(
     name='lowercase',
-    srcs=[
-         'plowercase.cpp'
-         ],
+    srcs=['plowercase.cpp'],
+    hdrs=['plowercase.h'],
     deps=[
          '#pthread',
          ':rpc_meta_info_proto',

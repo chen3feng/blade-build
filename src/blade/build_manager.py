@@ -136,20 +136,11 @@ class Blade(object):
 
     def _expand_command_targets(self):
         """Expand command line targets to targets list"""
-        all_targets = self.__build_targets
         all_command_targets = []
-        for t in self.__command_targets:
-            t_path, name = t.split(':')
-            if name == '...':
-                for tkey in all_targets:
-                    if tkey[0].startswith(t_path):
-                        all_command_targets.append(tkey)
-            elif name == '*':
-                for tkey in all_targets:
-                    if tkey[0] == t_path:
-                        all_command_targets.append(tkey)
-            else:
-                all_command_targets.append((t_path, name))
+        for tkey in self.__build_targets:
+            for pattern in self.__command_targets:
+                if target.match(tkey, pattern):
+                    all_command_targets.append(tkey)
         return all_command_targets
 
     def analyze_targets(self):
@@ -196,11 +187,11 @@ class Blade(object):
             if target.type.startswith('cc_') and target.srcs:
                 ok, details = target.verify_hdr_dep_missing(
                         header_inclusion_history,
-                        verify_suppress.get(target.fullname, {}))
+                        verify_suppress.get(target.key, {}))
                 if not ok:
                     error += 1
                 if details:
-                    verify_details[target.fullname] = details
+                    verify_details[target.key] = details
         self._dump_verify_details(verify_details)
         self._dump_verify_history()
         return error == 0
@@ -284,21 +275,19 @@ class Blade(object):
             for key in result_map:
                 print(file=output_file)
                 deps = result_map[key][0]
-                print('//%s:%s depends on the following targets:' % (key[0], key[1]),
-                      file=output_file)
+                print('//%s depends on the following targets:' % key, file=output_file)
                 for d in deps:
-                    print('%s:%s' % (d[0], d[1]), file=output_file)
+                    print('%s' % d, file=output_file)
         if self.__options.dependents:
             for key in result_map:
                 print(file=output_file)
                 depended_by = result_map[key][1]
-                print('//%s:%s is depended by the following targets:' % (key[0], key[1]),
-                      file=output_file)
+                print('//%s is depended by the following targets:' % key, file=output_file)
                 for d in depended_by:
-                    print('%s:%s' % (d[0], d[1]), file=output_file)
+                    print('%s' % d, file=output_file)
 
     def print_dot_node(self, output_file, node):
-        print('"%s:%s" [label = "%s:%s"]' % (node[0], node[1], node[0], node[1]), file=output_file)
+        print('"%s" [label = "%s"]' % (node, node), file=output_file)
 
     def print_dot_deps(self, output_file, node, target_set):
         targets = self.__build_targets
@@ -306,7 +295,7 @@ class Blade(object):
         for i in deps:
             if not i in target_set:
                 continue
-            print('"%s:%s" -> "%s:%s"' % (node[0], node[1], i[0], i[1]), file=output_file)
+            print('"%s" -> "%s"' % (node, i), file=output_file)
 
     def __print_dot_graph(self, result_map, name, print_mode, output_file):
         # print_mode = 0: deps, 1: dependents
@@ -352,13 +341,12 @@ class Blade(object):
 
     def _query_dependency_tree(self, key, level, build_targets, output_file):
         """Query the dependency tree of the specified target recursively. """
-        path, name = key
         if level == 0:
-            output = '%s:%s' % (path, name)
+            output = '%s' % key
         elif level == 1:
-            output = '%s %s:%s' % ('+-', path, name)
+            output = '%s %s' % ('+-', key)
         else:
-            output = '%s%s %s:%s' % ('|  ' * (level - 1), '+-', path, name)
+            output = '%s%s %s' % ('|  ' * (level - 1), '+-', key)
         print(output, file=output_file)
         for dkey in build_targets[key].deps:
             self._query_dependency_tree(dkey, level + 1, build_targets, output_file)

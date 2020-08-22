@@ -57,7 +57,7 @@ def _find_dir_dependent(dir, blade):
     for key in target_database:
         target = target_database[key]
         for dkey in target.expanded_deps:
-            if dkey[0] == dir:
+            if dkey.split(':')[0] == dir:
                 return target
     return None
 
@@ -257,7 +257,6 @@ def load_targets(target_ids, blade_root_dir, blade):
     # pylint: disable=too-many-locals
     build_rules.register_variable('build_target', build_attributes.attributes)
     target_database = blade.get_target_database()
-
     # targets specified in command line
     cited_targets = set()
     # cited_targets and all its dependencies
@@ -278,7 +277,7 @@ def load_targets(target_ids, blade_root_dir, blade):
             _report_not_exist('Directory', source_dir, source_dir, blade)
 
         if target_name not in ('*', '...'):
-            cited_targets.add((source_dir, target_name))
+            cited_targets.add(source_dir + ':' + target_name)
         elif target_name == '...':
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the
@@ -310,7 +309,7 @@ def load_targets(target_ids, blade_root_dir, blade):
     # which is a subset of target_databased created by loading  BUILD files.
     while cited_targets:
         target_id = cited_targets.pop()
-        source_dir, target_name = target_id
+        source_dir, target_name = target_id.split(':')
         if target_id in related_targets:
             continue
 
@@ -319,7 +318,7 @@ def load_targets(target_ids, blade_root_dir, blade):
                          blade)
 
         if target_id not in target_database:
-            msg = 'Target "//%s:%s" does not exist' % target_id
+            msg = 'Target "//%s" does not exist' % target_id
             dependent = _find_dependent(target_id, blade)
             (dependent or console).error(msg)
             continue
@@ -330,7 +329,8 @@ def load_targets(target_ids, blade_root_dir, blade):
                 cited_targets.add(key)
 
     # Iterating to get svn root dirs
-    for path, name in related_targets:  # pylint: disable=dict-iter-missing-items
+    for target_id in related_targets:  # pylint: disable=dict-iter-missing-items
+        path, name = target_id.rsplit(':')
         root_dir = path.split('/')[0].strip()
         if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
             blade.svn_root_dirs.append(root_dir)

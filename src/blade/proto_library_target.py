@@ -54,9 +54,8 @@ class ProtocPlugin(object):
             for dep in var_to_list(v['deps']):
                 if dep.startswith('//'):
                     dep = dep[2:]
-                key = tuple(dep.split(':'))
-                if key not in deps:
-                    deps.append(key)
+                if dep not in deps:
+                    deps.append(dep)
             self.code_generation[language]['deps'] = deps
 
     def protoc_plugin_flag(self, out):
@@ -143,9 +142,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.data['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java', False)
         self.data['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python', False)
         self.data['generate_go'] = 'go' in target_languages or getattr(options, 'generate_go', False)
-        # TODO(chen3feng): Reuse CcLibrary
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
-                                         config.get_item('cc_library_config', 'generate_dynamic'))
 
         # Declare generated header files
         full_cpp_headers = []

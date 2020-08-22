@@ -58,6 +58,18 @@ def normalize(targets, working_dir):
     return [_normalize_one(target, working_dir) for target in targets]
 
 
+def match(target_id, pattern):
+    """Check whether a atrget id match a target pattern"""
+    t_path, t_name = target_id.split(':')
+    p_path, p_name = pattern.split(':')
+
+    if p_name == '...':
+        return t_path == p_path or t_path.startswith(p_path) and t_path[len(p_path)] == os.sep
+    if p_name == '*':
+        return t_path == p_path
+    return target_id == pattern
+
+
 class Target(object):
     """Abstract target class.
 
@@ -84,10 +96,12 @@ class Target(object):
         current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
 
-        self.key = (current_source_path, name)
-        self.fullname = '%s:%s' % self.key
         self.name = name
         self.path = current_source_path
+        # The unique key of this target, for internal use mainly.
+        self.key = '%s:%s' % (current_source_path, name)
+        # The full qualified target id, to be displayed in diagnostic message
+        self.fullname = '//' + self.key
         self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
         self.type = type
         self.srcs = srcs
@@ -233,38 +247,37 @@ class Target(object):
 
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
-        for s in self.srcs:
-            if '..' in s or s.startswith('/'):
+        for src in self.srcs:
+            if '..' in src or src.startswith('/'):
                 self.error('Invalid source file path: %s. can only be relative path, and must '
-                           'in current directory or subdirectories.' % s)
+                           'in current directory or subdirectories.' % src)
 
-            src = os.path.normpath(os.path.join(self.path, s))
+            full_src = os.path.normpath(os.path.join(self.path, src))
             target = self.fullname, self._allow_duplicate_source()
-            if src not in Target.__src_target_map:
-                Target.__src_target_map[src] = target
+            if full_src not in Target.__src_target_map:
+                Target.__src_target_map[full_src] = target
             else:
-                target_existed = Target.__src_target_map[src]
+                target_existed = Target.__src_target_map[full_src]
                 if target_existed != target:
                     # Always preserve the target which disallows
                     # duplicate source files in the map
                     if target_existed[1]:
-                        Target.__src_target_map[src] = target
+                        Target.__src_target_map[full_src] = target
                     elif target[1]:
                         pass
                     else:
-                        message = 'Source file %s belongs to {%s, %s}' % (
-                            s, target_existed[0], target[0])
+                        message = '"%s" is already in srcs of "%s"' % (src, target_existed[0])
                         if action == 'error':
-                            console.error(message)
+                            self.error(message)
                         elif action == 'warning':
-                            console.warning(message)
+                            self.warning(message)
 
     def _add_hardcode_library(self, hardcode_dep_list):
         """Add hardcode dep list to key's deps. """
         for dep in hardcode_dep_list:
-            dkey = self._convert_string_to_target_helper(dep)
-            if not dkey:
-                continue
+            if not dep.startswith('//') and not dep.startswith('#'):
+                dep = '//' + dep
+            dkey = self._unify_dep(dep)
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
             if dkey not in self.expanded_deps:
@@ -334,14 +347,14 @@ class Target(object):
         elif dep.startswith('//'):
             # Depend on library in remote directory
             if not ':' in dep:
-                raise Exception('Wrong format in %s' % self.fullname)
+                raise Exception('Wrong dep format "%s" in %s' % (dep, self.fullname))
             (path, lib) = dep[2:].rsplit(':', 1)
             dkey = (os.path.normpath(path), lib)
         elif dep.startswith('#'):
             # System libaray, they don't have entry in BUILD so we need
             # to add deps manually.
             dkey = ('#', dep[1:])
-            self._add_system_library(dkey, dep)
+            self._add_system_library(':'.join(dkey), dep)
         else:
             # Depend on library in relative subdirectory
             if not ':' in dep:
@@ -352,7 +365,7 @@ class Target(object):
             dkey = (os.path.normpath('%s/%s' % (
                 self.path, path)), lib)
 
-        return dkey
+        return ':'.join(dkey)
 
     def _init_target_deps(self, deps):
         """Init the target deps.
@@ -586,26 +599,6 @@ class Target(object):
             self.ninja_rules()
         return self.__build_rules
 
-    def _convert_string_to_target_helper(self, target_string):
-        """
-        Converting a string like thirdparty/gtest:gtest to tuple
-        (target_path, target_name)
-        """
-        if target_string:
-            if target_string.startswith('#'):
-                return ('#', target_string[1:])
-            if target_string.find(':') != -1:
-                path, name = target_string.split(':')
-                path = path.strip()
-                if path.startswith('//'):
-                    path = path[2:]
-                return (path, name.strip())
-
-        self.error('Invalid target lib format: "%s", '
-                   'should be "#lib_name" or "//lib_path:lib_name"' %
-                   target_string)
-        return None
-
 
 class SystemLibrary(Target):
     def __init__(self, name):
@@ -617,9 +610,9 @@ class SystemLibrary(Target):
                 deps=[],
                 visibility=['PUBLIC'],
                 kwargs={})
-        self.key = ('#', name)
-        self.fullname = '%s:%s' % self.key
         self.path = '#'
+        self.key = '#:' + name
+        self.fullname = '//' + self.key
 
     def ninja_rules(self):
         pass

@@ -1,15 +1,14 @@
 cc_library(
     name='lowercase',
     srcs=[],
-    deps=[],
+    hdrs=['lowercase.h'],
     prebuilt=1
 )
 
 cc_library(
     name='uppercase',
-    srcs=[
-         'puppercase.cpp'
-         ],
+    srcs=['puppercase.cpp'],
+    hdrs=['puppercase.h'],
     deps=[':lowercase'],
     link_all_symbols=1
 )
