@@ -18,7 +18,7 @@ class TestCcTest(blade_test.TargetTest):
     """Test cc_test """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_cc_test')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """

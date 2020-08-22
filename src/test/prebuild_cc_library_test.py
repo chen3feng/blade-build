@@ -18,7 +18,7 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
     """Test cc_library """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_prebuild_cc_library')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly.
@@ -31,12 +31,8 @@ class TestPrebuildCcLibrary(blade_test.TargetTest):
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
         upper_depends_libs = self.findCommand('libuppercase.so')
 
-        self.assertIn('test_prebuild_cc_library/liblowercase.so', copy_lower_line)
-        self.assertIn('lib64/liblowercase.so', copy_lower_line)
-
-        self.assertIn('-Wall -Wextra', com_upper_line)
-        self.assertIn('-Wframe-larger-than=69632', com_upper_line)
-        self.assertIn('-Werror=vla', com_upper_line)
+        self.assertIn('cc/libprebuilt.so', copy_lower_line)
+        self.assertIn('lib64/libprebuilt.so', copy_lower_line)
 
         self.assertTrue(upper_depends_libs)
         self.assertIn('libuppercase.so', upper_depends_libs)

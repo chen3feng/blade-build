@@ -18,7 +18,7 @@ class TestResourceLibrary(blade_test.TargetTest):
     """Test resource_library """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_resource_library')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """

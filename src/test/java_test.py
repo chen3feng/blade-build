@@ -18,7 +18,7 @@ class TestJava(blade_test.TargetTest):
     """Test java_jar """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_java/java', generate_php=False)
+        self.doSetUp('java', generate_php=False)
         self.upper_target_path = 'test_java'
 
     def testLoadBuildsNotNone(self):

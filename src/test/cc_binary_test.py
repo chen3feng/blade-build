@@ -18,7 +18,7 @@ class TestCcBinary(blade_test.TargetTest):
     """Test cc_binary """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_cc_binary')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """

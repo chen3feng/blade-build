@@ -18,7 +18,7 @@ class TestCcPlugin(blade_test.TargetTest):
     """Test cc_plugin """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_cc_plugin')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """

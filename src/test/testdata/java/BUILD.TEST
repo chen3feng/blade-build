@@ -2,8 +2,8 @@ java_library(
     name = 'poppy_java_client',
     srcs = glob('src/com/soso/poppy/**/*.java', allow_empty=True),
     deps = [
-        '//test_java:rpc_meta_info_proto',
-        '//test_java:rpc_option_proto',
-        './lib:junit'
+        '//proto:rpc_meta_info_proto',
+        '//proto:rpc_option_proto',
+        '//java/lib:junit'
     ]
 )

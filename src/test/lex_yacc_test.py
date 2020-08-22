@@ -18,7 +18,7 @@ class TestLexYacc(blade_test.TargetTest):
     """Test lex_yacc """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_lex_yacc')
+        self.doSetUp('lex_yacc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly. """

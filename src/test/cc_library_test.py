@@ -18,7 +18,7 @@ class TestCcLibrary(blade_test.TargetTest):
     """Test cc_library """
     def setUp(self):
         """setup method. """
-        self.doSetUp('test_cc_library')
+        self.doSetUp('cc')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly.
