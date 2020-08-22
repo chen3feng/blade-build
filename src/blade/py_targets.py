@@ -128,9 +128,8 @@ class PrebuiltPythonLibrary(PythonTarget):
             self.error('There can only be 1 file in prebuilt py_library')
         src = self.srcs[0]
         if not src.endswith('.egg') and not src.endswith('.whl'):
-            console.error(
-                '%s: Invalid file "%s" in srcs, prebuilt py_library only support egg and whl' %
-                (self.fullname, src))
+            self.error(
+                    'Invalid src "%s", prebuilt py_library only support egg and whl' % src)
 
     def ninja_rules(self):
         self._add_target_file('pylib', self._source_file_path(self.srcs[0]))

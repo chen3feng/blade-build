@@ -187,11 +187,11 @@ class Blade(object):
             if target.type.startswith('cc_') and target.srcs:
                 ok, details = target.verify_hdr_dep_missing(
                         header_inclusion_history,
-                        verify_suppress.get(target.fullname, {}))
+                        verify_suppress.get(target.key, {}))
                 if not ok:
                     error += 1
                 if details:
-                    verify_details[target.fullname] = details
+                    verify_details[target.key] = details
         self._dump_verify_details(verify_details)
         self._dump_verify_history()
         return error == 0

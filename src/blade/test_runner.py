@@ -253,7 +253,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.exclude_tests:
             return False
         for pattern in self.exclude_tests:
-            if pattern == target.fullname:
+            if pattern == target.key:
                 return True
             path, name = pattern.split(':')
             if path == target.path and name == '*':
@@ -305,7 +305,7 @@ class TestRunner(binary_runner.BinaryRunner):
             if not target.type.endswith('_test'):
                 continue
             if self._exclude_test(target):
-                console.info('//%s is skipped due to --exclude-test' % target.fullname)
+                target.info('is skipped due to --exclude-test')
                 self.excluded_tests.append(target.key)
                 continue
 
@@ -347,7 +347,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if tests:
             output('There are %d %s tests:' % (len(tests), kind))
             for key in sorted(tests):
-                output('  %s:%s' % key, prefix=False)
+                output('  %s' % key, prefix=False)
 
     def _show_run_results(self, run_results, is_error=False):
         """Show the tests detail after scheduling them. """
@@ -366,7 +366,7 @@ class TestRunner(binary_runner.BinaryRunner):
             return
         console.info('There are %d repaired tests:' % len(repaired_tests))
         for tests in repaired_tests:
-            console.info('%s:%s' % tests, prefix=False)
+            console.info('%s' % tests, prefix=False)
 
     def _show_unrepaired_results(self):
         """Show the unrepaired tests"""

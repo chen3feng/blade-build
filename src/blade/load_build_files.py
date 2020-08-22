@@ -318,7 +318,7 @@ def load_targets(target_ids, blade_root_dir, blade):
                          blade)
 
         if target_id not in target_database:
-            msg = 'Target "//%s:%s" does not exist' % target_id
+            msg = 'Target "//%s" does not exist' % target_id
             dependent = _find_dependent(target_id, blade)
             (dependent or console).error(msg)
             continue

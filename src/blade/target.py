@@ -98,8 +98,10 @@ class Target(object):
 
         self.name = name
         self.path = current_source_path
-        self.fullname = '%s:%s' % (current_source_path, name)
-        self.key = self.fullname
+        # The unique key of this target, for internal use mainly.
+        self.key = '%s:%s' % (current_source_path, name)
+        # The full qualified target id, to be displayed in diagnostic message
+        self.fullname = '//' + self.key
         self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
         self.type = type
         self.srcs = srcs
@@ -264,12 +266,11 @@ class Target(object):
                     elif target[1]:
                         pass
                     else:
-                        message = 'Source file %s belongs to {%s, %s}' % (
-                            s, target_existed[0], target[0])
+                        message = '"%s" is already in srcs of "%s"' % ( s, target_existed[0])
                         if action == 'error':
-                            console.error(message)
+                            self.error(message)
                         elif action == 'warning':
-                            console.warning(message)
+                            self.warning(message)
 
     def _add_hardcode_library(self, hardcode_dep_list):
         """Add hardcode dep list to key's deps. """
@@ -609,10 +610,9 @@ class SystemLibrary(Target):
                 deps=[],
                 visibility=['PUBLIC'],
                 kwargs={})
-        self.key = ('#', name)
-        self.fullname = '#:' + name
-        self.key = self.fullname
         self.path = '#'
+        self.key = '#:' + name
+        self.fullname = '//' + self.key
 
     def ninja_rules(self):
         pass

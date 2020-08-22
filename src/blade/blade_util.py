@@ -249,7 +249,7 @@ def source_location(filename):
     """Return source location of current call stack from filename"""
     lineno = 1
 
-    See https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
+    # See https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
     frame = inspect.currentframe()
     while frame:
         if frame.f_code.co_filename.endswith(filename):

@@ -145,7 +145,7 @@ class CcTarget(Target):
         """Set The "hdrs" attribute properly"""
         if hdrs is None:
             suppress = config.get_item('cc_library_config', 'hdrs_missing_suppress')
-            if self.fullname not in suppress:
+            if self.key not in suppress:
                 severity = config.get_item('cc_library_config', 'hdrs_missing_severity')
                 getattr(self, severity)(
                         'Missing "hdrs" declaration. The public header files should be declared '
@@ -169,7 +169,7 @@ class CcTarget(Target):
                 replaced_deps = dep.deps
                 if replaced_deps:
                     self.warning('//%s is deprecated, please depends on //%s' % (
-                        "%s:%s" % dep, "%s:%s" % replaced_deps[0]))
+                        dep, replaced_deps[0]))
 
     __cxx_keyword_list = frozenset([
         'and', 'and_eq', 'alignas', 'alignof', 'asm', 'auto',
@@ -638,7 +638,7 @@ class CcTarget(Target):
                     break
                 level, hdr = self._parse_hdr_level(line)
                 if level == -1:
-                    console.log('%s: Unrecognized line %s' % (self.fullname, line))
+                    console.log('%s: Unrecognized line %s' % (path, line))
                     break
                 if level == 1 and not hdr.startswith('/'):
                     direct_hdrs.append(hdr)
@@ -693,7 +693,7 @@ class CcTarget(Target):
             libs = _find_libs_by_header(hdr)
         if not libs:
             return hdr
-        libs = ' or '.join(['//%s:%s' % lib for lib in libs])
+        libs = ' or '.join(['//%s' % lib for lib in libs])
         return '%s, which belongs to %s' % (hdr, libs)
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,

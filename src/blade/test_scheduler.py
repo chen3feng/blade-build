@@ -161,7 +161,7 @@ class TestScheduler(object):
     def _run_job_redirect(self, job, job_thread):
         """run job and redirect the output. """
         target, run_dir, test_env, cmd = job
-        test_name = target.fullname
+        test_name = target.key
         shell = target.data.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
@@ -190,7 +190,7 @@ class TestScheduler(object):
     def _run_job(self, job, job_thread):
         """run job, do not redirect the output. """
         target, run_dir, test_env, cmd = job
-        test_name = target.fullname
+        test_name = target.key
         shell = target.data.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
@@ -222,7 +222,7 @@ class TestScheduler(object):
             else:
                 returncode = self._run_job(job, job_thread)
         except OSError as e:
-            console.error('//%s: Create test process error: %s' % (target.fullname, str(e)))
+            target.error('Create test process error: %s' % str(e))
             returncode = 255
 
         cost_time = time.time() - start_time
