@@ -84,6 +84,8 @@ The format of `hdr_dep_missing_ignore` is a dict like `{ target_label : {src : [
 Which means, for `common:rpc`, in `rpc_server.cc`, if the libraries which declared `common/base64.h` 
 and `common/list.h` are not declared in the `deps`, this error will be ignored.
 
+For the generated header files, the path can have no build_dir prefix, and it is best not to have it, so that it can be used for different build types.
+
 This feature is to help upgrade old projects that do not properly declare and comply with header file dependencies.
 
 To make the upgrade process easier, for all header missing errors, we write them into `blade-bin/blade_hdr_verify.details` file, with this format.
