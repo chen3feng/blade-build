@@ -130,7 +130,6 @@ class Target(object):
         self._init_visibility(visibility)
         self.__build_rules = None
         self.__rule_hash = None  # Cached rule hash
-        self.data['generated_hdrs'] = []
 
     def dump(self):
         """Dump to a dict"""
