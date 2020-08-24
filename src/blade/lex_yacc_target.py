@@ -64,6 +64,8 @@ class LexYaccLibrary(CcTarget):
         self.data['prefix'] = prefix
         self.data['allow_undefined'] = allow_undefined
         self.data['link_all_symbols'] = True
+        cc, cc_path, h_path = self._yacc_generated_files(self.srcs[1])
+        self.data['generated_hdrs'] = [h_path]
 
     def _lex_flags(self):
         """Return lex flags according to the options. """
@@ -103,21 +105,29 @@ class LexYaccLibrary(CcTarget):
             return {'yaccflags': ' '.join(yacc_flags)}
         return {}
 
-    def _lex_rules(self, source, implicit_deps, vars):
+    def _lex_generated_files(self, source):
         cc = self._cc_source(source)
         cc_path = self._target_file_path(cc)
+        return cc, cc_path
+
+    def _lex_rules(self, source, implicit_deps, vars):
+        cc, cc_path = self._lex_generated_files(source)
         input = self._source_file_path(source)
         self.ninja_build('lex', cc_path, inputs=input, implicit_deps=implicit_deps, variables=vars)
         return cc, cc_path
 
-    def _yacc_rules(self, source, rule, vars):
+    def _yacc_generated_files(self, source):
         cc = self._cc_source(source)
         cc_path = self._target_file_path(cc)
-        input = self._source_file_path(source)
         if cc_path.endswith('.c'):
             h_path = '%s.h' % cc_path[:-2]
         else:
             h_path = '%s.hh' % cc_path[:-3]
+        return cc, cc_path, h_path
+
+    def _yacc_rules(self, source, rule, vars):
+        cc, cc_path, h_path = self._yacc_generated_files(source)
+        input = self._source_file_path(source)
         self.ninja_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
         return cc, cc_path, h_path
 

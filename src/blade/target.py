@@ -130,7 +130,6 @@ class Target(object):
         self._init_visibility(visibility)
         self.__build_rules = None
         self.__rule_hash = None  # Cached rule hash
-        self.data['generated_hdrs'] = []
 
     def dump(self):
         """Dump to a dict"""
@@ -480,6 +479,7 @@ class Target(object):
         Returns:
             A tuple of (target jars, maven jars)
         """
+        # TODO(chen3feng): put to `data`
         return [], []
 
     def _source_file_path(self, name):
@@ -489,6 +489,16 @@ class Target(object):
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
         return os.path.normpath(os.path.join(self.build_dir, self.path, file_name))
+
+    def _remove_build_dir_prefix(self, path):
+        """Remove the build dir prefix of path (e.g. build64_release/)
+        Args:
+            path:str, the full path starts from the workspace root
+        """
+        prefix = self.build_dir + os.sep
+        if path.startswith(prefix):
+            return path[len(prefix):]
+        return path
 
     def _add_target_file(self, label, path):
         """

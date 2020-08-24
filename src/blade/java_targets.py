@@ -41,6 +41,7 @@ class MavenJar(Target):
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
+        self._setup()
 
     def _check_id(self, id):
         """Check if id is valid. """
@@ -53,7 +54,7 @@ class MavenJar(Target):
     def _get_java_pack_deps(self):
         return [], self.data.get('maven_deps', [])
 
-    def ninja_rules(self):
+    def _setup(self):
         maven_cache = maven.MavenCache.instance(self.build_dir)
         binary_jar = maven_cache.get_jar_path(self.data['id'], self.data['classifier'], self)
         if binary_jar:
@@ -63,6 +64,9 @@ class MavenJar(Target):
                     self.data['id'], self.data['classifier'], self)
                 if deps_path:
                     self.data['maven_deps'] = deps_path.split(':')
+
+    def ninja_rules(self):
+        pass
 
 
 def debug_info_options():
