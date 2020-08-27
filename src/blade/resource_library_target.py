@@ -66,8 +66,8 @@ class ResourceLibrary(cc_targets.CcTarget):
             self.ninja_build('resource', self._target_file_path(generated_source),
                              inputs=self._source_file_path(resource))
             sources.append(generated_source)
-        self._cc_objects(sources, True)
-        self._cc_library()
+        objs = self._cc_objects(sources, True)
+        self._cc_library(objs)
 
 
 def resource_library(name=None,

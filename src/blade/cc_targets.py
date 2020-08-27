@@ -448,33 +448,31 @@ class CcTarget(Target):
                              variables=vars)
             objs.append(obj)
 
-        self.attr['objs'] = objs
         self._cc_hdrs(hdrs_inclusion_srcs, vars)
+        return objs
 
-    def _static_cc_library(self):
+    def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
-        objs = self.attr.get('objs', [])
         self.ninja_build('ar', output, inputs=objs)
         self._add_default_target_file('a', output)
 
-    def _dynamic_cc_library(self):
+    def _dynamic_cc_library(self, objs):
         output = self._target_file_path('lib%s.so' % self.name)
         ldflags = self._generate_link_flags()
         sys_libs, usr_libs = self._dynamic_dependencies()
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
-        self._cc_link(output, 'solink', deps=usr_libs,
+        self._cc_link(output, 'solink', objs=objs, deps=usr_libs,
                       ldflags=ldflags, extra_ldflags=extra_ldflags)
         self._add_target_file('so', output)
 
-    def _cc_library(self):
-        self._static_cc_library()
+    def _cc_library(self, objs):
+        self._static_cc_library(objs)
         if self.attr.get('generate_dynamic'):
-            self._dynamic_cc_library()
+            self._dynamic_cc_library(objs)
 
-    def _cc_link(self, output, rule, deps,
+    def _cc_link(self, output, rule, objs, deps,
                  ldflags=None, extra_ldflags=None,
                  implicit_deps=None, order_only_deps=None):
-        objs = self.attr.get('objs', [])
         vars = {}
         if ldflags:
             vars['ldflags'] = ' '.join(ldflags)
@@ -824,7 +822,7 @@ class CcLibrary(CcTarget):
         self.ninja_build('securecc', obj, inputs=secure_obj)
 
     def _securecc_objects(self, sources):
-        """Generate securecc objects build rules in ninja. """
+        """Generate securecc compile rules in ninja. """
         vars = {}
         self._setup_cc_vars(vars)
         implicit_deps = self._cc_compile_deps()
@@ -835,18 +833,17 @@ class CcLibrary(CcTarget):
             obj = '%s.o' % os.path.join(objs_dir, src)
             self._securecc_object(obj, src, implicit_deps, vars)
             objs.append(obj)
-
-        self.attr['objs'] = objs
+        return objs
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
         if self.srcs:
             if self.attr.get('secure'):
-                self._securecc_objects(self.srcs)
+                objs = self._securecc_objects(self.srcs)
             else:
-                self._cc_objects(self.srcs)
-            self._cc_library()
+                objs = self._cc_objects(self.srcs)
+            self._cc_library(objs)
 
 
 class PrebuiltCcLibrary(CcTarget):
@@ -996,6 +993,7 @@ class PrebuiltCcLibrary(CcTarget):
         dynamic_target = self.attr.get('dynamic_target')
         if dynamic_source and dynamic_target:
             self.ninja_build('copy', dynamic_target, inputs=dynamic_source)
+
 
 def prebuilt_cc_library(
         name,
@@ -1268,7 +1266,7 @@ class CcBinary(CcTarget):
             ldflags.append('-Wl,--rpath-link=%s' % rpath_link)
         return ldflags
 
-    def _cc_binary(self, dynamic_link):
+    def _cc_binary(self, objs, dynamic_link):
         ldflags = self._generate_cc_binary_link_flags(dynamic_link)
         implicit_deps = []
         if dynamic_link:
@@ -1286,7 +1284,7 @@ class CcBinary(CcTarget):
             order_only_deps.append(scm)
         extra_ldflags += ['-l%s' % lib for lib in sys_libs]
         output = self._target_file_path(self.name)
-        self._cc_link(output, 'link', deps=usr_libs,
+        self._cc_link(output, 'link', objs=objs, deps=usr_libs,
                       ldflags=ldflags, extra_ldflags=extra_ldflags,
                       implicit_deps=implicit_deps,
                       order_only_deps=order_only_deps)
@@ -1295,8 +1293,8 @@ class CcBinary(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc binary/test. """
         self._check_deprecated_deps()
-        self._cc_objects(self.srcs)
-        self._cc_binary(self.attr['dynamic_link'])
+        objs = self._cc_objects(self.srcs)
+        self._cc_binary(objs, self.attr['dynamic_link'])
 
 
 def cc_binary(name=None,
@@ -1396,7 +1394,7 @@ class CcPlugin(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc plugin. """
         self._check_deprecated_deps()
-        self._cc_objects(self.srcs)
+        objs = self._cc_objects(self.srcs)
         ldflags = self._generate_link_flags()
         implicit_deps = []
         sys_libs, usr_libs, link_all_symbols_libs = self._static_dependencies()
@@ -1414,7 +1412,7 @@ class CcPlugin(CcTarget):
                 link_output = '%s.unstripped' % output
             else:
                 link_output = output
-            self._cc_link(link_output, 'solink', deps=usr_libs,
+            self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs,
                           ldflags=ldflags, extra_ldflags=extra_ldflags,
                           implicit_deps=implicit_deps)
             if self.attr['strip']:
