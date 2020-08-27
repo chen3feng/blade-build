@@ -138,8 +138,8 @@ class LexYaccLibrary(CcTarget):
         lex_cc, lex_cc_path = self._lex_rules(lex_file, implicit_deps=[yacc_cc_path],
                                               vars=self._lex_vars())
         self.attr['generated_hdrs'].append(yacc_h_path)
-        self._cc_objects([lex_cc, yacc_cc], True)
-        self._cc_library()
+        objs = self._cc_objects([lex_cc, yacc_cc], True)
+        self._cc_library(objs)
 
 
 def lex_yacc_library(

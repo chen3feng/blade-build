@@ -447,7 +447,8 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
             go_pool = 'golang_pool'
             self._add_rule(textwrap.dedent('''\
                     pool %s
-                      depth = 1''') % go_pool)
+                      depth = 1
+                    ''') % go_pool)
             go_path = os.path.normpath(os.path.abspath(go_home))
             out_relative = ""
             if go_module_enabled:
