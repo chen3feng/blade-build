@@ -44,7 +44,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 extra_linkflags=[],
                 kwargs=kwargs)
         hdrs = [self._target_file_path('%s.h' % self.name)]
-        self.data['generated_hdrs'] = hdrs
+        self.attr['generated_hdrs'] = hdrs
         cc_targets._declare_hdrs(self, hdrs)
 
     def ninja_rules(self):

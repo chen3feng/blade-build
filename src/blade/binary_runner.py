@@ -120,11 +120,11 @@ class BinaryRunner(object):
         return run_env
 
     def _prepare_test_data(self, target):
-        if 'testdata' not in target.data:
+        if 'testdata' not in target.attr:
             return
         runfiles_dir = self._runfiles_dir(target)
         dest_list = []
-        for i in target.data['testdata']:
+        for i in target.attr['testdata']:
             if isinstance(i, tuple):
                 src, dest = i
             else:

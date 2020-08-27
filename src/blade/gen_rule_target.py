@@ -57,15 +57,15 @@ class GenRuleTarget(Target):
             self.error('"cmd" can not be empty')
         outs = [os.path.normpath(o) for o in var_to_list(outs)]
 
-        self.data['outs'] = outs
-        self.data['locations'] = []
-        self.data['cmd'] = LOCATION_RE.sub(self._process_location_reference, cmd)
-        self.data['cmd_name'] = cmd_name
-        self.data['heavy'] = heavy
+        self.attr['outs'] = outs
+        self.attr['locations'] = []
+        self.attr['cmd'] = LOCATION_RE.sub(self._process_location_reference, cmd)
+        self.attr['cmd_name'] = cmd_name
+        self.attr['heavy'] = heavy
 
         if generated_incs is not None:
             generated_incs = [self._target_file_path(inc) for inc in var_to_list(generated_incs)]
-            self.data['generated_incs'] = generated_incs
+            self.attr['generated_incs'] = generated_incs
             for inc in generated_incs:
                 cc_targets._declare_hdr_dir(self, inc)
         else:
@@ -76,11 +76,11 @@ class GenRuleTarget(Target):
                 generated_hdrs = var_to_list(generated_hdrs)
             if generated_hdrs:
                 generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
-                self.data['generated_hdrs'] = generated_hdrs
+                self.attr['generated_hdrs'] = generated_hdrs
                 cc_targets._declare_hdrs(self, generated_hdrs)
 
         if export_incs:
-            self.data['export_incs'] = self._expand_incs(var_to_list(export_incs))
+            self.attr['export_incs'] = self._expand_incs(var_to_list(export_incs))
 
     def _srcs_list(self, path, srcs):
         """Returns srcs list. """
@@ -94,7 +94,7 @@ class GenRuleTarget(Target):
     def _process_location_reference(self, m):
         """Process target location reference in the command. """
         key, type = self._add_location_reference_target(m)
-        self.data['locations'].append((key, type))
+        self.attr['locations'].append((key, type))
         return '%s'  # Will be expanded in `_expand_command`
 
     def _allow_duplicate_source(self):
@@ -102,7 +102,7 @@ class GenRuleTarget(Target):
 
     def _expand_command(self):
         """Expand vars and location references in command"""
-        cmd = self.data['cmd']
+        cmd = self.attr['cmd']
         cmd = cmd.replace('$SRCS', '${in}')
         cmd = cmd.replace('$OUTS', '${out}')
         cmd = cmd.replace('$FIRST_SRC', '${_in_1}')
@@ -110,7 +110,7 @@ class GenRuleTarget(Target):
         cmd = cmd.replace('$SRC_DIR', self.path)
         cmd = cmd.replace('$OUT_DIR', os.path.join(self.build_dir, self.path))
         cmd = cmd.replace('$BUILD_DIR', self.build_dir)
-        locations = self.data['locations']
+        locations = self.attr['locations']
         if locations:
             targets = self.blade.get_build_targets()
             locations_paths = []
@@ -143,19 +143,19 @@ class GenRuleTarget(Target):
     def ninja_rules(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self._expand_command()
-        description = console.colored('%s %s' % (self.data['cmd_name'], self.fullname), 'dimpurple')
+        description = console.colored('%s %s' % (self.attr['cmd_name'], self.fullname), 'dimpurple')
         self._write_rule('''rule %s
   command = %s && cd %s && ls ${out} > /dev/null
   description = %s
 ''' % (rule, cmd, self.blade.get_root_dir(), description))
-        outputs = [self._target_file_path(o) for o in self.data['outs']]
+        outputs = [self._target_file_path(o) for o in self.attr['outs']]
         inputs = self._expand_srcs()
         vars = {}
         if '${_in_1}' in cmd:
             vars['_in_1'] = inputs[0]
         if '${_out_1}' in cmd:
             vars['_out_1'] = outputs[0]
-        if self.data['heavy']:
+        if self.attr['heavy']:
             vars['pool'] = 'heavy_pool'
         self.ninja_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
                          variables=vars)

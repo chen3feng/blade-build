@@ -162,10 +162,10 @@ class TestScheduler(object):
         """run job and redirect the output. """
         target, run_dir, test_env, cmd = job
         test_name = target.key
-        shell = target.data.get('run_in_shell', False)
+        shell = target.attr.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
-        timeout = target.data.get('test_timeout')
+        timeout = target.attr.get('test_timeout')
         self._show_progress(cmd)
         p = subprocess.Popen(cmd,
                              env=test_env,
@@ -191,10 +191,10 @@ class TestScheduler(object):
         """run job, do not redirect the output. """
         target, run_dir, test_env, cmd = job
         test_name = target.key
-        shell = target.data.get('run_in_shell', False)
+        shell = target.attr.get('run_in_shell', False)
         if shell:
             cmd = subprocess.list2cmdline(cmd)
-        timeout = target.data.get('test_timeout')
+        timeout = target.attr.get('test_timeout')
         self._show_progress(cmd)
         p = subprocess.Popen(cmd, env=test_env, cwd=run_dir, close_fds=True, shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
@@ -275,7 +275,7 @@ class TestScheduler(object):
 
         for i in self.tests_list:
             target = i[0]
-            if target.data.get('exclusive'):
+            if target.attr.get('exclusive'):
                 self.exclusive_job_queue.put(i)
             else:
                 self.job_queue.put(i)

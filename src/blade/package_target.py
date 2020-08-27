@@ -59,15 +59,15 @@ class PackageTarget(Target):
         if type not in _package_types:
             self.error('Invalid type %s. Types supported by the package are %s' % (
                        type, ', '.join(sorted(_package_types))))
-        self.data['type'] = type
-        self.data['sources'] = []
-        self.data['locations'] = []
+        self.attr['type'] = type
+        self.attr['sources'] = []
+        self.attr['locations'] = []
         self._process_srcs(srcs)
 
         if not out:
             out = '%s.%s' % (name, type)
-        self.data['out'] = out
-        self.data['shell'] = shell
+        self.attr['out'] = out
+        self.attr['shell'] = shell
 
     def _process_srcs(self, srcs):
         """
@@ -92,7 +92,7 @@ class PackageTarget(Target):
     def _add_location_reference(self, m, dst):
         """Add target location reference. """
         key, type = self._add_location_reference_target(m)
-        self.data['locations'].append((key, type, dst))
+        self.attr['locations'].append((key, type, dst))
 
     def _get_source_path(self, src, dst):
         """
@@ -117,7 +117,7 @@ class PackageTarget(Target):
         if not os.path.exists(src):
             self.error('Package source %s does not exist.' % src)
         elif os.path.isfile(src):
-            self.data['sources'].append((src, dst))
+            self.attr['sources'].append((src, dst))
         else:
             for dir, subdirs, files in os.walk(src):
                 # Skip over subdirs starting with '.', such as .svn
@@ -125,16 +125,16 @@ class PackageTarget(Target):
                 for f in files:
                     f = os.path.join(dir, f)
                     rel_path = os.path.relpath(f, src)
-                    self.data['sources'].append((f, os.path.join(dst, rel_path)))
+                    self.attr['sources'].append((f, os.path.join(dst, rel_path)))
 
     def ninja_rules(self):
         inputs, entries = [], []
-        for src, dst in self.data['sources']:
+        for src, dst in self.attr['sources']:
             inputs.append(src)
             entries.append(dst)
 
         targets = self.blade.get_build_targets()
-        for key, type, dst in self.data['locations']:
+        for key, type, dst in self.attr['locations']:
             path = targets[key]._get_target_file(type)
             if not path:
                 self.warning('Location %s %s is missing. Ignored.' % (key, type))
@@ -144,8 +144,8 @@ class PackageTarget(Target):
             inputs.append(path)
             entries.append(dst)
 
-        output = self._target_file_path(self.data['out'])
-        if not self.data['shell']:
+        output = self._target_file_path(self.attr['out'])
+        if not self.attr['shell']:
             self.ninja_build('package', output, inputs=inputs,
                              variables={'entries': ' '.join(entries)})
         else:
@@ -178,7 +178,7 @@ class PackageTarget(Target):
             'entries': ' '.join(entries),
             'packageroot': packageroot,
         }
-        type = self.data['type']
+        type = self.attr['type']
         rule = self._rule_from_package_type(type)
         if type != 'zip':
             vars['tarflags'] = self.tar_flags(type)

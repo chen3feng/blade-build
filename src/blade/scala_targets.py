@@ -54,9 +54,9 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 kwargs=kwargs)
         self._process_resources(resources)
         if source_encoding:
-            self.data['source_encoding'] = source_encoding
+            self.attr['source_encoding'] = source_encoding
         if warnings:
-            self.data['warnings'] = warnings
+            self.attr['warnings'] = warnings
 
     def _expand_deps_generation(self):
         self._expand_deps_java_generation()
@@ -70,7 +70,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
         target_platform = scala_config['target_platform']
         if target_platform:
             flags.append('-target:%s' % target_platform)
-        warnings = self.data.get('warnings')
+        warnings = self.attr.get('warnings')
         if warnings:
             flags.append(warnings)
         global_warnings = scala_config['warnings']
@@ -128,9 +128,9 @@ class ScalaLibrary(ScalaTarget):
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
-        self.data['exported_deps'] = self._unify_deps(exported_deps)
-        self.data['provided_deps'] = self._unify_deps(provided_deps)
-        self.data['jacoco_coverage'] = bool(srcs)
+        self.attr['exported_deps'] = self._unify_deps(exported_deps)
+        self.attr['provided_deps'] = self._unify_deps(provided_deps)
+        self.attr['jacoco_coverage'] = bool(srcs)
 
     def ninja_rules(self):
         jar = self._generate_jar()
@@ -196,7 +196,7 @@ class ScalaTest(ScalaFatLibrary):
                 exclusions=exclusions,
                 kwargs=kwargs)
         self.type = 'scala_test'
-        self.data['testdata'] = var_to_list(testdata)
+        self.attr['testdata'] = var_to_list(testdata)
 
         if not self.srcs:
             self.warning('Empty scala test sources.')

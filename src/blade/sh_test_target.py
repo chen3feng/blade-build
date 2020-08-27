@@ -59,7 +59,7 @@ class ShellTest(Target):
         Process test data of which the source could be regular file
         or location reference.
         """
-        self.data['testdata'], self.data['locations'] = [], []
+        self.attr['testdata'], self.attr['locations'] = [], []
         for td in testdata:
             if isinstance(td, tuple):
                 src, dst = td
@@ -72,9 +72,9 @@ class ShellTest(Target):
             m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
-                self.data['locations'].append((key, type, dst))
+                self.attr['locations'].append((key, type, dst))
             else:
-                self.data['testdata'].append(td)
+                self.attr['testdata'].append(td)
 
     def ninja_rules(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
@@ -82,7 +82,7 @@ class ShellTest(Target):
         self.ninja_build('shelltest', output, inputs=srcs)
         targets = self.blade.get_build_targets()
         inputs, testdata = [], []
-        for key, type, dst in self.data['locations']:
+        for key, type, dst in self.attr['locations']:
             path = targets[key]._get_target_file(type)
             if not path:
                 self.warning('Location %s %s is missing. Ignored.' % (key, type))

@@ -44,10 +44,10 @@ class SwigLibrary(CcTarget):
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
-        self.data['cpperraswarn'] = warning
-        self.data['java_package'] = java_package
-        self.data['java_lib_packed'] = java_lib_packed
-        self.data['extra_swigflags'] = extra_swigflags
+        self.attr['cpperraswarn'] = warning
+        self.attr['java_package'] = java_package
+        self.attr['java_lib_packed'] = java_lib_packed
+        self.attr['extra_swigflags'] = extra_swigflags
 
         build_platform = self.blade.get_build_platform()
         self.php_inc_list = build_platform.get_php_include()
@@ -58,7 +58,7 @@ class SwigLibrary(CcTarget):
         for dep in self.expanded_deps:
             d = build_targets[dep]
             if d.type == 'proto_library':
-                d.data['generate_php'] = True
+                d.attr['generate_php'] = True
 
     def _pyswig_gen_python_file(self, path, src):
         """Generate swig python file for python. """

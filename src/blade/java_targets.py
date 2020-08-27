@@ -38,9 +38,9 @@ class MavenJar(Target):
                 visibility=visibility,
                 kwargs={})
         self._check_id(id)
-        self.data['id'] = id
-        self.data['classifier'] = classifier
-        self.data['transitive'] = transitive
+        self.attr['id'] = id
+        self.attr['classifier'] = classifier
+        self.attr['transitive'] = transitive
 
     def _check_id(self, id):
         """Check if id is valid. """
@@ -51,18 +51,18 @@ class MavenJar(Target):
                        'such as jaxen:jaxen:1.1.6' % id)
 
     def _get_java_pack_deps(self):
-        return [], self.data.get('maven_deps', [])
+        return [], self.attr.get('maven_deps', [])
 
     def _setup(self):
         maven_cache = maven.MavenCache.instance(self.build_dir)
-        binary_jar = maven_cache.get_jar_path(self.data['id'], self.data['classifier'], self)
+        binary_jar = maven_cache.get_jar_path(self.attr['id'], self.attr['classifier'], self)
         if binary_jar:
-            self.data['binary_jar'] = binary_jar
-            if self.data.get('transitive'):
+            self.attr['binary_jar'] = binary_jar
+            if self.attr.get('transitive'):
                 deps_path = maven_cache.get_jar_deps_path(
-                    self.data['id'], self.data['classifier'], self)
+                    self.attr['id'], self.attr['classifier'], self)
                 if deps_path:
-                    self.data['maven_deps'] = deps_path.split(':')
+                    self.attr['maven_deps'] = deps_path.split(':')
 
     def ninja_rules(self):
         self._setup()
@@ -105,8 +105,8 @@ class JavaTargetMixIn(object):
             if k not in keys:
                 keys.add(k)
                 dep = self.target_database[k]
-                if 'generate_java' in dep.data:  # Has this attribute
-                    dep.data['generate_java'] = True
+                if 'generate_java' in dep.attr:  # Has this attribute
+                    dep.attr['generate_java'] = True
                     queue.extend(dep.deps)
 
     def _get_maven_dep_ids(self):
@@ -114,7 +114,7 @@ class JavaTargetMixIn(object):
         for dkey in self.deps:
             dep = self.target_database[dkey]
             if dep.type == 'maven_jar':
-                id = dep.data.get('id')
+                id = dep.attr.get('id')
                 if id:
                     maven_dep_ids.add(id)
         return maven_dep_ids
@@ -137,7 +137,7 @@ class JavaTargetMixIn(object):
 
     def _set_pack_exclusions(self, exclusions):
         exclusions = var_to_list(exclusions)
-        self.data['exclusions'] = []
+        self.attr['exclusions'] = []
         for exclusion in exclusions:
             if maven.is_valid_id(exclusion):
                 if '*' in exclusion:
@@ -145,14 +145,14 @@ class JavaTargetMixIn(object):
                         self.warning('Invalid maven id with wildcards %s. Ignored. The valid id '
                                      'could be: group:artifact:*, group:*:*, *:*:*' % exclusion)
                         continue
-                self.data['exclusions'].append(exclusion)
+                self.attr['exclusions'].append(exclusion)
             else:
                 self.warning('Exclusions only support maven id group:artifact:version. Ignore %s' %
                              exclusion)
 
     def _process_pack_exclusions(self, jars):
         """Exclude jars specified by exclusions from input jars. """
-        exclusions = self.data.get('exclusions', [])
+        exclusions = self.attr.get('exclusions', [])
         if exclusions:
             jars = set(jars)
             jars_excluded = set()
@@ -177,7 +177,7 @@ class JavaTargetMixIn(object):
         Process resources which could be regular files/directories or
         location references.
         """
-        self.data['resources'], self.data['location_resources'] = [], []
+        self.attr['resources'], self.attr['location_resources'] = [], []
         for resource in resources:
             if isinstance(resource, tuple):
                 src, dst = resource
@@ -191,9 +191,9 @@ class JavaTargetMixIn(object):
             m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
-                self.data['location_resources'].append((key, type, dst))
+                self.attr['location_resources'].append((key, type, dst))
             else:
-                self.data['resources'].append((src, dst))
+                self.attr['resources'].append((src, dst))
 
     def _get_classes_dir(self):
         """Return path of classes dir. """
@@ -214,7 +214,7 @@ class JavaTargetMixIn(object):
         if jar:
             dep_jars.append(jar)
         else:
-            jar = dep.data.get('binary_jar')
+            jar = dep.attr.get('binary_jar')
             if jar:
                 assert dep.type == 'maven_jar'
                 maven_jars.append(jar)
@@ -238,7 +238,7 @@ class JavaTargetMixIn(object):
             if key not in keys:
                 keys.add(key)
                 dep = self.target_database[key]
-                exported_deps = dep.data.get('exported_deps', [])
+                exported_deps = dep.attr.get('exported_deps', [])
                 for edkey in exported_deps:
                     self.__collect_dep_jars(edkey, dep_jars, maven_jars)
                 queue.extend(exported_deps)
@@ -254,7 +254,7 @@ class JavaTargetMixIn(object):
         for key in deps:
             dep = self.target_database[key]
             if dep.type == 'maven_jar':
-                maven_jars += dep.data.get('maven_deps', [])
+                maven_jars += dep.attr.get('maven_deps', [])
         return maven_jars
 
     def _detect_maven_conflicted_deps(self, scope, dep_jars):
@@ -328,10 +328,10 @@ class JavaTargetMixIn(object):
         """
         Recursively scan direct dependencies and exclude provided dependencies.
         """
-        if 'java_pack_deps' in self.data: # Cache result
-            return self.data['java_pack_deps']
+        if 'java_pack_deps' in self.attr: # Cache result
+            return self.attr['java_pack_deps']
 
-        deps = set(self.deps) - set(self.data.get('provided_deps', []))
+        deps = set(self.deps) - set(self.attr.get('provided_deps', []))
         dep_jars, maven_jars = self.__get_deps(deps)
 
         for dep in deps:
@@ -342,7 +342,7 @@ class JavaTargetMixIn(object):
 
         dep_jars = sorted(set(dep_jars))
         maven_jars = sorted(self._process_pack_exclusions(set(maven_jars)))
-        self.data['java_pack_deps'] = (dep_jars, maven_jars)
+        self.attr['java_pack_deps'] = (dep_jars, maven_jars)
         return dep_jars, maven_jars
 
     def get_java_package_source_mapping(self):
@@ -353,15 +353,15 @@ class JavaTargetMixIn(object):
             return {}
         # A dict of package : [source_path]
         key = 'java_package_source_mapping'
-        if key in self.data:
-            return self.data[key]
+        if key in self.attr:
+            return self.attr[key]
         mapping = collections.defaultdict(list)
         for src in self.srcs:
             src = self._source_file_path(src)
             package = self._get_source_package_name(src)
             if package:
                 mapping[package].append(src)
-        self.data[key] = mapping
+        self.attr[key] = mapping
         return mapping
 
     def _get_java_package_names(self):
@@ -465,7 +465,7 @@ class JavaTargetMixIn(object):
         packages = []
         for dkey in self.deps:
             dep = self.target_database[dkey]
-            if not dep.data.get('jacoco_coverage'):
+            if not dep.attr.get('jacoco_coverage'):
                 continue
             packages += dep._get_java_package_names()
         return ':'.join(packages)
@@ -490,8 +490,8 @@ class JavaTargetMixIn(object):
             self.ninja_build('copy', dst, inputs=src)
 
     def _generate_resources(self):
-        resources = self.data['resources']
-        locations = self.data['location_resources']
+        resources = self.attr['resources']
+        locations = self.attr['location_resources']
         if not resources and not locations:
             return []
         inputs, outputs = [], []
@@ -597,9 +597,9 @@ class JavaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 kwargs=kwargs)
         self._process_resources(resources)
-        self.data['source_encoding'] = source_encoding
+        self.attr['source_encoding'] = source_encoding
         if warnings is not None:
-            self.data['warnings'] = var_to_list(warnings)
+            self.attr['warnings'] = var_to_list(warnings)
 
     def _expand_deps_generation(self):
         self._expand_deps_java_generation()
@@ -608,7 +608,7 @@ class JavaTarget(Target, JavaTargetMixIn):
         return self._get_pack_deps()
 
     def javac_flags(self):
-        warnings = self.data.get('warnings')
+        warnings = self.attr.get('warnings')
         if not warnings:
             warnings = config.get_item('java_config', 'warnings')
         return debug_info_options() + warnings
@@ -678,18 +678,18 @@ class JavaLibrary(JavaTarget):
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
-        self.data['exported_deps'] = self._unify_deps(exported_deps)
-        self.data['provided_deps'] = self._unify_deps(provided_deps)
+        self.attr['exported_deps'] = self._unify_deps(exported_deps)
+        self.attr['provided_deps'] = self._unify_deps(provided_deps)
         if prebuilt:
             if not binary_jar:
                 binary_jar = name + '.jar'
-            self.data['binary_jar'] = self._source_file_path(binary_jar)
-        self.data['jacoco_coverage'] = coverage and bool(srcs)
+            self.attr['binary_jar'] = self._source_file_path(binary_jar)
+        self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
     def ninja_rules(self):
         if self.type == 'prebuilt_java_library':
             jar = os.path.join(self.blade.get_root_dir(),
-                               self.data['binary_jar'])
+                               self.attr['binary_jar'])
         else:
             jar = self._generate_jar()
         if jar:
@@ -721,8 +721,8 @@ class JavaBinary(JavaTarget):
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
-        self.data['main_class'] = main_class
-        self.data['run_in_shell'] = True
+        self.attr['main_class'] = main_class
+        self.attr['run_in_shell'] = True
         if not main_class:
             self.warning('Missing "main_class", program may not run')
         if exclusions:
@@ -739,7 +739,7 @@ class JavaBinary(JavaTarget):
             inputs = []
         inputs += dep_jars + maven_jars
         output = self._target_file_path(self.name + '.one.jar')
-        vars = {'mainclass': self.data['main_class']}
+        vars = {'mainclass': self.attr['main_class']}
         self.ninja_build('onejar', output, inputs=inputs, variables=vars)
         self._add_target_file('onejar', output)
         return output
@@ -817,11 +817,11 @@ class JavaTest(JavaBinary):
         if target_under_test:
             self.warning('"target_under_test" is deprecated, you can remove it safely')
         self.type = 'java_test'
-        self.data['testdata'] = var_to_list(testdata)
+        self.attr['testdata'] = var_to_list(testdata)
 
     def _java_test_vars(self):
         vars = {
-            'mainclass': self.data['main_class'],
+            'mainclass': self.attr['main_class'],
             'packages_under_test': self._packages_under_test()
         }
         return vars
