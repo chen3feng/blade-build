@@ -41,7 +41,6 @@ class MavenJar(Target):
         self.data['id'] = id
         self.data['classifier'] = classifier
         self.data['transitive'] = transitive
-        self._setup()
 
     def _check_id(self, id):
         """Check if id is valid. """
@@ -66,8 +65,7 @@ class MavenJar(Target):
                     self.data['maven_deps'] = deps_path.split(':')
 
     def ninja_rules(self):
-        pass
-
+        self._setup()
 
 def debug_info_options():
     """javac debug information options(-g)"""
