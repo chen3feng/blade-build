@@ -206,7 +206,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if os.path.exists(test_file_name):
             related_file_list.append(test_file_name)
 
-        if target.data.get('dynamic_link'):
+        if target.attr.get('dynamic_link'):
             for dep in self._build_targets[target.key].expanded_deps:
                 dep_target = self._build_targets[dep]
                 if 'cc_library' in dep_target.type:
@@ -218,7 +218,7 @@ class TestRunner(binary_runner.BinaryRunner):
                     if os.path.exists(abs_lib_path):
                         related_file_list.append(abs_lib_path)
 
-        for i in target.data['testdata']:
+        for i in target.attr['testdata']:
             if isinstance(i, tuple):
                 data_target = i[0]
             else:
@@ -269,7 +269,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if self.options.full_test:
             return 'FULL_TEST'
 
-        if target.data.get('always_run'):
+        if target.attr.get('always_run'):
             return 'ALWAYS_RUN'
         if target.key in self.__direct_targets:
             return 'EXPLICIT'
@@ -466,7 +466,7 @@ class TestRunner(binary_runner.BinaryRunner):
             else:
                 test_env['GTEST_COLOR'] = 'no'
             test_env['GTEST_OUTPUT'] = 'xml'
-            test_env['HEAPCHECK'] = target.data.get('heap_check', '')
+            test_env['HEAPCHECK'] = target.attr.get('heap_check', '')
             pprof_path = config.get_item('cc_test_config', 'pprof_path')
             if pprof_path:
                 test_env['PPROF_PATH'] = os.path.abspath(pprof_path)

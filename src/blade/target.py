@@ -118,9 +118,14 @@ class Target(object):
         self.__targets = {}
         self.__default_target = ''
 
+        # Target releated attributes, they should be set only before generating build rules.
+        self.attr = {}
+
+        # For temporary, mutable fields only, their values should not relate to rule_hash
         self.data = {}
+
         # TODO: Remove it
-        self.data['test_timeout'] = config.get_item('global_config', 'test_timeout')
+        self.attr['test_timeout'] = config.get_item('global_config', 'test_timeout')
 
         self._check_name()
         self._check_kwargs(kwargs)
@@ -141,7 +146,7 @@ class Target(object):
             'deps': self.deps,
             'visibility': self.visibility,
         }
-        target.update(self.data)
+        target.update(self.attr)
         return target
 
     def _rule_hash_entropy(self):
@@ -150,12 +155,12 @@ class Target(object):
 
         Can be override in sub classes, must return a dict{string:value}.
 
-        The default implementation is return the `data` member, but you can return lesser or more
+        The default implementation is return the `attr` member, but you can return lesser or more
         elements to custom the final result.
-        For example, you can remove unrelated members in `data` which doesn't affect build and must
+        For example, you can remove unrelated members in `attr` which doesn't affect build and must
         add extra elements which may affect build.
         """
-        return self.data
+        return self.attr
 
     def rule_hash(self):
         """Calculate a hash string to be used to judge whether regenerate per-target ninja file"""

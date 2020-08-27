@@ -60,8 +60,8 @@ class ThriftLibrary(CcTarget):
         self._add_hardcode_library(thrift_libs)
 
         # Link all the symbols by default
-        self.data['link_all_symbols'] = True
-        self.data['deprecated'] = deprecated
+        self.attr['link_all_symbols'] = True
+        self.attr['deprecated'] = deprecated
         options = self.blade.get_options()
 
         # For each thrift file initialize a ThriftHelper, which will be used
@@ -72,7 +72,7 @@ class ThriftLibrary(CcTarget):
             self.thrift_helpers[src] = ThriftHelper(self.path, src)
             thrift_files = self._thrift_gen_cpp_files(src)
             headers += [h for h in thrift_files if h.endswith('.h')]
-        self.data['generated_hdrs'] = headers
+        self.attr['generated_hdrs'] = headers
 
     def _check_thrift_srcs_name(self, srcs):
         """Check whether the thrift file's name ends with .thrift. """
@@ -111,7 +111,7 @@ class ThriftLibrary(CcTarget):
             self.ninja_build('thrift', thrift_files, inputs=self._source_file_path(src))
             thrift_cpp_sources = [s for s in thrift_files if s.endswith('.cpp')]
             sources += [os.path.relpath(s, target_dir) for s in thrift_cpp_sources]
-        self._cc_objects(sources, True, generated_headers=self.data['generated_hdrs'])
+        self._cc_objects(sources, True, generated_headers=self.attr['generated_hdrs'])
         self._cc_library()
 
 

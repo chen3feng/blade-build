@@ -33,7 +33,7 @@ class JacocoReporter(object):
         self.__coverage_targets = []
         for key in self.__command_targets:
             target = self.__target_database[key]
-            if target.data.get('jacoco_coverage'):
+            if target.attr.get('jacoco_coverage'):
                 self.__coverage_targets.append(target)
 
     # Copied from BinaryRunner

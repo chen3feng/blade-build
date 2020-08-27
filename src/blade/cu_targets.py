@@ -63,16 +63,16 @@ class CuTarget(CcTarget):
         nvcc_flags = []
 
         # Warnings
-        if self.data.get('warning', '') == 'no':
+        if self.attr.get('warning', '') == 'no':
             nvcc_flags.append('-w')
 
         # Defs
-        defs = self.data.get('defs', [])
+        defs = self.attr.get('defs', [])
         nvcc_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
         if (self.blade.get_options().profile == 'release' or
-                self.data.get('always_optimize')):
+                self.attr.get('always_optimize')):
             nvcc_flags += self._get_optimize_flags()
 
         # Incs
@@ -236,9 +236,9 @@ class CuTest(CuBinary):
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
         self.type = 'cu_test'
-        self.data['testdata'] = var_to_list(testdata)
-        self.data['always_run'] = always_run
-        self.data['exclusive'] = exclusive
+        self.attr['testdata'] = var_to_list(testdata)
+        self.attr['always_run'] = always_run
+        self.attr['exclusive'] = exclusive
 
         cc_test_config = config.get_section('cc_test_config')
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])

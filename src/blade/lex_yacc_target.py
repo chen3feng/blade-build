@@ -57,31 +57,31 @@ class LexYaccLibrary(CcTarget):
                 (not (srcs[1].endswith('.y') or srcs[1].endswith('.yy')))):
             self.error('"lex_yacc_library.srcs"  must be a pair of [lex_file, yacc_file]')
 
-        self.data['recursive'] = recursive
-        self.data['prefix'] = prefix
-        self.data['lexflags'] = var_to_list(lexflags)
-        self.data['yaccflags'] = var_to_list(yaccflags)
-        self.data['prefix'] = prefix
-        self.data['allow_undefined'] = allow_undefined
-        self.data['link_all_symbols'] = True
+        self.attr['recursive'] = recursive
+        self.attr['prefix'] = prefix
+        self.attr['lexflags'] = var_to_list(lexflags)
+        self.attr['yaccflags'] = var_to_list(yaccflags)
+        self.attr['prefix'] = prefix
+        self.attr['allow_undefined'] = allow_undefined
+        self.attr['link_all_symbols'] = True
         cc, cc_path, h_path = self._yacc_generated_files(self.srcs[1])
-        self.data['generated_hdrs'] = [h_path]
+        self.attr['generated_hdrs'] = [h_path]
 
     def _lex_flags(self):
         """Return lex flags according to the options. """
-        lex_flags = list(self.data['lexflags'])
-        if self.data.get('recursive'):
+        lex_flags = list(self.attr['lexflags'])
+        if self.attr.get('recursive'):
             lex_flags.append('-R')
-        prefix = self.data.get('prefix')
+        prefix = self.attr.get('prefix')
         if prefix:
             lex_flags.append('-P %s' % prefix)
         return lex_flags
 
     def _yacc_flags(self):
         """Return yacc flags according to the options. """
-        yacc_flags = list(self.data['yaccflags'])
+        yacc_flags = list(self.attr['yaccflags'])
         yacc_flags.append('-d')
-        prefix = self.data.get('prefix')
+        prefix = self.attr.get('prefix')
         if prefix:
             yacc_flags.append('-p %s' % prefix)
         return yacc_flags
@@ -137,7 +137,7 @@ class LexYaccLibrary(CcTarget):
                                                               vars=self._yacc_vars())
         lex_cc, lex_cc_path = self._lex_rules(lex_file, implicit_deps=[yacc_cc_path],
                                               vars=self._lex_vars())
-        self.data['generated_hdrs'].append(yacc_h_path)
+        self.attr['generated_hdrs'].append(yacc_h_path)
         self._cc_objects([lex_cc, yacc_cc], True)
         self._cc_library()
 

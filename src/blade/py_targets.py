@@ -52,17 +52,17 @@ class PythonTarget(Target):
                 self.error('Invalid base directory %s. Option base should be a directory '
                            'starting with \'//\' from BLADE_ROOT directory.' % base)
                 return
-            self.data['python_base'] = base[2:]
+            self.attr['python_base'] = base[2:]
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
             d = build_targets[dep]
-            d.data['generate_python'] = True
+            d.attr['generate_python'] = True
 
     def _vars(self):
         vars = {}
-        basedir = self.data.get('python_base')
+        basedir = self.attr.get('python_base')
         if basedir:
             vars['basedir'] = basedir
         return vars
@@ -192,22 +192,22 @@ class PythonBinary(PythonLibrary):
                 kwargs=kwargs)
 
         self.type = 'py_binary'
-        self.data['run_in_shell'] = True
+        self.attr['run_in_shell'] = True
         if main:
-            self.data['main'] = main
+            self.attr['main'] = main
         else:
             if len(srcs) == 1:
-                self.data['main'] = srcs[0]
+                self.attr['main'] = srcs[0]
             else:
                 self.error(
                     'The entry file must be specified by the "main" '
                     'argument if there are more than one srcs')
-        self.data['exclusions'] = exclusions
+        self.attr['exclusions'] = exclusions
 
     def _get_entry(self):
-        main = self.data['main']
+        main = self.attr['main']
         full_path = os.path.normpath(os.path.join(self.path, main))[:-3]
-        base_path = self.data.get('python_base', '')
+        base_path = self.attr.get('python_base', '')
         rel_path = os.path.relpath(full_path, base_path)
         return rel_path.replace('/', '.')
 
@@ -224,7 +224,7 @@ class PythonBinary(PythonLibrary):
             # TODO(wentingli): Add other dependencies if needed
         vars = self._vars()
         vars['mainentry'] = self._get_entry()
-        vars['exclusions'] = ','.join(self.data['exclusions'])
+        vars['exclusions'] = ','.join(self.attr['exclusions'])
         self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)
         self._add_default_target_file('bin', output)
 
@@ -278,7 +278,7 @@ class PythonTest(PythonBinary):
                 exclusions=[],
                 kwargs=kwargs)
         self.type = 'py_test'
-        self.data['testdata'] = testdata
+        self.attr['testdata'] = testdata
 
 
 def py_test(name=None,

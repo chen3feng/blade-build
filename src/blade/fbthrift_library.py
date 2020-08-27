@@ -64,7 +64,7 @@ class FBThriftLibrary(CcTarget):
         self._add_hardcode_library(fbthrift_libs)
 
         # Link all the symbols by default
-        self.data['link_all_symbols'] = True
+        self.attr['link_all_symbols'] = True
 
         # For each thrift file initialize a FBThriftHelper, which will be used
         # to get the source files generated from thrift file.

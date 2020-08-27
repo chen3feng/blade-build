@@ -122,17 +122,17 @@ class CcTarget(Target):
         self._check_defs(defs)
         self._check_incorrect_no_warning(warning)
 
-        self.data['warning'] = warning
-        self.data['private_hdrs'] = private_hdrs
-        self.data['defs'] = var_to_list(defs)
-        self.data['incs'] = self._incs_to_fullpath(incs)
-        self.data['export_incs'] = self._incs_to_fullpath(export_incs)
-        self.data['optimize'] = var_to_list(optimize)
-        self.data['extra_cppflags'] = var_to_list(extra_cppflags)
-        self.data['extra_linkflags'] = var_to_list(extra_linkflags)
+        self.attr['warning'] = warning
+        self.attr['private_hdrs'] = private_hdrs
+        self.attr['defs'] = var_to_list(defs)
+        self.attr['incs'] = self._incs_to_fullpath(incs)
+        self.attr['export_incs'] = self._incs_to_fullpath(export_incs)
+        self.attr['optimize'] = var_to_list(optimize)
+        self.attr['extra_cppflags'] = var_to_list(extra_cppflags)
+        self.attr['extra_linkflags'] = var_to_list(extra_linkflags)
         # TODO(chen3feng): Move to CcLibrary
         options = self.blade.get_options()
-        self.data['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
+        self.attr['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
 
     def _incs_to_fullpath(self, incs):
@@ -162,14 +162,14 @@ class CcTarget(Target):
             if not os.path.exists(hdr):
                 hdr = self._target_file_path(h)
             expanded_hdrs.append(hdr)
-        self.data['hdrs'] = expanded_hdrs
+        self.attr['hdrs'] = expanded_hdrs
         _declare_hdrs(self, expanded_hdrs)
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library. """
         for key in self.deps:
             dep = self.target_database.get(key)
-            if dep and dep.data.get('deprecated'):
+            if dep and dep.attr.get('deprecated'):
                 replaced_deps = dep.deps
                 if replaced_deps:
                     self.warning('//%s is deprecated, please depends on //%s' % (
@@ -223,7 +223,7 @@ class CcTarget(Target):
 
     def _get_optimize_flags(self):
         """get optimize flags such as -O2"""
-        return self.data.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
+        return self.attr.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
 
     def _get_cc_flags(self):
         """_get_cc_flags.
@@ -234,21 +234,21 @@ class CcTarget(Target):
         cpp_flags = []
 
         # Warnings
-        if self.data.get('warning', '') == 'no':
+        if self.attr.get('warning', '') == 'no':
             cpp_flags.append('-w')
 
         # Defs
-        defs = self.data.get('defs', [])
+        defs = self.attr.get('defs', [])
         cpp_flags += [('-D' + macro) for macro in defs]
 
         # Optimize flags
         if (self.blade.get_options().profile == 'release' or
-                self.data.get('always_optimize')):
+                self.attr.get('always_optimize')):
             cpp_flags += self._get_optimize_flags()
             # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
             cpp_flags += ['-fno-omit-frame-pointer']
 
-        cpp_flags += self.data.get('extra_cppflags', [])
+        cpp_flags += self.attr.get('extra_cppflags', [])
 
         # Incs
         incs = self._get_incs_list()
@@ -272,12 +272,12 @@ class CcTarget(Target):
                 continue
 
             target = self.target_database[dep]
-            inc_list += target.data.get('export_incs', [])
+            inc_list += target.attr.get('export_incs', [])
         return inc_list
 
     def _get_incs_list(self):
         """Get all incs includes export_incs of all depends. """
-        incs = self.data.get('incs', []) + self.data.get('export_incs', [])
+        incs = self.attr.get('incs', []) + self.attr.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
         incs = stable_unique(incs)
@@ -295,7 +295,7 @@ class CcTarget(Target):
 
     def _setup_cc_vars(self, vars):
         """Set up warning, compile options and include directories for cc build. """
-        if self.data.get('warning') != 'yes':
+        if self.attr.get('warning') != 'yes':
             vars['c_warnings'] = ''
             vars['cxx_warnings'] = ''
         cppflags, includes = self._get_cc_flags()
@@ -307,11 +307,11 @@ class CcTarget(Target):
     def _generate_link_flags(self):
         """Generate linker flags for cc link. """
         ldflags = []
-        extra_linkflags = self.data.get('extra_linkflags')
+        extra_linkflags = self.attr.get('extra_linkflags')
         if extra_linkflags:
             ldflags = extra_linkflags
-        if 'allow_undefined' in self.data:
-            allow_undefined = self.data['allow_undefined']
+        if 'allow_undefined' in self.attr:
+            allow_undefined = self.attr['allow_undefined']
             if not allow_undefined:
                 ldflags.append('-Xlinker --no-undefined')
         return ldflags
@@ -359,7 +359,7 @@ class CcTarget(Target):
             else:
                 lib = dep._get_target_file('a')
                 if lib:
-                    if dep.data.get('link_all_symbols'):
+                    if dep.attr.get('link_all_symbols'):
                         link_all_symbols_libs.append(lib)
                     else:
                         usr_libs.append(lib)
@@ -402,7 +402,7 @@ class CcTarget(Target):
         result = set()
         for key in self.expanded_deps:
             dep = self.target_database[key]
-            generated_hdrs = dep.data.get('generated_hdrs')
+            generated_hdrs = dep.attr.get('generated_hdrs')
             if generated_hdrs:
                 # NOTE: Here is an optimization: If we know the detaild generated header files,
                 # depends on them explicitly rather than depending on the whole target improves
@@ -410,7 +410,7 @@ class CcTarget(Target):
                 # For example, if we depends on a proto_library, once its `pb.h` is generated,
                 # our source file can be compiled without waiting for its library beeing generated.
                 result.update(generated_hdrs)
-            elif 'generated_incs' in dep.data:
+            elif 'generated_incs' in dep.attr:
                 # We know that this target generate header files, but we don't know the details,
                 # so we have to depends on its final target file.
                 target_file = dep._get_target_file()
@@ -448,12 +448,12 @@ class CcTarget(Target):
                              variables=vars)
             objs.append(obj)
 
-        self.data['objs'] = objs
+        self.attr['objs'] = objs
         self._cc_hdrs(hdrs_inclusion_srcs, vars)
 
     def _static_cc_library(self):
         output = self._target_file_path('lib%s.a' % self.name)
-        objs = self.data.get('objs', [])
+        objs = self.attr.get('objs', [])
         self.ninja_build('ar', output, inputs=objs)
         self._add_default_target_file('a', output)
 
@@ -468,13 +468,13 @@ class CcTarget(Target):
 
     def _cc_library(self):
         self._static_cc_library()
-        if self.data.get('generate_dynamic'):
+        if self.attr.get('generate_dynamic'):
             self._dynamic_cc_library()
 
     def _cc_link(self, output, rule, deps,
                  ldflags=None, extra_ldflags=None,
                  implicit_deps=None, order_only_deps=None):
-        objs = self.data.get('objs', [])
+        objs = self.attr.get('objs', [])
         vars = {}
         if ldflags:
             vars['ldflags'] = ' '.join(ldflags)
@@ -687,8 +687,8 @@ class CcTarget(Target):
         build_targets = self.blade.get_build_targets()
         for key in self.expanded_deps:
             dep = build_targets[key]
-            declared_hdrs.update(dep.data.get('generated_hdrs', []))
-            declared_incs.update(dep.data.get('generated_incs', []))
+            declared_hdrs.update(dep.attr.get('generated_hdrs', []))
+            declared_incs.update(dep.attr.get('generated_incs', []))
 
         # Verify
         details = {}  # {src: list(hdrs)}
@@ -791,16 +791,16 @@ class CcLibrary(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
-        self.data['link_all_symbols'] = link_all_symbols
-        self.data['always_optimize'] = always_optimize
-        self.data['deprecated'] = deprecated
-        self.data['allow_undefined'] = allow_undefined
+        self.attr['link_all_symbols'] = link_all_symbols
+        self.attr['always_optimize'] = always_optimize
+        self.attr['deprecated'] = deprecated
+        self.attr['allow_undefined'] = allow_undefined
         self._set_hdrs(hdrs)
         self._set_secure(secure)
 
     def _set_secure(self, secure):
         if secure:
-            self.data['secure'] = secure
+            self.attr['secure'] = secure
             for src in self.srcs:
                 path = self._source_file_path(src)
                 if not os.path.exists(path):
@@ -836,13 +836,13 @@ class CcLibrary(CcTarget):
             self._securecc_object(obj, src, implicit_deps, vars)
             objs.append(obj)
 
-        self.data['objs'] = objs
+        self.attr['objs'] = objs
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
         if self.srcs:
-            if self.data.get('secure'):
+            if self.attr.get('secure'):
                 self._securecc_objects(self.srcs)
             else:
                 self._cc_objects(self.srcs)
@@ -880,9 +880,9 @@ class PrebuiltCcLibrary(CcTarget):
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
-        self.data['libpath_pattern'] = libpath_pattern
-        self.data['link_all_symbols'] = link_all_symbols
-        self.data['deprecated'] = deprecated
+        self.attr['libpath_pattern'] = libpath_pattern
+        self.attr['link_all_symbols'] = link_all_symbols
+        self.attr['deprecated'] = deprecated
         self._set_hdrs(hdrs)
         self._setup()
 
@@ -911,7 +911,7 @@ class PrebuiltCcLibrary(CcTarget):
         self.file_and_link = None
 
         if has_static:
-            self.data['static_source'] = static_source
+            self.attr['static_source'] = static_source
             self._add_target_file('a', static_source)
             if not has_dynamic:
                 # Using static library for dynamic linking
@@ -919,8 +919,8 @@ class PrebuiltCcLibrary(CcTarget):
 
         if has_dynamic:
             dynamic_target = self._target_file_path(os.path.basename(dynamic_source))
-            self.data['dynamic_source'] = dynamic_source
-            self.data['dynamic_target'] = dynamic_target
+            self.attr['dynamic_source'] = dynamic_source
+            self.attr['dynamic_target'] = dynamic_target
             self._add_target_file('so', dynamic_target)
 
             soname = self._soname(dynamic_source)
@@ -942,7 +942,7 @@ class PrebuiltCcLibrary(CcTarget):
             PrebuiltCcLibrary._default_libpath = Template(pattern).substitute(
                 bits=bits, arch=arch, profile=profile)
 
-        pattern = self.data.get('libpath_pattern')
+        pattern = self.attr.get('libpath_pattern')
         if pattern is None:
             libpath = PrebuiltCcLibrary._default_libpath
         else:
@@ -992,8 +992,8 @@ class PrebuiltCcLibrary(CcTarget):
         # rule to avoid runtime error and also avoid unnecessary runtime cost.
         if not self._is_depended():
             return
-        dynamic_source = self.data.get('dynamic_source')
-        dynamic_target = self.data.get('dynamic_target')
+        dynamic_source = self.attr.get('dynamic_source')
+        dynamic_target = self.attr.get('dynamic_target')
         if dynamic_source and dynamic_target:
             self.ninja_build('copy', dynamic_target, inputs=dynamic_source)
 
@@ -1115,23 +1115,23 @@ class ForeignCcLibrary(CcTarget):
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
-        self.data['install_dir'] = install_dir
-        self.data['link_all_symbols'] = link_all_symbols
-        self.data['deprecated'] = deprecated
-        self.data['lib_dir'] = lib_dir
+        self.attr['install_dir'] = install_dir
+        self.attr['link_all_symbols'] = link_all_symbols
+        self.attr['deprecated'] = deprecated
+        self.attr['lib_dir'] = lib_dir
 
         if hdrs:
             hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdrs)]
-            self.data['hdrs'] = hdrs
-            self.data['generated_hdrs'] = hdrs
+            self.attr['hdrs'] = hdrs
+            self.attr['generated_hdrs'] = hdrs
             _declare_hdrs(self, hdrs)
         else:
             hdr_dir = self._target_file_path(os.path.join(install_dir, hdr_dir))
-            self.data['generated_incs'] = [hdr_dir]
+            self.attr['generated_incs'] = [hdr_dir]
             _declare_hdr_dir(self, hdr_dir)
 
     def _ninja_rules(self):
-        lib = self._target_file_path(os.path.join(self.data['install_dir'], self.data['lib_dir'],
+        lib = self._target_file_path(os.path.join(self.attr['install_dir'], self.attr['lib_dir'],
                                                   'lib%s.a' % self.name))
         self._add_default_target_file('a', lib)
         self._add_target_file('so', lib)
@@ -1225,9 +1225,9 @@ class CcBinary(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
-        self.data['embed_version'] = embed_version
-        self.data['dynamic_link'] = dynamic_link
-        self.data['export_dynamic'] = export_dynamic
+        self.attr['embed_version'] = embed_version
+        self.attr['dynamic_link'] = dynamic_link
+        self.attr['export_dynamic'] = export_dynamic
 
         # add extra link library
         link_libs = var_to_list(config.get_item('cc_binary_config', 'extra_libs'))
@@ -1237,14 +1237,14 @@ class CcBinary(CcTarget):
         return True
 
     def _expand_deps_generation(self):
-        if self.data.get('dynamic_link'):
+        if self.attr.get('dynamic_link'):
             build_targets = self.blade.get_build_targets()
             for dep in self.expanded_deps:
-                build_targets[dep].data['generate_dynamic'] = True
+                build_targets[dep].attr['generate_dynamic'] = True
 
     def _get_rpath_links(self):
         """Get rpath_links from dependencies"""
-        dynamic_link = self.data['dynamic_link']
+        dynamic_link = self.attr['dynamic_link']
         build_targets = self.blade.get_build_targets()
         rpath_links = []
         for lib in self.expanded_deps:
@@ -1261,7 +1261,7 @@ class CcBinary(CcTarget):
         if (not dynamic_link and
             platform.gcc_in_use() and platform.get_cc_version() > '4.5'):
             ldflags += ['-static-libgcc', '-static-libstdc++']
-        if self.data.get('export_dynamic'):
+        if self.attr.get('export_dynamic'):
             ldflags.append('-rdynamic')
         ldflags += self._generate_link_flags()
         for rpath_link in self._get_rpath_links():
@@ -1280,7 +1280,7 @@ class CcBinary(CcTarget):
                 implicit_deps = link_all_symbols_libs
 
         extra_ldflags, order_only_deps = [], []
-        if self.data['embed_version']:
+        if self.attr['embed_version']:
             scm = os.path.join(self.build_dir, 'scm.cc.o')
             extra_ldflags.append(scm)
             order_only_deps.append(scm)
@@ -1296,7 +1296,7 @@ class CcBinary(CcTarget):
         """Generate ninja build rules for cc binary/test. """
         self._check_deprecated_deps()
         self._cc_objects(self.srcs)
-        self._cc_binary(self.data['dynamic_link'])
+        self._cc_binary(self.attr['dynamic_link'])
 
 
 def cc_binary(name=None,
@@ -1390,8 +1390,8 @@ class CcPlugin(CcTarget):
                   kwargs=kwargs)
         self.prefix = prefix
         self.suffix = suffix
-        self.data['allow_undefined'] = allow_undefined
-        self.data['strip'] = strip
+        self.attr['allow_undefined'] = allow_undefined
+        self.attr['strip'] = strip
 
     def ninja_rules(self):
         """Generate ninja build rules for cc plugin. """
@@ -1410,14 +1410,14 @@ class CcPlugin(CcTarget):
         else:
             output = self._target_file_path('lib%s.so' % self.name)
         if self.srcs or self.expanded_deps:
-            if self.data['strip']:
+            if self.attr['strip']:
                 link_output = '%s.unstripped' % output
             else:
                 link_output = output
             self._cc_link(link_output, 'solink', deps=usr_libs,
                           ldflags=ldflags, extra_ldflags=extra_ldflags,
                           implicit_deps=implicit_deps)
-            if self.data['strip']:
+            if self.attr['strip']:
                 self.ninja_build('strip', output, inputs=link_output)
             self._add_default_target_file('so', output)
 
@@ -1510,9 +1510,9 @@ class CcTest(CcBinary):
                 export_dynamic=export_dynamic,
                 kwargs=kwargs)
         self.type = 'cc_test'
-        self.data['testdata'] = var_to_list(testdata)
-        self.data['always_run'] = always_run
-        self.data['exclusive'] = exclusive
+        self.attr['testdata'] = var_to_list(testdata)
+        self.attr['always_run'] = always_run
+        self.attr['exclusive'] = exclusive
 
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
@@ -1531,7 +1531,7 @@ class CcTest(CcBinary):
         perftools_lib = var_to_list(cc_test_config['gperftools_libs'])
         perftools_debug_lib = var_to_list(cc_test_config['gperftools_debug_libs'])
         if heap_check:
-            self.data['heap_check'] = heap_check
+            self.attr['heap_check'] = heap_check
 
             if heap_check_debug:
                 perftools_lib_list = perftools_debug_lib

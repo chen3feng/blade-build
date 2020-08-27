@@ -55,7 +55,7 @@ class GoTarget(Target):
 
         self._set_go_package()
         self._init_go_environment()
-        self.data['extra_goflags'] = extra_goflags
+        self.attr['extra_goflags'] = extra_goflags
 
     def _set_go_package(self):
         """
@@ -73,9 +73,9 @@ class GoTarget(Target):
         go_module_enabled = config.get_item('go_config', 'go_module_enabled')
         go_module_relpath = config.get_item('go_config', 'go_module_relpath')
         if go_module_enabled and not go_module_relpath:
-            self.data['go_package'] = os.path.join("./", self.path)
+            self.attr['go_package'] = os.path.join("./", self.path)
         else:
-            self.data['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
+            self.attr['go_package'] = os.path.relpath(self.path, os.path.join(go_home, 'src'))
 
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:
@@ -99,7 +99,7 @@ class GoTarget(Target):
         build_targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:
             d = build_targets[dep]
-            d.data['generate_go'] = True
+            d.attr['generate_go'] = True
 
     def _go_dependencies(self):
         targets = self.blade.get_build_targets()
@@ -126,13 +126,13 @@ class GoTarget(Target):
     def ninja_rules(self):
         implicit_deps = self._go_dependencies()
         output = self._go_target_path()
-        variables = {'package': self.data['go_package']}
-        if self.data['extra_goflags']:
-            variables['extra_goflags'] = self.data['extra_goflags']
-        self.ninja_build(self.data['go_rule'], output,
+        variables = {'package': self.attr['go_package']}
+        if self.attr['extra_goflags']:
+            variables['extra_goflags'] = self.attr['extra_goflags']
+        self.ninja_build(self.attr['go_rule'], output,
                          implicit_deps=implicit_deps,
                          variables=variables)
-        label = self.data.get('go_label')
+        label = self.attr.get('go_label')
         if label:
             self._add_target_file(label, output)
 
@@ -149,15 +149,15 @@ class GoLibrary(GoTarget):
                 visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
-        self.data['go_rule'] = 'gopackage'
-        self.data['go_label'] = 'gopkg'
+        self.attr['go_rule'] = 'gopackage'
+        self.attr['go_label'] = 'gopkg'
 
     def _go_target_path(self):  # Override
         """Return package object path according to the standard go directory layout. """
         go_home = config.get_item('go_config', 'go_home')
         return os.path.join(go_home, 'pkg',
                             '%s_%s' % (GoTarget._go_os, GoTarget._go_arch),
-                            '%s.a' % self.data['go_package'])
+                            '%s.a' % self.attr['go_package'])
 
 
 class GoBinary(GoTarget):
@@ -172,8 +172,8 @@ class GoBinary(GoTarget):
                 visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
-        self.data['go_rule'] = 'gocommand'
-        self.data['go_label'] = 'bin'
+        self.attr['go_rule'] = 'gocommand'
+        self.attr['go_label'] = 'bin'
 
 
 class GoTest(GoTarget):
@@ -188,8 +188,8 @@ class GoTest(GoTarget):
                 visibility=visibility,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
-        self.data['go_rule'] = 'gotest'
-        self.data['testdata'] = var_to_list(testdata)
+        self.attr['go_rule'] = 'gotest'
+        self.attr['testdata'] = var_to_list(testdata)
 
 
 def go_library(
