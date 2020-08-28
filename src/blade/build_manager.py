@@ -17,6 +17,7 @@ from __future__ import print_function
 import json
 import os
 import pprint
+import subprocess
 import sys
 import time
 
@@ -247,6 +248,30 @@ class Blade(object):
                 self.test_jobs_num())
         return test_runner.run()
 
+    @staticmethod
+    def _remove_paths(paths):
+        # The rm command can delete a large number of files at once, which is much faster than
+        # using python's own remove functions (only supports deleting a single path at a time).
+        subprocess.call(['rm', '-fr'] + paths)
+
+    def clean(self):
+        """Clean specific generated target files or directories"""
+        console.info('Cleaning...')
+        paths = []
+        for key in self.__expanded_command_targets:
+            target = self.__build_targets[key]
+            clean_list = target.get_clean_list()
+            console.debug('Cleaning %s: %s' % (target.fullname, clean_list))
+            # Batch removing is much faster than one by one
+            paths += clean_list
+            if len(paths) > 10000:  # Avoid 'Argument list too long' error.
+                self._remove_paths(paths)
+                paths[:] = []
+        if paths:
+            self._remove_paths(paths)
+        console.info('Cleaning done.')
+        return 0
+
     def query(self):
         """Query the targets. """
         output_file_name = self.__options.output_file
@@ -458,6 +483,9 @@ class Blade(object):
 
         if rule_hash == old_rule_hash:
             console.debug('Using cached %s' % target_ninja)
+            # If the command is "clean", we still need to generate rules to obtain the clean list
+            if self.__command == 'clean':
+                target.get_rules()
             return target_ninja
 
         rules = target.get_rules()
@@ -488,6 +516,7 @@ class Blade(object):
 
             target_ninja = self._find_or_generate_target_ninja_file(target)
             if target_ninja:
+                target._remove_on_clean(target_ninja)
                 rules_buf += 'include %s\n' % target_ninja
 
         return rules_buf

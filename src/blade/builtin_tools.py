@@ -16,7 +16,7 @@ The build function is defined as follows:
     indicate failure.
 
     Parameters:
-        * kwargs...: name=value pairs as parameters for tool chain
+        * kwargs...: name=value pairs as parameters in command line
         * args: any other non-kw args
     When call this from the command line, all arguments which match `--name=value`
     pattern will be converted into a kwarg, any other arguments merged into the

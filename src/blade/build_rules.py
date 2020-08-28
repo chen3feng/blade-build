@@ -18,7 +18,7 @@ def register_variable(name, value):
 
 
 def register_function(f):
-    """Register a function as a build function that callable in BUILD file """
+    """Register a function as a build rule that callable in BUILD file """
     register_variable(f.__name__, f)
 
 

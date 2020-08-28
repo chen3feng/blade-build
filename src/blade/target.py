@@ -117,6 +117,7 @@ class Target(object):
         # proto_library: static lib/shared lib/jar variables
         self.__targets = {}
         self.__default_target = ''
+        self.__clean_list = []  # Paths to be cleaned
 
         # Target releated attributes, they should be set only before generating build rules.
         self.attr = {}
@@ -571,6 +572,18 @@ class Target(object):
                 results.add(v)
         return sorted(results)
 
+    def _remove_on_clean(self, *paths):
+        """Add paths to clean list, to be removed in clean sub command.
+        In most cases, you needn't to call this function manually, because in the `ninja_build`,
+        the outputs will be used to call this function defaultly, unless you need to clean extra
+        generated files.
+        """
+        self.__clean_list += paths
+
+    def get_clean_list(self):
+        """Collect paths to be cleaned"""
+        return self.__clean_list
+
     def _write_rule(self, rule):
         """_write_rule.
         Append the rule to the buffer at first.
@@ -585,13 +598,21 @@ class Target(object):
 
     def ninja_build(self, rule, outputs, inputs=None,
                     implicit_deps=None, order_only_deps=None,
-                    variables=None, implicit_outputs=None):
-        """Generate a ninja build statement with specified parameters. """
-        outs = var_to_list(outputs)
+                    variables=None, implicit_outputs=None, clean=None):
+        """Generate a ninja build statement with specified parameters.
+        Args:
+            clean:list[str], files to be removed on clean, defaults to outputs + implicit_outputs,
+                you can pass a empty list to prevent cleaning. (For example, if you want to  remove
+                the entire outer dir instead of single files)
+            See ninja documents for description for other args.
+        """
+        outputs = var_to_list(outputs)
+        implicit_outputs = var_to_list(implicit_outputs)
+        outs = outputs[:]
         if implicit_outputs:
             outs.append('|')
-            outs += var_to_list(implicit_outputs)
-        ins = var_to_list(inputs) if inputs else []
+            outs += implicit_outputs
+        ins = var_to_list(inputs)
         if implicit_deps:
             ins.append('|')
             ins += var_to_list(implicit_deps)
@@ -599,6 +620,9 @@ class Target(object):
             ins.append('||')
             ins += var_to_list(order_only_deps)
         self._write_rule('build %s: %s %s' % (' '.join(outs), rule, ' '.join(ins)))
+        clean = (outputs + implicit_outputs) if clean is None else var_to_list(clean)
+        if clean:
+            self._remove_on_clean(*clean)
 
         if variables:
             assert isinstance(variables, dict)
