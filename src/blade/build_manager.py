@@ -25,12 +25,12 @@ from blade import config
 from blade import console
 from blade import target
 from blade.binary_runner import BinaryRunner
-from blade.blade_platform import BuildPlatform
+from blade.toolchain import ToolChain
 from blade.blade_util import cpu_count, md5sum_file
-from blade.build_environment import BuildEnvironment
+from blade.build_accelerator import BuildAccelerator
 from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
-from blade.rules_generator import NinjaRulesGenerator
+from blade.backend import NinjaFileGenerator
 from blade.test_runner import TestRunner
 
 # Global build manager instance
@@ -106,8 +106,8 @@ class Blade(object):
 
         self.__build_time = time.time()
 
-        self.__build_platform = BuildPlatform()
-        self.build_environment = BuildEnvironment(self.__root_dir)
+        self.__build_toolchain = ToolChain()
+        self.build_accelerator = BuildAccelerator(self.__root_dir)
         self.__build_jobs_num = 0
         self.__test_jobs_num = 0
 
@@ -154,9 +154,6 @@ class Blade(object):
         console.info('Analyzing done.')
         return self.__build_targets  # For test
 
-    def new_build_rules_generator(self):
-        return NinjaRulesGenerator(self.__build_script, self.__blade_path, self)
-
     def build_script(self):
         """Return build script file name"""
         return self.__build_script
@@ -164,7 +161,7 @@ class Blade(object):
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('Generating build rules...')
-        generator = self.new_build_rules_generator()
+        generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         rules = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
         console.info('Generating done.')
@@ -521,9 +518,9 @@ class Blade(object):
 
         return rules_buf
 
-    def get_build_platform(self):
-        """Return build platform instance. """
-        return self.__build_platform
+    def get_build_toolchain(self):
+        """Return build toolchain instance. """
+        return self.__build_toolchain
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.
@@ -545,9 +542,9 @@ class Blade(object):
 
         # Calculate job numbers smartly
         distcc_enabled = config.get_item('distcc_config', 'enabled')
-        if distcc_enabled and self.build_environment.distcc_env_prepared:
+        if distcc_enabled and self.build_accelerator.distcc_env_prepared:
             # Distcc doesn't cost much local cpu, jobs can be quite large.
-            distcc_num = len(self.build_environment.get_distcc_hosts_list())
+            distcc_num = len(self.build_accelerator.get_distcc_hosts_list())
             jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
         else:
             cpu_core_num = cpu_count()

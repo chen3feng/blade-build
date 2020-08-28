@@ -1258,9 +1258,9 @@ class CcBinary(CcTarget):
 
     def _generate_cc_binary_link_flags(self, dynamic_link):
         ldflags = []
-        platform = self.blade.get_build_platform()
+        toolchain = self.blade.get_build_toolchain()
         if (not dynamic_link and
-            platform.gcc_in_use() and platform.get_cc_version() > '4.5'):
+            toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5'):
             ldflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
             ldflags.append('-rdynamic')

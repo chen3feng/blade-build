@@ -19,7 +19,7 @@ import subprocess
 from blade import console
 
 
-class BuildEnvironment(object):
+class BuildAccelerator(object):
     """Managers ccache, distcc. """
 
     def __init__(self, blade_root_dir, distcc_host_list=None):

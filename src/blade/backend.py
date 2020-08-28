@@ -22,7 +22,7 @@ import textwrap
 from blade import blade_util
 from blade import config
 from blade import console
-from blade.blade_platform import CcFlagsManager
+from blade.toolchain import CcFlagsManager
 
 
 def _incs_list_to_string(incs):
@@ -36,27 +36,25 @@ def protoc_import_path_option(incs):
     return ' '.join(['-I=%s' % inc for inc in incs])
 
 
-class ScriptHeaderGenerator(object):
+class _NinjaFileHeaderGenerator(object):
     """Generate global declarations and definitions for build script.
 
     Specifically it may consist of global functions and variables,
     environment setup, predefined rules and builders, utilities
     for the underlying build system.
     """
-
-    def __init__(self, options, build_dir, build_platform, build_environment, svn_roots):
-        self.rules_buf = []
+    # pylint: disable=too-many-public-methods
+    def __init__(self, options, build_dir, blade_path, build_toolchain, blade):
         self.options = options
         self.build_dir = build_dir
-        self.cc = build_platform.get_cc()
-        self.cc_version = build_platform.get_cc_version()
-        self.python_inc = build_platform.get_python_include()
-        self.cuda_inc = build_platform.get_cuda_include()
-        self.build_environment = build_environment
-        self.ccflags_manager = CcFlagsManager(options, build_dir, build_platform)
-        self.svn_roots = svn_roots
+        self.blade_path = blade_path
+        self.build_toolchain = build_toolchain
+        self.build_accelerator = blade.build_accelerator
+        self.blade = blade
+        self.ccflags_manager = CcFlagsManager(options, build_dir, build_toolchain)
 
-        self.distcc_enabled = config.get_item('distcc_config', 'enabled')
+        self.rules_buf = []
+        self.__all_rule_names = set()
 
     def _add_rule(self, rule):
         """Append one rule to buffer. """
@@ -71,17 +69,6 @@ class ScriptHeaderGenerator(object):
         if condition:
             return '%s %s' % (prefix, building_var)
         return building_var
-
-
-class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
-    # pylint: disable=too-many-public-methods
-    def __init__(self, options, build_dir, blade_path, build_platform, blade):
-        super(NinjaScriptHeaderGenerator, self).__init__(
-            options, build_dir, build_platform,
-            blade.build_environment, blade.svn_root_dirs)
-        self.blade = blade
-        self.blade_path = blade_path
-        self.__all_rule_names = set()
 
     def get_all_rule_names(self):
         return list(self.__all_rule_names)
@@ -139,12 +126,12 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
 
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
-        build_with_ccache = self.build_environment.ccache_installed
+        build_with_ccache = self.build_accelerator.ccache_installed
         cc = os.environ.get('CC', 'gcc')
         cxx = os.environ.get('CXX', 'g++')
         ld = os.environ.get('LD', 'g++')
         if build_with_ccache:
-            os.environ['CCACHE_BASEDIR'] = self.build_environment.blade_root_dir
+            os.environ['CCACHE_BASEDIR'] = self.build_accelerator.blade_root_dir
             os.environ['CCACHE_NOHASHDIR'] = 'true'
             cc = 'ccache ' + cc
             cxx = 'ccache ' + cxx
@@ -507,6 +494,9 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                            description='ZIP ${out}')
 
     def generate_version_rules(self):
+        cc = self.build_toolchain.get_cc()
+        cc_version = self.build_toolchain.get_cc_version()
+
         revision, url = blade_util.load_scm(self.build_dir)
         args = '--scm=${out} --revision=${revision} --url=${url} --profile=${profile} --compiler="${compiler}"'
         self.generate_rule(name='scm',
@@ -519,7 +509,7 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
                   url = %s
                   profile = %s
                   compiler = %s
-                ''') % (scm, revision, url, self.options.profile, '%s %s' % (self.cc, self.cc_version)))
+                ''') % (scm, revision, url, self.options.profile, '%s %s' % (cc, cc_version)))
         self._add_rule(textwrap.dedent('''\
                 build %s: cxx %s
                   cppflags = -w -O2
@@ -555,26 +545,32 @@ class NinjaScriptHeaderGenerator(ScriptHeaderGenerator):
         return self.rules_buf
 
 
-class RulesGenerator(object):
-    """
-    Generate build rules according to underlying build system and blade options.
-    This class should be inherited by particular build system generator.
-    """
+class NinjaFileGenerator(object):
+    """Generate ninja rules to build.ninja. """
 
-    def __init__(self, script_path, blade_path, blade):
-        self.script_path = script_path
+    def __init__(self, ninja_path, blade_path, blade):
+        self.script_path = ninja_path
         self.blade_path = blade_path
         self.blade = blade
-        self.build_platform = self.blade.get_build_platform()
-        self.build_dir = self.blade.get_build_dir()
+        self.build_toolchain = blade.get_build_toolchain()
+        self.build_dir = blade.get_build_dir()
+        self.__all_rule_names = []
 
     def get_all_rule_names(self):
-        """Get all build rule names"""
-        return []
+        return self.__all_rule_names
 
     def generate_build_rules(self):
-        """Generate build rules for underlying build system. """
-        raise NotImplementedError
+        """Generate ninja rules to build.ninja. """
+        ninja_script_header_generator = _NinjaFileHeaderGenerator(
+            self.blade.get_options(),
+            self.build_dir,
+            self.blade_path,
+            self.build_toolchain,
+            self.blade)
+        rules = ninja_script_header_generator.generate()
+        rules += self.blade.gen_targets_rules()
+        self.__all_rule_names = ninja_script_header_generator.get_all_rule_names()
+        return rules
 
     def generate_build_script(self):
         """Generate build script for underlying build system. """
@@ -582,28 +578,4 @@ class RulesGenerator(object):
         script = open(self.script_path, 'w')
         script.writelines(rules)
         script.close()
-        return rules
-
-
-class NinjaRulesGenerator(RulesGenerator):
-    """Generate ninja rules to build.ninja. """
-
-    def __init__(self, ninja_path, blade_path, blade):
-        super(NinjaRulesGenerator, self).__init__(ninja_path, blade_path, blade)
-        self.__all_rule_names = []
-
-    def get_all_rule_names(self):  # override
-        return self.__all_rule_names
-
-    def generate_build_rules(self):
-        """Generate ninja rules to build.ninja. """
-        ninja_script_header_generator = NinjaScriptHeaderGenerator(
-            self.blade.get_options(),
-            self.build_dir,
-            self.blade_path,
-            self.build_platform,
-            self.blade)
-        rules = ninja_script_header_generator.generate()
-        rules += self.blade.gen_targets_rules()
-        self.__all_rule_names = ninja_script_header_generator.get_all_rule_names()
         return rules
