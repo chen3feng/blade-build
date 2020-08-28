@@ -26,6 +26,8 @@ class LexYaccLibrary(CcTarget):
                  warning,
                  defs,
                  incs,
+                 extra_cppflags,
+                 extra_linkflags,
                  allow_undefined,
                  recursive,
                  prefix,
@@ -62,6 +64,8 @@ class LexYaccLibrary(CcTarget):
         self.attr['lexflags'] = var_to_list(lexflags)
         self.attr['yaccflags'] = var_to_list(yaccflags)
         self.attr['prefix'] = prefix
+        self.attr['extra_cppflags'] = var_to_list(extra_cppflags)
+        self.attr['extra_linkflags'] = var_to_list(extra_linkflags)
         self.attr['allow_undefined'] = allow_undefined
         self.attr['link_all_symbols'] = True
         cc, cc_path, h_path = self._yacc_generated_files(self.srcs[1])
@@ -150,6 +154,8 @@ def lex_yacc_library(
         warning='yes',
         defs=[],
         incs=[],
+        extra_cppflags=None,
+        extra_linkflags=None,
         allow_undefined=False,
         recursive=False,
         prefix=None,
@@ -165,6 +171,8 @@ def lex_yacc_library(
             visibility=visibility,
             defs=defs,
             incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
             recursive=recursive,
             prefix=prefix,
