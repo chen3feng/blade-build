@@ -8,6 +8,14 @@
 
 本规则构建时按依赖关系自动调用flex和bison, 并且编译成对应的cc_library，生成正确的头文件
 
+属性：
+
+- recursive=True 生成可重入的C scanner。
+
+也支持大部分 [cc_library 的属性](cc.md#cc_library)。
+
+示例：
+
 ```python
 lex_yacc_library(
      name = 'parser',
@@ -21,9 +29,3 @@ lex_yacc_library(
      recursive = True
 )
 ```
-
-属性：
-
-  recursive=True 生成可重入的C scanner。
-  
-  也支持大部分cc_library的属性。

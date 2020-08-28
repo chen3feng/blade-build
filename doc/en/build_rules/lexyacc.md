@@ -15,6 +15,14 @@ the suffix should be `l` and `y` for C code, and should be `ll` and `yy` for c++
 
 This rule will generate a library and a header file.
 
+Attributes:
+
+- recursive=True Generate resursice C scanner
+
+lex_yacc_library also support most [cc_library attributes](cc.md#cc_library).
+
+Example:
+
 ```python
 lex_yacc_library(
      name = 'parser',
@@ -28,9 +36,3 @@ lex_yacc_library(
      recursive = True
 )
 ```
-
-Attributes:
-
-- recursive=True Generate resursice C scanner
-
-lex_yacc_library also support most cc_library attributes.
