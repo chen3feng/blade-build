@@ -477,9 +477,12 @@ class JavaTargetMixIn(object):
         Note that the classes are still compiled from the sources in the
         source directory.
         """
+        sources_dir = self._get_sources_dir()
+        self._remove_on_clean(sources_dir)
+
         if not getattr(self.blade.get_options(), 'coverage', False):
             return
-        sources_dir = self._get_sources_dir()
+
         for source in self.srcs:
             src = self._source_file_path(source)
             if not os.path.exists(src):  # Maybe it's a generated file
@@ -512,6 +515,7 @@ class JavaTargetMixIn(object):
             outputs.append(os.path.join(resources_dir, dst))
         if inputs:
             self.ninja_build('javaresource', outputs, inputs=inputs)
+            self._remove_on_clean(resources_dir)
         return outputs
 
     def _generate_fat_jar(self):
@@ -537,7 +541,9 @@ class JavaTargetMixIn(object):
                 vars['scalacflags'] = ' '.join(scalacflags)
         else:
             rule = 'javac'
-            vars = {'classes_dir': self._get_classes_dir()}
+            classes_dir = self._get_classes_dir()
+            self._remove_on_clean(classes_dir)
+            vars = {'classes_dir': classes_dir}
             if javacflags:
                 vars['javacflags'] = ' '.join(javacflags)
         dep_jars, maven_jars = self._get_compile_deps()
@@ -559,7 +565,8 @@ class JavaTargetMixIn(object):
             inputs = []
         inputs += dep_jars + maven_jars
         output = self._target_file_path(self.name + '.fat.jar')
-        self.ninja_build('fatjar', output, inputs=inputs)
+        log = self._target_file_path(self.name + '__fatjar__.log')
+        self.ninja_build('fatjar', output, implicit_outputs=log, inputs=inputs)
         return output
 
 

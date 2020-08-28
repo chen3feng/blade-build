@@ -386,7 +386,7 @@ class CcTarget(Target):
             # the generated ninja file. For more details, see:
             # https://ninja-build.org/manual.html#_the_literal_phony_literal_rule
             stamp = self._target_file_path(self.name + '__compile_deps__')
-            self.ninja_build('phony', stamp, inputs=deps)
+            self.ninja_build('phony', stamp, inputs=deps, clean=[])
             deps = [stamp]
         return deps
 
@@ -445,10 +445,11 @@ class CcTarget(Target):
                     input = self._target_file_path(src)
             self.ninja_build(rule, obj, inputs=input,
                              implicit_deps=implicit_deps,
-                             variables=vars)
+                             variables=vars, clean=[])
             objs.append(obj)
 
         self._cc_hdrs(hdrs_inclusion_srcs, vars)
+        self._remove_on_clean(objs_dir)
         return objs
 
     def _static_cc_library(self, objs):
@@ -808,6 +809,7 @@ class CcLibrary(CcTarget):
                     if not os.path.exists(dirname):
                         os.makedirs(dirname)
                     open(path, 'w').close()
+                    self._remove_on_clean(path)
 
     def _securecc_object(self, obj, src, implicit_deps, vars):
         assert obj.endswith('.o')
@@ -818,8 +820,8 @@ class CcLibrary(CcTarget):
         if not os.path.exists(path):
             path = self._target_file_path(src)
         self.ninja_build('securecccompile', secure_obj, inputs=path,
-                         implicit_deps=implicit_deps, variables=vars)
-        self.ninja_build('securecc', obj, inputs=secure_obj)
+                         implicit_deps=implicit_deps, variables=vars, clean=[])
+        self.ninja_build('securecc', obj, inputs=secure_obj, clean=[])
 
     def _securecc_objects(self, sources):
         """Generate securecc compile rules in ninja. """
@@ -833,6 +835,7 @@ class CcLibrary(CcTarget):
             obj = '%s.o' % os.path.join(objs_dir, src)
             self._securecc_object(obj, src, implicit_deps, vars)
             objs.append(obj)
+        self._remove_on_clean(objs_dir)
         return objs
 
     def ninja_rules(self):
@@ -1289,6 +1292,7 @@ class CcBinary(CcTarget):
                       implicit_deps=implicit_deps,
                       order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
+        self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
     def ninja_rules(self):
         """Generate ninja build rules for cc binary/test. """

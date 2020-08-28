@@ -312,17 +312,7 @@ def test(options):
 
 
 def clean(options):
-    console.info('Cleaning...(hint: You can specify --generate-dynamic to '
-                 'clean shared libraries)')
-    backend_builder = config.get_item('global_config', 'backend_builder')
-    cmd = [backend_builder]
-    # cmd += backend_builder_options(options)
-    cmd.append('-f%s' % build_manager.instance.build_script())
-    cmd += ['-t', 'clean']
-    cmdstr = subprocess.list2cmdline(cmd)
-    returncode = _run_backend_builder(cmdstr)
-    console.info('Cleaning done.')
-    return returncode
+    return build_manager.instance.clean()
 
 
 def query(options):

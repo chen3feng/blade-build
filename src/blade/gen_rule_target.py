@@ -36,6 +36,7 @@ class GenRuleTarget(Target):
                  generated_hdrs,
                  generated_incs,
                  export_incs,
+                 cleans,
                  heavy,
                  kwargs):
         """Init method.
@@ -62,6 +63,9 @@ class GenRuleTarget(Target):
         self.attr['cmd'] = LOCATION_RE.sub(self._process_location_reference, cmd)
         self.attr['cmd_name'] = cmd_name
         self.attr['heavy'] = heavy
+        self.cleans = var_to_list(cleans)
+        for clean in self.cleans:
+            self._remove_on_clean(self._target_file_path(clean))
 
         if generated_incs is not None:
             generated_incs = [self._target_file_path(inc) for inc in var_to_list(generated_incs)]
@@ -174,6 +178,7 @@ def gen_rule(
         generated_hdrs=None,
         generated_incs=None,
         export_incs=[],
+        cleans=[],
         heavy=False,
         **kwargs):
     """General Build Rule
@@ -184,8 +189,10 @@ def gen_rule(
             according to the names in the |outs|`
             But if they are not specified in the outs, and we sure know this target will generate
             some headers, we should set this argument to True.
-        export_incs List(str), the include dirs to be exported to dependants, NOTE these dirs are
+        export_incs: List(str), the include dirs to be exported to dependants, NOTE these dirs are
             under the target dir, it's different with cc_library.export_incs.
+        cleans: List(str), The paths to be removed in the clean command, relative to the output
+            directory.
         heavy: bool, Whether this target is a heavy target, which means to build it will cost many
             cpu/memory.
     """
@@ -200,6 +207,7 @@ def gen_rule(
             generated_hdrs=generated_hdrs,
             generated_incs=generated_incs,
             export_incs=export_incs,
+            cleans=cleans,
             heavy=heavy,
             kwargs=kwargs)
     build_manager.instance.register_target(gen_rule_target)
