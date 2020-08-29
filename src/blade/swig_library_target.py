@@ -49,10 +49,6 @@ class SwigLibrary(CcTarget):
         self.attr['java_lib_packed'] = java_lib_packed
         self.attr['extra_swigflags'] = extra_swigflags
 
-        build_platform = self.blade.get_build_platform()
-        self.php_inc_list = build_platform.get_php_include()
-        self.options = self.blade.get_options()
-
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
         for dep in self.expanded_deps:

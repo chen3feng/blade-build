@@ -4,10 +4,8 @@
 # Author: Michaelpeng <michaelpeng@tencent.com>
 # Date:   August 02, 2012
 
-
 """
- building environment checking and managing module.
-
+ build accelerator (ccache, distcc, etc.) checking and managing module.
 """
 
 from __future__ import absolute_import
@@ -19,7 +17,7 @@ import subprocess
 from blade import console
 
 
-class BuildEnvironment(object):
+class BuildAccelerator(object):
     """Managers ccache, distcc. """
 
     def __init__(self, blade_root_dir, distcc_host_list=None):
@@ -37,8 +35,6 @@ class BuildEnvironment(object):
             distcc_log_file = os.environ.get('DISTCC_LOG', '')
             if distcc_log_file:
                 console.debug('Distcc log: %s' % distcc_log_file)
-
-        self.rules_buf = []
 
     @staticmethod
     def _check_ccache_install():
@@ -85,24 +81,6 @@ class BuildEnvironment(object):
                 return True
         return False
 
-    def setup_build_cache(self, options):
-        if self.ccache_installed:
-            self._add_rule('top_env.Append(CCACHE_BASEDIR="%s")' % self.blade_root_dir)
-            self._add_rule('top_env.Append(CCACHE_NOHASHDIR="true")')
-
-    def setup_distcc_env(self):
-        """Generates distcc rules. """
-        if self.distcc_installed:
-            self._add_rule('top_env.Append(DISTCC_HOSTS="%s")' % self.distcc_host_list)
-
     def get_distcc_hosts_list(self):
         """Returns the hosts list. """
         return [x for x in self.distcc_host_list.split(' ') if x]
-
-    def _add_rule(self, rule):
-        """Append to buffer. """
-        self.rules_buf.append(rule)
-
-    def get_rules(self):
-        """Return the generated rules. """
-        return self.rules_buf

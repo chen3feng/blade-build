@@ -6,9 +6,9 @@
 
 
 """
- This is the blade_platform module which deals with the environment
- variable.
+ This module deals with the build toolchains.
 """
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -102,12 +102,11 @@ class BuildArchitecture(object):
         return None
 
 
-class BuildPlatform(object):
+class ToolChain(object):
     """The build platform handles and gets the platform information. """
 
     def __init__(self):
         self.cc, self.cc_version = self._get_cc_toolchain()
-        self.python_inc = self._get_python_include()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
         self.nvcc_version = self._get_nvcc_version()
@@ -120,11 +119,11 @@ class BuildPlatform(object):
                           os.environ.get('CC', 'gcc'))
         version = ''
         if 'gcc' in cc:
-            returncode, stdout, stderr = BuildPlatform._execute(cc + ' -dumpversion')
+            returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpversion')
             if returncode == 0:
                 version = stdout.strip()
         elif 'clang' in cc:
-            returncode, stdout, stderr = BuildPlatform._execute(cc + ' --version')
+            returncode, stdout, stderr = ToolChain._execute(cc + ' --version')
             if returncode == 0:
                 line = stdout.splitlines()[0]
                 pos = line.find('version')
@@ -142,12 +141,12 @@ class BuildPlatform(object):
         cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
                           os.environ.get('CC', 'gcc'))
         if 'gcc' in cc:
-            returncode, stdout, stderr = BuildPlatform._execute(cc + ' -dumpmachine')
+            returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpmachine')
             if returncode == 0:
                 return stdout.strip()
         elif 'clang' in cc:
             llc = cc[:-len('clang')] + 'llc'
-            returncode, stdout, stderr = BuildPlatform._execute('%s --version' % llc)
+            returncode, stdout, stderr = ToolChain._execute('%s --version' % llc)
             if returncode == 0:
                 for line in stdout.splitlines():
                     if 'Default target' in line:
@@ -158,7 +157,7 @@ class BuildPlatform(object):
     def _get_nvcc_version():
         """Get the nvcc version. """
         nvcc = os.environ.get('NVCC', 'nvcc')
-        returncode, stdout, stderr = BuildPlatform._execute(nvcc + ' --version')
+        returncode, stdout, stderr = ToolChain._execute(nvcc + ' --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[5]
@@ -166,18 +165,8 @@ class BuildPlatform(object):
         return ''
 
     @staticmethod
-    def _get_python_include():
-        """Get the python include dir. """
-        returncode, stdout, stderr = BuildPlatform._execute('python-config --includes')
-        if returncode == 0:
-            include_line = stdout.splitlines(True)[0]
-            header = include_line.split()[0][2:]
-            return header
-        return ''
-
-    @staticmethod
     def _get_php_include():
-        returncode, stdout, stderr = BuildPlatform._execute('php-config --includes')
+        returncode, stdout, stderr = ToolChain._execute('php-config --includes')
         if returncode == 0:
             include_line = stdout.splitlines(True)[0]
             headers = include_line.split()
@@ -193,7 +182,7 @@ class BuildPlatform(object):
             include_list.append('%s/include' % java_home)
             include_list.append('%s/include/linux' % java_home)
             return include_list
-        returncode, stdout, stderr = BuildPlatform._execute(
+        returncode, stdout, stderr = ToolChain._execute(
             'java -version', redirect_stderr_to_stdout=True)
         if returncode == 0:
             version_line = stdout.splitlines(True)[0]
@@ -212,7 +201,7 @@ class BuildPlatform(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        returncode, stdout, stderr = BuildPlatform._execute('nvcc --version')
+        returncode, stdout, stderr = ToolChain._execute('nvcc --version')
         if returncode == 0:
             version_line = stdout.splitlines(True)[-1]
             version = version_line.split()[4]
@@ -245,17 +234,9 @@ class BuildPlatform(object):
     def get_cc_version(self):
         return self.cc_version
 
-    def gcc_in_use(self):
-        """Whether gcc is used for C/C++ compilation. """
-        return 'gcc' in self.cc
-
-    def clang_in_use(self):
-        """Whether clang is used for C/C++ compilation. """
-        return 'clang' in self.cc
-
-    def get_python_include(self):
-        """Returns python include. """
-        return self.python_inc
+    def cc_is(self, vendor):
+        """Is cc is used for C/C++ compilation match vendor. """
+        return vendor in self.cc
 
     def get_php_include(self):
         """Returns a list of php include. """
@@ -277,15 +258,15 @@ class BuildPlatform(object):
 class CcFlagsManager(object):
     """The CcFlagsManager manages the compile warning flags. """
 
-    def __init__(self, options, build_dir, build_platform):
+    def __init__(self, options, build_dir, toolchain):
         self.options = options
         self.build_dir = build_dir
-        self.build_platform = build_platform
+        self.toolchain = toolchain
 
     def _filter_out_invalid_flags(self, flag_list, language='c'):
         """Filter out the invalid compilation flags. """
         valid_flags, unrecognized_flags = [], []
-        cc = self.build_platform.get_cc()
+        cc = self.toolchain.get_cc()
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
@@ -338,17 +319,10 @@ class CcFlagsManager(object):
             flags_except_warning.append('-pg')
             linkflags.append('-pg')
 
-        platform = self.build_platform
+        toolchain = self.toolchain
         if getattr(self.options, 'coverage', False):
-            if ((platform.gcc_in_use() and platform.get_cc_version() > '4.1') or
-                    self.build_platform.clang_in_use()):
-                flags_except_warning.append('--coverage')
-                linkflags.append('--coverage')
-            else:
-                flags_except_warning.append('-fprofile-arcs')
-                flags_except_warning.append('-ftest-coverage')
-                linkflags += ['-Wl,--whole-archive', '-lgcov',
-                              '-Wl,--no-whole-archive']
+            flags_except_warning.append('--coverage')
+            linkflags.append('--coverage')
 
         flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
         return flags_except_warning, linkflags
