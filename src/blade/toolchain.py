@@ -14,6 +14,7 @@ from __future__ import print_function
 
 import os
 import subprocess
+import tempfile
 
 from blade import config
 from blade import console
@@ -254,88 +255,25 @@ class ToolChain(object):
         """Returns a list of cuda include. """
         return self.cuda_inc_list
 
-
-class CcFlagsManager(object):
-    """The CcFlagsManager manages the compile warning flags. """
-
-    def __init__(self, options, build_dir, toolchain):
-        self.options = options
-        self.build_dir = build_dir
-        self.toolchain = toolchain
-
-    def _filter_out_invalid_flags(self, flag_list, language='c'):
-        """Filter out the invalid compilation flags. """
+    def filter_cc_flags(self, flag_list, language='c'):
+        """Filter out the unrecognized compilation flags. """
         valid_flags, unrecognized_flags = [], []
-        cc = self.toolchain.get_cc()
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
-        obj = os.path.join(self.build_dir, 'test.o')
+        fd, obj = tempfile.mkstemp('.o', 'filter_cc_flags_test')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1 && rm -f %s' % (
-                       cc, obj, language, flag, obj))
+                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1' % (
+                       self.cc, obj, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 valid_flags.append(flag)
             else:
                 unrecognized_flags.append(flag)
+        os.remove(obj)
+        os.close(fd)
         if unrecognized_flags:
             console.warning('config: Unrecognized %s flags: %s' % (
                     language, ', '.join(unrecognized_flags)))
         return valid_flags
-
-    def get_flags_except_warning(self):
-        """Get the flags that are not warning flags. """
-        global_config = config.get_section('global_config')
-        cc_config = config.get_section('cc_config')
-        if not self.options.m:
-            flags_except_warning = []
-            linkflags = []
-        else:
-            flags_except_warning = ['-m%s' % self.options.m]
-            linkflags = ['-m%s' % self.options.m]
-        flags_except_warning.append('-pipe')
-
-        # Debugging information setting
-        debug_info_level = global_config['debug_info_level']
-        debug_info_options = cc_config['debug_info_levels'][debug_info_level]
-        flags_except_warning += debug_info_options
-
-        # Option debugging flags
-        if self.options.profile == 'debug':
-            flags_except_warning.append('-fstack-protector')
-        elif self.options.profile == 'release':
-            flags_except_warning.append('-DNDEBUG')
-
-        flags_except_warning += [
-            '-D_FILE_OFFSET_BITS=64',
-            '-D__STDC_CONSTANT_MACROS',
-            '-D__STDC_FORMAT_MACROS',
-            '-D__STDC_LIMIT_MACROS',
-        ]
-
-        if getattr(self.options, 'gprof', False):
-            flags_except_warning.append('-pg')
-            linkflags.append('-pg')
-
-        toolchain = self.toolchain
-        if getattr(self.options, 'coverage', False):
-            flags_except_warning.append('--coverage')
-            linkflags.append('--coverage')
-
-        flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
-        return flags_except_warning, linkflags
-
-    def get_warning_flags(self):
-        """Get the warning flags. """
-        cc_config = config.get_section('cc_config')
-        cppflags = cc_config['warnings']
-        cxxflags = cc_config['cxx_warnings']
-        cflags = cc_config['c_warnings']
-
-        filtered_cppflags = self._filter_out_invalid_flags(cppflags)
-        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
-        filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
-
-        return filtered_cppflags, filtered_cxxflags, filtered_cflags
