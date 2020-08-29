@@ -6,9 +6,9 @@
 
 
 """
- This is the blade_platform module which deals with the environment
- variable.
+ This module deals with the build toolchains.
 """
+
 from __future__ import absolute_import
 from __future__ import print_function
 
