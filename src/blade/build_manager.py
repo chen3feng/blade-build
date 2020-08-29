@@ -539,7 +539,7 @@ class Blade(object):
         jobs_num = config.get_item('global_config', 'build_jobs')
         if jobs_num > 0:
             return jobs_num
-        jobs_num = self.build_accelerator.adjust_jobs_num(cpu_core_num())
+        jobs_num = self.build_accelerator.adjust_jobs_num(cpu_count())
         console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 

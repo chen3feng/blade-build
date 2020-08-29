@@ -103,12 +103,11 @@ class BuildAccelerator(object):
     def adjust_jobs_num(self, cpu_core_num):
         # Calculate job numbers smartly
         distcc_enabled = config.get_item('distcc_config', 'enabled')
-        if distcc_enabled and self.build_accelerator.distcc_env_prepared:
+        if distcc_enabled and self.distcc_env_prepared:
             # Distcc doesn't cost much local cpu, jobs can be quite large.
             distcc_num = len(self.get_distcc_hosts_list())
             jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
         else:
-            cpu_core_num = cpu_count()
             # machines with cpu_core_num > 8 is usually shared by multiple users,
             # set an upper bound to avoid interfering other users
             jobs_num = min(cpu_core_num, 8)

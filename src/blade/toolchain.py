@@ -16,7 +16,6 @@ import os
 import subprocess
 import tempfile
 
-from blade import config
 from blade import console
 from blade.blade_util import var_to_list, iteritems, to_string
 
