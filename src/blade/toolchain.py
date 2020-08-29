@@ -14,8 +14,8 @@ from __future__ import print_function
 
 import os
 import subprocess
+import tempfile
 
-from blade import config
 from blade import console
 from blade.blade_util import var_to_list, iteritems, to_string
 
@@ -106,24 +106,29 @@ class ToolChain(object):
     """The build platform handles and gets the platform information. """
 
     def __init__(self):
-        self.cc, self.cc_version = self._get_cc_toolchain()
+        self.cc = self._get_cc_command('CC', 'gcc')
+        self.cxx = self._get_cc_command('CXX', 'g++')
+        self.ld = self._get_cc_command('LD', 'g++')
+        self.cc_version = self._get_cc_version()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
         self.nvcc_version = self._get_nvcc_version()
         self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
-    def _get_cc_toolchain():
-        """Get the cc toolchain. """
-        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                          os.environ.get('CC', 'gcc'))
+    def _get_cc_command(env, default):
+        """Get a cc command.
+        """
+        return os.path.join(os.environ.get('TOOLCHAIN_DIR', ''), os.environ.get(env, default))
+
+    def _get_cc_version(self):
         version = ''
-        if 'gcc' in cc:
-            returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpversion')
+        if 'gcc' in self.cc:
+            returncode, stdout, stderr = ToolChain._execute(self.cc + ' -dumpversion')
             if returncode == 0:
                 version = stdout.strip()
-        elif 'clang' in cc:
-            returncode, stdout, stderr = ToolChain._execute(cc + ' --version')
+        elif 'clang' in self.cc:
+            returncode, stdout, stderr = ToolChain._execute(self.cc + ' --version')
             if returncode == 0:
                 line = stdout.splitlines()[0]
                 pos = line.find('version')
@@ -133,13 +138,12 @@ class ToolChain(object):
                     version = line[pos + len('version') + 1:]
         if not version:
             console.fatal('Failed to obtain cc toolchain.')
-        return cc, version
+        return version
 
     @staticmethod
-    def _get_cc_target_arch():
+    def get_cc_target_arch():
         """Get the cc target architecture. """
-        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                          os.environ.get('CC', 'gcc'))
+        cc = ToolChain._get_cc_command('CC', 'gcc')
         if 'gcc' in cc:
             returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpmachine')
             if returncode == 0:
@@ -228,6 +232,9 @@ class ToolChain(object):
         stderr = to_string(stderr)
         return p.returncode, stdout, stderr
 
+    def get_cc_commands(self):
+        return self.cc, self.cxx, self.ld
+
     def get_cc(self):
         return self.cc
 
@@ -254,88 +261,25 @@ class ToolChain(object):
         """Returns a list of cuda include. """
         return self.cuda_inc_list
 
-
-class CcFlagsManager(object):
-    """The CcFlagsManager manages the compile warning flags. """
-
-    def __init__(self, options, build_dir, toolchain):
-        self.options = options
-        self.build_dir = build_dir
-        self.toolchain = toolchain
-
-    def _filter_out_invalid_flags(self, flag_list, language='c'):
-        """Filter out the invalid compilation flags. """
+    def filter_cc_flags(self, flag_list, language='c'):
+        """Filter out the unrecognized compilation flags. """
         valid_flags, unrecognized_flags = [], []
-        cc = self.toolchain.get_cc()
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
-        obj = os.path.join(self.build_dir, 'test.o')
+        fd, obj = tempfile.mkstemp('.o', 'filter_cc_flags_test')
         for flag in var_to_list(flag_list):
             cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1 && rm -f %s' % (
-                       cc, obj, language, flag, obj))
+                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1' % (
+                       self.cc, obj, language, flag))
             if subprocess.call(cmd, shell=True) == 0:
                 valid_flags.append(flag)
             else:
                 unrecognized_flags.append(flag)
+        os.remove(obj)
+        os.close(fd)
         if unrecognized_flags:
             console.warning('config: Unrecognized %s flags: %s' % (
                     language, ', '.join(unrecognized_flags)))
         return valid_flags
-
-    def get_flags_except_warning(self):
-        """Get the flags that are not warning flags. """
-        global_config = config.get_section('global_config')
-        cc_config = config.get_section('cc_config')
-        if not self.options.m:
-            flags_except_warning = []
-            linkflags = []
-        else:
-            flags_except_warning = ['-m%s' % self.options.m]
-            linkflags = ['-m%s' % self.options.m]
-        flags_except_warning.append('-pipe')
-
-        # Debugging information setting
-        debug_info_level = global_config['debug_info_level']
-        debug_info_options = cc_config['debug_info_levels'][debug_info_level]
-        flags_except_warning += debug_info_options
-
-        # Option debugging flags
-        if self.options.profile == 'debug':
-            flags_except_warning.append('-fstack-protector')
-        elif self.options.profile == 'release':
-            flags_except_warning.append('-DNDEBUG')
-
-        flags_except_warning += [
-            '-D_FILE_OFFSET_BITS=64',
-            '-D__STDC_CONSTANT_MACROS',
-            '-D__STDC_FORMAT_MACROS',
-            '-D__STDC_LIMIT_MACROS',
-        ]
-
-        if getattr(self.options, 'gprof', False):
-            flags_except_warning.append('-pg')
-            linkflags.append('-pg')
-
-        toolchain = self.toolchain
-        if getattr(self.options, 'coverage', False):
-            flags_except_warning.append('--coverage')
-            linkflags.append('--coverage')
-
-        flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
-        return flags_except_warning, linkflags
-
-    def get_warning_flags(self):
-        """Get the warning flags. """
-        cc_config = config.get_section('cc_config')
-        cppflags = cc_config['warnings']
-        cxxflags = cc_config['cxx_warnings']
-        cflags = cc_config['c_warnings']
-
-        filtered_cppflags = self._filter_out_invalid_flags(cppflags)
-        filtered_cxxflags = self._filter_out_invalid_flags(cxxflags, 'c++')
-        filtered_cflags = self._filter_out_invalid_flags(cflags, 'c')
-
-        return filtered_cppflags, filtered_cxxflags, filtered_cflags

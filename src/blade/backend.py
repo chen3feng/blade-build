@@ -22,7 +22,6 @@ import textwrap
 from blade import blade_util
 from blade import config
 from blade import console
-from blade.toolchain import CcFlagsManager
 
 
 def _incs_list_to_string(incs):
@@ -51,7 +50,6 @@ class _NinjaFileHeaderGenerator(object):
         self.build_toolchain = build_toolchain
         self.build_accelerator = blade.build_accelerator
         self.blade = blade
-        self.ccflags_manager = CcFlagsManager(options, build_dir, build_toolchain)
 
         self.rules_buf = []
         self.__all_rule_names = set()
@@ -59,16 +57,6 @@ class _NinjaFileHeaderGenerator(object):
     def _add_rule(self, rule):
         """Append one rule to buffer. """
         self.rules_buf.append('%s\n' % rule)
-
-    def _append_prefix_to_building_var(
-            self,
-            prefix='',
-            building_var='',
-            condition=False):
-        """A helper method: append prefix to building var if condition is True."""
-        if condition:
-            return '%s %s' % (prefix, building_var)
-        return building_var
 
     def get_all_rule_names(self):
         return list(self.__all_rule_names)
@@ -115,8 +103,62 @@ class _NinjaFileHeaderGenerator(object):
                            command='cp -f ${in} ${out}',
                            description='COPY ${in} ${out}')
 
+    def _get_cc_flags(self):
+        """Get the common c/c++ flags."""
+        global_config = config.get_section('global_config')
+        cc_config = config.get_section('cc_config')
+        if not self.options.m:
+            cppflags = []
+            linkflags = []
+        else:
+            cppflags = ['-m%s' % self.options.m]
+            linkflags = ['-m%s' % self.options.m]
+        cppflags.append('-pipe')
+
+        # Debugging information setting
+        debug_info_level = global_config['debug_info_level']
+        debug_info_options = cc_config['debug_info_levels'][debug_info_level]
+        cppflags += debug_info_options
+
+        # Option debugging flags
+        if self.options.profile == 'debug':
+            cppflags.append('-fstack-protector')
+        elif self.options.profile == 'release':
+            cppflags.append('-DNDEBUG')
+
+        cppflags += [
+            '-D_FILE_OFFSET_BITS=64',
+            '-D__STDC_CONSTANT_MACROS',
+            '-D__STDC_FORMAT_MACROS',
+            '-D__STDC_LIMIT_MACROS',
+        ]
+
+        if getattr(self.options, 'gprof', False):
+            cppflags.append('-pg')
+            linkflags.append('-pg')
+
+        if getattr(self.options, 'coverage', False):
+            cppflags.append('--coverage')
+            linkflags.append('--coverage')
+
+        cppflags = self.build_toolchain.filter_cc_flags(cppflags)
+        return cppflags, linkflags
+
+    def _get_warning_flags(self):
+        """Get the warning flags. """
+        cc_config = config.get_section('cc_config')
+        cppflags = cc_config['warnings']
+        cxxflags = cc_config['cxx_warnings']
+        cflags = cc_config['c_warnings']
+
+        filtered_cppflags = self.build_toolchain.filter_cc_flags(cppflags)
+        filtered_cxxflags = self.build_toolchain.filter_cc_flags(cxxflags, 'c++')
+        filtered_cflags = self.build_toolchain.filter_cc_flags(cflags, 'c')
+
+        return filtered_cppflags, filtered_cxxflags, filtered_cflags
+
     def generate_cc_warning_vars(self):
-        warnings, cxx_warnings, c_warnings = self.ccflags_manager.get_warning_flags()
+        warnings, cxx_warnings, c_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
         self._add_rule(textwrap.dedent('''\
@@ -126,19 +168,11 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
-        build_with_ccache = self.build_accelerator.ccache_installed
-        cc = os.environ.get('CC', 'gcc')
-        cxx = os.environ.get('CXX', 'g++')
-        ld = os.environ.get('LD', 'g++')
-        if build_with_ccache:
-            os.environ['CCACHE_BASEDIR'] = self.build_accelerator.blade_root_dir
-            os.environ['CCACHE_NOHASHDIR'] = 'true'
-            cc = 'ccache ' + cc
-            cxx = 'ccache ' + cxx
+        cc, cxx, ld = self.build_accelerator.get_cc_commands()
         cc_config = config.get_section('cc_config')
         cc_library_config = config.get_section('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
-        cppflags, ldflags = self.ccflags_manager.get_flags_except_warning()
+        cppflags, ldflags = self._get_cc_flags()
         cppflags = cc_config['cppflags'] + cppflags
         arflags = ''.join(cc_library_config['arflags'])
         ldflags = cc_config['linkflags'] + ldflags

@@ -466,16 +466,6 @@ def adjust_config_by_options(config, options):
             config.global_config(**{name: value})
 
 
-def clear_build_script():
-    scripts = [build_manager.instance.build_script()]
-    for script in scripts:
-        script = os.path.join(_BLADE_ROOT_DIR, script)
-        try:
-            os.remove(script)
-        except OSError:
-            pass
-
-
 def _check_error_log(stage):
     error_count = console.error_count()
     if error_count > 0:
@@ -533,11 +523,7 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
         'run': run,
         'test': test,
     }[command]
-    try:
-        returncode = action(options)
-    finally:
-        clear_build_script()
-
+    returncode = action(options)
     if returncode != 0:
         return returncode
     return _check_error_log(command)

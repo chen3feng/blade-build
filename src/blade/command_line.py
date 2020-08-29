@@ -414,7 +414,7 @@ class ParsedCommandLine(object):
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture. """
-        arch = ToolChain._get_cc_target_arch()
+        arch = ToolChain.get_cc_target_arch()
         pos = arch.find('-')
         if pos == -1:
             console.fatal('Unknown target architecture %s from gcc.' % arch)
