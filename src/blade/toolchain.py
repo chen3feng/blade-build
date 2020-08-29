@@ -107,24 +107,29 @@ class ToolChain(object):
     """The build platform handles and gets the platform information. """
 
     def __init__(self):
-        self.cc, self.cc_version = self._get_cc_toolchain()
+        self.cc = self._get_cc_command('CC', 'gcc')
+        self.cxx = self._get_cc_command('CXX', 'g++')
+        self.ld = self._get_cc_command('LD', 'g++')
+        self.cc_version = self._get_cc_version()
         self.php_inc_list = self._get_php_include()
         self.java_inc_list = self._get_java_include()
         self.nvcc_version = self._get_nvcc_version()
         self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
-    def _get_cc_toolchain():
-        """Get the cc toolchain. """
-        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                          os.environ.get('CC', 'gcc'))
+    def _get_cc_command(env, default):
+        """Get a cc command.
+        """
+        return os.path.join(os.environ.get('TOOLCHAIN_DIR', ''), os.environ.get(env, default))
+
+    def _get_cc_version(self):
         version = ''
-        if 'gcc' in cc:
-            returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpversion')
+        if 'gcc' in self.cc:
+            returncode, stdout, stderr = ToolChain._execute(self.cc + ' -dumpversion')
             if returncode == 0:
                 version = stdout.strip()
-        elif 'clang' in cc:
-            returncode, stdout, stderr = ToolChain._execute(cc + ' --version')
+        elif 'clang' in self.cc:
+            returncode, stdout, stderr = ToolChain._execute(self.cc + ' --version')
             if returncode == 0:
                 line = stdout.splitlines()[0]
                 pos = line.find('version')
@@ -134,13 +139,12 @@ class ToolChain(object):
                     version = line[pos + len('version') + 1:]
         if not version:
             console.fatal('Failed to obtain cc toolchain.')
-        return cc, version
+        return version
 
     @staticmethod
-    def _get_cc_target_arch():
+    def get_cc_target_arch():
         """Get the cc target architecture. """
-        cc = os.path.join(os.environ.get('TOOLCHAIN_DIR', ''),
-                          os.environ.get('CC', 'gcc'))
+        cc = ToolChain._get_cc_command('CC', 'gcc')
         if 'gcc' in cc:
             returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpmachine')
             if returncode == 0:
@@ -228,6 +232,9 @@ class ToolChain(object):
         stdout = to_string(stdout)
         stderr = to_string(stderr)
         return p.returncode, stdout, stderr
+
+    def get_cc_commands(self):
+        return self.cc, self.cxx, self.ld
 
     def get_cc(self):
         return self.cc

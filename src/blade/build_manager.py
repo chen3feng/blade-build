@@ -107,7 +107,7 @@ class Blade(object):
         self.__build_time = time.time()
 
         self.__build_toolchain = ToolChain()
-        self.build_accelerator = BuildAccelerator(self.__root_dir)
+        self.build_accelerator = BuildAccelerator(self.__root_dir, self.__build_toolchain)
         self.__build_jobs_num = 0
         self.__test_jobs_num = 0
 
@@ -539,18 +539,7 @@ class Blade(object):
         jobs_num = config.get_item('global_config', 'build_jobs')
         if jobs_num > 0:
             return jobs_num
-
-        # Calculate job numbers smartly
-        distcc_enabled = config.get_item('distcc_config', 'enabled')
-        if distcc_enabled and self.build_accelerator.distcc_env_prepared:
-            # Distcc doesn't cost much local cpu, jobs can be quite large.
-            distcc_num = len(self.build_accelerator.get_distcc_hosts_list())
-            jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
-        else:
-            cpu_core_num = cpu_count()
-            # machines with cpu_core_num > 8 is usually shared by multiple users,
-            # set an upper bound to avoid interfering other users
-            jobs_num = min(cpu_core_num, 8)
+        jobs_num = self.build_accelerator.adjust_jobs_num(cpu_core_num())
         console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 

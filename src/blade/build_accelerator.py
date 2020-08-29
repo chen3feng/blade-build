@@ -14,15 +14,17 @@ from __future__ import print_function
 import os
 import subprocess
 
+from blade import config
 from blade import console
 
 
 class BuildAccelerator(object):
     """Managers ccache, distcc. """
 
-    def __init__(self, blade_root_dir, distcc_host_list=None):
+    def __init__(self, blade_root_dir, toolchain, distcc_host_list=None):
         # ccache
         self.blade_root_dir = blade_root_dir
+        self.__toolchain = toolchain
         self.ccache_installed = self._check_ccache_install()
 
         # distcc
@@ -84,3 +86,30 @@ class BuildAccelerator(object):
     def get_distcc_hosts_list(self):
         """Returns the hosts list. """
         return [x for x in self.distcc_host_list.split(' ') if x]
+
+    def get_cc_commands(self):
+        """Get correct c/c++ commands with proper build accelerator prefix
+        Returns:
+            cc, cxx, linker
+        """
+        cc, cxx, ld = self.__toolchain.get_cc_commands()
+        if self.ccache_installed:
+            os.environ['CCACHE_BASEDIR'] = self.blade_root_dir
+            os.environ['CCACHE_NOHASHDIR'] = 'true'
+            cc = 'ccache ' + cc
+            cxx = 'ccache ' + cxx
+        return cc, cxx, ld
+
+    def adjust_jobs_num(self, cpu_core_num):
+        # Calculate job numbers smartly
+        distcc_enabled = config.get_item('distcc_config', 'enabled')
+        if distcc_enabled and self.build_accelerator.distcc_env_prepared:
+            # Distcc doesn't cost much local cpu, jobs can be quite large.
+            distcc_num = len(self.get_distcc_hosts_list())
+            jobs_num = min(max(int(1.5 * distcc_num), 1), 20)
+        else:
+            cpu_core_num = cpu_count()
+            # machines with cpu_core_num > 8 is usually shared by multiple users,
+            # set an upper bound to avoid interfering other users
+            jobs_num = min(cpu_core_num, 8)
+        return jobs_num

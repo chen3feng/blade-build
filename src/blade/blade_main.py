@@ -523,7 +523,6 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
         'run': run,
         'test': test,
     }[command]
-
     returncode = action(options)
     if returncode != 0:
         return returncode

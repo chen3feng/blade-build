@@ -168,15 +168,7 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
-        build_with_ccache = self.build_accelerator.ccache_installed
-        cc = os.environ.get('CC', 'gcc')
-        cxx = os.environ.get('CXX', 'g++')
-        ld = os.environ.get('LD', 'g++')
-        if build_with_ccache:
-            os.environ['CCACHE_BASEDIR'] = self.build_accelerator.blade_root_dir
-            os.environ['CCACHE_NOHASHDIR'] = 'true'
-            cc = 'ccache ' + cc
-            cxx = 'ccache ' + cxx
+        cc, cxx, ld = self.build_accelerator.get_cc_commands()
         cc_config = config.get_section('cc_config')
         cc_library_config = config.get_section('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
