@@ -67,6 +67,11 @@ class WorkerThread(threading.Thread):
     def terminate(self):
         """Terminate the worker. """
         self.running = False
+        if self.job_process:
+            try:
+                self.job_process.terminate()
+            except OSError:
+                pass
 
     def cleanup_job(self):
         """Clean up job data. """
@@ -233,7 +238,7 @@ class TestScheduler(object):
         with self.run_result_lock:
             if returncode == 0:
                 self.passed_run_results[target.key] = run_result
-            else:
+            elif returncode != -signal.SIGINT:  # Treat Ctrl-C ended as cancelled
                 self.failed_run_results[target.key] = run_result
             self.num_of_running_tests -= 1
             self.num_of_finished_tests += 1
@@ -266,6 +271,8 @@ class TestScheduler(object):
             console.debug('KeyboardInterrupt: Terminate workers...')
             for t in threads:
                 t.terminate()
+            for t in threads:
+                t.join()
             raise
 
     def schedule_jobs(self):
@@ -288,18 +295,22 @@ class TestScheduler(object):
 
             redirect = num_of_workers > 1 or quiet
             threads = []
-            for i in range(num_of_workers):
-                t = WorkerThread(i, self.job_queue, self._process_job, redirect)
-                t.start()
-                threads.append(t)
-            self._wait_worker_threads(threads)
+            try:
+                for i in range(num_of_workers):
+                    t = WorkerThread(i, self.job_queue, self._process_job, redirect)
+                    t.start()
+                    threads.append(t)
+            finally:
+                self._wait_worker_threads(threads)
 
         if not self.exclusive_job_queue.empty():
             console.info('Spawn 1 worker thread to run exclusive tests')
             last_t = WorkerThread(num_of_workers, self.exclusive_job_queue,
                                   self._process_job, quiet)
-            last_t.start()
-            self._wait_worker_threads([last_t])
+            try:
+                last_t.start()
+            finally:
+                self._wait_worker_threads([last_t])
 
     def get_results(self):
         return self.passed_run_results, self.failed_run_results
