@@ -321,8 +321,8 @@ class CcFlagsManager(object):
 
         toolchain = self.toolchain
         if getattr(self.options, 'coverage', False):
-                flags_except_warning.append('--coverage')
-                linkflags.append('--coverage')
+            flags_except_warning.append('--coverage')
+            linkflags.append('--coverage')
 
         flags_except_warning = self._filter_out_invalid_flags(flags_except_warning)
         return flags_except_warning, linkflags
