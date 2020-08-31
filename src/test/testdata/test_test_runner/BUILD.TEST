@@ -6,7 +6,7 @@ cc_library(
     warning='yes',
     defs=['LOWER_DEF'],
     incs=['include'],
-    optimize=['O3'],
+    optimize=['-O3'],
     always_optimize=True,
     link_all_symbols=1
 )

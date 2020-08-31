@@ -105,7 +105,7 @@ class FBThriftLibrary(CcTarget):
 def fbthrift_library(name=None,
                      srcs=[],
                      deps=[],
-                     optimize=[],
+                     optimize=None,
                      visibility=None,
                      deprecated=False,
                      **kwargs):

@@ -23,7 +23,7 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
-from blade.blade_util import var_to_list, stable_unique
+from blade.blade_util import stable_unique, var_to_list, var_to_list_or_none
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
@@ -127,7 +127,7 @@ class CcTarget(Target):
         self.attr['defs'] = var_to_list(defs)
         self.attr['incs'] = self._incs_to_fullpath(incs)
         self.attr['export_incs'] = self._incs_to_fullpath(export_incs)
-        self.attr['optimize'] = var_to_list(optimize)
+        self.attr['optimize'] = var_to_list_or_none(optimize)
         self.attr['extra_cppflags'] = var_to_list(extra_cppflags)
         self.attr['extra_linkflags'] = var_to_list(extra_linkflags)
         # TODO(chen3feng): Move to CcLibrary
@@ -222,8 +222,15 @@ class CcTarget(Target):
             self.warning(""""warning='no'" should only be used for thirdparty libraries.""")
 
     def _get_optimize_flags(self):
-        """get optimize flags such as -O2"""
-        return self.attr.get('optimize') or config.get_item('cc_config', 'optimize') or ['-O2']
+        """Get optimize flags according to build mode and attributes"""
+        optimize = self.attr.get('optimize')
+        if optimize is not None:
+            optimize = ' '.join(optimize)
+        if self.attr.get('always_optimize'):
+            return optimize if optimize is not None else '$optimize_flags'
+        if self.blade.get_options().profile == 'release':
+            return optimize
+        return None
 
     def _get_cc_flags(self):
         """_get_cc_flags.
@@ -233,21 +240,9 @@ class CcTarget(Target):
         """
         cpp_flags = []
 
-        # Warnings
-        if self.attr.get('warning', '') == 'no':
-            cpp_flags.append('-w')
-
         # Defs
         defs = self.attr.get('defs', [])
         cpp_flags += [('-D' + macro) for macro in defs]
-
-        # Optimize flags
-        if (self.blade.get_options().profile == 'release' or
-                self.attr.get('always_optimize')):
-            cpp_flags += self._get_optimize_flags()
-            # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
-            cpp_flags += ['-fno-omit-frame-pointer']
-
         cpp_flags += self.attr.get('extra_cppflags', [])
 
         # Incs
@@ -295,14 +290,20 @@ class CcTarget(Target):
 
     def _setup_cc_vars(self, vars):
         """Set up warning, compile options and include directories for cc build. """
+        # Warnings
         if self.attr.get('warning') != 'yes':
-            vars['c_warnings'] = ''
-            vars['cxx_warnings'] = ''
+            vars['c_warnings'] = '-w'
+            vars['cxx_warnings'] = '-w'
+
         cppflags, includes = self._get_cc_flags()
         if cppflags:
             vars['cppflags'] = ' '.join(cppflags)
         if includes:
             vars['includes'] = ' '.join(['-I%s' % inc for inc in includes])
+
+        optimize = self._get_optimize_flags()
+        if optimize is not None:
+            vars['optimize'] = optimize
 
     def _generate_link_flags(self):
         """Generate linker flags for cc link. """
@@ -876,7 +877,7 @@ class PrebuiltCcLibrary(CcTarget):
                 defs=[],
                 incs=[],
                 export_incs=export_incs,
-                optimize=[],
+                optimize=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
@@ -1033,7 +1034,7 @@ def cc_library(
         defs=[],
         incs=[],
         export_incs=[],
-        optimize=[],
+        optimize=None,
         always_optimize=False,
         pre_build=False,
         prebuilt=False,
@@ -1112,7 +1113,7 @@ class ForeignCcLibrary(CcTarget):
                 defs=[],
                 incs=[],
                 export_incs=export_incs,
-                optimize=[],
+                optimize=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
@@ -1309,7 +1310,7 @@ def cc_binary(name=None,
               defs=[],
               incs=[],
               embed_version=True,
-              optimize=[],
+              optimize=None,
               dynamic_link=False,
               extra_cppflags=[],
               extra_linkflags=[],
@@ -1432,7 +1433,7 @@ def cc_plugin(
         warning='yes',
         defs=[],
         incs=[],
-        optimize=[],
+        optimize=None,
         prefix=None,
         suffix=None,
         extra_cppflags=[],
@@ -1551,7 +1552,7 @@ def cc_test(name=None,
             defs=[],
             incs=[],
             embed_version=False,
-            optimize=[],
+            optimize=None,
             dynamic_link=None,
             testdata=[],
             extra_cppflags=[],

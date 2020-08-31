@@ -125,7 +125,6 @@ class MavenCache(object):
     def _download_jar(self, id, classifier, target):
         group, artifact, version = id.split(':')
         basename = self._filename_base(artifact, version, classifier)
-        pom = basename + '.pom'
         jar = basename + '.jar'
 
         # Write log to build dir temporarily, and move it into the target_path after success.
