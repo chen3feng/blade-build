@@ -627,6 +627,7 @@ class Target(object):
         if variables:
             assert isinstance(variables, dict)
             for name, v in iteritems(variables):
+                assert v is not None
                 if v:
                     self._write_rule('  %s = %s' % (name, v))
                 else:
@@ -634,7 +635,7 @@ class Target(object):
         self._write_rule('')  # An empty line to improve readability
 
     def get_rules(self):
-        """Return build rules. """
+        """Return generated build rules. """
         # Add a cache to make it idempotent
         if self.__build_rules is None:
             self.__build_rules = []

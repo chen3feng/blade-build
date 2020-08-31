@@ -97,7 +97,7 @@ def swig_library(
         warning='',
         java_package='',
         java_lib_packed=False,
-        optimize=[],
+        optimize=None,
         extra_swigflags=[],
         **kwargs):
     """swig_library target. """

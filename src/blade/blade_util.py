@@ -88,12 +88,19 @@ def unlock_file(fd):
 
 
 def var_to_list(var):
-    """change the var to be a list. """
+    """Normalize a singlar or list to list."""
     if isinstance(var, list):
         return var[:]
     if not var:
         return []
     return [var]
+
+
+def var_to_list_or_none(var):
+    """Similar to var_to_list but keeps the None unchanged"""
+    if var is None:
+        return var
+    return var_to_list(var)
 
 
 def stable_unique(seq):

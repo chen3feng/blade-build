@@ -120,7 +120,7 @@ def thrift_library(
         srcs=[],
         deps=[],
         visibility=None,
-        optimize=[],
+        optimize=None,
         deprecated=False,
         **kwargs):
     """thrift_library target. """

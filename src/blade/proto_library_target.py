@@ -410,7 +410,7 @@ def proto_library(
         srcs=[],
         deps=[],
         visibility=None,
-        optimize=[],
+        optimize=None,
         deprecated=False,
         generate_descriptors=False,
         target_languages=None,

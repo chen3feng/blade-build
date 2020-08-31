@@ -107,13 +107,14 @@ class _NinjaFileHeaderGenerator(object):
         """Get the common c/c++ flags."""
         global_config = config.get_section('global_config')
         cc_config = config.get_section('cc_config')
-        if not self.options.m:
-            cppflags = []
-            linkflags = []
-        else:
+
+        cppflags = []
+        linkflags = []
+        if self.options.m:
             cppflags = ['-m%s' % self.options.m]
             linkflags = ['-m%s' % self.options.m]
-        cppflags.append('-pipe')
+        # Add -fno-omit-frame-pointer to optimize mode for easy debugging.
+        cppflags += ['-pipe', '-fno-omit-frame-pointer']
 
         # Debugging information setting
         debug_info_level = global_config['debug_info_level']
@@ -157,14 +158,20 @@ class _NinjaFileHeaderGenerator(object):
 
         return filtered_cppflags, filtered_cxxflags, filtered_cflags
 
-    def generate_cc_warning_vars(self):
+    def generate_cc_vars(self):
         warnings, cxx_warnings, c_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
+        # optimize_flags is need for `always_optimize`
+        optimize_flags = config.get_item('cc_config', 'optimize')
+        optimize = '$optimize_flags' if self.options.profile == 'release' else ''
         self._add_rule(textwrap.dedent('''\
                 c_warnings = %s
                 cxx_warnings = %s
-                ''') % (' '.join(c_warnings), ' '.join(cxx_warnings)))
+                optimize_flags = %s
+                optimize = %s
+                ''') % (' '.join(c_warnings), ' '.join(cxx_warnings),
+                        ' '.join(optimize_flags), optimize))
 
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
@@ -180,10 +187,10 @@ class _NinjaFileHeaderGenerator(object):
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
-        self.generate_cc_warning_vars()
+        self.generate_cc_vars()
         self.generate_rule(name='cc',
                            command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${c_warnings} ${cppflags} '
+                                   '-c -fPIC %s %s ${optimize} ${c_warnings} ${cppflags} '
                                    '%s ${includes} ${in}' % (
                                        cc, ' '.join(cflags), ' '.join(cppflags), includes),
                            description='CC ${in}',
@@ -191,7 +198,7 @@ class _NinjaFileHeaderGenerator(object):
                            deps='gcc')
         self.generate_rule(name='cxx',
                            command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${cxx_warnings} ${cppflags} '
+                                   '-c -fPIC %s %s ${optimize} ${cxx_warnings} ${cppflags} '
                                    '%s ${includes} ${in}' % (
                                        cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
                            description='CXX ${in}',
@@ -211,7 +218,7 @@ class _NinjaFileHeaderGenerator(object):
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self.generate_rule(name='securecccompile',
                            command='%s -o ${out} -c -fPIC '
-                                   '%s %s ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
+                                   '%s %s ${optimize} ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
                                        securecc, ' '.join(cxxflags), ' '.join(cppflags), includes),
                            description='SECURECC ${in}')
         self.generate_rule(name='securecc',
