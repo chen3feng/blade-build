@@ -105,16 +105,22 @@ In large-scale C++ projects, dependency management is very important, and header
 Starting with Blade 2.0, header files have also been included in dependency management.
 When a cc target includes a header file, it also needs to put the `cc_library` it belongs to in its own `deps`, otherwise Blade will check and report the problem.
 
+The lack of a declaration on the library to which the header files belong will cause the following problems:
+
+* The dependencies between libraries cannot be transferred correctly. If the library to which an undeclared header file belongs adds new dependencies in the future, it may cause link errors.
+* For the header files generated during the build, the lack of a dependency declaration for the library to which they belong will cause these header files to have not yet been generated at compile time, resulting in compilation errors.
+* To make matters worse, if these header files already exist but have not been updated, outdated header files may be used during compilation, which will cause runtime errors that are more difficult to troubleshoot.
+
 The severity of the problem can be controlled by the [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) configuration item.
 For problems that existed before hdrs were supported, It can be suppressed by [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config).
 
 Blade can detect two kind of missing dependencies:
 
--`Missing dependenvy`
+* `Missing dependenvy`
   The source file in `srcs` includes a header file, but the library to which it belongs is not declared in `deps`.
   In this case, just add the missing library to the `deps`.
 
--`Missing indirect dependency`
+* `Missing indirect dependency`
   One of the indirect included header file(included in the header file) does not appear in the `deps` of this target and its transitive dependencies.
 
   We only do this check for the header files generated during compilation.
