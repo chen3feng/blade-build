@@ -36,7 +36,8 @@ class TestCcLibrary(blade_test.TargetTest):
         self.assertCxxFlags(com_upper_line)
         self.assertNoWarningCxxFlags(com_string_line)
         self.assertIn('-DNDEBUG -D_FILE_OFFSET_BITS=64', com_string_line)
-        self.assertIn('-DBLADE_STR_DEF -O2', com_string_line)
+        self.assertIn('-DBLADE_STR_DEF', com_string_line)
+        self.assertIn('-O2', com_string_line)
         self.assertIn('-w', com_string_line)
         self.assertIn('-o', com_string_line)
 

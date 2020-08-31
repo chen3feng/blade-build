@@ -291,7 +291,7 @@ class CcTarget(Target):
     def _setup_cc_vars(self, vars):
         """Set up warning, compile options and include directories for cc build. """
         # Warnings
-        if self.attr.get('warning') == 'no':
+        if self.attr.get('warning') != 'yes':
             vars['c_warnings'] = '-w'
             vars['cxx_warnings'] = '-w'
 
