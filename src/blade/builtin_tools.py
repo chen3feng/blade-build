@@ -24,6 +24,7 @@ The build function is defined as follows:
 """
 
 from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import fnmatch
@@ -138,7 +139,7 @@ def generate_package(args):
     path = args[0]
     manifest = args[1:]
     assert len(manifest) % 2 == 0
-    middle = len(manifest) / 2
+    middle = len(manifest) // 2
     sources = manifest[:middle]
     destinations = manifest[middle:]
     if path.endswith('.zip'):
@@ -256,7 +257,7 @@ def generate_java_jar(args):
 
 def generate_java_resource(args):
     assert len(args) % 2 == 0
-    middle = len(args) / 2
+    middle = len(args) // 2
     targets = args[:middle]
     sources = args[middle:]
     for i in range(middle):
@@ -429,7 +430,7 @@ def generate_shell_testdata(args):
     path = args[0]
     testdata = args[1:]
     assert len(testdata) % 2 == 0
-    middle = len(testdata) / 2
+    middle = len(testdata) // 2
     sources = testdata[:middle]
     destinations = testdata[middle:]
     with open(path, 'w') as f:

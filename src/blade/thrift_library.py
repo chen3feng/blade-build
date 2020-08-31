@@ -62,7 +62,6 @@ class ThriftLibrary(CcTarget):
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True
         self.attr['deprecated'] = deprecated
-        options = self.blade.get_options()
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.

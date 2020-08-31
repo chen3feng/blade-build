@@ -315,7 +315,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         if plugin:
             implicit_deps.append(plugin)
         cpp_sources = []
-        full_cpp_sources = []
         for src in self.srcs:
             full_source, full_header = self._proto_gen_cpp_files(src)
             self.ninja_build('proto', [full_source, full_header],
