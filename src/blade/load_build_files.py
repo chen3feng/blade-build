@@ -324,7 +324,7 @@ def load_targets(target_ids, blade_root_dir, blade):
             continue
 
         related_targets[target_id] = target_database[target_id]
-        for key in related_targets[target_id].expanded_deps:
+        for key in related_targets[target_id].deps:
             if key not in related_targets:
                 cited_targets.add(key)
 

@@ -60,8 +60,8 @@ class FBThriftLibrary(CcTarget):
         fbthrift_config = config.get_section('fbthrift_config')
         fbthrift_libs = var_to_list(fbthrift_config['fbthrift_libs'])
 
-        # Hardcode deps rule to thrift libraries.
-        self._add_hardcode_library(fbthrift_libs)
+        # Add implicit deps rule to thrift libraries.
+        self._add_implicit_library(fbthrift_libs)
 
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True

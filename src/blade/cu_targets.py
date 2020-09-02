@@ -245,8 +245,8 @@ class CuTest(CuBinary):
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
 
         # Hardcode deps rule to thirdparty gtest main lib.
-        self._add_hardcode_library(gtest_lib)
-        self._add_hardcode_library(gtest_main_lib)
+        self._add_implicit_library(gtest_lib)
+        self._add_implicit_library(gtest_main_lib)
 
 
 def cu_test(
