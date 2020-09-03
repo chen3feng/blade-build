@@ -106,8 +106,9 @@ class Target(object):
         self.type = type
         self.srcs = srcs
         self.deps = []
-        self.expanded_deps = None
-        self.dependents = []
+        self.expanded_deps = None  # Expanded dependencies, includes direct and indirect dependies.
+        self.dependents = set()  # Target keys which depends on this
+        self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
         self.visibility = 'PUBLIC'
 
@@ -127,7 +128,7 @@ class Target(object):
         # For temporary, mutable fields only, their values should not relate to rule_hash
         self.data = {}
 
-        # TODO: Remove it
+        # TODO: Remove it, make a `TestTargetMixin`
         self.attr['test_timeout'] = config.get_item('global_config', 'test_timeout')
 
         self._check_name()

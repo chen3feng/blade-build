@@ -41,8 +41,6 @@ def analyze_deps(related_targets):
             {target_key : (target_data with deps expanded), ...}
         2. the keys sorted
             [all the targets keys] - sorted
-        3. the targets dependents_map dict which is the transpose of #1
-            {target_key : [the depended target keys]}
     """
     _expand_deps(related_targets)
     return _topological_sort(related_targets)
@@ -132,15 +130,13 @@ def _topological_sort(related_targets):
         related_targets: dict{target_key, target} to be built
     Returns:
         sorted_target_key, keys sorted according to dependency relationship
-        dependents_map, dict{target_key, target's dependents}
     """
     numpreds = {}  # elt -> # of predecessors
-    dependents_map = {}  # elt -> list of dependents
     for target_key, target in related_targets.items():
         if target_key not in numpreds:
             numpreds[target_key] = 0
-        if target_key not in dependents_map:
-            dependents_map[target_key] = []
+        for depkey in target.deps:
+            related_targets[depkey].dependents.add(target_key)
         for depkey in target.expanded_deps:
             # make sure every elt is a key in numpreds
             if depkey not in numpreds:
@@ -150,25 +146,20 @@ def _topological_sort(related_targets):
             numpreds[target_key] = numpreds[target_key] + 1
 
             # ... and depkey gains a succ
-            if depkey in dependents_map:
-                dependents_map[depkey].append(target_key)
-            else:
-                dependents_map[depkey] = [target_key]
+            related_targets[depkey].expanded_dependents.add(target_key)
 
     # suck up everything without a predecessor
     q = deque([key for key, num in numpreds.items() if num == 0])
 
-    # for everything in queue, knock down the pred count on
-    # its dependents_map
+    # for everything in queue, knock down the pred count on its dependents
     sorted_target_keys = []
     while q:
-        x = q.popleft()
-        del numpreds[x]
-        sorted_target_keys.append(x)
-        if x in dependents_map:
-            for y in dependents_map[x]:
-                numpreds[y] -= 1
-                if numpreds[y] == 0:
-                    q.append(y)
+        key = q.popleft()
+        del numpreds[key]
+        sorted_target_keys.append(key)
+        for depkey in related_targets[key].expanded_dependents:
+            numpreds[depkey] -= 1
+            if numpreds[depkey] == 0:
+                q.append(depkey)
 
-    return sorted_target_keys, dependents_map
+    return sorted_target_keys

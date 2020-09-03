@@ -972,8 +972,7 @@ class PrebuiltCcLibrary(CcTarget):
     def _is_depended(self):
         """Does this library really be used"""
         build_targets = self.blade.get_build_targets()
-        depended_targets = self.blade.get_depended_target_database()
-        for key in depended_targets[self.key]:
+        for key in self.expanded_dependents:
             t = build_targets[key]
             if t.type != 'prebuilt_cc_library':
                 return True
