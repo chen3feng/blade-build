@@ -87,14 +87,6 @@ class JavaTargetMixIn(object):
     This mixin includes common java methods
     """
 
-    def _add_implicit_java_library(self, deps):
-        """Add implicit dep list to key's deps. """
-        for dep in deps:
-            dkey = self._unify_dep(dep)
-            if dkey not in self.deps:
-                self.deps.append(dkey)
-            self._implicit_deps.add(dkey)
-
     def _expand_deps_java_generation(self):
         """Ensure that all multilingual dependencies such as proto_library generate java code."""
         queue = collections.deque(self.deps)
