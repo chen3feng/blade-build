@@ -57,7 +57,7 @@ class ThriftLibrary(CcTarget):
 
         thrift_libs = config.get_item('thrift_config', 'thrift_libs')
         # Hardcode deps rule to thrift libraries.
-        self._add_hardcode_library(thrift_libs)
+        self._add_implicit_library(thrift_libs)
 
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True

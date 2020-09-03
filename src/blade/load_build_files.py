@@ -306,7 +306,7 @@ def load_targets(target_ids, blade_root_dir, blade):
     # Starting from targets specified in command line, breath-first
     # propagate to load BUILD files containing directly and indirectly
     # dependent targets.  All these targets form related_targets,
-    # which is a subset of target_databased created by loading  BUILD files.
+    # which is a subset of target_database created by loading  BUILD files.
     while cited_targets:
         target_id = cited_targets.pop()
         source_dir, target_name = target_id.split(':')
@@ -324,7 +324,7 @@ def load_targets(target_ids, blade_root_dir, blade):
             continue
 
         related_targets[target_id] = target_database[target_id]
-        for key in related_targets[target_id].expanded_deps:
+        for key in related_targets[target_id].deps:
             if key not in related_targets:
                 cited_targets.add(key)
 

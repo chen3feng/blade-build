@@ -98,9 +98,6 @@ class Blade(object):
         # Used to generate build rules in correct order.
         self.__sorted_targets_keys = []
 
-        # The depended targets dict after topological sorting
-        self.__depended_targets = {}
-
         # Indicate whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
@@ -147,8 +144,7 @@ class Blade(object):
     def analyze_targets(self):
         """Expand the targets. """
         console.info('Analyzing dependency graph...')
-        (self.__sorted_targets_keys,
-         self.__depended_targets) = analyze_deps(self.__build_targets)
+        self.__sorted_targets_keys = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
 
         console.info('Analyzing done.')
@@ -346,22 +342,22 @@ class Blade(object):
 
         result_map = {}
         for key in query_list:
-            deps = all_targets[key].expanded_deps
+            target = all_targets[key]
+            deps = target.expanded_deps
             # depended_by = [k for k in all_targets if key in all_targets[k].expanded_deps]
-            depended_by = self.__depended_targets[key]
+            depended_by = target.expanded_dependents
             result_map[key] = (sorted(deps), sorted(depended_by))
         return result_map
 
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
-        if self.__options.dependents:
-            console.fatal('Only query --deps can be output as tree format')
+        query_attr = 'dependents' if self.__options.dependents else 'deps'
         print(file=output_file)
         for key in self.__expanded_command_targets:
-            self._query_dependency_tree(key, 0, self.__build_targets, output_file)
+            self._query_dependency_tree(key, 0, query_attr, output_file)
             print(file=output_file)
 
-    def _query_dependency_tree(self, key, level, build_targets, output_file):
+    def _query_dependency_tree(self, key, level, query_attr, output_file):
         """Query the dependency tree of the specified target recursively. """
         if level == 0:
             output = '%s' % key
@@ -370,8 +366,8 @@ class Blade(object):
         else:
             output = '%s%s %s' % ('|  ' * (level - 1), '+-', key)
         print(output, file=output_file)
-        for dkey in build_targets[key].deps:
-            self._query_dependency_tree(dkey, level + 1, build_targets, output_file)
+        for dkey in getattr(self.__build_targets[key], query_attr):
+            self._query_dependency_tree(dkey, level + 1, query_attr, output_file)
 
     def dump_targets(self, output_file_name):
         result = []
@@ -416,10 +412,6 @@ class Blade(object):
     def get_build_targets(self):
         """Get all the targets to be build. """
         return self.__build_targets
-
-    def get_depended_target_database(self):
-        """Get depended target database that query dependent targets directly. """
-        return self.__depended_targets
 
     def get_options(self):
         """Get the global command options. """

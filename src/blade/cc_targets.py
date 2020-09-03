@@ -972,8 +972,7 @@ class PrebuiltCcLibrary(CcTarget):
     def _is_depended(self):
         """Does this library really be used"""
         build_targets = self.blade.get_build_targets()
-        depended_targets = self.blade.get_depended_target_database()
-        for key in depended_targets[self.key]:
+        for key in self.expanded_dependents:
             t = build_targets[key]
             if t.type != 'prebuilt_cc_library':
                 return True
@@ -1233,7 +1232,7 @@ class CcBinary(CcTarget):
 
         # add extra link library
         link_libs = var_to_list(config.get_item('cc_binary_config', 'extra_libs'))
-        self._add_hardcode_library(link_libs)
+        self._add_implicit_library(link_libs)
 
     def _allow_duplicate_source(self):
         return True
@@ -1521,8 +1520,8 @@ class CcTest(CcBinary):
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
 
         # Hardcode deps rule to thirdparty gtest main lib.
-        self._add_hardcode_library(gtest_lib)
-        self._add_hardcode_library(gtest_main_lib)
+        self._add_implicit_library(gtest_lib)
+        self._add_implicit_library(gtest_main_lib)
 
         if heap_check is None:
             heap_check = cc_test_config.get('heap_check', '')
@@ -1541,7 +1540,7 @@ class CcTest(CcBinary):
             else:
                 perftools_lib_list = perftools_lib
 
-            self._add_hardcode_library(perftools_lib_list)
+            self._add_implicit_library(perftools_lib_list)
 
 
 def cc_test(name=None,

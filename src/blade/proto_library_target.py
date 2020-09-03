@@ -115,10 +115,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
         protobuf_python_libs = var_to_list(proto_config['protobuf_python_libs'])
 
-        # Hardcode deps rule to thirdparty protobuf lib.
-        self._add_hardcode_library(protobuf_libs)
-        self._add_hardcode_java_library(protobuf_java_libs)
-        self._add_hardcode_library(protobuf_python_libs)
+        # Implicit deps rule to thirdparty protobuf lib.
+        self._add_implicit_library(protobuf_libs)
+        self._add_implicit_library(protobuf_java_libs)
+        self._add_implicit_library(protobuf_python_libs)
 
         # Normally a proto target depends on another proto target when
         # it references a message defined in that target. Then in the
@@ -171,7 +171,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             if dkey in proto_deps:
                 continue
             dep = self.target_database[dkey]
-            if dep.type not in ('proto_library', 'gen_rule'):
+            if dkey not in self._implicit_deps and dep.type not in ('proto_library', 'gen_rule'):
                 self.error('Invalid dep %s. proto_library can only depend on proto_library '
                            'or gen_rule.' % dep.fullname)
 
@@ -190,8 +190,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 for key in v['deps']:
                     if key not in self.deps:
                         self.deps.append(key)
-                    if key not in self.expanded_deps:
-                        self.expanded_deps.append(key)
                     protoc_plugin_deps.add(key)
                     if language == 'java':
                         protoc_plugin_java_deps.add(key)

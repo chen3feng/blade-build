@@ -87,15 +87,6 @@ class JavaTargetMixIn(object):
     This mixin includes common java methods
     """
 
-    def _add_hardcode_java_library(self, deps):
-        """Add hardcode dep list to key's deps. """
-        for dep in deps:
-            dkey = self._unify_dep(dep)
-            if dkey not in self.deps:
-                self.deps.append(dkey)
-            if dkey not in self.expanded_deps:
-                self.expanded_deps.append(dkey)
-
     def _expand_deps_java_generation(self):
         """Ensure that all multilingual dependencies such as proto_library generate java code."""
         queue = collections.deque(self.deps)
@@ -219,7 +210,7 @@ class JavaTargetMixIn(object):
                 assert dep.type == 'maven_jar'
                 maven_jars.append(jar)
 
-    def __get_deps(self, deps):
+    def __get_dep_jars(self, deps):
         """Return a tuple of (target jars, maven jars). """
         dep_jars, maven_jars = [], []
         for d in deps:
@@ -308,7 +299,7 @@ class JavaTargetMixIn(object):
         return sorted(jars)
 
     def _get_compile_deps(self):
-        dep_jars, maven_jars = self.__get_deps(self.deps)
+        dep_jars, maven_jars = self.__get_dep_jars(self.deps)
         exported_dep_jars, exported_maven_jars = self.__get_exported_deps()
         maven_jars += self.__get_maven_transitive_deps(self.deps)
         dep_jars = sorted(set(dep_jars + exported_dep_jars))
@@ -317,7 +308,7 @@ class JavaTargetMixIn(object):
         return dep_jars, maven_jars
 
     def _get_test_deps(self):
-        dep_jars, maven_jars = self.__get_deps(self.expanded_deps)
+        dep_jars, maven_jars = self.__get_dep_jars(self.expanded_deps)
         maven_jars += self.__get_maven_transitive_deps(self.expanded_deps)
         dep_jars = sorted(set(dep_jars))
         maven_jars = self._process_pack_exclusions(maven_jars)
@@ -332,7 +323,7 @@ class JavaTargetMixIn(object):
             return self.attr['java_pack_deps']
 
         deps = set(self.deps) - set(self.attr.get('provided_deps', []))
-        dep_jars, maven_jars = self.__get_deps(deps)
+        dep_jars, maven_jars = self.__get_dep_jars(deps)
 
         for dep in deps:
             dep = self.target_database[dep]

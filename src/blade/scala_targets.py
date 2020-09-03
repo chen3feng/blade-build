@@ -203,7 +203,7 @@ class ScalaTest(ScalaFatLibrary):
 
         scalatest_libs = config.get_item('scala_test_config', 'scalatest_libs')
         if scalatest_libs:
-            self._add_hardcode_java_library(scalatest_libs)
+            self._add_implicit_library(scalatest_libs)
         else:
             console.warning('Config: "scala_test_config.scalatest_libs" is not configured')
 

@@ -106,7 +106,10 @@ class Target(object):
         self.type = type
         self.srcs = srcs
         self.deps = []
-        self.expanded_deps = []
+        self.expanded_deps = None  # Expanded dependencies, includes direct and indirect dependies.
+        self.dependents = set()  # Target keys which depends on this
+        self.expanded_dependents = set()  # Expanded target keys which depends on this
+        self._implicit_deps = set()
         self.visibility = 'PUBLIC'
 
         if not name:
@@ -125,7 +128,7 @@ class Target(object):
         # For temporary, mutable fields only, their values should not relate to rule_hash
         self.data = {}
 
-        # TODO: Remove it
+        # TODO: Remove it, make a `TestTargetMixin`
         self.attr['test_timeout'] = config.get_item('global_config', 'test_timeout')
 
         self._check_name()
@@ -280,16 +283,17 @@ class Target(object):
                         elif action == 'warning':
                             self.warning(message)
 
-    def _add_hardcode_library(self, hardcode_dep_list):
-        """Add hardcode dep list to key's deps. """
-        for dep in hardcode_dep_list:
+    def _add_implicit_library(self, implicit_deps):
+        """Add implicit dep list to key's deps. """
+        for dep in implicit_deps:
             if not dep.startswith('//') and not dep.startswith('#'):
                 dep = '//' + dep
             dkey = self._unify_dep(dep)
             if dkey[0] == '#':
                 self._add_system_library(dkey, dep)
-            if dkey not in self.expanded_deps:
-                self.expanded_deps.append(dkey)
+            if dkey not in self.deps:
+                self.deps.append(dkey)
+            self._implicit_deps.add(dkey)
 
     def _add_system_library(self, key, name):
         """Add system library entry to database. """
@@ -341,8 +345,6 @@ class Target(object):
             type = ''
         type = type.strip()
         key = self._unify_dep(key)
-        if key not in self.expanded_deps:
-            self.expanded_deps.append(key)
         if key not in self.deps:
             self.deps.append(key)
         return key, type
@@ -389,8 +391,6 @@ class Target(object):
         """
         for d in deps:
             dkey = self._unify_dep(d)
-            if dkey not in self.expanded_deps:
-                self.expanded_deps.append(dkey)
             if dkey not in self.deps:
                 self.deps.append(dkey)
 
