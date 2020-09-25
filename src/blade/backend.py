@@ -207,7 +207,7 @@ class _NinjaFileHeaderGenerator(object):
 
         # Generate '.H' for cc file to check dependency missing, see '-H' part in
         # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        preprocess = '%s -o /dev/null -fdirectives-only -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}'
+        preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}'
         self.generate_rule(name='cchdrs',
                            command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
                            description='CC HDRS ${in}')
