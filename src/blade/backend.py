@@ -173,6 +173,17 @@ class _NinjaFileHeaderGenerator(object):
                 ''') % (' '.join(c_warnings), ' '.join(cxx_warnings),
                         ' '.join(optimize_flags), optimize))
 
+    def _hdrs_command(self, cc, flags, cppflags, includes):
+        """Command to generate cc inclusion information file"""
+        args = '-o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}' % (
+                ' '.join(flags), ' '.join(cppflags), includes)
+        # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
+        # but errors may occur under certain boundary conditions (for example, check `__COUNTER__`
+        # in the preprocessing directives), rerun the command without it on error.
+        preprocess1 = '%s -fdirectives-only %s' % (cc, args)
+        preprocess2 = '%s %s' % (cc, args)
+        return preprocess1 + ' || ' + preprocess2
+
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
@@ -205,14 +216,13 @@ class _NinjaFileHeaderGenerator(object):
                            depfile='${out}.d',
                            deps='gcc')
 
-        # Generate '.H' for cc file to check dependency missing, see '-H' part in
+        # Generate inclusion stack file for cc file to check dependency missing, see '-H' part in
         # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        preprocess = '%s -o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}'
         self.generate_rule(name='cchdrs',
-                           command=preprocess % (cc, ' '.join(cflags), ' '.join(cppflags), includes),
+                           command=self._hdrs_command(cc, cflags, cppflags, includes),
                            description='CC HDRS ${in}')
         self.generate_rule(name='cxxhdrs',
-                           command=preprocess % (cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                           command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
                            description='CXX HDRS ${in}')
 
         securecc = '%s %s' % (cc_config['securecc'], cxx)
