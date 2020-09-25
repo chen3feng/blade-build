@@ -437,7 +437,7 @@ def generate_scm_git():
     # origin  https://github.com/chen3feng/blade-build.git (push)
     if out:
         url = out.splitlines()[0].split()[1]
-        # Remove userinfo (sucn as username and password) from url, if any.
+        # Remove userinfo (such as username and password) from url, if any.
         url = re.sub(r'(?<=://).*:.*@', '', url)
     return url, revision
 
