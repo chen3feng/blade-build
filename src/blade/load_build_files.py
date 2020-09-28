@@ -56,7 +56,7 @@ def _find_dir_dependent(dir, blade):
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]
-        for dkey in target.expanded_deps:
+        for dkey in target.deps:
             if dkey.split(':')[0] == dir:
                 return target
     return None
@@ -211,7 +211,7 @@ def _find_dependent(dkey, blade):
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]
-        if dkey in target.expanded_deps:
+        if dkey in target.deps:
             return target
     return None
 
