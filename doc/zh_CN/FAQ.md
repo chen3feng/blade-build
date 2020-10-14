@@ -163,7 +163,7 @@ blade -c 清除不了项目生成的文件
 
 解决过程：
 
-- 请先检查命令是否配对使用blade -prelease with blade -prelease -c , blade -pdebug with blade -pdebug -c。
+- 请先检查命令是否配对使用：`blade build -prelease` with `blade clean -prelease`, `blade build -pdebug` with `blade clean -pdebug`。
 
 结论：
 
@@ -242,7 +242,7 @@ cc_config(
 
 采用Blade来构建的项目往往是比较大规模的项目，因此构建后的结果往往也会占用较多的空间，如果你有这方面的问题，可以尝试用以下方式进行优化：
 
-#### 降低调试符号占用的开销 ####
+#### 降低调试符号级别 ####
 
 ```python
 global_config(
@@ -252,10 +252,40 @@ global_config(
 
 说明：
 
-- no: 没有调试符号，程序无法gdb调试
-- low: 低调试符号，可以看到函数名和全局变量
+- no: 没有调试符号，程序无法用 gdb 调试
+- low: 低调试符号，调试时只可以看到函数名和全局变量，看不到局部变量和函数参数
 - mid: 中等，比low多了局部变量，函数参数
-- high: 最高，包含了宏等的调试信息
+- high: 最高，包含了宏等更多的调试信息
+
+默认为 `mid`。
+
+#### 压缩调试符号 ####
+
+可以尝试开启 GCC 的 [`-gz`](https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html) 选项，这个选项可以用于编译和链接阶段，
+如果只是想降低最终可执行文件的大小，只对链接启用即可，因为压缩和解压会降低构建速度。
+
+这个选项可以在配置中全局开启：
+
+```python
+cc_config(
+    ...
+    cppflags = [..., '-gz', ...],
+    linkflags = [..., '-gz', ...],
+    ...
+)
+```
+
+也可以针对具体的单个目标开启：
+
+```python
+cc_binary(
+    name = 'xxx_server',
+    ...
+    extra_linkflags = ['-gz'],
+)
+```
+
+需要注意[较新版本的 gdb 才支持读取压缩的调试符号](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html)，如果 gdb 版本过低或者没有开启，就可能无法正确读取调试符号信息。
 
 #### 测试程序采用动态链接 ####
 
