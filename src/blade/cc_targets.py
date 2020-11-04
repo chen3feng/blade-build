@@ -1142,8 +1142,8 @@ class ForeignCcLibrary(CcTarget):
     def soname_and_full_path(self):
         """Return soname and full path of the shared library, if any"""
         if 'soname_and_full_path' not in self.data:
+            self.data['soname_and_full_path'] = None
             if self.attr['has_dynamic']:
-                self.data['soname_and_full_path'] = None
                 so_path = self._library_full_path('so')
                 soname = self._soname_of(so_path)
                 if soname:
