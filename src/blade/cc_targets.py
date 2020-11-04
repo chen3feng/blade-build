@@ -745,6 +745,20 @@ class CcTarget(Target):
 
         return not failed, details
 
+    def _soname_of(self, so_path):
+        """Get the `soname` of a shared library."""
+        soname = None
+        try:
+            output = subprocess.check_output('objdump -p %s' % so_path, shell=True)
+            for line in output.splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[0] == 'SONAME':
+                    soname = parts[1]
+                    break
+        except subprocess.CalledProcessError:
+            pass
+        return soname
+
 
 class CcLibrary(CcTarget):
     """
@@ -904,13 +918,6 @@ class PrebuiltCcLibrary(CcTarget):
             self.error('Can not find either %s or %s' % (static_source, dynamic_source))
             return
 
-        # When a prebuilt shared library with a 'soname' is linked into a program
-        # Its name appears in the program's DT_NEEDED tag without full path.
-        # So we need to make a symbolic link let the program find the library.
-        # Type: tuple(target_path, soname)
-        # TODO(): bad naming
-        self.file_and_link = None
-
         if has_static:
             self.attr['static_source'] = static_source
             self._add_target_file('a', static_source)
@@ -924,9 +931,9 @@ class PrebuiltCcLibrary(CcTarget):
             self.attr['dynamic_target'] = dynamic_target
             self._add_target_file('so', dynamic_target)
 
-            soname = self._soname(dynamic_source)
+            soname = self._soname_of(dynamic_source)
             if soname:
-                self.file_and_link = (dynamic_target, soname)
+                self.data['soname_and_full_path'] = (soname, dynamic_target)
 
             if not has_static:
                 # Using dynamic library for static linking
@@ -955,20 +962,6 @@ class PrebuiltCcLibrary(CcTarget):
 
         return os.path.join(libpath, 'lib%s.%s' % (self.name, suffix))
 
-    def _soname(self, so):
-        """Get the soname of prebuilt shared library."""
-        soname = None
-        try:
-            output = subprocess.check_output('objdump -p %s' % so, shell=True)
-            for line in output.splitlines():
-                parts = line.split()
-                if len(parts) == 2 and parts[0] == 'SONAME':
-                    soname = parts[1]
-                    break
-        except subprocess.CalledProcessError:
-            pass
-        return soname
-
     def _is_depended(self):
         """Does this library really be used"""
         build_targets = self.blade.get_build_targets()
@@ -983,6 +976,13 @@ class PrebuiltCcLibrary(CcTarget):
         if os.path.exists(path):
             return os.path.dirname(path)
         return None
+
+    def soname_and_full_path(self):
+        """Return soname and full path of the shared library, if any"""
+        # When a prebuilt shared library with a 'soname' is linked into a program
+        # Its name appears in the program's DT_NEEDED tag without full path.
+        # So we need to make a symbolic link let the program find the library.
+        return self.data.get('soname_and_full_path')
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
@@ -1097,6 +1097,7 @@ class ForeignCcLibrary(CcTarget):
                  visibility,
                  export_incs,
                  lib_dir,
+                 has_dynamic,
                  link_all_symbols,
                  deprecated,
                  kwargs):
@@ -1120,6 +1121,7 @@ class ForeignCcLibrary(CcTarget):
         self.attr['link_all_symbols'] = link_all_symbols
         self.attr['deprecated'] = deprecated
         self.attr['lib_dir'] = lib_dir
+        self.attr['has_dynamic'] = has_dynamic
 
         if hdrs:
             hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdrs)]
@@ -1131,11 +1133,29 @@ class ForeignCcLibrary(CcTarget):
             self.attr['generated_incs'] = [hdr_dir]
             _declare_hdr_dir(self, hdr_dir)
 
+    def _library_full_path(self, type):
+        """Return full path of the library file with specified type"""
+        assert type == 'a' or type == 'so'
+        return self._target_file_path(os.path.join(self.attr['install_dir'], self.attr['lib_dir'],
+                'lib%s.%s' % (self.name, type)))
+
+    def soname_and_full_path(self):
+        """Return soname and full path of the shared library, if any"""
+        if 'soname_and_full_path' not in self.data:
+            if self.attr['has_dynamic']:
+                self.data['soname_and_full_path'] = None
+                so_path = self._library_full_path('so')
+                soname = self._soname_of(so_path)
+                if soname:
+                    self.data['soname_and_full_path'] = (soname, so_path)
+        return self.data['soname_and_full_path']
+
     def _ninja_rules(self):
-        lib = self._target_file_path(os.path.join(self.attr['install_dir'], self.attr['lib_dir'],
-                                                  'lib%s.a' % self.name))
-        self._add_default_target_file('a', lib)
-        self._add_target_file('so', lib)
+        a_path = self._library_full_path('a')
+        so_path = self._library_full_path('so')
+
+        self._add_default_target_file('a', a_path)
+        self._add_target_file('so', so_path if self.attr['has_dynamic'] else a_path)
 
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
@@ -1151,6 +1171,7 @@ def foreign_cc_library(
         hdr_dir='',
         export_incs=[],
         deps=[],
+        has_dynamic=False,
         link_all_symbols=False,
         visibility=None,
         deprecated=False,
@@ -1164,6 +1185,7 @@ def foreign_cc_library(
         hdrs: header files to be declared, always under the output directory
         hdr_dir: header file directory to be declared, always under the output directory
         lib_dir: str, the relative path of the lib dir under the `install_dir` dir.
+        has_dynamic: bool, whether this library has a dynamic edition.
     """
     target = ForeignCcLibrary(
             name=name,
@@ -1174,6 +1196,7 @@ def foreign_cc_library(
             hdrs=hdrs,
             hdr_dir=hdr_dir,
             lib_dir=lib_dir,
+            has_dynamic=has_dynamic,
             link_all_symbols=link_all_symbols,
             deprecated=deprecated,
             kwargs=kwargs)

@@ -154,6 +154,7 @@ foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 
 * name 库的名字
 * install_dir 包构建完成后的安装目录
 * lib_dir 库在安装目录下的子目录名
+* has_dynamic 是否生成了动态库
 
 ### 示例1，zlib ###
 

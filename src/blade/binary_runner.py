@@ -52,17 +52,6 @@ class BinaryRunner(object):
         """Returns runfiles dir. """
         return '%s.runfiles' % self._executable(target)
 
-    def _get_prebuilt_files(self, target):
-        """Get prebuilt files for one target that it depends. """
-        file_list = []
-        for dep in target.expanded_deps:
-            dep_target = self.target_database[dep]
-            if dep_target.type == 'prebuilt_cc_library':
-                prebuilt_file = dep_target.file_and_link
-                if prebuilt_file:
-                    file_list.append(prebuilt_file)
-        return file_list
-
     def __check_test_data_dest(self, target, dest, dest_list):
         """Check whether the destination of test data is valid or not. """
         dest_norm = os.path.normpath(dest)
@@ -78,31 +67,17 @@ class BinaryRunner(object):
                 target.error('"%s" could not exist with "%s" in testdata' % (dest, item))
 
     def _prepare_env(self, target):
-        """Prepare the test environment. """
+        """Prepare the running environment."""
+
+        # Prepare `<target_name>.runfiles` directory
         runfiles_dir = self._runfiles_dir(target)
         shutil.rmtree(runfiles_dir, ignore_errors=True)
         os.mkdir(runfiles_dir)
-        # Make a symbolic link of build_dir because dynamic linked binary need to load shared
-        # libraries from this path
-        build_dir_name = os.path.basename(self.build_dir)
-        os.symlink(os.path.abspath(self.build_dir),
-                   os.path.join(runfiles_dir, build_dir_name))
 
-        # Also make symbolic links for prebuilt shared libraries
-        for prebuilt_file in self._get_prebuilt_files(target):
-            src = os.path.abspath(prebuilt_file[0])
-            dst = os.path.join(runfiles_dir, prebuilt_file[1])
-            if os.path.lexists(dst):
-                console.warning('Trying to make duplicate prebuilt symlink:\n'
-                                '%s -> %s\n'
-                                '%s -> %s already exists\n'
-                                'skipped, should check duplicate prebuilt '
-                                'libraries'
-                                % (dst, src, dst, os.path.realpath(dst)))
-                continue
-            os.symlink(src, dst)
-
+        self._prepare_shared_libraries(target, runfiles_dir)
         self._prepare_test_data(target)
+
+        # Prepare environments
         run_env = dict(os.environ)
         environ_add_path(run_env, 'LD_LIBRARY_PATH', runfiles_dir)
         run_lib_paths = config.get_item('cc_binary_config', 'run_lib_paths')
@@ -118,6 +93,46 @@ class BinaryRunner(object):
             environ_add_path(run_env, 'PATH', os.path.join(java_home, 'bin'))
 
         return run_env
+
+    def _prepare_shared_libraries(self, target, runfiles_dir):
+        """Prepare correct shared libraries for running target"""
+
+        # Make symbolic links for shared libraries of the executable.
+
+        # For normal built shared libraries, their path has been writen in the executable.
+        # For example, `build64_release/common/crypto/hash/libhash.so`, we need put a symbolic
+        # link `build64_release` to the it's full path.
+        build_dir_name = os.path.basename(self.build_dir)
+        os.symlink(os.path.abspath(self.build_dir),
+                   os.path.join(runfiles_dir, build_dir_name))
+
+        # For shared libraries with `soname`, their path were not been writen into the executable,
+        # they are always been searched from some given paths.
+        #
+        # libcrypto.so.1.0.0 => /lib64/libcrypto.so.1.0.0 (0x00007f0705d9f000)
+        for soname, full_path in self._get_shared_libraries_with_soname(target):
+            src = os.path.abspath(full_path)
+            dst = os.path.join(runfiles_dir, soname)
+            if os.path.lexists(dst):
+                console.warning('Trying to make duplicate symlink for shared library:\n'
+                                '%s -> %s\n'
+                                '%s -> %s already exists\n'
+                                'skipped, should check duplicate prebuilt '
+                                'libraries'
+                                % (dst, src, dst, os.path.realpath(dst)))
+                continue
+            os.symlink(src, dst)
+
+    def _get_shared_libraries_with_soname(self, target):
+        """Get shared libraries with soname for one target that it depends."""
+        file_list = []
+        for dep in target.expanded_deps:
+            dep_target = self.target_database[dep]
+            if hasattr(dep_target, 'soname_and_full_path'):
+                value = dep_target.soname_and_full_path()
+                if value:
+                    file_list.append(value)
+        return file_list
 
     def _prepare_test_data(self, target):
         if 'testdata' not in target.attr:

@@ -177,10 +177,10 @@ Attributes:
 * name : The name of the library
 * install_dir : The installation directory after the package is built
 * lib_dir : The subdirectory name of the library in the installation directory
+* has_dynamic : Whether this library has a dynamic linked edition.
 
 ### Example1, zlib ###
 
-zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
 zlib can be the simplest example of autotools package. Assuming that zlib-1.2.11.tar.gz is in the thirparty/zlib directory, its BUILD file is thirdparty/zlib/BUILD:
 
 ```python
