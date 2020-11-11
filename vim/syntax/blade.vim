@@ -27,7 +27,7 @@ syn keyword bladeTarget resource_library swig_library thrift_library
 
 syn keyword bladeTarget prebuilt_cc_library
 syn keyword bladeTarget foreign_cc_library
-syn keyword bladeArg libpath_pattern has_dynamic
+syn keyword bladeArg libpath_pattern has_dynamic binary_link_only
 
 " TODO(chen3feng): Reorgnize by target
 " Sorted by alphabet order

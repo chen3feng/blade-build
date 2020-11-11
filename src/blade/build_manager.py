@@ -502,7 +502,7 @@ class Blade(object):
                 continue
             if skip_package and target.type == 'package' and k not in self.__direct_targets:
                 continue
-
+            target.before_generate()
             target_ninja = self._find_or_generate_target_ninja_file(target)
             if target_ninja:
                 target._remove_on_clean(target_ninja)

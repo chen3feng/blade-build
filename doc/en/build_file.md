@@ -16,9 +16,9 @@ cc_library(
         'string_number.cpp',
         'string_piece.cpp',
         'format.cpp',
-        'concat.cpp'
+        'concat.cpp',
     ],
-    deps = ['//common/base:int']
+    deps = ['//common/base:int'],
 )
 ```
 
@@ -26,12 +26,14 @@ It is also an explanation, just need to list the target name, source file name a
 
 ## Style Suggestion ##
 
-* Four spaces are indented, do not use tab characters
-* Always use single quotes
-* Target name is lowercase
+* Indented 4 spaces, do not use tab characters
+* Always use single quotes (`'`) rather than double quotes (`"`)
+* Keep target names in lowercase
 * The file names in src are in alphabetical order
-* Deps writes the dependencies (:target) in this directory first, and then writes (//dir:name) in other directories, in alphabetical order.
-* A line between different targets, can be annotated before
+* Deps writes the dependencies (:target) in this directory first, and then writes (//dir:name) in other directories, in alphabetical order
+* When placing 1 parameter per line, the last parameter also ends with a comma (`,`) to reduce the number of lines affected when adding or deleting
+  parameters
+* Put an empty line between different targets, can also put comments before it
 * An empty # after the comment #, such as # This is a comment
 
 ## Common Attributes ##
