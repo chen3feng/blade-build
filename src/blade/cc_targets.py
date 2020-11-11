@@ -52,6 +52,7 @@ def _is_likely_concatenated_filenames(string, exts):
         ```
         'second.h' will be concatenated with 'third.h' to be 'first.hsecond.h'
     """
+    # Convert exts to regex, e.g., ['h', 'hpp'] to "(h|hpp)"
     ext_pattern = '(%s)' % '|'.join(e.replace('+', r'\+') for e in exts)
     return re.search(r'\w+\.{ext}.+\.{ext}$'.format(ext=ext_pattern), string)
 
