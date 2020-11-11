@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import collections
 import os
+import re
 import subprocess
 from string import Template
 
@@ -28,11 +29,31 @@ from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
 
+_HEADER_FILE_EXTS = ('h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'tcc')
+
+
 def is_header_file(filename):
     _, ext = os.path.splitext(filename)
     ext = ext[1:]  # Remove leading '.'
     # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html
-    return ext in ('h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'tcc')
+    return ext in _HEADER_FILE_EXTS
+
+
+def _is_likely_concatenated_filenames(string, exts):
+    """Check whether a string is likely a concatenated filenames.
+    This situation is usually caused by missing a comma between file names.
+    For example, if the user writes:
+        ```
+        [
+            'first.h',
+            'second.h'  # NOTE: Missing the ending ","
+            'third.h',
+        ]
+        ```
+        'second.h' will be concatenated with 'third.h' to be 'first.hsecond.h'
+    """
+    ext_pattern = '(%s)' % '|'.join(e.replace('+', r'\+') for e in exts)
+    return re.search(r'\w+\.{ext}.+\.{ext}$'.format(ext=ext_pattern), string)
 
 
 # A dict[hdr, set(target)]
@@ -160,6 +181,8 @@ class CcTarget(Target):
         for h in var_to_list(hdrs):
             hdr = self._source_file_path(h)
             if not os.path.exists(hdr):
+                if _is_likely_concatenated_filenames(h, _HEADER_FILE_EXTS):
+                    self.warning('File "%s" does not exist, missing "," between file names?' % h)
                 hdr = self._target_file_path(h)
             expanded_hdrs.append(hdr)
         self.attr['hdrs'] = expanded_hdrs
