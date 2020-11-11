@@ -221,6 +221,18 @@ class CcTarget(Target):
         if illegal_path_list:
             self.warning(""""warning='no'" should only be used for thirdparty libraries.""")
 
+    def _check_binary_link_only(self):
+        """Check whether a `binary_link_only` library is used correctly"""
+        if self.attr.get('binary_link_only'):
+            # A binary_link_only library is always allowed to depends on another binary_link_only
+            # library
+            return
+        for dkey in self.deps:
+            dep = self.target_database[dkey]
+            if dep.attr.get('binary_link_only'):
+                self.error('"%s" is a binary_link_only library, can only be a dependent of '
+                           'executable target or another binary_link_only library' % dep.fullname)
+
     def _get_optimize_flags(self):
         """Get optimize flags according to build mode and attributes"""
         optimize = self.attr.get('optimize')
@@ -779,6 +791,7 @@ class CcLibrary(CcTarget):
                  optimize,
                  always_optimize,
                  link_all_symbols,
+                 binary_link_only,
                  deprecated,
                  extra_cppflags,
                  extra_linkflags,
@@ -806,11 +819,16 @@ class CcLibrary(CcTarget):
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
         self.attr['link_all_symbols'] = link_all_symbols
+        self.attr['binary_link_only'] = binary_link_only
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
         self._set_hdrs(hdrs)
         self._set_secure(secure)
+
+    def before_generate(self):
+        """Override"""
+        self._check_binary_link_only()
 
     def _set_secure(self, secure):
         if secure:
@@ -877,6 +895,7 @@ class PrebuiltCcLibrary(CcTarget):
                  export_incs,
                  libpath_pattern,
                  link_all_symbols,
+                 binary_link_only,
                  deprecated,
                  kwargs):
         """Init method."""
@@ -897,6 +916,7 @@ class PrebuiltCcLibrary(CcTarget):
                 kwargs=kwargs)
         self.attr['libpath_pattern'] = libpath_pattern
         self.attr['link_all_symbols'] = link_all_symbols
+        self.attr['binary_link_only'] = binary_link_only
         self.attr['deprecated'] = deprecated
         self._set_hdrs(hdrs)
         self._setup()
@@ -984,6 +1004,10 @@ class PrebuiltCcLibrary(CcTarget):
         # So we need to make a symbolic link let the program find the library.
         return self.data.get('soname_and_full_path')
 
+    def before_generate(self):
+        """Override"""
+        self._check_binary_link_only()
+
     def ninja_rules(self):
         """Generate ninja build rules for cc object/library. """
         self._check_deprecated_deps()
@@ -1006,6 +1030,7 @@ def prebuilt_cc_library(
         hdrs=None,
         libpath_pattern=None,
         link_all_symbols=False,
+        binary_link_only=False,
         deprecated=False,
         **kwargs):
     """prebuilt_cc_library rule"""
@@ -1017,6 +1042,7 @@ def prebuilt_cc_library(
             hdrs=hdrs,
             libpath_pattern=libpath_pattern,
             link_all_symbols=link_all_symbols,
+            binary_link_only=binary_link_only,
             deprecated=deprecated,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
@@ -1039,6 +1065,7 @@ def cc_library(
         prebuilt=False,
         prebuilt_libpath_pattern=None,
         link_all_symbols=False,
+        binary_link_only=False,
         deprecated=False,
         extra_cppflags=[],
         extra_linkflags=[],
@@ -1056,6 +1083,7 @@ def cc_library(
                 export_incs=export_incs,
                 libpath_pattern=prebuilt_libpath_pattern,
                 link_all_symbols=link_all_symbols,
+                binary_link_only=binary_link_only,
                 deprecated=deprecated,
                 **kwargs)
         # target.warning('"cc_library.prebuilt" is deprecated, please use the standalone '
@@ -1074,6 +1102,7 @@ def cc_library(
             optimize=optimize,
             always_optimize=always_optimize,
             link_all_symbols=link_all_symbols,
+            binary_link_only=binary_link_only,
             deprecated=deprecated,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
@@ -1099,6 +1128,7 @@ class ForeignCcLibrary(CcTarget):
                  lib_dir,
                  has_dynamic,
                  link_all_symbols,
+                 binary_link_only,
                  deprecated,
                  kwargs):
         """Init method."""
@@ -1150,6 +1180,10 @@ class ForeignCcLibrary(CcTarget):
                     self.data['soname_and_full_path'] = (soname, so_path)
         return self.data['soname_and_full_path']
 
+    def before_generate(self):
+        """Override"""
+        self._check_binary_link_only()
+
     def _ninja_rules(self):
         a_path = self._library_full_path('a')
         so_path = self._library_full_path('so')
@@ -1173,6 +1207,7 @@ def foreign_cc_library(
         deps=[],
         has_dynamic=False,
         link_all_symbols=False,
+        binary_link_only=False,
         visibility=None,
         deprecated=False,
         **kwargs):
@@ -1198,6 +1233,7 @@ def foreign_cc_library(
             lib_dir=lib_dir,
             has_dynamic=has_dynamic,
             link_all_symbols=link_all_symbols,
+            binary_link_only=binary_link_only,
             deprecated=deprecated,
             kwargs=kwargs)
     build_manager.instance.register_target(target)

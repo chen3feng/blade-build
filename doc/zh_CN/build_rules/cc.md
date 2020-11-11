@@ -21,16 +21,18 @@ CC 目标均支持的属性为：
 cc_library同时用于构建静态和动态库，默认只构建静态库，只有被dynamic_link=1的cc_binary依赖时或者命令行指定
 --generate-dynamic 才生成动态链接库。
 
-cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环境。如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用`cc_plugin`构建规则，这样生成的动态库已经静态链接的方式包含了其依赖。
+cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环
+境。如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用`cc_plugin`构建规则，这样生成的动态库已经静态链接的方式包含了其
+依赖。
 
-举例：
+示例：
 
 ```python
 cc_library(
-    name='lowercase',
-    srcs=['./src/lower/plowercase.cpp'],
-    deps=['#pthread'],
-    link_all_symbols=False
+    name = 'lowercase',
+    srcs = ['./src/lower/plowercase.cpp'],
+    deps = ['#pthread'],
+    link_all_symbols = False,
 )
 ```
 
@@ -68,6 +70,31 @@ cc_library(
   需要注意的是，link_all_symbols是库自身的属性，不是使用库时的属性。
 
   如还有疑问，可以进一步阅读[更多解答](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option)。
+
+* binary_link_only : bool
+
+  本库只能作为可执行文件目标（比如 `cc_binary` 或者 `cc_test`）的依赖，而不是其他 `cc_library` 的依赖。本属性适用于排他性的库，比如 malloc 库。
+  
+  例如 `tcmalloc` 和 `jemalloc` 库都包含了一些相同的符号（`malloc`、`free`等）。如果某个 `cc_library` 依赖了 `tcmalloc`，那么依赖他的 `cc_binary` 将不
+  能再选择 `jemalloc` 库，否则会造成链接冲突。通过把 `tcmalloc` 和 `jemalloc` 都设置这个属性，使得其只能作为可执行文件的目标的依赖，从而避免这类问题。
+
+  'binary_link_only' 库可以依赖其他 'binary_link_only' 库。
+
+  示例：
+
+  ```python
+  cc_library(
+      name = 'tcmaloc',
+      binary_link_only = True,
+      ...
+  )
+
+  cc_library(
+      name = 'jemaloc',
+      binary_link_only = True,
+      ...
+  )
+  ```
 
 * always_optimize : bool
 
@@ -109,10 +136,11 @@ Blade 能检查到两种缺失情况：
 
   修复这个错误麻烦一些，你需要顺着错误信息报告的包含栈，从源文件开始，依次向上查找各个头文件所属的库中，是否依赖了其包含的头文件所属的库。
 
-  这时可能遇到一种情况，就是某些纯头文件的库没有实现文件，因此根本没有对应的 `cc_library` 描述它，这时候就需要为它写一个新的 `cc_library`，在 `hdrs` 中列出头文件，`deps`
-  中列入其实现所需要的依赖。然后把它加入到使用到它的库的依赖中。
+  这时可能遇到一种情况，就是某些纯头文件的库没有实现文件，因此根本没有对应的 `cc_library` 描述它，这时候就需要为它写一个新的 `cc_library`，在 `hdrs`
+  中列出头文件，`deps` 中列入其实现所需要的依赖。然后把它加入到使用到它的库的依赖中。
 
-  这样能解决根本问题，不过确实需要花一些精力。简单粗暴的解决方式则是把报告缺失的库加入到当前目标的 `deps` 中，这相当于依赖了某些库的实现细节，非常不推荐。
+  这样能解决根本问题，不过确实需要花一些精力。简单粗暴的解决方式则是把报告缺失的库加入到当前目标的 `deps` 中，这相当于依赖了某些库的实现细节，非常不
+  推荐。
 
 ## prebuilt_cc_library ##
 
@@ -146,8 +174,10 @@ foreign_cc_library 用于描述不是直接通过 Blade 构建而是其他构建
 foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 Blade 在构建期间调用其他构建系统动态生成的，
 而 prebuilt_cc_library 所描述的库是构建前提前放置于源代码树中的。所以 foreign_cc_library 总是需要搭配 gen_rule 来使用。
 
-考虑到大量采用 [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html) 构建，foreign_cc_library 的默认参数适配其安装后的[目录布局](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html)。
-为了能正确找到库和头文件，foreign_cc_library 假设包构建后会安装到某一个目录下（也就是 `configure` 的 `--prefix` 参数所指定的路径），头文件在 `include` 子目录下，库文件安装到 `lib` 子目录下。
+考虑到大量采用 [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html) 构建，foreign_cc_library 的默认参数适配其安装后的
+[目录布局](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html)。
+为了能正确找到库和头文件，foreign_cc_library 假设包构建后会安装到某一个目录下（也就是 `configure` 的 `--prefix` 参数所指定的路径），头文件在 `include`
+子目录下，库文件安装到 `lib` 子目录下。
 
 属性：
 
@@ -261,9 +291,12 @@ cc_binary(
 
 * dynamic_link=True
 
-  cc_binary默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些[技术限制](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，glibc并不包含在内，虽然也可以强行静态链接glibc，但是有可能导致运行时出错。
+  cc_binary默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些
+  [技术限制](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，glibc并不包含在内，虽然
+  也可以强行静态链接glibc，但是有可能导致运行时出错。
 
-  如果希望动态链接可执行文件依赖的库，可以使用此参数指定，此时被此target依赖的所有库都会自动生成对应的动态库供链接。这能有效地减少磁盘空间占用，但是程序启动时会变慢，一般仅用于非部署环境比如本地测试。
+  如果希望动态链接可执行文件依赖的库，可以使用此参数指定，此时被此target依赖的所有库都会自动生成对应的动态库供链接。这能有效地减少磁盘空间占用，但是
+  程序启动时会变慢，一般仅用于非部署环境比如本地测试。
 
   需要注意的是，dynamic_link只适用于可执行文件，不适用于库。
 
@@ -271,7 +304,8 @@ cc_binary(
 
   常规情况下，so中只引用所依赖的so中的符号，但是对于应用特殊的场合，需要在so中引用宿主可执行文件中的符号，就需要这个选项。
 
-  这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中的这些符号。
+  这个选项告诉连接器在可执行文件的动态符号表中加入所有的符号，而不只是用到的其他动态库中的符号。这样就使得在dlopen方式加载的so中可以调用可执行文件中
+  的这些符号。
 
   详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 

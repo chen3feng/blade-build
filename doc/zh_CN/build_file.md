@@ -16,9 +16,9 @@ cc_library(
         'string_number.cpp',
         'string_piece.cpp',
         'format.cpp',
-        'concat.cpp'
+        'concat.cpp',
     ],
-    deps = ['//common/base:int']
+    deps = ['//common/base:int'],
 )
 ```
 
@@ -31,8 +31,9 @@ cc_library(
 * 目标名用小写
 * src 里的文件名按字母顺序排列
 * deps 里先写本目录内的依赖（:target），后写其他目录内的（//dir:name），分别按字母顺序排列。
+* 每行放置一个参数时，最后一个参数也以逗号（`,`）结尾，以减少增删参数时影响的行数
 * 不同目标之间空一行，前面可以加注释
-* 注释的 # 后面空一格，比如 # This is a comment
+* 注释的 `#` 后面空一格，比如 `# This is a comment`
 
 ## 通用属性 ##
 
