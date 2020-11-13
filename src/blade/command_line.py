@@ -348,7 +348,7 @@ class ParsedCommandLine(object):
                 help='Only show warnings and errors')
 
     def _add_dump_arguments(self, parser):
-        """Add query arguments for parser. """
+        """Add dump arguments for parser. """
         parser.add_argument(
             '--to-file', dest='dump_to_file', action='store', metavar='FILEPATH',
             default='/dev/stdout',

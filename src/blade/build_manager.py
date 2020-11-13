@@ -288,18 +288,19 @@ class Blade(object):
         return 0
 
     def query_dependency_plain(self, output_file):
-        result_map = self.query_helper()
+        all_targets = self.__build_targets
+        query_list = self.__expanded_command_targets
         if self.__options.deps:
-            for key in result_map:
+            for key in query_list:
                 print(file=output_file)
-                deps = result_map[key][0]
+                deps = all_targets[key].expanded_deps
                 print('//%s depends on the following targets:' % key, file=output_file)
                 for d in deps:
                     print('%s' % d, file=output_file)
         if self.__options.dependents:
-            for key in result_map:
+            for key in query_list:
                 print(file=output_file)
-                depended_by = result_map[key][1]
+                depended_by = all_targets[key].expanded_dependents
                 print('//%s is depended by the following targets:' % key, file=output_file)
                 for d in depended_by:
                     print('%s' % d, file=output_file)
@@ -315,13 +316,14 @@ class Blade(object):
                 continue
             print('"%s" -> "%s"' % (node, i), file=output_file)
 
-    def __print_dot_graph(self, result_map, name, print_mode, output_file):
-        # print_mode = 0: deps, 1: dependents
-        targets = result_map.keys()
-        nodes = set(targets)
-        for key in targets:
-            nodes |= set(result_map[key][print_mode])
-        print('digraph %s {' % name, file=output_file)
+    def __print_dot_graph(self, attr_name, output_file):
+        # Collect all related nodes
+        query_list = self.__expanded_command_targets
+        nodes = set(query_list)
+        for key in query_list:
+            nodes |= set(getattr(self.__build_targets[key], 'expanded_' + attr_name))
+
+        print('digraph %s {' % attr_name, file=output_file)
         for i in nodes:
             self.print_dot_node(output_file, i)
         for i in nodes:
@@ -329,25 +331,10 @@ class Blade(object):
         print('}', file=output_file)
 
     def query_dependency_dot(self, output_file):
-        result_map = self.query_helper()
         if self.__options.deps:
-            self.__print_dot_graph(result_map, 'deps', 0, output_file)
+            self.__print_dot_graph('deps', output_file)
         if self.__options.dependents:
-            self.__print_dot_graph(result_map, 'dependents', 1, output_file)
-
-    def query_helper(self):
-        """Query the targets helper method. """
-        all_targets = self.__build_targets
-        query_list = self.__expanded_command_targets
-
-        result_map = {}
-        for key in query_list:
-            target = all_targets[key]
-            deps = target.expanded_deps
-            # depended_by = [k for k in all_targets if key in all_targets[k].expanded_deps]
-            depended_by = target.expanded_dependents
-            result_map[key] = (sorted(deps), sorted(depended_by))
-        return result_map
+            self.__print_dot_graph('dependents', output_file)
 
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
