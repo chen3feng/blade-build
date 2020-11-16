@@ -34,7 +34,7 @@ syn keyword bladeArg libpath_pattern has_dynamic binary_link_only
 syn keyword bladeArg always_run binary_jar cmd coverage defs deprecated deps dynamic_link embed_version
 syn keyword bladeArg exclude exclusions exclusive export_dynamic export_incs exported_deps
 syn keyword bladeArg extra_cppflags extra_linkflags generate_descriptors generate_hdrs glob allow_empty
-syn keyword bladeArg heap_check heap_check_debug heavy include incs link_all_symbols main_class
+syn keyword bladeArg hdrs heap_check heap_check_debug heavy include incs link_all_symbols main_class
 syn keyword bladeArg name optimize out outs plugins prebuilt prefix provided_deps
 syn keyword bladeArg resources secure source_encoding srcs suffix
 syn keyword bladeArg target_languages testdata transitive visibility warning warnings
