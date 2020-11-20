@@ -114,6 +114,7 @@ class ScalaLibrary(ScalaTarget):
             warnings,
             exported_deps,
             provided_deps,
+            coverage,
             kwargs):
         exported_deps = var_to_list(exported_deps)
         provided_deps = var_to_list(provided_deps)
@@ -130,7 +131,7 @@ class ScalaLibrary(ScalaTarget):
                 kwargs=kwargs)
         self.attr['exported_deps'] = self._unify_deps(exported_deps)
         self.attr['provided_deps'] = self._unify_deps(provided_deps)
-        self.attr['jacoco_coverage'] = bool(srcs)
+        self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
     def ninja_rules(self):
         jar = self._generate_jar()
@@ -228,6 +229,7 @@ def scala_library(name=None,
                   warnings=None,
                   exported_deps=[],
                   provided_deps=[],
+                  coverage=True,
                   **kwargs):
     """Define scala_library target. """
     target = ScalaLibrary(
@@ -240,6 +242,7 @@ def scala_library(name=None,
             warnings=warnings,
             exported_deps=exported_deps,
             provided_deps=provided_deps,
+            coverage=coverage,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 
