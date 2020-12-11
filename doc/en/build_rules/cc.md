@@ -214,7 +214,7 @@ The library described by prebuilt_cc_library is placed in the source tree before
 with gen_rule.
 
 Considering that a large number of C/C++ libraries are built with [GNU Autotools](http://autotoolset.sourceforge.net/tutorial.html),
-the default parameters of foreign_cc_library are adapted to the 
+the default parameters of foreign_cc_library are adapted to the
 [autotools installation directory layout](https://www.gnu.org/software/automake/manual/html_node/Standard-Directory-Variables.html).
 In order to find the library and header files correctly, foreign_cc_library assumes that the package will be installed in a certain directory
 after the build (that is, the path specified by the `--prefix` parameter of `configure`), and the header file is in the `include` subdirectory,

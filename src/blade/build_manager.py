@@ -23,6 +23,7 @@ import time
 
 from blade import config
 from blade import console
+from blade import maven
 from blade import target
 from blade.binary_runner import BinaryRunner
 from blade.toolchain import ToolChain
@@ -157,6 +158,10 @@ class Blade(object):
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('Generating build rules...')
+
+        # maven_cache = maven.MavenCache.instance(self.__build_dir)
+        # maven_cache.download_all()
+
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         rules = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
@@ -288,18 +293,19 @@ class Blade(object):
         return 0
 
     def query_dependency_plain(self, output_file):
-        result_map = self.query_helper()
+        all_targets = self.__build_targets
+        query_list = self.__expanded_command_targets
         if self.__options.deps:
-            for key in result_map:
+            for key in query_list:
                 print(file=output_file)
-                deps = result_map[key][0]
+                deps = all_targets[key].expanded_deps
                 print('//%s depends on the following targets:' % key, file=output_file)
                 for d in deps:
                     print('%s' % d, file=output_file)
         if self.__options.dependents:
-            for key in result_map:
+            for key in query_list:
                 print(file=output_file)
-                depended_by = result_map[key][1]
+                depended_by = all_targets[key].expanded_dependents
                 print('//%s is depended by the following targets:' % key, file=output_file)
                 for d in depended_by:
                     print('%s' % d, file=output_file)
@@ -315,13 +321,14 @@ class Blade(object):
                 continue
             print('"%s" -> "%s"' % (node, i), file=output_file)
 
-    def __print_dot_graph(self, result_map, name, print_mode, output_file):
-        # print_mode = 0: deps, 1: dependents
-        targets = result_map.keys()
-        nodes = set(targets)
-        for key in targets:
-            nodes |= set(result_map[key][print_mode])
-        print('digraph %s {' % name, file=output_file)
+    def __print_dot_graph(self, attr_name, output_file):
+        # Collect all related nodes
+        query_list = self.__expanded_command_targets
+        nodes = set(query_list)
+        for key in query_list:
+            nodes |= set(getattr(self.__build_targets[key], 'expanded_' + attr_name))
+
+        print('digraph %s {' % attr_name, file=output_file)
         for i in nodes:
             self.print_dot_node(output_file, i)
         for i in nodes:
@@ -329,35 +336,33 @@ class Blade(object):
         print('}', file=output_file)
 
     def query_dependency_dot(self, output_file):
-        result_map = self.query_helper()
         if self.__options.deps:
-            self.__print_dot_graph(result_map, 'deps', 0, output_file)
+            self.__print_dot_graph('deps', output_file)
         if self.__options.dependents:
-            self.__print_dot_graph(result_map, 'dependents', 1, output_file)
-
-    def query_helper(self):
-        """Query the targets helper method. """
-        all_targets = self.__build_targets
-        query_list = self.__expanded_command_targets
-
-        result_map = {}
-        for key in query_list:
-            target = all_targets[key]
-            deps = target.expanded_deps
-            # depended_by = [k for k in all_targets if key in all_targets[k].expanded_deps]
-            depended_by = target.expanded_dependents
-            result_map[key] = (sorted(deps), sorted(depended_by))
-        return result_map
+            self.__print_dot_graph('dependents', output_file)
 
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
+        path_to = self._parse_qyery_path_to()
         query_attr = 'dependents' if self.__options.dependents else 'deps'
         print(file=output_file)
         for key in self.__expanded_command_targets:
-            self._query_dependency_tree(key, 0, query_attr, output_file)
+            self._query_dependency_tree(key, 0, query_attr, path_to, output_file)
             print(file=output_file)
 
-    def _query_dependency_tree(self, key, level, query_attr, output_file):
+    def _parse_qyery_path_to(self):
+        """Parse the `--path-to` command line argument"""
+        if not self.__options.query_path_to:
+            return set()
+        result = set()
+        for id in target.normalize(self.__options.query_path_to.split(','), self.__working_dir):
+            if id not in self.__target_database:
+                console.fatal('Invalid argument: "--path_to=%s", target "%s" does not exist' % (
+                        self.__options.query_path_to, id))
+                result.add(id)
+        return result
+
+    def _query_dependency_tree(self, key, level, query_attr, path_to, output_file):
         """Query the dependency tree of the specified target recursively. """
         if level == 0:
             output = '%s' % key
@@ -367,7 +372,19 @@ class Blade(object):
             output = '%s%s %s' % ('|  ' * (level - 1), '+-', key)
         print(output, file=output_file)
         for dkey in getattr(self.__build_targets[key], query_attr):
-            self._query_dependency_tree(dkey, level + 1, query_attr, output_file)
+            if self._query_path_match(dkey, path_to):
+                self._query_dependency_tree(dkey, level + 1, query_attr, path_to, output_file)
+
+    def _query_path_match(self, dkey, path_to):
+        """Test whether we can reach `path_to` from `dkey`"""
+        if not path_to:
+            return True
+        if dkey in path_to:
+            return True
+        dep = self.__build_targets[dkey]
+        if path_to & set(dep.expanded_deps):
+            return True
+        return False
 
     def dump_targets(self, output_file_name):
         result = []
