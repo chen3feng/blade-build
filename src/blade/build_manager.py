@@ -351,6 +351,7 @@ class Blade(object):
             print(file=output_file)
 
     def _parse_qyery_path_to(self):
+        """Parse the `--path-to` command line argument"""
         if not self.__options.query_path_to:
             return set()
         result = set()
@@ -358,7 +359,6 @@ class Blade(object):
             if id not in self.__target_database:
                 console.fatal('Invalid argument: "--path_to=%s", target "%s" does not exist' % (
                         self.__options.query_path_to, id))
-                continue
                 result.add(id)
         return result
 
@@ -376,6 +376,7 @@ class Blade(object):
                 self._query_dependency_tree(dkey, level + 1, query_attr, path_to, output_file)
 
     def _query_path_match(self, dkey, path_to):
+        """Test whether we can reach `path_to` from `dkey`"""
         if not path_to:
             return True
         if dkey in path_to:
