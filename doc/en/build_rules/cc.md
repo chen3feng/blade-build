@@ -68,6 +68,14 @@ Attributes:
   Therefore, for header-only libraries, they also needs to be described with `cc_library`, its public header files need to be
   declared in its `hdrs`, and its direct dependencies need to be listed in its `deps`.
 
+  If the granularity of the library is too large, some unnecessary dependencies will be included due to the enforcement
+  of the `hdrs` checking. You should proper splitting the library to reduce unnecessary coupling.
+
+  For example, [gtest_prod.h](https://github.com/google/googletest/blob/master/googletest/include/gtest/gtest_prod.h) of
+  gtest is often used to declare testing support in product code, but it only contains some declarations and does not
+  depend on the implementation part of the gtest library. It is suitable to declare it in a separate `gtest_prod`
+  library instead of putting it into `gtest` library, Otherwise, the gtest library may be linked into the product code.
+
 * link_all_symbols : bool
   If you depends on the global initialization to register something, but didn't access these
   global object directly. it works for code in `srcs` of executable. but if the global is in a library, it will be
@@ -86,13 +94,13 @@ Attributes:
 
   This library can only be a depenedency of the executable targets (Such as `cc_binary` or `cc_test`), but not normal `cc_library`s. This attribute is
   useful for some exclusive libraries such as malloc library.
-  
+
   For example, `tcmalloc` and `jemalloc` are both malloc library which contains same symbols (such as `malloc`, `free`), if a `cc_library` depends on
   `tcmalloc`, the dependent `cc_binary` may not depends on `jemalloc` any more, otherwise linker will report multiple `malloc` definition. This
   problem can be solved by setting this attribute on both 'tcmalloc' and 'jemalloc'.
 
   A 'binary_link_only' library can depends on other 'binary_link_only' libraries.
-  
+
   ```python
   cc_library(
       name = 'tcmaloc',
@@ -157,7 +165,7 @@ Blade can detect two kind of missing dependencies:
   In this case, just add the missing library to the `deps`.
 
 * `Missing indirect dependency`
-  
+
   One of the indirect included header file(included in the header file) does not appear in the `deps` of this target and its transitive dependencies.
 
   We only do this check for the header files generated during compilation.

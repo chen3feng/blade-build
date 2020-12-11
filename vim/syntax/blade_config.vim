@@ -17,6 +17,7 @@ endif
 
 syn case match
 
+" Globals and Functions
 syn keyword bladeTarget build_target
 syn keyword bladeArg bits
 syn keyword bladeArg arch

@@ -572,7 +572,7 @@ class Blade(object):
         build_jobs_num = self.build_jobs_num()
         cpu_core_num = cpu_count()
         jobs_num = max(min(build_jobs_num, cpu_core_num) / 2, 1)
-        console.info('Adjust build jobs number(-j N) to be %d' % jobs_num)
+        console.info('Adjust test jobs number(-j N) to be %d' % jobs_num)
         return jobs_num
 
     def get_all_rule_names(self):
