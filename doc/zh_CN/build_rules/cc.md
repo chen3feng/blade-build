@@ -57,6 +57,11 @@ cc_library(
 
   因此，对于只有头文件的库，也需要用 `cc_library` 来描述，其公开头文件需要列入到其 `hdrs` 中，其直接依赖需要列入到 `deps` 中。
 
+  如果库的粒度太大，那么通过强制 `hdrs` 检查机制，会导致传递一些不必要的依赖，这时应该进行适当的拆分以降低不必要的耦合。
+  比如 gtest 里的 [gtest_prod.h](https://github.com/google/googletest/blob/master/googletest/include/gtest/gtest_prod.h)，
+  常用来在产品代码中为测试提供支持，但是它本身只包含一些声明，并不依赖 gtest 库的实现部分。这种情况就适合再单独声明成一个
+  独立的 `gtest_prod` 库，而不是和 `gtest` 库放在一起，否则可能导致 gtest 库被链接进产品代码。
+
 * link_all_symbols : bool
 
   如果你通过全局对象的构造函数执行一些动作（比如注册一些可以按运行期间字符串形式的名字动态创建的类），而这个全局变量本身没有被任何地方引用到。
@@ -74,7 +79,7 @@ cc_library(
 * binary_link_only : bool
 
   本库只能作为可执行文件目标（比如 `cc_binary` 或者 `cc_test`）的依赖，而不是其他 `cc_library` 的依赖。本属性适用于排他性的库，比如 malloc 库。
-  
+
   例如 `tcmalloc` 和 `jemalloc` 库都包含了一些相同的符号（`malloc`、`free`等）。如果某个 `cc_library` 依赖了 `tcmalloc`，那么依赖他的 `cc_binary` 将不
   能再选择 `jemalloc` 库，否则会造成链接冲突。通过把 `tcmalloc` 和 `jemalloc` 都设置这个属性，使得其只能作为可执行文件的目标的依赖，从而避免这类问题。
 
