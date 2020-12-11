@@ -23,6 +23,7 @@ import time
 
 from blade import config
 from blade import console
+from blade import maven
 from blade import target
 from blade.binary_runner import BinaryRunner
 from blade.toolchain import ToolChain
@@ -157,6 +158,10 @@ class Blade(object):
     def generate_build_rules(self):
         """Generate the constructing rules. """
         console.info('Generating build rules...')
+
+        # maven_cache = maven.MavenCache.instance(self.__build_dir)
+        # maven_cache.download_all()
+
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         rules = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
@@ -338,13 +343,26 @@ class Blade(object):
 
     def query_dependency_tree(self, output_file):
         """Query the dependency tree of the specified targets. """
+        path_to = self._parse_qyery_path_to()
         query_attr = 'dependents' if self.__options.dependents else 'deps'
         print(file=output_file)
         for key in self.__expanded_command_targets:
-            self._query_dependency_tree(key, 0, query_attr, output_file)
+            self._query_dependency_tree(key, 0, query_attr, path_to, output_file)
             print(file=output_file)
 
-    def _query_dependency_tree(self, key, level, query_attr, output_file):
+    def _parse_qyery_path_to(self):
+        if not self.__options.query_path_to:
+            return set()
+        result = set()
+        for id in target.normalize(self.__options.query_path_to.split(','), self.__working_dir):
+            if id not in self.__target_database:
+                console.fatal('Invalid argument: "--path_to=%s", target "%s" does not exist' % (
+                        self.__options.query_path_to, id))
+                continue
+                result.add(id)
+        return result
+
+    def _query_dependency_tree(self, key, level, query_attr, path_to, output_file):
         """Query the dependency tree of the specified target recursively. """
         if level == 0:
             output = '%s' % key
@@ -354,7 +372,18 @@ class Blade(object):
             output = '%s%s %s' % ('|  ' * (level - 1), '+-', key)
         print(output, file=output_file)
         for dkey in getattr(self.__build_targets[key], query_attr):
-            self._query_dependency_tree(dkey, level + 1, query_attr, output_file)
+            if self._query_path_match(dkey, path_to):
+                self._query_dependency_tree(dkey, level + 1, query_attr, path_to, output_file)
+
+    def _query_path_match(self, dkey, path_to):
+        if not path_to:
+            return True
+        if dkey in path_to:
+            return True
+        dep = self.__build_targets[dkey]
+        if path_to & set(dep.expanded_deps):
+            return True
+        return False
 
     def dump_targets(self, output_file_name):
         result = []

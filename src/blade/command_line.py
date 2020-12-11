@@ -259,6 +259,9 @@ class ParsedCommandLine(object):
             action='store_true', default=False,
             help='Show all targets that depends on the target being queried')
         parser.add_argument(
+            '--path-to', dest='query_path_to', type=str, default='',
+            help='The targets to be depended on, comma separated')
+        parser.add_argument(
             '--output-file', dest='output_file', type=str,
             help='The name of file to output query results, default to stdout')
         parser.add_argument(
