@@ -19,7 +19,6 @@ addons:
       - ninja-build
 
 script:
-  - sh --help
   - src/test/runall.sh
 
 after_success:

@@ -38,7 +38,7 @@ def protoc_import_path_option(incs):
 
 def _shell_support_pipefail():
     """Whether current shell support the `pipefail` option"""
-    return subprocess.call('set -o pipefail', shell=True) == 0
+    return subprocess.call('set -o pipefail 2>/dev/null', shell=True) == 0
 
 
 class _NinjaFileHeaderGenerator(object):
