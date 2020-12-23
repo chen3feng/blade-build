@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import subprocess
 import sys
 import textwrap
 
@@ -33,6 +34,14 @@ def _incs_list_to_string(incs):
 
 def protoc_import_path_option(incs):
     return ' '.join(['-I=%s' % inc for inc in incs])
+
+
+def _set_pipefail_cmd():
+    return ''
+    """The stupid dash (dafault sh of Ubuntu) does'nt support pipefail"""
+    if subprocess.call('set -o pipefail', shell=True) == 0:
+        return 'set -o pipefail && '
+    return ''
 
 
 class _NinjaFileHeaderGenerator(object):
@@ -211,7 +220,7 @@ class _NinjaFileHeaderGenerator(object):
         stderr_splitter = """awk 'BEGIN {stop=0} $$0 ~ /^Multiple include guards may be useful for:/ {stop=1} {if (!stop) { if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr" }}'"""
 
         # Use `pipefail` to ensure that the exit code is correct.
-        template = 'set -o pipefail && %s -H 2>&1 | ' + stderr_splitter + ' > ${out}.H'
+        template = '%s%%s -H 2>&1 | %s > ${out}.H' % (_set_pipefail_cmd(), stderr_splitter)
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
                       '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
