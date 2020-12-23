@@ -202,7 +202,7 @@ class _NinjaFileHeaderGenerator(object):
 
         # To verify whether a header file is included without depends on the library it belongs to,
         # we use the gcc's `-H` option to generate the inclusion stack information, see
-        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details for details..
+        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
         # But this information is output to stderr mixed with diagnostic messages.
         # So we use this awk script to split them.
         #
@@ -210,7 +210,7 @@ class _NinjaFileHeaderGenerator(object):
         # the messages.
         stderr_splitter = """awk 'BEGIN {stop=0} $$0 ~ /^Multiple include guards may be useful for:/ {stop=1} {if (!stop) { if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr" }}'"""
 
-        # pipefail is required here to return currect exit code
+        # Use `pipefail` to ensure that the exit code is correct.
         template = 'set -o pipefail && %s -H 2>&1 | ' + stderr_splitter + ' > ${out}.H'
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '

@@ -50,7 +50,7 @@ class TargetTest(unittest.TestCase):
 
         os.chdir(self.cur_dir)
 
-    def runBlade(self, extra_args=''):
+    def runBlade(self, extra_args='', print_error=True):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
         p = subprocess.Popen(
@@ -60,7 +60,8 @@ class TargetTest(unittest.TestCase):
         try:
             p.wait()
             self.build_output = io.open(self.build_output_file, encoding='utf-8').readlines()
-            print(p.returncode)
+            if p.returncode != 0:
+                sys.stderr.write('Exit with: %d\nstdout:\n%s\n' % (p.returncode, '\n'.join(self.build_output)))
             return p.returncode == 0
         except:
             sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
