@@ -222,7 +222,8 @@ class _NinjaFileHeaderGenerator(object):
             template = 'set -o pipefail && %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
         else:
             # Some shell such as `dash` under Ubuntu doesn't support pipefail, make a workaround.
-            template = '%%s -H 2> ${out}.err && awk %s < ${out}.err > ${out}.H && rm -f ${out}.err' % awk_script
+            template = ('%%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
+                        'rm -f ${out}.err; exit $$ec') % awk_script
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
                       '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
