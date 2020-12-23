@@ -199,31 +199,37 @@ class _NinjaFileHeaderGenerator(object):
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
         self.generate_cc_vars()
+
+        # To verify whether a header file is included without depends on the library it belongs to,
+        # we use the gcc's `-H` option to generate the inclusion stack information, see
+        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details for details..
+        # But this information is output to stderr mixed with diagnostic messages.
+        # So we use this awk script to split them.
+        #
+        # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
+        # the messages.
+        stderr_splitter = """awk 'BEGIN {stop=0} $$0 ~ /^Multiple include guards may be useful for:/ {stop=1} {if (!stop) { if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr" }}'"""
+
+        # pipefail is required here to return currect exit code
+        template = 'set -o pipefail && %s -H 2>&1 | ' + stderr_splitter + ' > ${out}.H'
+
+        cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
+                      '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
+                              cc, ' '.join(cflags), ' '.join(cppflags), includes)
         self.generate_rule(name='cc',
-                           command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${optimize} ${c_warnings} ${cppflags} '
-                                   '%s ${includes} ${in}' % (
-                                       cc, ' '.join(cflags), ' '.join(cppflags), includes),
+                           command=template % cc_command,
                            description='CC ${in}',
                            depfile='${out}.d',
                            deps='gcc')
+
+        cxx_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
+                       '${cxx_warnings} ${cppflags} %s ${includes} ${in}') % (
+                               cxx, ' '.join(cxxflags), ' '.join(cppflags), includes)
         self.generate_rule(name='cxx',
-                           command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${optimize} ${cxx_warnings} ${cppflags} '
-                                   '%s ${includes} ${in}' % (
-                                       cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                           command=template % cxx_command,
                            description='CXX ${in}',
                            depfile='${out}.d',
                            deps='gcc')
-
-        # Generate inclusion stack file for cc file to check dependency missing, see '-H' part in
-        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        self.generate_rule(name='cchdrs',
-                           command=self._hdrs_command(cc, cflags, cppflags, includes),
-                           description='CC HDRS ${in}')
-        self.generate_rule(name='cxxhdrs',
-                           command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
-                           description='CXX HDRS ${in}')
 
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self.generate_rule(name='securecccompile',
