@@ -214,14 +214,15 @@ class _NinjaFileHeaderGenerator(object):
         #
         # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
         # the messages.
-        stderr_splitter = """awk 'BEGIN {stop=0} $$0 ~ /^Multiple include guards may be useful for:/ {stop=1} {if (!stop) { if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr" }}'"""
+        awk_script = ("""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
+                      """ !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
 
         if _shell_support_pipefail():
             # Use `pipefail` to ensure that the exit code is correct.
-            template = 'set -o pipefail && %%s -H 2>&1 | %s > ${out}.H' % stderr_splitter
+            template = 'set -o pipefail && %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
         else:
             # Some shell such as `dash` under Ubuntu doesn't support pipefail, make a workaround.
-            template = '%%s -H 2> ${out}.err && %s < ${out}.err > ${out}.H && rm -f ${out}.err' % stderr_splitter
+            template = '%%s -H 2> ${out}.err && awk %s < ${out}.err > ${out}.H && rm -f ${out}.err' % awk_script
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
                       '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
