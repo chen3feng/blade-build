@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import subprocess
 import sys
 import textwrap
 
@@ -33,6 +34,11 @@ def _incs_list_to_string(incs):
 
 def protoc_import_path_option(incs):
     return ' '.join(['-I=%s' % inc for inc in incs])
+
+
+def _shell_support_pipefail():
+    """Whether current shell support the `pipefail` option"""
+    return subprocess.call('set -o pipefail 2>/dev/null', shell=True) == 0
 
 
 class _NinjaFileHeaderGenerator(object):
@@ -199,31 +205,43 @@ class _NinjaFileHeaderGenerator(object):
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
         self.generate_cc_vars()
+
+        # To verify whether a header file is included without depends on the library it belongs to,
+        # we use the gcc's `-H` option to generate the inclusion stack information, see
+        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
+        # But this information is output to stderr mixed with diagnostic messages.
+        # So we use this awk script to split them.
+        #
+        # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
+        # the messages.
+        awk_script = ("""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
+                      """ !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
+
+        if _shell_support_pipefail():
+            # Use `pipefail` to ensure that the exit code is correct.
+            template = 'LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
+        else:
+            # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
+            template = ('LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
+                        'rm -f ${out}.err; exit $$ec') % awk_script
+
+        cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
+                      '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
+                              cc, ' '.join(cflags), ' '.join(cppflags), includes)
         self.generate_rule(name='cc',
-                           command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${optimize} ${c_warnings} ${cppflags} '
-                                   '%s ${includes} ${in}' % (
-                                       cc, ' '.join(cflags), ' '.join(cppflags), includes),
+                           command=template % cc_command,
                            description='CC ${in}',
                            depfile='${out}.d',
                            deps='gcc')
+
+        cxx_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
+                       '${cxx_warnings} ${cppflags} %s ${includes} ${in}') % (
+                               cxx, ' '.join(cxxflags), ' '.join(cppflags), includes)
         self.generate_rule(name='cxx',
-                           command='%s -o ${out} -MMD -MF ${out}.d '
-                                   '-c -fPIC %s %s ${optimize} ${cxx_warnings} ${cppflags} '
-                                   '%s ${includes} ${in}' % (
-                                       cxx, ' '.join(cxxflags), ' '.join(cppflags), includes),
+                           command=template % cxx_command,
                            description='CXX ${in}',
                            depfile='${out}.d',
                            deps='gcc')
-
-        # Generate inclusion stack file for cc file to check dependency missing, see '-H' part in
-        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        self.generate_rule(name='cchdrs',
-                           command=self._hdrs_command(cc, cflags, cppflags, includes),
-                           description='CC HDRS ${in}')
-        self.generate_rule(name='cxxhdrs',
-                           command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
-                           description='CXX HDRS ${in}')
 
         securecc = '%s %s' % (cc_config['securecc'], cxx)
         self.generate_rule(name='securecccompile',

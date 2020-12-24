@@ -410,10 +410,6 @@ class CcTarget(Target):
         for key in ('c_warnings', 'cxx_warnings'):
             if key in vars:
                 del vars[key]
-        for src, obj, rule in hdrs_inclusion_srcs:
-            output = obj[:-2] + '.H'  # Replace '.o' suffix with '.H'
-            rule = '%shdrs' % rule
-            self.ninja_build(rule, output, inputs=src, implicit_deps=[obj], variables=vars)
 
     def _cc_compile_deps(self):
         """Return a stamp which depends on targets which generate header files. """
@@ -551,7 +547,7 @@ class CcTarget(Target):
         for details.
         """
         objs_dir = self._target_file_path(self.name + '.objs')
-        path = '%s.H' % os.path.join(objs_dir, src)
+        path = '%s.o.H' % os.path.join(objs_dir, src)
         if not os.path.exists(path):
             return ''
         return path
@@ -559,7 +555,7 @@ class CcTarget(Target):
     def _parse_inclusion_stacks(self, path):
         """Parae headers inclusion stacks from file.
 
-        Given the following inclusions found in the app/example/foo.cc.H:
+        Given the following inclusions found in the app/example/foo.cc.o.H:
 
             . ./app/example/foo.h
             .. build64_release/app/example/proto/foo.pb.h
