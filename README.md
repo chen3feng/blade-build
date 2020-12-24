@@ -24,6 +24,12 @@ Click here to read [中文文档](README-zh.md).
 [![codebeat badge](https://codebeat.co/badges/e0d861b7-47cc-4023-9784-7d54246a3576)](https://codebeat.co/projects/github-com-chen3feng-blade-build-master)
 [![Coverage](https://coveralls.io/repos/chen3feng/blade-build/badge.svg?branch=master)](https://coveralls.io/github/chen3feng/blade-build)
 
+## Demo
+
+First, let's see a cool demo:
+
+[![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
+
 ## Brief
 
 Blade is designed to be a modern build system. It is powerful and easy to use. It supports building
