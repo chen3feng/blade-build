@@ -219,10 +219,10 @@ class _NinjaFileHeaderGenerator(object):
 
         if _shell_support_pipefail():
             # Use `pipefail` to ensure that the exit code is correct.
-            template = 'LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
+            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
         else:
             # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
+            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
                         'rm -f ${out}.err; exit $$ec') % awk_script
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
