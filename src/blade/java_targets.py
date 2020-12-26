@@ -41,7 +41,7 @@ class MavenJar(Target):
         self.attr['id'] = id
         self.attr['classifier'] = classifier
         self.attr['transitive'] = transitive
-        self._download()
+        self._setup()
 
     def _check_id(self, id):
         """Check if id is valid. """
@@ -54,11 +54,13 @@ class MavenJar(Target):
     def _get_java_pack_deps(self):
         return [], self.attr.get('maven_deps', [])
 
-    def _download(self):
-        maven_cache = maven.MavenCache.instance(self.build_dir)
-        maven_cache.download(self.attr['id'], self.attr['classifier'], self.attr['transitive'], self)
-
     def _setup(self):
+        maven_cache = maven.MavenCache.instance(self.build_dir)
+        maven_cache.schedule_download(self.attr['id'], self.attr['classifier'],
+                                      self.attr['transitive'], self)
+
+    def ninja_rules(self):
+        # This muthod doesn't generate build rules, so it is always executed without caching.
         maven_cache = maven.MavenCache.instance(self.build_dir)
         artifact = maven_cache.get_artifact(self.attr['id'], self.attr['classifier'],
                                             self.attr['transitive'], self)
@@ -66,8 +68,6 @@ class MavenJar(Target):
             self.attr['binary_jar'] = artifact.path
             self.attr['maven_deps'] = artifact.deps.split(':')
 
-    def ninja_rules(self):
-        self._setup()
 
 def debug_info_options():
     """javac debug information options(-g)"""

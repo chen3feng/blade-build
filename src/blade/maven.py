@@ -17,7 +17,6 @@ from __future__ import print_function
 import os
 import shutil
 import subprocess
-import sys
 import threading
 import time
 
@@ -260,7 +259,8 @@ class MavenCache(object):
             self._download_artifact(id, classifier, transitive, target)
         return self.__jar_database.get((id, classifier, transitive))
 
-    def download(self, id, classifier, transitive, target):
+    def schedule_download(self, id, classifier, transitive, target):
+        """Schedule an artifact to be downloaded"""
         self.__to_download.put((id, classifier, transitive, target))
 
     def download_all(self):
