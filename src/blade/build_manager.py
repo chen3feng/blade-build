@@ -159,8 +159,8 @@ class Blade(object):
         """Generate the constructing rules. """
         console.info('Generating build rules...')
 
-        # maven_cache = maven.MavenCache.instance(self.__build_dir)
-        # maven_cache.download_all()
+        maven_cache = maven.MavenCache.instance(self.__build_dir)
+        maven_cache.download_all()
 
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         rules = generator.generate_build_script()

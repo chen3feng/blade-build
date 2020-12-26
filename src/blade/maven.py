@@ -12,11 +12,18 @@ from maven repository
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import shutil
 import subprocess
+import threading
 import time
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 from blade import config
 from blade import console
@@ -38,9 +45,12 @@ class MavenArtifact(object):
     separated by colon in maven cache.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, deps):
         self.path = path
-        self.deps = None
+        self.deps = deps
+
+    def __repr__(self):
+        return repr(self.__dict__)
 
 
 class MavenCache(object):
@@ -60,7 +70,7 @@ class MavenCache(object):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         self.__log_dir = log_dir
-        #   key: (id, classifier)
+        #   key: (id, classifier, transitive)
         #     id: jar id in the format group:artifact:version
         #   value: an instance of MavenArtifact
         self.__jar_database = {}
@@ -88,8 +98,10 @@ class MavenCache(object):
         # Download the snapshot artifact daily
         self.__build_time = time.time()
 
-    def _generate_jar_path(self, id):
-        """Generate jar path within local repository. """
+        self.__to_download = queue.Queue()
+
+    def _artifact_dir(self, id):
+        """Get dir for artifact within local repository. """
         group, artifact, version = id.split(':')
         return os.path.join(self.__local_repository,
                             group.replace('.', '/'), artifact, version)
@@ -127,20 +139,20 @@ class MavenCache(object):
         basename = self._filename_base(artifact, version, classifier)
         jar = basename + '.jar'
 
-        # Write log to build dir temporarily, and move it into the target_path after success.
+        # Write log to build dir temporarily, and move it into the artifact_dir after success.
         log_path = os.path.join(self.__log_dir, basename + '_download.log')
-        target_path = self._generate_jar_path(id)
+        artifact_dir = self._artifact_dir(id)
         target_log = 'download.log'
         if classifier:
             target_log = classifier + '_download.log'
-        target_log = os.path.join(target_path, target_log)
+        target_log = os.path.join(artifact_dir, target_log)
 
-        if not self._need_download(os.path.join(target_path, jar), version, target_log):
+        if not self._need_download(os.path.join(artifact_dir, jar), version, target_log):
             return True
 
         if classifier:
             id = '%s:%s' % (id, classifier)
-        console.info('Downloading %s from central repository...' % id)
+        target.info('Downloading maven_jar %s' % id)
         cmd = ' '.join([self.__maven,
                         'dependency:get',
                         '-DgroupId=%s' % group,
@@ -150,23 +162,31 @@ class MavenCache(object):
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -e -X'  # More detailed debug message
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
-            target.warning('Error occurred when downloading %s from central '
-                           'repository. Check %s for details.' % (id, log_path))
+            message = ('Error downloading maven_jar %s, see "%s" for details.' % (id, log_path))
+            # Rertry without transitive
             cmd += ' -Dtransitive=false'
-            if subprocess.call('%s > %s' % (cmd, log_path + '.transitive'), shell=True) != 0:
+            with open(log_path, 'a') as f:
+                f.write('\n\nBlade: Retry without transitive dependencies\n\n')
+
+            if subprocess.call('%s >> %s' % (cmd, log_path), shell=True) != 0:
+                target.error(message)
                 return False
-            target.warning('Download standalone artifact %s successfully, but '
-                           'its transitive dependencies are unavailable.' % id)
-        shutil.move(log_path, target_log)
+            target.warning('Downloaded maven_jar %s, but without its transitive dependencies.' % id)
+        try:
+            shutil.move(log_path, target_log)
+        except IOError:
+            # When multiple threads download same artifact
+            pass
+
         return True
 
     def _download_dependency(self, id, classifier, target):
         group, artifact, version = id.split(':')
-        target_path = self._generate_jar_path(id)
+        artifact_dir = self._artifact_dir(id)
         classpath = 'classpath.txt'
         log = 'classpath.log'
-        log = os.path.join(target_path, log)
-        if not self._need_download(os.path.join(target_path, classpath), version, log):
+        log = os.path.join(artifact_dir, log)
+        if not self._need_download(os.path.join(artifact_dir, classpath), version, log):
             return True
 
         # if classifier:
@@ -175,70 +195,109 @@ class MavenCache(object):
         #     # usually fails. Here when there is no classpath.txt
         #     # file but classpath.log exists, that means the failure
         #     # of analyzing dependencies last time
-        #     if (not os.path.exists(os.path.join(target_path, classpath))
+        #     if (not os.path.exists(os.path.join(artifact_dir, classpath))
         #         and os.path.exists(log)):
         #         return False
 
-        console.info('Downloading %s dependencies...' % id)
-        pom = os.path.join(target_path, artifact + '-' + version + '.pom')
+        target.info('Querying dependencies for maven_jar %s' % id)
+        classpath_tmp = classpath + '.tmp'
+        pom = os.path.join(artifact_dir, artifact + '-' + version + '.pom')
         cmd = ' '.join([self.__maven,
                         'dependency:build-classpath',
                         '-DincludeScope=runtime',
-                        '-Dmdep.outputFile=%s' % classpath])
+                        '-Dmdep.outputFile=%s' % classpath_tmp])
         cmd += ' -e -X -f %s > %s' % (pom, log)
+        classpath = os.path.join(artifact_dir, classpath)
+        classpath_tmp = os.path.join(artifact_dir, classpath_tmp)
         if subprocess.call(cmd, shell=True) != 0:
-            target.warning('Error occurred when resolving %s dependencies. '
-                           'Check %s for details.' % (id, log))
+            target.warning('Failed to query dependencies of %s , see "%s" for details.' % (id, log))
+            try:
+                os.remove(classpath_tmp)
+            except OSError:
+                pass
             return False
+
+        try:
+            shutil.move(classpath_tmp, classpath)
+        except IOError:
+            # When multiple threads download same artifact
+            pass
+
         return True
 
-    def _download_artifact(self, id, classifier, target):
+    def _download_artifact(self, id, classifier, transitive, target):
         """Download the specified jar and its transitive dependencies. """
         if not self._download_jar(id, classifier, target):
+            self.__jar_database[(id, classifier, transitive)] = None
             return False
 
         group, artifact, version = id.split(':')
-        path = self._generate_jar_path(id)
+        artifact_dir = self._artifact_dir(id)
         jar = artifact + '-' + version + '.jar'
         if classifier:
             jar = artifact + '-' + version + '-' + classifier + '.jar'
-        self.__jar_database[(id, classifier)] = MavenArtifact(os.path.join(path, jar))
-        return True
 
-    def _get_artifact_from_database(self, id, classifier, target):
-        """get_artifact_from_database. """
-        if (id, classifier) not in self.__jar_database:
-            if not self._download_artifact(id, classifier, target):
-                target.fatal('Download %s failed' % id)
-        return self.__jar_database[(id, classifier)]
-
-    def get_jar_path(self, id, classifier, target):
-        """get_jar_path
-
-        Return local jar path corresponding to the id specified in the
-        format group:artifact:version.
-        Download jar files and its transitive dependencies if needed.
-
-        """
-        artifact = self._get_artifact_from_database(id, classifier, target)
-        return artifact.path
-
-    def get_jar_deps_path(self, id, classifier, target):
-        """get_jar_deps_path
-
-        Return a string of the dependencies path separated by colon.
-        This string can be used in java -cp later.
-
-        """
-        artifact = self._get_artifact_from_database(id, classifier, target)
-        if artifact.deps is None:
+        deps = ''
+        if transitive:
             if not self._download_dependency(id, classifier, target):
                 # Ignore dependency download error
-                artifact.deps = ''
+                pass
             else:
-                path = self._generate_jar_path(id)
-                classpath = os.path.join(path, 'classpath.txt')
+                classpath = os.path.join(artifact_dir, 'classpath.txt')
                 with open(classpath) as f:
                     # Read the first line
-                    artifact.deps = f.readline()
-        return artifact.deps
+                    deps = f.readline()
+
+        # Thread safe, see https://docs.python.org/3/glossary.html#term-global-interpreter-lock
+        artifact = MavenArtifact(os.path.join(artifact_dir, jar), deps)
+        self.__jar_database[(id, classifier, transitive)] = artifact
+        return True
+
+    def get_artifact(self, id, classifier, transitive, target):
+        """get_artifact_from_database. """
+        if (id, classifier, transitive) not in self.__jar_database:
+            self._download_artifact(id, classifier, transitive, target)
+        return self.__jar_database.get((id, classifier, transitive))
+
+    def schedule_download(self, id, classifier, transitive, target):
+        """Schedule an artifact to be downloaded"""
+        self.__to_download.put((id, classifier, transitive, target))
+
+    def download_all(self):
+        """Download all needed maven artifacts"""
+        if self.__to_download.empty():
+            return
+        num_threads = min(self.__to_download.qsize(), 16)
+        console.info('Downloading maven_jars, concurrency=%d ...' % num_threads)
+        threads = []
+        for i in range(num_threads):
+            thread = threading.Thread(target=self._download_worker)
+            thread.start()
+            threads.append(thread)
+        try:
+            self.__to_download.join()
+        except KeyboardInterrupt:
+            console.error('KeyboardInterrupt')
+            while not self.__to_download.empty():
+                try:
+                    self.__to_download.get_nowait()
+                except queue.Empty:
+                    pass
+        finally:
+            console.debug('join threads')
+            for thread in threads:
+                thread.join()
+            console.debug('join threads done')
+
+        console.info('Downloading maven_jars done.')
+
+    def _download_worker(self):
+        """Download worker thread function"""
+        while not self.__to_download.empty():
+            try:
+                id, classifier, transitive, target = self.__to_download.get_nowait()
+            except queue.Empty:
+                return
+            if target.dependents:  # Only download really used artifacts
+                self._download_artifact(id, classifier, transitive, target)
+            self.__to_download.task_done()
