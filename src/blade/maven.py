@@ -12,10 +12,12 @@ from maven repository
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 
@@ -48,6 +50,9 @@ class MavenArtifact(object):
         self.path = path
         self.deps = deps
 
+    def __repr__(self):
+        return repr(self.__dict__)
+
 
 class MavenCache(object):
     """MavenCache. Manages maven jar files. """
@@ -66,7 +71,7 @@ class MavenCache(object):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         self.__log_dir = log_dir
-        #   key: (id, classifier)
+        #   key: (id, classifier, transitive)
         #     id: jar id in the format group:artifact:version
         #   value: an instance of MavenArtifact
         self.__jar_database = {}
@@ -224,7 +229,7 @@ class MavenCache(object):
     def _download_artifact(self, id, classifier, transitive, target):
         """Download the specified jar and its transitive dependencies. """
         if not self._download_jar(id, classifier, target):
-            self.__jar_database[(id, classifier)] = None
+            self.__jar_database[(id, classifier, transitive)] = None
             return False
 
         group, artifact, version = id.split(':')
@@ -244,24 +249,28 @@ class MavenCache(object):
                     # Read the first line
                     deps = f.readline()
 
-        self.__jar_database[(id, classifier)] = MavenArtifact(os.path.join(artifact_dir, jar), deps)
+        # Thread safe, see https://docs.python.org/3/glossary.html#term-global-interpreter-lock
+        artifact = MavenArtifact(os.path.join(artifact_dir, jar), deps)
+        self.__jar_database[(id, classifier, transitive)] = artifact
         return True
 
     def get_artifact(self, id, classifier, transitive, target):
         """get_artifact_from_database. """
-        if (id, classifier) not in self.__jar_database:
+        if (id, classifier, transitive) not in self.__jar_database:
             self._download_artifact(id, classifier, transitive, target)
-        return self.__jar_database.get((id, classifier))
+        return self.__jar_database.get((id, classifier, transitive))
 
     def download(self, id, classifier, transitive, target):
         self.__to_download.put((id, classifier, transitive, target))
 
     def download_all(self):
+        """Download all needed maven artifacts"""
         if self.__to_download.empty():
             return
-        console.info('Downloading maven_jars...')
+        num_threads = min(self.__to_download.qsize(), 16)
+        console.info('Downloading maven_jars, concurrency=%d ...' % num_threads)
         threads = []
-        for i in range(max(self.__to_download.qsize(), 16)):
+        for i in range(num_threads):
             thread = threading.Thread(target=self._download_worker)
             thread.start()
             threads.append(thread)
@@ -275,20 +284,20 @@ class MavenCache(object):
                 except queue.Empty:
                     pass
         finally:
-            console.info('join threads')
+            console.debug('join threads')
             for thread in threads:
                 thread.join()
-            console.info('join threads done')
+            console.debug('join threads done')
 
-        console.info('Downloading done.')
+        console.info('Downloading maven_jars done.')
 
     def _download_worker(self):
+        """Download worker thread function"""
         while not self.__to_download.empty():
             try:
                 id, classifier, transitive, target = self.__to_download.get_nowait()
             except queue.Empty:
                 return
-            self._download_artifact(id, classifier, transitive, target)
+            if target.dependents:  # Only download really used artifacts
+                self._download_artifact(id, classifier, transitive, target)
             self.__to_download.task_done()
-
-
