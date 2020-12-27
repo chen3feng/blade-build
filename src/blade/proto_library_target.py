@@ -320,7 +320,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                              implicit_deps=implicit_deps, variables=vars)
             source, header = self._proto_gen_cpp_file_names(src)
             cpp_sources.append(source)
-        objs = self._cc_objects(cpp_sources, True, generated_headers=self.attr['generated_hdrs'])
+        objs = self._generated_cc_objects(cpp_sources, generated_headers=self.attr['generated_hdrs'])
         self._cc_library(objs)
 
     def _proto_java_rules(self):
