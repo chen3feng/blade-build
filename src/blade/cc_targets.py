@@ -156,6 +156,18 @@ class CcTarget(Target):
         options = self.blade.get_options()
         self.attr['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
+        self.attr['expanded_srcs'] = self._expand_srcs()
+
+    def _expand_srcs(self):
+        """Expand src to [(src, full_path)]"""
+        result = []
+        for src in self.srcs:
+            full_path = self._source_file_path(src)
+            if not os.path.exists(full_path):
+                # Assume generated
+                full_path = self._target_file_path(src)
+            result.append((src, full_path))
+        return result
 
     def _incs_to_fullpath(self, incs):
         """Expand incs to full path"""
@@ -324,8 +336,9 @@ class CcTarget(Target):
                 return 'cxx'
         return 'cc'
 
-    def _setup_cc_vars(self, vars):
-        """Set up warning, compile options and include directories for cc build. """
+    def _get_cc_vars(self):
+        """Get warning, compile options and include directories for cc build. """
+        vars = {}
         # Warnings
         if self.attr.get('warning') != 'yes':
             vars['c_warnings'] = '-w'
@@ -340,6 +353,8 @@ class CcTarget(Target):
         optimize = self._get_optimize_flags()
         if optimize is not None:
             vars['optimize'] = optimize
+
+        return vars
 
     def _generate_link_flags(self):
         """Generate linker flags for cc link. """
@@ -402,15 +417,6 @@ class CcTarget(Target):
                         usr_libs.append(lib)
         return sys_libs, usr_libs, link_all_symbols_libs
 
-    def _cc_hdrs(self, hdrs_inclusion_srcs, vars):
-        """Generate header inclusion stack files"""
-        if not self._need_verify_generate_hdrs():
-            return
-
-        for key in ('c_warnings', 'cxx_warnings'):
-            if key in vars:
-                del vars[key]
-
     def _cc_compile_deps(self):
         """Return a stamp which depends on targets which generate header files. """
         deps = self._collect_cc_compile_deps()
@@ -453,37 +459,31 @@ class CcTarget(Target):
 
         return list(result)
 
-    def _cc_objects(self, sources, generated=False, generated_headers=None):
+    def _cc_objects(self, expanded_srcs, generated_headers=None):
         """Generate cc objects build rules in ninja. """
         # pylint: disable=too-many-locals
-        vars = {}
-        self._setup_cc_vars(vars)
+        vars = self._get_cc_vars()
         implicit_deps = []
         implicit_deps += self._cc_compile_deps()
+        if generated_headers and len(generated_headers) > 1:
+            implicit_deps += generated_headers
         objs_dir = self._target_file_path(self.name + '.objs')
-        objs, hdrs_inclusion_srcs = [], []
-        for src in sources:
+        objs = []
+        for src, input in expanded_srcs:
             obj = '%s.o' % os.path.join(objs_dir, src)
             rule = self._get_rule_from_suffix(src)
-            if generated:
-                input = self._target_file_path(src)
-                if generated_headers and len(generated_headers) > 1:
-                    implicit_deps += generated_headers
-            else:
-                path = self._source_file_path(src)
-                if os.path.exists(path):
-                    input = path
-                    hdrs_inclusion_srcs.append((path, obj, rule))
-                else:
-                    input = self._target_file_path(src)
             self.ninja_build(rule, obj, inputs=input,
                              implicit_deps=implicit_deps,
                              variables=vars, clean=[])
             objs.append(obj)
 
-        self._cc_hdrs(hdrs_inclusion_srcs, vars)
         self._remove_on_clean(objs_dir)
         return objs
+
+    def _generated_cc_objects(self, sources, generated_headers=None):
+        """Compile generated cc sources"""
+        expanded_sources = [(src, self._target_file_path(src)) for src in sources]
+        return self._cc_objects(expanded_sources, generated_headers)
 
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
@@ -878,8 +878,7 @@ class CcLibrary(CcTarget):
 
     def _securecc_objects(self, sources):
         """Generate securecc compile rules in ninja. """
-        vars = {}
-        self._setup_cc_vars(vars)
+        vars = self._get_cc_vars()
         implicit_deps = self._cc_compile_deps()
 
         objs_dir = self._target_file_path(self.name + '.objs')
@@ -898,7 +897,7 @@ class CcLibrary(CcTarget):
             if self.attr.get('secure'):
                 objs = self._securecc_objects(self.srcs)
             else:
-                objs = self._cc_objects(self.srcs)
+                objs = self._cc_objects(self.attr['expanded_srcs'])
             self._cc_library(objs)
 
 
@@ -1376,7 +1375,7 @@ class CcBinary(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc binary/test. """
         self._check_deprecated_deps()
-        objs = self._cc_objects(self.srcs)
+        objs = self._cc_objects(self.attr['expanded_srcs'])
         self._cc_binary(objs, self.attr['dynamic_link'])
 
 
@@ -1477,7 +1476,7 @@ class CcPlugin(CcTarget):
     def ninja_rules(self):
         """Generate ninja build rules for cc plugin. """
         self._check_deprecated_deps()
-        objs = self._cc_objects(self.srcs)
+        objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
         implicit_deps = []
         sys_libs, usr_libs, link_all_symbols_libs = self._static_dependencies()
