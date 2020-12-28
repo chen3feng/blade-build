@@ -81,7 +81,7 @@ The format of `hdr_dep_missing_ignore` is a dict like `{ target_label : {src : [
 }
 ```
 
-Which means, for `common:rpc`, in `rpc_server.cc`, if the libraries which declared `common/base64.h` 
+Which means, for `common:rpc`, in `rpc_server.cc`, if the libraries which declared `common/base64.h`
 and `common/list.h` are not declared in the `deps`, this error will be ignored.
 
 For the generated header files, the path can have no build_dir prefix, and it is best not to have it, so that it can be used for different build types.
@@ -146,14 +146,18 @@ Java related configurations
 | maven_central                  | string |                           |                | Maven repository URL                                    |
 | maven_snapshot_update_policy   | string | daily                     |                | Update policy of snapshot version in maven repository   |
 | maven_snapshot_update_interval | int    | empty                     |                | Update interval of snapshot version in maven repository |
+| maven_download_concurrency     | int    | 0                         |                | Number of processes when download maven artifacts       |
 | warnings                       | list   | ['-Werror', '-Xlint:all'] |                | Warning flags                                           |
 | source_encoding                | string | None                      |                | Specify character encoding used by source files         |
 | java_home                      | string | Take from '$JAVA_HOME'    |                | Set JAVA_HOME                                           |
 
 About maven:
 
-* maven_snapshot_updata_policy values: "always", "daily"(default), "interval",  "never"
-* maven_snapshot_update_interval is in minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
+* Valid values of `maven_snapshot_updata_policy` are: "always", "daily"(default), "interval",  "never"
+* The unit of `maven_snapshot_update_interval` is minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
+* Setting `maven_download_concurrency` to above `1` can speedup maven artifacts downloading, but [maven local repository is not concurrent-safe defaultly](https://issues.apache.org/jira/browse/MNG-2802),
+  you can try to install [takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository) to make it safe.
+  NOTE there are multiple available versions, the version in the example code of the document is not the latest one.
 
 ### proto_library_config
 

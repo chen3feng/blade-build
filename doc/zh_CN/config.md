@@ -153,14 +153,17 @@ Java构建相关的配置
 | maven\_central                    | string | 空                          |              | maven 仓库的URL                      |
 | maven\_snapshot\_update\_policy   | string | daily                       |              | maven 仓库的 SNAPSHOT 版本的更新策略 |
 | maven\_snapshot\_update\_interval | int    | 空                          |              | maven 仓库的 SNAPSHOT 版本的更新间隔 |
+| maven_download_concurrency        | int    | 0                           |              | 并发下载 maven_jar 的进程数          |
 | warnings                          | list   | ['-Werror', '-Xlint:all']   |              | 警告设置                             |
 | source\_encoding                  | string | None                        |              | 设置源代码的默认编码                 |
-| java\_home                        | string | 读取 '$JAVA\_HOME' 环境变量  |              | 设置JAVA_HOME                        |
+| java\_home                        | string | 读取 '$JAVA\_HOME' 环境变量 |              | 设置JAVA_HOME                        |
 
 关于 Maven：
 
 * maven\_snapshot\_updata\_policy 允许的值："always", "daily"(默认), "interval",  "never"
 * maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
+* 设置 `maven_download_concurrency` 大于 1 可以提高下载速度，但是由于[maven 本地仓库缓存默认不是并发安全的](https://issues.apache.org/jira/browse/MNG-2802),
+  你可以尝试安装[takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository) 来确保安全, 注意其实有多个可用的版本，文档示例里的不是最新的。
 
 ### proto\_library\_config ###
 
