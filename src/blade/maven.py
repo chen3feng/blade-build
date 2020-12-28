@@ -265,9 +265,10 @@ class MavenCache(object):
 
     def download_all(self):
         """Download all needed maven artifacts"""
-        if self.__to_download.empty():
+        concurrency = config.get_item('java_config', 'maven_download_concurrency')
+        num_threads = min(self.__to_download.qsize(), concurrency)
+        if num_threads == 0:
             return
-        num_threads = min(self.__to_download.qsize(), 16)
         console.info('Downloading maven_jars, concurrency=%d ...' % num_threads)
         threads = []
         for i in range(num_threads):
