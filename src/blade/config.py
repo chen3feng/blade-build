@@ -152,7 +152,7 @@ class BladeConfig(object):
                     'Can be %s' % _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES,
                 'maven_snapshot_update_interval': 0,
                 'maven_snapshot_update_interval__doc__': 'When policy is interval, in minutes',
-                'maven_download_concurrency': 16,
+                'maven_download_concurrency': 0,
                 'maven_download_concurrency__doc__':
                     'Number of processes to pre-download maven_jar, 0 to disable pre-downloading',
                 'warnings': ['-Werror', '-Xlint:all'],
