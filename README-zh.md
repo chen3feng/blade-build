@@ -39,7 +39,7 @@ Click here to read [English README](README.md).
   * 支持自定义扩展
   * 后端只支持[ninja](doc/zh_CN/config.md#global_config)构建系统，大幅度提高构建性能
 
-具体请查看[升级说明](doc/zh_CN/upgrade-to-v2,md)。
+具体请查看[升级说明](doc/zh_CN/upgrade-to-v2.md)。
 
 ## 源起
 
