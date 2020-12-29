@@ -32,7 +32,7 @@ First, let's see a cool demo:
 
 ## News
 
-* Version 2.0 released!, it includes the following notable changes:
+* Version 2.0 is released! It includes the following notable changes:
 
   * minimal python version 2.7, support python 3
   * Support Java, scala building
@@ -40,12 +40,12 @@ First, let's see a cool demo:
   * Support custom extensions
   * Only use [ninja](doc/en/config.md#global_config) as backend build system, increases speed dramatically.
 
-Please follow [Upgrade Notes](doc/en/upgrade-to-v2.md) to upgrade.
+Please follow the [Upgrade Notes](doc/en/upgrade-to-v2.md) to upgrade.
 
 ## Brief
 
 Blade is designed to be a modern build system. It is powerful and easy to use. It supports building
-multiple languages, such as c/c++, java, python, scala, protobuf and swig etc. It analyzes the
+multiple languages, such as c/c++, java, python, scala, protobuf, etc. It analyzes the
 target dependency automatically and integrates compiling, linking, testing(includes incremental
 testing and parallel testing) and static code inspectiontogether.
 It aims to improve the clarity and simplicity of the building rules for a project.

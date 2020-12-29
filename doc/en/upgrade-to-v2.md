@@ -16,19 +16,19 @@ There are many improvement in V2, include performance，new features, code refac
 - Better `clean` sub command
 - Complete English documents.
 
-## Frequent Problems
+## Possible Problems
 
 ### Python Version
 
-V2 Only support python 2.7 and 3.x, no longer support old version. For python 3.x, only 3.6 were tests.
+V2 Only support python 2.7 and 3.x, no longer support old versions. And for python 3.x, only 3.6 were tests.
 
 ### Ninja
 
 Blade is a "meta" build system, it must depends on a backend build system.
 The initial version use Scons as its backend. but ninja is much faster than Scons.
-So in V2, we only support ninja as our backend build.
+So in V2, we only support ninja as our backend build system.
 
-To upgrade V2, you muse install [ninja](https://ninja-build.org/), by either package manager or downloaded binary.
+To upgrade to V2, you muse install [ninja](https://ninja-build.org/), by either package manager or downloaded binary.
 
 ### hdrs dependency check
 
