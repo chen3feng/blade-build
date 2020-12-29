@@ -21,11 +21,7 @@ class TestCcLibrary(blade_test.TargetTest):
         self.doSetUp('cc')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly.
-
-        Scons can use the rules for dry running.
-
-        """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.runBlade())
 
         com_lower_line = self.findCommand(['-c', 'plowercase.cpp.o'])

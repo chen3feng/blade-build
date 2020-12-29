@@ -30,6 +30,18 @@ First, let's see a cool demo:
 
 [![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
+## News
+
+* Version 2.0 released!, it includes the following notable changes:
+
+  * minimal python version 2.7, support python 3
+  * Support Java, scala building
+  * Full support to Python
+  * Support custom extensions
+  * Only use [ninja](doc/en/config.md#global_config) as backend build system, increases speed dramatically.
+
+Please follow [Upgrade Notes](doc/en/upgrade-to-v2.md) to upgrade.
+
 ## Brief
 
 Blade is designed to be a modern build system. It is powerful and easy to use. It supports building

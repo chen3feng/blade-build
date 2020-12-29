@@ -32,20 +32,14 @@ Click here to read [English README](README.md).
 
 ## 通知
 
-* Blade 发布1.1.2，包含以下特性：
-  * python 最低版本要求2.6
-  * 对Java，scala构建的完善支持
+* Blade 发布2.0，包含以下特性：
+  * python 最低版本要求2.7，并支持 python 3
+  * 对 Java，scala 构建的完善支持
+  * 全面支持Python构建
   * 支持自定义扩展
+  * 后端只支持[ninja](doc/zh_CN/config.md#global_config)构建系统，大幅度提高构建性能
 
-我们正在开发2.0版本（最新代码在在master分支上），包含以下特性：
-
-* 后端支持[ninja](doc/zh_CN/config.md#global_config)构建系统，大幅度提高构建性能
-* 全面支持Python构建
-* 完善对扩展的支持
-* 支持kotlin，rust构建
-* python2只支持2.7，不再支持更低版本，同时兼容 python 2/3。
-
-欢迎尝试。
+具体请查看[升级说明](doc/zh_CN/upgrade-to-v2,md)。
 
 ## 源起
 
