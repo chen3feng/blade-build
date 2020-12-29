@@ -27,6 +27,7 @@ syn keyword bladeTarget global_config
 syn keyword bladeArg build_path_template
 syn keyword bladeArg debug_info_level
 syn keyword bladeArg duplicated_source_action
+syn keyword bladeArg glob_error_severity
 syn keyword bladeArg test_timeout
 syn keyword bladeArg backend_builder
 syn keyword bladeArg build_jobs
@@ -132,11 +133,13 @@ syn keyword bladeArg benchmark_libs
 syn keyword bladeArg benchmark_main_libs
 syn keyword bladeArg securecc
 syn keyword bladeArg hdr_dep_missing_severity
-syn keyword bladeArg hdr_dep_missing_ignore
+syn keyword bladeArg hdr_dep_missing_suppress
 
 syn keyword bladeTarget cc_library_config
 syn keyword bladeArg generate_dynamic
 syn keyword bladeArg prebuilt_libpath_pattern
+syn keyword bladeArg hdrs_missing_severity
+syn keyword bladeArg hdrs_missing_suppress
 
 syn keyword bladeTarget protoc_plugin
 syn keyword bladeArg name
