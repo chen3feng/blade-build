@@ -20,19 +20,19 @@ There are many improvement in V2, include performance，new features, code refac
 
 ### Python Version
 
-V2 Only support python 2.7 and 3.x, no longer support old versions. And for python 3.x, only 3.6 were tests.
+V2 only support python 2.7 and 3.x, no longer support old versions. And for python 3.x, only 3.6 were tests.
 
 ### Ninja
 
 Blade is a "meta" build system, it must depends on a backend build system.
-The initial version use Scons as its backend. but ninja is much faster than Scons.
+The initial version use `Scons` as its backend. But after years, we found that `ninja` is much faster than Scons.
 So in V2, we only support ninja as our backend build system.
 
 To upgrade to V2, you muse install [ninja](https://ninja-build.org/), by either package manager or downloaded binary.
 
-### hdrs dependency check
+### Header Files Dependency Check
 
 Header file are included in dependency management in V2 defaultly.
-If you use V2 to build projects which only support V1.x, many diagnostic errors will occur.
+If you use V2 to build old projects which were built by V1.x, many diagnostic errors will occur.
 You can fix or suppress these legancy errors. or turn off this check totally (strongly discouraged!).
 See [config](config.md) and [cc](build_rules/cc.md) for details.
