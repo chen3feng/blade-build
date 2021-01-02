@@ -4,8 +4,8 @@
 
 Used to customize your own construction rules, parameters:
 
--outs: list, output file list
--cmd: str, the called command line, may contain the following variables, which will be replaced with actual values before running:
+- outs: list, output file list
+- cmd: str, the called command line, may contain the following variables, which will be replaced with actual values before running:
     - $SRCS, space-separated list of source file names, relative to WORKSPACE
     - $OUTS, space-separated list of output files, relative to WORKSPACE
     - $SRC\_DIR, the directory where the input file is located
