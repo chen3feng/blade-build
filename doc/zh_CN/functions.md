@@ -4,11 +4,11 @@
 
 ## include ##
 
-include 函数用于导入自定义常量和函数
+include 函数用于包含自定义的常量和函数
 
-定义：
+定义包含文件：
 
-假设我们要支持一种awesome文件类型，先编译成c文件，再编译成cc_library，那么定义构建规则文件awesome_build_rules.bld
+假设我们要支持一种awesome文件类型，先编译成c文件，再编译成cc_library，那么定义构建规则文件 `awesome_build_rules.bld`
 
 ```python
 def awesome_library(name, srcs=[], deps=[]):
@@ -19,7 +19,7 @@ def awesome_library(name, srcs=[], deps=[]):
 
 使用：
 
-In some BUILD file:
+在 BUILD 文件中:
 
 ```python
 include('//common/awesome_build_rules.bld')
@@ -30,9 +30,12 @@ awesome_library(
 )
 ```
 
-include后，被导入的文件的定义均会被导入到当前BUILD文件中，include支持相对当前目录的子目录路径和//开头的相对workspace的路径，并仅对当前文件BUILD有效。
+include 后，被包含的文件中的定义就对当前 `BUILD` 文件可见。include 支持相对当前目录的子目录路径和 `//` 开头的相对 workspace 的路径，并**仅对当前文件 `BUILD` 文件有效**。
 
-导入自定义常量和函数属于比较高级的功能，请谨慎使用。
+风格建议：
+
+- 扩展名为 `.bld`
+- 不希望被直接使用的非公开符号应当以下划线（`_`）开始
 
 ## glob ##
 
