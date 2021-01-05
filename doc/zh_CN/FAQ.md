@@ -174,11 +174,6 @@ blade -c 清除不了项目生成的文件
 我想看到构建过程中中执行的完整命令。
 构建时加上 --verbose 参数，就能显示完整的命令行。
 
-### 我修改了源文件，为何还是失败，报错位置也匹配不上(或者没有重新编译) ###
-
-首先 alt 到 build 目录下，看看是不是把源代码（或者头文件）放在这里了，由于 Blade 分离了源码和构建结果目录，
-如果是源文件误放到这里，构建时会显示 Compiling build64_release/...，根据这一点能更容易定位这个问题。
-
 ### 如何发布预编译的库 ###
 
 有些机密的代码，希望以库的方式发布，但同时又依赖了非机密的库（比如common），如何发布呢？比如这样的库：
@@ -323,6 +318,10 @@ yum install libstdc++-static
 ### g++: Fatal error:Killed signal terminated program cc1plus ###
 
 可能是开发机性能不足，不足以支持默认计算出来的并发构建任务数目，尝试用 `-j <小一点的数字>` 参数，比如在 8 核的机器上用 `blade build -j4`
+
+### No space left on device
+
+输出的目标磁盘满。除了构建输出目录外，有时候也可能会是临时目录满了，可以尝试清空或者通过修改[TMPDIR](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html) 环境变量更改临时目录。
 
 ### 如何让 Blade 忽略某些目录下的 BUILD 文件（比如代码库中有用 bazel 构建的目录，它的构建文件也叫 BUILD） ###
 

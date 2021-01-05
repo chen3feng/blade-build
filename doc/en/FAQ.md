@@ -178,11 +178,6 @@ Conclusion:
 I want to see the complete command executed during the build process.
 The complete command line can be displayed by adding the --verbose parameter to the build.
 
-### I modified the source file, why is it still failing, and the error location is not matched (or not recompiled) ###
-
-First alt to the build directory to see if the source code (or header file) is placed here, because the Blade separates the source code and builds the results directory.
-If the source file is misplaced here, the build will show Compiling build64_release/..., which makes it easier to locate the problem.
-
 ### How do I publish a precompiled library ###
 
 Some confidential code, I hope to release it as a library, but at the same time rely on non-confidential libraries (such as common), how to publish it?
@@ -323,6 +318,14 @@ Maybe you need to install a static version of libstdc++:
 ```bash
 yum install libstdc++-static
 ```
+
+### g++: Fatal error:Killed signal terminated program cc1plus ###
+
+Maybe your debox is not powerful enough to support defaultly calculated number of jobs, retry with `-j <lesser-job-number>` parameter, such as using `blade build -j4` in a 8 cores machine.
+
+### No space left on device
+
+The output disk is full. Besides the output directory, the temporary directory is often a root cause, you can try to clean it or modify the [TMPDIR](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html) environment variable to change it.
 
 ### How to skip some directories contains foreign `BUILD` files (such as from bazel) ###
 

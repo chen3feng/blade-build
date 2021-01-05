@@ -4,9 +4,9 @@ Some Functions can be called in BUILD files.
 
 ## include ##
 
-Import custom constants and functions
+Include custom constants and functions
 
-You can use the `include` function to import custom constants and functions
+You can use the `include` function to include custom constants and functions
 
 definition:
 
@@ -32,9 +32,15 @@ awesome_library(
 )
 ```
 
-After the include, the definition of the imported file will be imported into the current BUILD file. The include supports the path of the subdirectory relative to the current directory and the path of the relative workspace starting with //, and is only valid for the current file BUILD.
+After including, the definitions in the included file will be visiable in the current `BUILD` file.
+The `include` function supports the path of the subdirectory relative to the current directory and
+the path of the relative workspace starting with `//`. The included definitions only
+**apply to the current `BUILD` file**.
 
-Importing custom constants and functions is a more advanced feature, so use it with caution.
+Suggested style:
+
+- Using the `.bld` extension name
+- Using the `_` prefix for private symbols
 
 ## glob ##
 
