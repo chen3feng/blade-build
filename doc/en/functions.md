@@ -32,7 +32,15 @@ awesome_library(
 )
 ```
 
-After including, the definitions in the included file will be visiable in the current `BUILD` file. The `include` function supports the path of the subdirectory relative to the current directory and the path of the relative workspace starting with `//`. The included definitions only **apply to the current `BUILD` file**.
+After including, the definitions in the included file will be visiable in the current `BUILD` file.
+The `include` function supports the path of the subdirectory relative to the current directory and
+the path of the relative workspace starting with `//`. The included definitions only
+**apply to the current `BUILD` file**.
+
+Suggested style:
+
+- Using the `.bld` extension name
+- Using the `_` prefix for private symbols
 
 ## glob ##
 
