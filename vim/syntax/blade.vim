@@ -20,7 +20,7 @@ syn case match
 " Sorted by alphabet order, grouped by targets
 
 " General functions
-syn keyword bladeTarget build_target enable_if include
+syn keyword bladeTarget build_target enable_if include load
 
 syn keyword bladeTarget glob
 syn keyword bladeArg allow_empty exclude

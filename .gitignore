@@ -9,7 +9,7 @@ BLADE_ROOT
 
 blade-bin
 .Building.lock
-build*_*
+/build*_*
 
 /blade.zip
 

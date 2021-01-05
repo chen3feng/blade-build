@@ -321,7 +321,7 @@ yum install libstdc++-static
 
 ### g++: Fatal error:Killed signal terminated program cc1plus ###
 
-Maybe your debox is not powerful enough to support defaultly calculated number of jobs, retry with `-j <lesser-job-number>` parameter, such as using `blade build -j4` in a 8 cores machine.
+Maybe your devbox is not powerful enough to support defaultly calculated number of jobs, retry with `-j <smaller-job-number>` parameter, such as using `blade build -j4` in a 8 cores machine.
 
 ### No space left on device
 

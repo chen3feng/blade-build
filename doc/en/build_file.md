@@ -68,4 +68,5 @@ The allowed format of deps:
 
 ## Other features ##
 
-* Some [functions](functions.md) which can be called in BUILD files.
+* Some [functions](functions.md) which can be called in BUILD files
+* You can create and use your custom functions and rules via [extension](build_rules/extension.md) mechanism
