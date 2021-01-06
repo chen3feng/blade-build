@@ -15,6 +15,15 @@ def awesome_library(name, srcs=[], deps=[]):
 
 请记住，当你自定义规则时，`gen_rule` 是个很有用的内置规则。
 
+由于通过扩展的方式可以覆盖内置规则，你可以用 `native.` 前缀来确保不受影响地使用内置规则。
+
+```python
+def awesome_library(name, srcs=[], deps=[]):
+    cc_srcs = [src + '.c' for src in srcs]
+    native.gen_rule(name=name+'_cc', srcs=srcs, outs=cc_srcs, cmd=<...>)
+    native.cc_library(name=name, srcs=cc_srcs, deps=deps)
+```
+
 除了函数外，也可以定义常量：
 
 ```python

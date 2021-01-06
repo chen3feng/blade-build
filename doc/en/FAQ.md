@@ -323,7 +323,7 @@ yum install libstdc++-static
 
 Maybe your devbox is not powerful enough to support defaultly calculated number of jobs, retry with `-j <smaller-job-number>` parameter, such as using `blade build -j4` in a 8 cores machine.
 
-### No space left on device
+### No space left on device ###
 
 The output disk is full. Besides the output directory, the temporary directory is often a root cause, you can try to clean it or modify the [TMPDIR](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html) environment variable to change it.
 

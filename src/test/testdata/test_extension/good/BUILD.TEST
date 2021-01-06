@@ -16,3 +16,7 @@ assert VAR2 == 2
 assert VAR2_ALIAS == VAR2
 assert VAR3 == 3
 
+native.cc_library
+native.cc_binary
+native.gen_rule
+

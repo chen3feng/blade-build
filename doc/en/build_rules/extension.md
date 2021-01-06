@@ -10,14 +10,24 @@ it into `cc_library`, we can define the build rule in a `awesome_build_rules.bld
 
 ```python
 def awesome_library(name, srcs=[], deps=[]):
-     cc_srcs = [src + '.c' for src in srcs]
-     gen_rule(name=name+'_cc', srcs=srcs, outs=cc_srcs, cmd=<...>)
-     cc_library(name=name, srcs=cc_srcs, deps=deps)
+    cc_srcs = [src + '.c' for src in srcs]
+    gen_rule(name=name+'_cc', srcs=srcs, outs=cc_srcs, cmd=<...>)
+    cc_library(name=name, srcs=cc_srcs, deps=deps)
 ```
 
 Remember the `gen_rule` is a useful native rule when you create your own rules.
 
-You can also define constants：
+Since the built-in rules can be overridden in the extension, you can enforce using the built-in rules
+by adding the `native.` prefix before the rule name.
+
+```python
+def awesome_library(name, srcs=[], deps=[]):
+    cc_srcs = [src + '.c' for src in srcs]
+    native.gen_rule(name=name+'_cc', srcs=srcs, outs=cc_srcs, cmd=<...>)
+    native.cc_library(name=name, srcs=cc_srcs, deps=deps)
+```
+
+In addition to functions, you can also define constants:
 
 ```python
 GTEST_LIBS = ["//thirdparty/gtest:gtest"]
