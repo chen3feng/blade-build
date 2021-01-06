@@ -240,9 +240,13 @@ For higher version GCC，such as GCC 6, C++14 is already the default std value, 
 
 ### Compiled results take up too much disk space ###
 
-Projects built with Blades are often relatively large-scale projects, so the results after construction often take up more space. If you have problems in this area, you can try to optimize them in the following way.
+Projects built with blade are often relatively large-scale projects, so the results files often take up more space. If you have problems in this area, you can try to optimize them in the following way.
 
 #### Reduce debug information level ####
+
+Blade compiles the code with debugging symbols defaultly, so that when you use some tools such as gdb to debug, you can
+see the names of functions and variables, but the debugging symbols are usually the largest part of the binary file.
+By reducing the level of debugging symbols, the size of the binary file can be significantly reduced, but it also makes the program more difficult to debug.
 
 ```python
 # Reduce the overhead of debug information
