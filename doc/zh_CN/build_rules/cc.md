@@ -394,7 +394,8 @@ cc_plugin(
 
 `prefix` 和 `suffix` 控制生成的动态库的文件名，假设 `name='file'`，默认生成的库为 `libfile.so`，设置`prefix=''`，则变为 `file.so`。
 
-cc_plugin 是为 JNI，python 扩展等需要动态库的场合设计的，不应该用于其他目的。
+cc_plugin 主要是为 JNI，python 扩展等需要运行期间通过调用某些函数动态加载的场合而设计的，不应该用于其他目的。
+即使它出现在其他 cc 目标的 `deps` 里，链接时也会被忽略。
 
 ## resource_library ##
 
