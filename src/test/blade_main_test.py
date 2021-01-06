@@ -20,6 +20,7 @@ from cc_binary_test import TestCcBinary
 from cc_library_test import TestCcLibrary
 from cc_plugin_test import TestCcPlugin
 from cc_test_test import TestCcTest
+from extension_test import TestExtension
 from gen_rule_test import TestGenRule
 from java_test import TestJava
 from lex_yacc_test import TestLexYacc
@@ -43,6 +44,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcBinary),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcPlugin),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcTest),
+        unittest.defaultTestLoader.loadTestsFromTestCase(TestExtension),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestGenRule),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestJava),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLexYacc),

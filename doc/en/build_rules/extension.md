@@ -55,8 +55,8 @@ Use:
 include('//common/awesome_build_rules.bld')
 
 awesome_library(  # Use imported rule
-     name='awesome_lib',
-     srcs=['my.awesome', 'your.awesome'],
+    name='awesome_lib',
+    srcs=['my.awesome', 'your.awesome'],
 )
 ```
 
@@ -73,7 +73,7 @@ The symbols in BUILD file is inaccessible in the extension file.
 
 ## The `include` function
 
-The `include` function is like the `#include` directive in C language, it include the file content into current `BUILD` file.
+The `include` function is like the `#include` directive in C language, it includes the file content into current `BUILD` file.
 
 Use:
 
