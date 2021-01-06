@@ -56,8 +56,8 @@ Prototype：
 def load(extension_label, *symbols, **aliases):
 ```
 
-`symbols` are the symbol names to be imported.
-`aliases` are the symbol names to be imported as aliases.
+`symbols` are the symbol names to be imported, `aliases` are the symbol names to be imported as aliases.
+Symbols beginning with an underscore will not be exported and therefore cannot be imported.
 
 Use:
 
@@ -79,7 +79,9 @@ load('//common/awesome_build_rules1.bld', my_awesome_library='awesome_library')
 load('//common/awesome_build_rules2.bld', your_awesome_library='awesome_library')
 ```
 
-The symbols in BUILD file is inaccessible in the extension file.
+When the extension is loaded, it has nothing to do with the current context. You can only access the symbols imported
+from the extension in the BUILD file, but you cannot access the symbols defined in the current BUILD file in the extension.
+No matter how many times the same extension file is loaded in BUILD files, it is actually read and parsed only once.
 
 ## The `include` function
 

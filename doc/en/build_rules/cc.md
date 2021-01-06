@@ -413,7 +413,9 @@ Attributes:
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
 set `prefix=''`, then it becomes `file. so`.
 
-cc_plugin is designed for create extension, such as JNI and python extension.
+`cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries 
+that are dynamically loaded by calling certain functions during runtime.
+It will be ignored when linking even if it appears in the `deps` of other cc targets.
 
 ## resource_library ##
 

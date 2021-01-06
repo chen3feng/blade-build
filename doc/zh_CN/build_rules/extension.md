@@ -49,7 +49,7 @@ Blade 支持 2 种方式使用扩展，分别是 `load` 和 `include`，无论�
 def load(extension_label, *symbols, **aliases):
 ```
 
-symbols 为要导入的符号名，aliases 则支持以别名的方式导入，都是数目的可变参数。
+symbols 为要导入的符号名，aliases 则支持以别名的方式导入，都是数目的可变参数。下划线开头的符号不会被导出因此也无法被导入。
 
 用法：
 
@@ -71,7 +71,8 @@ load('//common/awesome_build_rules1.bld', my_awesome_library='awesome_library')
 load('//common/awesome_build_rules2.bld', your_awesome_library='awesome_library')
 ```
 
-在被加载的扩展文件里，访问不到当前 BUILD 文件中的符号。
+扩展被加载时与其所处的上下文无关，只能在 BUILD 文件中访问到从扩展中导入的符号，在扩展里则无法访问到当前 BUILD 文件中定义的符号。
+同一个扩展文件不管在多少 BUILD 文件中被加载多少次，实际上都只读取和解析一次。
 
 ### include 函数
 

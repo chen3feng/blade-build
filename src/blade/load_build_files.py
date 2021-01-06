@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import os
 import traceback
+import types
 
 from blade import build_attributes
 from blade import build_rules
@@ -157,16 +158,43 @@ def _expand_include_path(name):
     """Expand and normalize path to be loaded"""
     from blade import build_manager  # pylint: disable=import-outside-toplevel
     if name.startswith('//'):
-        dir = build_manager.instance.get_root_dir()
-        name = name[2:]
-    else:
-        dir = build_manager.instance.get_current_source_path()
+        return name[2:]
+    dir = build_manager.instance.get_current_source_path()
     return os.path.join(dir, name)
 
 
 def include(name):
     """Include another file into current BUILD file"""
     exec_file(_expand_include_path(name), __current_globals, None)
+
+
+# Loaded extensions information
+# dict{full_path: dict{symbol_name: value}}
+__loaded_extension_info = {}
+
+
+def _load_extension(name):
+    """Load symbols from file or obtain from loaded cache."""
+    full_path = _expand_include_path(name)
+    if full_path in __loaded_extension_info:
+        return __loaded_extension_info[full_path]
+    # The symbols in the current context should be invisible to the extension,
+    # make an isolated symbol set to implement this approach.
+    origin_globals = build_rules.get_all()
+    extension_globals = origin_globals.copy()
+    exec_file(full_path, extension_globals, None)
+    # Extract new symbols
+    result = {}
+    for symbol, value in extension_globals.items():
+        if symbol.startswith('_'):
+            continue
+        if symbol in origin_globals and value is origin_globals[symbol]:
+            continue
+        if type(value) is types.ModuleType:
+            continue
+        result[symbol] = value
+    __loaded_extension_info[full_path] = result
+    return result
 
 
 def load(name, *symbols, **aliases):
@@ -181,10 +209,7 @@ def load(name, *symbols, **aliases):
         console.error('%s error: The symbols to be imported must be explicitly declared' % src_loc,
                       prefix=False)
 
-    # The symbols in the current context should be invisible to the extension,
-    # make an isolated symbol set to implement this approach.
-    extension_globals = build_rules.get_all()
-    exec_file(_expand_include_path(name), extension_globals, None)
+    extension_globals = _load_extension(name)
 
     def error(symbol):
         console.error('%s error: "%s" is not defined in "%s"' % (src_loc, symbol, name),
