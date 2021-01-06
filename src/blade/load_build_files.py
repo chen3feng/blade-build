@@ -181,25 +181,27 @@ def load(name, *symbols, **aliases):
         console.error('%s error: The symbols to be imported must be explicitly declared' % src_loc,
                       prefix=False)
 
-    # Isolate symbols in current context
-    current_globals = build_rules.get_all()
-    exec_file(_expand_include_path(name), current_globals, None)
+    # The symbols in the current context should be invisible to the extension,
+    # make an isolated symbol set to implement this approach.
+    extension_globals = build_rules.get_all()
+    exec_file(_expand_include_path(name), extension_globals, None)
 
     def error(symbol):
-        console.error('%s error: "%s" is not defined in "%s"' % (src_loc, symbol, name), prefix=False)
+        console.error('%s error: "%s" is not defined in "%s"' % (src_loc, symbol, name),
+                      prefix=False)
 
     # Only import declared symbols into current file
     for symbol in symbols:
-        if symbol not in current_globals:
+        if symbol not in extension_globals:
             error(symbol)
             continue
-        __current_globals[symbol] = current_globals[symbol]
+        __current_globals[symbol] = extension_globals[symbol]
 
     for alias, real_name in aliases.items():
-        if real_name not in current_globals:
+        if real_name not in extension_globals:
             error(real_name)
             continue
-        __current_globals[alias] = current_globals[real_name]
+        __current_globals[alias] = extension_globals[real_name]
 
 
 build_rules.register_function(enable_if)
