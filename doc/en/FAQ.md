@@ -234,19 +234,22 @@ cc_config(
 )
 ```
 
-See [GCC Online Documents](https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html) to see other values。Some version of GCC was released before C++11 stdndard，maybe you should use ”gnu++0x“ to instead。
+See [GCC Online Documents](https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html) to see other values。Some version
+of GCC was released before C++11 stdndard，maybe you should use ”gnu++0x“ to instead。
 
 For higher version GCC，such as GCC 6, C++14 is already the default std value, this configuration item maybe become unnecessnary.
 
 ### Compiled results take up too much disk space ###
 
-Projects built with blade are often relatively large-scale projects, so the results files often take up more space. If you have problems in this area, you can try to optimize them in the following way.
+Projects built with blade are often large-scale projects, so the result files often take up more disk space. If it is a
+problem, you can try to optimize them in the following ways.
 
 #### Reduce debug information level ####
 
 Blade compiles the code with debugging symbols defaultly, so that when you use some tools such as gdb to debug, you can
 see the names of functions and variables, but the debugging symbols are usually the largest part of the binary file.
-By reducing the level of debugging symbols, the size of the binary file can be significantly reduced, but it also makes the program more difficult to debug.
+By reducing the level of debugging symbols, the size of the binary file can be significantly reduced, but it also makes
+the program more difficult to debug.
 
 ```python
 # Reduce the overhead of debug information
@@ -268,7 +271,8 @@ The default value is `mid`.
 
 You can use the [`-gz`](https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html) option of GCC to compress debug information.
 This option can be used in both compile and link phases.
-If you only want to reduce the size of the final executable file, suggest only use it in the the link phase, because compression and decompression will reduce the build speed.
+If you only want to reduce the size of the final executable file, suggest only use it in the the link phase, because
+compression and decompression will reduce the build speed.
 
 This option can be used globally in the configuration:
 
