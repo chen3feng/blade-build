@@ -234,15 +234,22 @@ cc_config(
 )
 ```
 
-See [GCC Online Documents](https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html) to see other values。Some version of GCC was released before C++11 stdndard，maybe you should use ”gnu++0x“ to instead。
+See [GCC Online Documents](https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html) to see other values。Some version
+of GCC was released before C++11 stdndard，maybe you should use ”gnu++0x“ to instead。
 
 For higher version GCC，such as GCC 6, C++14 is already the default std value, this configuration item maybe become unnecessnary.
 
 ### Compiled results take up too much disk space ###
 
-Projects built with Blades are often relatively large-scale projects, so the results after construction often take up more space. If you have problems in this area, you can try to optimize them in the following way.
+Projects built with blade are often large-scale projects, so the result files often take up more disk space. If it is a
+problem, you can try to optimize them in the following ways.
 
 #### Reduce debug information level ####
+
+Blade compiles the code with debugging symbols defaultly, so that when you use some tools such as gdb to debug, you can
+see the names of functions and variables, but the debugging symbols are usually the largest part of the binary file.
+By reducing the level of debugging symbols, the size of the binary file can be significantly reduced, but it also makes
+the program more difficult to debug.
 
 ```python
 # Reduce the overhead of debug information
@@ -253,7 +260,7 @@ global_config(
 
 Description:
 
-- `no`: no debug information, the program can not be debugged with gdb
+- `no`: no debug information. When debugging with gdb, you can not see the symbolic names for functions and variables, etc
 - `low`: low debug information, you can only see the function name and global variables
 - `mid`: medium, you can see more symbols than `low`, includes local variables and function parameters
 - `high`: highest, contains more debug information, such as for macros
@@ -264,7 +271,8 @@ The default value is `mid`.
 
 You can use the [`-gz`](https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html) option of GCC to compress debug information.
 This option can be used in both compile and link phases.
-If you only want to reduce the size of the final executable file, suggest only use it in the the link phase, because compression and decompression will reduce the build speed.
+If you only want to reduce the size of the final executable file, suggest only use it in the the link phase, because
+compression and decompression will reduce the build speed.
 
 This option can be used globally in the configuration:
 
@@ -287,7 +295,14 @@ cc_binary(
 )
 ```
 
-NOTE: Only [newer version of gdb supports reading compressed debugging symbols](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html), if the gdb version is too low or `zlib` is not configured, the debugging information cannot be read correctly.
+NOTE: Only [newer version of gdb supports reading compressed debugging symbols](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html),
+if the gdb version is too low or `zlib` is not configured, the debugging information cannot be read correctly.
+
+#### Separate Debugging Symbols ####
+
+Lowering the level of debugging symbols or using strip to delete debugging symbols can reduce the size of the binary file,
+but it also makes the program difficult to debug.
+Splitting the debugging symbols into separate files through [Separated Debugging Symbols](https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html) is a compromise.
 
 #### Link test programs dynamically ####
 
