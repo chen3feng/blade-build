@@ -247,7 +247,7 @@ global_config(
 
 说明：
 
-- no: 没有调试符号，程序无法用 gdb 调试
+- no: 没有调试符号，程序用 gdb 调试时看不到函数名变量名等符号
 - low: 低调试符号，调试时只可以看到函数名和全局变量，看不到局部变量和函数参数
 - mid: 中等，比low多了局部变量，函数参数
 - high: 最高，包含了宏等更多的调试信息
@@ -281,6 +281,11 @@ cc_binary(
 ```
 
 需要注意[较新版本的 gdb 才支持读取压缩的调试符号](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html)，如果 gdb 版本过低或者没有开启，就可能无法正确读取调试符号信息。
+
+#### 分离调试符号 ####
+
+降低调试符号级别或者用 strip 删除调试符号虽然能降低二进制文件的大小，但是也使得程序难以调试。
+通过[分离调试符号](https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html)把调试符号拆分到单独的文件中，是一种折中的办法。
 
 #### 测试程序采用动态链接 ####
 
@@ -319,7 +324,7 @@ yum install libstdc++-static
 
 可能是开发机性能不足，不足以支持默认计算出来的并发构建任务数目，尝试用 `-j <小一点的数字>` 参数，比如在 8 核的机器上用 `blade build -j4`
 
-### No space left on device
+### No space left on device ###
 
 输出的目标磁盘满。除了构建输出目录外，有时候也可能会是临时目录满了，可以尝试清空或者通过修改[TMPDIR](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html) 环境变量更改临时目录。
 

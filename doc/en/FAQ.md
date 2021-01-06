@@ -253,7 +253,7 @@ global_config(
 
 Description:
 
-- `no`: no debug information, the program can not be debugged with gdb
+- `no`: no debug information. When debugging with gdb, you can not see the symbolic names for functions and variables, etc
 - `low`: low debug information, you can only see the function name and global variables
 - `mid`: medium, you can see more symbols than `low`, includes local variables and function parameters
 - `high`: highest, contains more debug information, such as for macros
@@ -287,7 +287,14 @@ cc_binary(
 )
 ```
 
-NOTE: Only [newer version of gdb supports reading compressed debugging symbols](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html), if the gdb version is too low or `zlib` is not configured, the debugging information cannot be read correctly.
+NOTE: Only [newer version of gdb supports reading compressed debugging symbols](https://sourceware.org/gdb/current/onlinedocs/gdb/Requirements.html),
+if the gdb version is too low or `zlib` is not configured, the debugging information cannot be read correctly.
+
+#### Separate Debugging Symbols ####
+
+Lowering the level of debugging symbols or using strip to delete debugging symbols can reduce the size of the binary file,
+but it also makes the program difficult to debug.
+Splitting the debugging symbols into separate files through [Separated Debugging Symbols](https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html) is a compromise.
 
 #### Link test programs dynamically ####
 
