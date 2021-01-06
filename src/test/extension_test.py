@@ -1,13 +1,12 @@
-# Copyright (c) 2011 Tencent Inc.
+# Copyright (c) 2021 Tencent Inc.
 # All rights reserved.
 #
-# Author: Michaelpeng <michaelpeng@tencent.com>
-# Date:   October 20, 2011
+# Author:  CHEN Feng <chen3feng@gmail.com>
+# Created: 2021-01-06
 
 
 """
- This is the test module for cc_binary target.
-
+ This is the test for extension functionality.
 """
 
 
