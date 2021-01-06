@@ -289,8 +289,7 @@ class MavenCache(object):
             for thread in threads:
                 thread.join()
             console.debug('join threads done')
-
-        console.info('Downloading maven_jars done.')
+            console.info('Downloading maven_jars done.')
 
     def _download_worker(self):
         """Download worker thread function"""
