@@ -1,0 +1,22 @@
+load('extension.bld', 'VAR1')
+assert VAR1 == 1
+
+try:
+    VAR2
+except NameError:
+    pass
+
+load('extension.bld', 'VAR1', VAR2_ALIAS='VAR2')
+
+assert VAR2_ALIAS == 2
+
+include('extension.bld')
+
+assert VAR2 == 2
+assert VAR2_ALIAS == VAR2
+assert VAR3 == 3
+
+native.cc_library
+native.cc_binary
+native.gen_rule
+

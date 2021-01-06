@@ -80,6 +80,13 @@ def enable_if(cond, true_value, false_value=None):
     return ret
 
 
+def _current_source_location():
+    """Return source location in current BUILD file"""
+    from blade import build_manager  # pylint: disable=import-outside-toplevel
+    source_dir = Path(build_manager.instance.get_current_source_path())
+    return source_location(os.path.join(str(source_dir), 'BUILD'))
+
+
 def glob(include, exclude=None, excludes=None, allow_empty=False):
     """This function can be called in BUILD to specify a set of files using patterns.
     Args:
@@ -92,7 +99,7 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     """
     from blade import build_manager  # pylint: disable=import-outside-toplevel
     source_dir = Path(build_manager.instance.get_current_source_path())
-    source_loc = source_location(os.path.join(str(source_dir), 'BUILD'))
+    source_loc = _current_source_location()
     include = var_to_list(include)
     severity = config.get_item('global_config', 'glob_error_severity')
     output = getattr(console, severity)
@@ -143,23 +150,64 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
 
 
 # Each include in a BUILD file can only affect itself
-__current_globles = None
+__current_globals = None
 
 
-# Include a defination file in a BUILD file
-def include(name):
+def _expand_include_path(name):
+    """Expand and normalize path to be loaded"""
     from blade import build_manager  # pylint: disable=import-outside-toplevel
     if name.startswith('//'):
         dir = build_manager.instance.get_root_dir()
         name = name[2:]
     else:
         dir = build_manager.instance.get_current_source_path()
-    exec_file(os.path.join(dir, name), __current_globles, None)
+    return os.path.join(dir, name)
+
+
+def include(name):
+    """Include another file into current BUILD file"""
+    exec_file(_expand_include_path(name), __current_globals, None)
+
+
+def load(name, *symbols, **aliases):
+    """Load and import symbols into current calling BUILD file
+    Args:
+        name: str, file name to be loaded.
+        symbols: str*, symbol names to be imported.
+        aliases: alias_name='real_name'*, symbol name to be imported as alias.
+    """
+    src_loc = _current_source_location()
+    if not symbols and not aliases:
+        console.error('%s error: The symbols to be imported must be explicitly declared' % src_loc,
+                      prefix=False)
+
+    # The symbols in the current context should be invisible to the extension,
+    # make an isolated symbol set to implement this approach.
+    extension_globals = build_rules.get_all()
+    exec_file(_expand_include_path(name), extension_globals, None)
+
+    def error(symbol):
+        console.error('%s error: "%s" is not defined in "%s"' % (src_loc, symbol, name),
+                      prefix=False)
+
+    # Only import declared symbols into current file
+    for symbol in symbols:
+        if symbol not in extension_globals:
+            error(symbol)
+            continue
+        __current_globals[symbol] = extension_globals[symbol]
+
+    for alias, real_name in aliases.items():
+        if real_name not in extension_globals:
+            error(real_name)
+            continue
+        __current_globals[alias] = extension_globals[real_name]
 
 
 build_rules.register_function(enable_if)
 build_rules.register_function(glob)
 build_rules.register_function(include)
+build_rules.register_function(load)
 
 
 def _load_build_file(source_dir, processed_source_dirs, blade):
@@ -192,9 +240,9 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             try:
                 # The magic here is that a BUILD file is a Python script,
                 # which can be loaded and executed by execfile().
-                global __current_globles
-                __current_globles = build_rules.get_all()
-                exec_file(build_file, __current_globles, None)
+                global __current_globals
+                __current_globals = build_rules.get_all()
+                exec_file(build_file, __current_globals, None)
             except SystemExit:
                 console.fatal('%s: Fatal error' % build_file)
             except:  # pylint: disable=bare-except

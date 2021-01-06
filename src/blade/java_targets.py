@@ -61,6 +61,8 @@ class MavenJar(Target):
 
     def ninja_rules(self):
         # This muthod doesn't generate build rules, so it is always executed without caching.
+        if not self.dependents:  # Only download really used artifacts
+            return
         maven_cache = maven.MavenCache.instance(self.build_dir)
         artifact = maven_cache.get_artifact(self.attr['id'], self.attr['classifier'],
                                             self.attr['transitive'], self)

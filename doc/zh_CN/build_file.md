@@ -68,3 +68,4 @@ deps的允许的格式：
 ## 其他特性 ##
 
 * [BUILD中可以调用的通用函数](functions.md)
+* 通过[扩展](build_rules/extension.md)机制创建和使用自定义函数和规则
