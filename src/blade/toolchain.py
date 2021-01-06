@@ -263,23 +263,40 @@ class ToolChain(object):
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags. """
+        flag_list = var_to_list(flag_list)
         valid_flags, unrecognized_flags = [], []
+
         # Put compilation output into test.o instead of /dev/null
         # because the command line with '--coverage' below exit
         # with status 1 which makes '--coverage' unsupported
         # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
         fd, obj = tempfile.mkstemp('.o', 'filter_cc_flags_test')
-        for flag in var_to_list(flag_list):
-            cmd = ('echo "int main() { return 0; }" | '
-                   '%s -o %s -c -x %s -Werror %s - > /dev/null 2>&1' % (
-                       self.cc, obj, language, flag))
-            if subprocess.call(cmd, shell=True) == 0:
-                valid_flags.append(flag)
-            else:
-                unrecognized_flags.append(flag)
-        os.remove(obj)
+        cmd = ('export LC_ALL=C; echo "int main() { return 0; }" | '
+               '%s -o %s -c -x %s -Werror %s -' % (
+                   self.cc, obj, language, ' '.join(flag_list)))
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        unused_out, err = p.communicate()
+
+        try:
+            # In case of error, the `.o` file will be deleted by the compiler
+            os.remove(obj)
+        except OSError:
+            pass
         os.close(fd)
+
+        if p.returncode == 0:
+            return flag_list
+        for flag in flag_list:
+            # Example error messages:
+            #   clang: warning: unknown warning option '-Wzzz' [-Wunknown-warning-option]
+            #   gcc:   gcc: error: unrecognized command line option '-Wxxx'
+            if " option '%s'" % flag in err:
+                unrecognized_flags.append(flag)
+            else:
+                valid_flags.append(flag)
+
         if unrecognized_flags:
             console.warning('config: Unrecognized %s flags: %s' % (
                     language, ', '.join(unrecognized_flags)))
+
         return valid_flags
