@@ -222,7 +222,7 @@ class Target(object):
         console.fatal(self._format_message('error', msg), code=code, prefix=False)
 
     def _prepare_to_generate_rule(self):
-        """Should be overridden. """
+        """Should be overridden."""
         self.error('_prepare_to_generate_rule should be overridden in subclasses')
 
     def _check_name(self):
@@ -284,7 +284,7 @@ class Target(object):
                             self.warning(message)
 
     def _add_implicit_library(self, implicit_deps):
-        """Add implicit dep list to key's deps. """
+        """Add implicit dep list to key's deps."""
         for dep in implicit_deps:
             if not dep.startswith('//') and not dep.startswith('#'):
                 dep = '//' + dep
@@ -296,7 +296,7 @@ class Target(object):
             self._implicit_deps.add(dkey)
 
     def _add_system_library(self, key, name):
-        """Add system library entry to database. """
+        """Add system library entry to database."""
         if key not in self.target_database:
             lib = SystemLibrary(name)
             self.blade.register_target(lib)
@@ -596,7 +596,7 @@ class Target(object):
         self.__build_rules.append('%s\n' % rule)
 
     def ninja_rules(self):
-        """Generate ninja rules for specific target. """
+        """Generate ninja rules for specific target."""
         raise NotImplementedError(self.fullname)
 
     def ninja_build(self, rule, outputs, inputs=None,
@@ -638,7 +638,7 @@ class Target(object):
         self._write_rule('')  # An empty line to improve readability
 
     def get_rules(self):
-        """Return generated build rules. """
+        """Return generated build rules."""
         # Add a cache to make it idempotent
         if self.__build_rules is None:
             self.__build_rules = []

@@ -53,7 +53,7 @@ def _load_build_rules():
 
 
 def _find_dir_dependent(dir, blade):
-    """Find which target depends on the dir. """
+    """Find which target depends on the dir."""
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]
@@ -64,7 +64,7 @@ def _find_dir_dependent(dir, blade):
 
 
 def _report_not_exist(kind, path, source_dir, blade):
-    """Report dir or BUILD file does not exist. """
+    """Report dir or BUILD file does not exist."""
     msg = '%s "//%s" does not exist' % (kind, path)
     dependent = _find_dir_dependent(source_dir, blade)
     (dependent or console).fatal(msg)
@@ -280,7 +280,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
 
 
 def _find_dependent(dkey, blade):
-    """Find which target depends on the target with dkey. """
+    """Find which target depends on the target with dkey."""
     target_database = blade.get_target_database()
     for key in target_database:
         target = target_database[key]

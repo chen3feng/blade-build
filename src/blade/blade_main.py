@@ -356,7 +356,7 @@ def unlock_workspace(lock_file_fd):
 
 
 def load_config(options, blade_root_dir):
-    """load the configuration file and parse. """
+    """load the configuration file and parse."""
     # Init global build attributes
     build_attributes.initialize(options)
     config.load_files(blade_root_dir, options.load_local_config)
@@ -551,7 +551,7 @@ def run_subcommand_profile(command, options, targets, blade_path, build_dir):
 
 
 def _main(blade_path, argv):
-    """The main entry of blade. """
+    """The main entry of blade."""
     command, options, targets = command_line.parse(argv)
     setup_console(options)
 

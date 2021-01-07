@@ -231,7 +231,7 @@ def scala_library(name=None,
                   provided_deps=[],
                   coverage=True,
                   **kwargs):
-    """Define scala_library target. """
+    """Define scala_library target."""
     target = ScalaLibrary(
             name=name,
             srcs=srcs,
@@ -256,7 +256,7 @@ def scala_fat_library(name=None,
                       warnings=None,
                       exclusions=[],
                       **kwargs):
-    """Define scala_fat_library target. """
+    """Define scala_fat_library target."""
     target = ScalaFatLibrary(
             name=name,
             srcs=srcs,

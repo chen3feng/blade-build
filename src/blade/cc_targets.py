@@ -202,7 +202,7 @@ class CcTarget(Target):
         _declare_hdrs(self, expanded_hdrs)
 
     def _check_deprecated_deps(self):
-        """Check whether it depends upon a deprecated library. """
+        """Check whether it depends upon a deprecated library."""
         for key in self.deps:
             dep = self.target_database.get(key)
             if dep and dep.attr.get('deprecated'):
@@ -237,10 +237,10 @@ class CcTarget(Target):
             if pos != -1:
                 macro = macro[0:pos]
             if macro in CcTarget.__cxx_keyword_list:
-                self.warning('DO NOT define c++ keyword "%s" as macro' % macro)
+                self.warning('DO NOT define c++ keyword "%s" as a macro' % macro)
 
     def _check_incorrect_no_warning(self, warning):
-        """check if warning=no is correctly used or not. """
+        """check if warning=no is correctly used or not."""
         srcs = self.srcs
         if not srcs or warning != 'no':
             return
@@ -299,7 +299,7 @@ class CcTarget(Target):
         return (cpp_flags, incs)
 
     def _get_as_flags(self):
-        """Return as flags according to the build architecture. """
+        """Return as flags according to the build architecture."""
         options = self.blade.get_options()
         if options.m:
             as_flags = ['-g', '--' + options.m]
@@ -319,7 +319,7 @@ class CcTarget(Target):
         return inc_list
 
     def _get_incs_list(self):
-        """Get all incs includes export_incs of all depends. """
+        """Get all incs includes export_incs of all depends."""
         incs = self.attr.get('incs', []) + self.attr.get('export_incs', [])
         incs += self._export_incs_list()
         # Remove duplicate items in incs list and keep the order
@@ -337,7 +337,7 @@ class CcTarget(Target):
         return 'cc'
 
     def _get_cc_vars(self):
-        """Get warning, compile options and include directories for cc build. """
+        """Get warning, compile options and include directories for cc build."""
         vars = {}
         # Warnings
         if self.attr.get('warning') != 'yes':
@@ -357,7 +357,7 @@ class CcTarget(Target):
         return vars
 
     def _generate_link_flags(self):
-        """Generate linker flags for cc link. """
+        """Generate linker flags for cc link."""
         ldflags = []
         extra_linkflags = self.attr.get('extra_linkflags')
         if extra_linkflags:
@@ -369,7 +369,7 @@ class CcTarget(Target):
         return ldflags
 
     def _generate_link_all_symbols_link_flags(self, libs):
-        """Generate link flags for libraries which should be linked with all symbols. """
+        """Generate link flags for libraries which should be linked with all symbols."""
         if libs:
             return ['-Wl,--whole-archive'] + libs + ['-Wl,--no-whole-archive']
         return []
@@ -418,7 +418,7 @@ class CcTarget(Target):
         return sys_libs, usr_libs, link_all_symbols_libs
 
     def _cc_compile_deps(self):
-        """Return a stamp which depends on targets which generate header files. """
+        """Return a stamp which depends on targets which generate header files."""
         deps = self._collect_cc_compile_deps()
         if len(deps) > 1:
             # If there are more deps, we generate a phony stamp as an alias # to simplify
@@ -460,7 +460,7 @@ class CcTarget(Target):
         return list(result)
 
     def _cc_objects(self, expanded_srcs, generated_headers=None):
-        """Generate cc objects build rules in ninja. """
+        """Generate cc objects build rules in ninja."""
         # pylint: disable=too-many-locals
         vars = self._get_cc_vars()
         implicit_deps = []
@@ -877,7 +877,7 @@ class CcLibrary(CcTarget):
         self.ninja_build('securecc', obj, inputs=secure_obj, clean=[])
 
     def _securecc_objects(self, sources):
-        """Generate securecc compile rules in ninja. """
+        """Generate securecc compile rules in ninja."""
         vars = self._get_cc_vars()
         implicit_deps = self._cc_compile_deps()
 
@@ -891,7 +891,7 @@ class CcLibrary(CcTarget):
         return objs
 
     def ninja_rules(self):
-        """Generate ninja build rules for cc object/library. """
+        """Generate ninja build rules for cc object/library."""
         self._check_deprecated_deps()
         if self.srcs:
             if self.attr.get('secure'):
@@ -1028,7 +1028,7 @@ class PrebuiltCcLibrary(CcTarget):
         self._check_binary_link_only()
 
     def ninja_rules(self):
-        """Generate ninja build rules for cc object/library. """
+        """Generate ninja build rules for cc object/library."""
         self._check_deprecated_deps()
         # We allow a prebuilt cc_library doesn't exist if it is not used.
         # So if this library is not depended by any target, don't generate any
@@ -1091,7 +1091,7 @@ def cc_library(
         allow_undefined=False,
         secure=False,
         **kwargs):
-    """cc_library target. """
+    """cc_library target."""
     # pylint: disable=too-many-locals
     if pre_build or prebuilt:
         target = prebuilt_cc_library(
@@ -1211,7 +1211,7 @@ class ForeignCcLibrary(CcTarget):
         self._add_target_file('so', so_path if self.attr['has_dynamic'] else a_path)
 
     def ninja_rules(self):
-        """Generate ninja build rules for cc object/library. """
+        """Generate ninja build rules for cc object/library."""
         self._check_deprecated_deps()
         self._ninja_rules()
 
@@ -1373,7 +1373,7 @@ class CcBinary(CcTarget):
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
     def ninja_rules(self):
-        """Generate ninja build rules for cc binary/test. """
+        """Generate ninja build rules for cc binary/test."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         self._cc_binary(objs, self.attr['dynamic_link'])
@@ -1393,7 +1393,7 @@ def cc_binary(name=None,
               extra_linkflags=[],
               export_dynamic=False,
               **kwargs):
-    """cc_binary target. """
+    """cc_binary target."""
     cc_binary_target = CcBinary(
             name=name,
             srcs=srcs,
@@ -1416,7 +1416,7 @@ build_rules.register_function(cc_binary)
 
 
 def cc_benchmark(name=None, deps=[], **kwargs):
-    """cc_benchmark target. """
+    """cc_benchmark target."""
     cc_config = config.get_section('cc_config')
     benchmark_libs = cc_config['benchmark_libs']
     benchmark_main_libs = cc_config['benchmark_main_libs']
@@ -1474,7 +1474,7 @@ class CcPlugin(CcTarget):
         self.attr['strip'] = strip
 
     def ninja_rules(self):
-        """Generate ninja build rules for cc plugin. """
+        """Generate ninja build rules for cc plugin."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
@@ -1518,7 +1518,7 @@ def cc_plugin(
         allow_undefined=True,
         strip=False,
         **kwargs):
-    """cc_plugin target. """
+    """cc_plugin target."""
     target = CcPlugin(
             name=name,
             srcs=srcs,
@@ -1640,7 +1640,7 @@ def cc_test(name=None,
             heap_check=None,
             heap_check_debug=False,
             **kwargs):
-    """cc_test target. """
+    """cc_test target."""
     # pylint: disable=too-many-locals
     cc_test_target = CcTest(
             name=name,

@@ -26,10 +26,10 @@ from blade.blade_util import environ_add_path
 
 
 class BinaryRunner(object):
-    """BinaryRunner. """
+    """BinaryRunner."""
 
     def __init__(self, options, target_database, build_targets):
-        """Init method. """
+        """Init method."""
         from blade import build_manager  # pylint: disable=import-outside-toplevel
         self._build_targets = build_targets
         self.build_dir = build_manager.instance.get_build_dir()
@@ -45,15 +45,15 @@ class BinaryRunner(object):
         self.target_database = target_database
 
     def _executable(self, target):
-        """Returns the executable path. """
+        """Returns the executable path."""
         return os.path.join(self.build_dir, target.path, target.name)
 
     def _runfiles_dir(self, target):
-        """Returns runfiles dir. """
+        """Returns runfiles dir."""
         return '%s.runfiles' % self._executable(target)
 
     def __check_test_data_dest(self, target, dest, dest_list):
-        """Check whether the destination of test data is valid or not. """
+        """Check whether the destination of test data is valid or not."""
         dest_norm = os.path.normpath(dest)
         if dest in dest_list:
             target.error('Ambiguous testdata "%s"' % dest)
@@ -173,7 +173,7 @@ class BinaryRunner(object):
         self._prepare_extra_test_data(target)
 
     def _prepare_extra_test_data(self, target):
-        """Prepare extra test data specified in the .testdata file if it exists. """
+        """Prepare extra test data specified in the .testdata file if it exists."""
         testdata = os.path.join(self.build_dir, target.path,
                                 '%s.testdata' % target.name)
         if os.path.isfile(testdata):

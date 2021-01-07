@@ -35,7 +35,7 @@ class PythonTarget(Target):
                  base,
                  visibility,
                  kwargs):
-        """Init method. """
+        """Init method."""
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
@@ -80,7 +80,7 @@ class PythonLibrary(PythonTarget):
                  base,
                  visibility,
                  kwargs):
-        """Init method. """
+        """Init method."""
         super(PythonLibrary, self).__init__(
                 name=name,
                 type='py_library',
@@ -112,7 +112,7 @@ class PrebuiltPythonLibrary(PythonTarget):
                  visibility,
                  base,
                  kwargs):
-        """Init method. """
+        """Init method."""
         super(PrebuiltPythonLibrary, self).__init__(
                 name=name,
                 type='prebuilt_py_library',
@@ -141,7 +141,7 @@ def py_library(name=None,
                base=None,
                prebuilt=None,
                **kwargs):
-    """python library. """
+    """python library."""
     if prebuilt:
         target = PrebuiltPythonLibrary(
                 name=name,
@@ -179,7 +179,7 @@ class PythonBinary(PythonLibrary):
                  base,
                  exclusions,
                  kwargs):
-        """Init method. """
+        """Init method."""
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
 
@@ -237,7 +237,7 @@ def py_binary(name=None,
               base=None,
               exclusions=[],
               **kwargs):
-    """python binary. """
+    """python binary."""
     target = PythonBinary(
             name=name,
             srcs=srcs,
@@ -267,7 +267,7 @@ class PythonTest(PythonBinary):
                  base,
                  testdata,
                  kwargs):
-        """Init method. """
+        """Init method."""
         super(PythonTest, self).__init__(
                 name=name,
                 srcs=srcs,
@@ -289,7 +289,7 @@ def py_test(name=None,
             base=None,
             testdata=[],
             **kwargs):
-    """python test. """
+    """python test."""
     target = PythonTest(
             name=name,
             srcs=srcs,

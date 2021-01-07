@@ -16,9 +16,9 @@ import blade_test
 
 
 class TestLoadBuilds(blade_test.TargetTest):
-    """Test load builds. """
+    """Test load builds."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('test_loadbuilds')
 
     @unittest.skip('TODO: query loaded targets')

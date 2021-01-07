@@ -30,7 +30,7 @@ from blade import console
 
 
 def is_valid_id(id):
-    """Check if id is valid. """
+    """Check if id is valid."""
     parts = id.split(':')
     if len(parts) == 3:
         group, artifact, version = parts
@@ -54,7 +54,7 @@ class MavenArtifact(object):
 
 
 class MavenCache(object):
-    """MavenCache. Manages maven jar files. """
+    """MavenCache. Manages maven jar files."""
 
     __instance = None
 
@@ -65,7 +65,7 @@ class MavenCache(object):
         return MavenCache.__instance
 
     def __init__(self, log_dir):
-        """Init method. """
+        """Init method."""
 
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -101,18 +101,18 @@ class MavenCache(object):
         self.__to_download = queue.Queue()
 
     def _artifact_dir(self, id):
-        """Get dir for artifact within local repository. """
+        """Get dir for artifact within local repository."""
         group, artifact, version = id.split(':')
         return os.path.join(self.__local_repository,
                             group.replace('.', '/'), artifact, version)
 
     def _check_config(self):
-        """Check whether maven is configured correctly. """
+        """Check whether maven is configured correctly."""
         if not self.__maven:
             console.fatal('MavenCache is not configured')
 
     def _is_file_expired(self, filename):
-        """Check if the modification time of file is expired relative to build time. """
+        """Check if the modification time of file is expired relative to build time."""
         return self.__build_time - os.path.getmtime(filename) > self.__snapshot_update_interval
 
     def _need_download(self, filename, version, logfile):
@@ -226,7 +226,7 @@ class MavenCache(object):
         return True
 
     def _download_artifact(self, id, classifier, transitive, target):
-        """Download the specified jar and its transitive dependencies. """
+        """Download the specified jar and its transitive dependencies."""
         if not self._download_jar(id, classifier, target):
             self.__jar_database[(id, classifier, transitive)] = None
             return False
@@ -254,7 +254,7 @@ class MavenCache(object):
         return True
 
     def get_artifact(self, id, classifier, transitive, target):
-        """get_artifact_from_database. """
+        """get_artifact_from_database."""
         if (id, classifier, transitive) not in self.__jar_database:
             self._download_artifact(id, classifier, transitive, target)
         return self.__jar_database.get((id, classifier, transitive))

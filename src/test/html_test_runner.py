@@ -68,7 +68,7 @@ from xml.sax import saxutils
 #   >>>
 
 class OutputRedirector(object):
-    """ Wrapper to redirect stdout or stderr """
+    """Wrapper to redirect stdout or stderr."""
 
     def __init__(self, fp):
         self.fp = fp

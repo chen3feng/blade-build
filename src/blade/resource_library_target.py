@@ -76,7 +76,7 @@ def resource_library(name=None,
                      optimize=None,
                      extra_cppflags=[],
                      **kwargs):
-    """resource_library. """
+    """resource_library."""
     target = ResourceLibrary(
             name,
             srcs=srcs,

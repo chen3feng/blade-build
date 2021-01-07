@@ -35,7 +35,7 @@ class ParsedCommandLine(object):
     """
 
     def __init__(self, argv):
-        """Init the class. """
+        """Init the class."""
         self.options, others = self._cmd_parse(argv)
 
         # If '--' in arguments, use all other arguments after it as run
@@ -67,7 +67,7 @@ class ParsedCommandLine(object):
         actions[command]()
 
     def _check_run_targets(self):
-        """check that run command should have only one target. """
+        """check that run command should have only one target."""
         if len(self.targets) != 1 or ':' not in self.targets[0] or self.targets[0].endswith('...'):
             console.fatal('Please specify a single target to run: '
                           'blade run //target_path:target_name (or '
@@ -77,7 +77,7 @@ class ParsedCommandLine(object):
         """check that test command options."""
 
     def _check_plat_and_profile_options(self):
-        """check platform and profile options. """
+        """check platform and profile options."""
         compiler_arch = self._compiler_target_arch()
         arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
         if arch is None:
@@ -96,47 +96,47 @@ class ParsedCommandLine(object):
                                    % (m, compiler_arch))
 
     def _check_clean_options(self):
-        """check the clean options. """
+        """check the clean options."""
         self._check_plat_and_profile_options()
 
     def _check_query_options(self):
-        """check query action options. """
+        """check query action options."""
         if not self.options.deps and not self.options.dependents:
             console.fatal('Please specify --deps, --dependents or both to query target')
 
     def _check_build_options(self):
-        """check the building options. """
+        """check the building options."""
         self._check_plat_and_profile_options()
 
     def _check_build_command(self):
-        """check build options. """
+        """check build options."""
         self._check_build_options()
 
     def _check_dump_command(self):
-        """check build options. """
+        """check build options."""
         self._check_build_options()
 
     def _check_run_command(self):
-        """check run options and the run targets. """
+        """check run options and the run targets."""
         self._check_build_options()
         self._check_run_targets()
 
     def _check_test_command(self):
-        """check test optios. """
+        """check test optios."""
         self._check_build_options()
         self._check_test_options()
 
     def _check_clean_command(self):
-        """check clean options. """
+        """check clean options."""
         self._check_clean_options()
 
     def _check_query_command(self):
-        """check query options. """
+        """check query options."""
         self._check_plat_and_profile_options()
         self._check_query_options()
 
     def __add_plat_profile_arguments(self, parser):
-        """Add plat and profile arguments. """
+        """Add plat and profile arguments."""
         parser.add_argument('-m',
                             dest='m',
                             choices=['32', '64'],
@@ -165,7 +165,7 @@ class ParsedCommandLine(object):
                             help=argparse.SUPPRESS)
 
     def __add_generate_arguments(self, parser):
-        """Add generate related arguments. """
+        """Add generate related arguments."""
         parser.add_argument(
             '--generate-dynamic', dest='generate_dynamic',
             action='store_true', default=False,
@@ -198,7 +198,7 @@ class ParsedCommandLine(object):
             help='Generate go files for proto_library')
 
     def __add_build_actions_arguments(self, parser):
-        """Add build related action arguments. """
+        """Add build related action arguments."""
         parser.add_argument(
             '--backend-builder', dest='backend_builder', choices=['ninja'],
             help='Specify the underlying backend builder (currently only support ninja)')
@@ -230,7 +230,7 @@ class ParsedCommandLine(object):
             help='Show build commands which are slower than specified seconds')
 
     def __add_coverage_arguments(self, parser):
-        """Add coverage arguments. """
+        """Add coverage arguments."""
         parser.add_argument(
             '--gprof', dest='gprof',
             action='store_true', default=False,
@@ -248,7 +248,7 @@ class ParsedCommandLine(object):
             help=argparse.SUPPRESS)
 
     def _add_query_arguments(self, parser):
-        """Add query arguments for parser. """
+        """Add query arguments for parser."""
         self.__add_plat_profile_arguments(parser)
         parser.add_argument(
             '--deps', dest='deps',
@@ -273,13 +273,13 @@ class ParsedCommandLine(object):
             help='DEPRECATED, please use --dependents')
 
     def _add_clean_arguments(self, parser):
-        """Add clean arguments for parser. """
+        """Add clean arguments for parser."""
         self.__add_plat_profile_arguments(parser)
         self.__add_build_actions_arguments(parser)
         self.__add_generate_arguments(parser)
 
     def _add_test_arguments(self, parser):
-        """Add test command arguments. """
+        """Add test command arguments."""
         parser.add_argument(
             '--full-test', action='store_true',
             dest='full_test', default=False,
@@ -313,10 +313,10 @@ class ParsedCommandLine(object):
             help='Whether run unrepaired(no changw after previous failure) tests during incremental test')
 
     def _add_run_arguments(self, parser):
-        """Add run command arguments. """
+        """Add run command arguments."""
 
     def _add_build_arguments(self, *parsers):
-        """Add building arguments for parsers. """
+        """Add building arguments for parsers."""
         for parser in parsers:
             self.__add_plat_profile_arguments(parser)
             self.__add_build_actions_arguments(parser)
@@ -351,7 +351,7 @@ class ParsedCommandLine(object):
                 help='Only show warnings and errors')
 
     def _add_dump_arguments(self, parser):
-        """Add dump arguments for parser. """
+        """Add dump arguments for parser."""
         parser.add_argument(
             '--to-file', dest='dump_to_file', action='store', metavar='FILEPATH',
             default='/dev/stdout',
@@ -416,7 +416,7 @@ class ParsedCommandLine(object):
         return arg_parser.parse_known_args(argv)
 
     def _compiler_target_arch(self):
-        """Compiler(gcc) target architecture. """
+        """Compiler(gcc) target architecture."""
         arch = ToolChain.get_cc_target_arch()
         pos = arch.find('-')
         if pos == -1:
@@ -424,7 +424,7 @@ class ParsedCommandLine(object):
         return arch[:pos]
 
     def get_command(self):
-        """Return blade command. """
+        """Return blade command."""
         return self.options.command
 
     def get_options(self):

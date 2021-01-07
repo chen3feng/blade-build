@@ -44,7 +44,7 @@ class MavenJar(Target):
         self._setup()
 
     def _check_id(self, id):
-        """Check if id is valid. """
+        """Check if id is valid."""
         if id is None:
             self.error('Missing "id"')
         if not maven.is_valid_id(id):
@@ -146,7 +146,7 @@ class JavaTargetMixIn(object):
                              exclusion)
 
     def _process_pack_exclusions(self, jars):
-        """Exclude jars specified by exclusions from input jars. """
+        """Exclude jars specified by exclusions from input jars."""
         exclusions = self.attr.get('exclusions', [])
         if exclusions:
             jars = set(jars)
@@ -191,11 +191,11 @@ class JavaTargetMixIn(object):
                 self.attr['resources'].append((src, dst))
 
     def _get_classes_dir(self):
-        """Return path of classes dir. """
+        """Return path of classes dir."""
         return self._target_file_path(self.name + '.classes')
 
     def _get_sources_dir(self):
-        """Return path of sources dir. """
+        """Return path of sources dir."""
         return self._target_file_path(self.name + '.sources')
 
     def __collect_dep_jars(self, dkey, dep_jars, maven_jars):
@@ -215,7 +215,7 @@ class JavaTargetMixIn(object):
                 maven_jars.append(jar)
 
     def __get_dep_jars(self, deps):
-        """Return a tuple of (target jars, maven jars). """
+        """Return a tuple of (target jars, maven jars)."""
         dep_jars, maven_jars = [], []
         for d in deps:
             self.__collect_dep_jars(d, dep_jars, maven_jars)
@@ -368,7 +368,7 @@ class JavaTargetMixIn(object):
         return self.get_java_package_source_mapping().keys()
 
     def _get_source_package_name(self, file_name):
-        """Get the java package name from source file if it is specified. """
+        """Get the java package name from source file if it is specified."""
         if not os.path.isfile(file_name):
             return ''
         package_pattern = r'^\s*package\s+([\w.]+)'
@@ -890,7 +890,7 @@ def java_binary(name=None,
                 warnings=None,
                 exclusions=[],
                 **kwargs):
-    """Define java_binary target. """
+    """Define java_binary target."""
     target = JavaBinary(
             name=name,
             srcs=srcs,
@@ -943,7 +943,7 @@ def java_fat_library(name=None,
                      warnings=None,
                      exclusions=[],
                      **kwargs):
-    """Define java_fat_library target. """
+    """Define java_fat_library target."""
     target = JavaFatLibrary(
             name=name,
             srcs=srcs,

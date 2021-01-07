@@ -97,18 +97,18 @@ _log = None
 
 
 def set_log_file(log_file):
-    """Set the global log file. """
+    """Set the global log file."""
     global _log
     _log = open(log_file, 'w', 1)
 
 
 def get_log_file():
-    """Return the global log file name. """
+    """Return the global log file name."""
     return _log.name
 
 
 def log(msg):
-    """Dump message into log file. """
+    """Dump message into log file."""
     if _log:
         print(msg, file=_log)
 
@@ -128,7 +128,7 @@ _verbosity = 'normal'
 
 
 def set_verbosity(value):
-    """Set the global verbosity. """
+    """Set the global verbosity."""
     global _verbosity
     assert value in _VERBOSITIES
     _verbosity = value
@@ -237,7 +237,7 @@ def error_count():
 
 
 def error(msg, prefix=True):
-    """dump error message. """
+    """dump error message."""
     if prefix:
         msg = 'Blade(error): ' + msg
     log(msg)
@@ -247,13 +247,13 @@ def error(msg, prefix=True):
 
 
 def fatal(msg, code=1, prefix=True):
-    """dump error message and exit. """
+    """dump error message and exit."""
     error(msg, prefix=prefix)
     sys.exit(code)
 
 
 def warning(msg, prefix=True):
-    """dump warning message. """
+    """dump warning message."""
     if prefix:
         msg = 'Blade(warning): ' + msg
     log(msg)
@@ -271,7 +271,7 @@ def notice(msg, prefix=True):
 
 
 def info(msg, prefix=True):
-    """dump info message. """
+    """dump info message."""
     if prefix:
         msg = 'Blade(info): ' + msg
     log(msg)
@@ -279,7 +279,7 @@ def info(msg, prefix=True):
 
 
 def debug(msg, prefix=True):
-    """dump debug message. """
+    """dump debug message."""
     if prefix:
         msg = 'Blade(debug): ' + msg
     log(msg)

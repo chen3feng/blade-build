@@ -50,7 +50,7 @@ _SIGNAL_MAP = _signal_map()
 
 class WorkerThread(threading.Thread):
     def __init__(self, index, job_queue, job_handler, redirect):
-        """Init methods for this thread. """
+        """Init methods for this thread."""
         super(WorkerThread, self).__init__()
         self.index = index
         self.running = True
@@ -65,7 +65,7 @@ class WorkerThread(threading.Thread):
         console.debug('Test worker %d starts to work' % self.index)
 
     def terminate(self):
-        """Terminate the worker. """
+        """Terminate the worker."""
         self.running = False
         if self.job_process:
             try:
@@ -74,14 +74,14 @@ class WorkerThread(threading.Thread):
                 pass
 
     def cleanup_job(self):
-        """Clean up job data. """
+        """Clean up job data."""
         self.job_start_time, self.job_timeout = 0, 0
         self.job_process = None
         self.job_name = ''
         self.job_is_timeout = False
 
     def set_job_data(self, p, name, timeout):
-        """Set the popen object and name if the job is run in a subprocess. """
+        """Set the popen object and name if the job is run in a subprocess."""
         self.job_process, self.job_name, self.job_timeout = p, name, timeout
 
     def check_job_timeout(self, now):
@@ -104,7 +104,7 @@ class WorkerThread(threading.Thread):
             self.job_lock.release()
 
     def run(self):
-        """executes and runs here. """
+        """executes and runs here."""
         try:
             job_queue = self.job_queue
             while not job_queue.empty() and self.running:
@@ -127,7 +127,7 @@ class TestScheduler(object):
     """Schedule specified tests to be ran in multiple test threads"""
 
     def __init__(self, tests_list, num_jobs):
-        """init method. """
+        """init method."""
         self.tests_list = tests_list
         self.num_jobs = num_jobs
 
@@ -143,11 +143,11 @@ class TestScheduler(object):
         self.num_of_running_tests = 0
 
     def _get_workers_num(self):
-        """get the number of thread workers. """
+        """get the number of thread workers."""
         return min(self.job_queue.qsize(), self.num_jobs)
 
     def _get_result(self, returncode):
-        """translate result from returncode. """
+        """translate result from returncode."""
         result = 'SUCCESS'
         if returncode != 0:
             result = _SIGNAL_MAP.get(returncode, 'FAILED')
@@ -164,7 +164,7 @@ class TestScheduler(object):
             console.show_progress_bar(self.num_of_finished_tests, len(self.tests_list))
 
     def _run_job_redirect(self, job, job_thread):
-        """run job and redirect the output. """
+        """run job and redirect the output."""
         target, run_dir, test_env, cmd = job
         test_name = target.key
         shell = target.attr.get('run_in_shell', False)
@@ -193,7 +193,7 @@ class TestScheduler(object):
         return p.returncode
 
     def _run_job(self, job, job_thread):
-        """run job, do not redirect the output. """
+        """run job, do not redirect the output."""
         target, run_dir, test_env, cmd = job
         test_name = target.key
         shell = target.attr.get('run_in_shell', False)
@@ -251,7 +251,7 @@ class TestScheduler(object):
             t.join(1)
 
     def _wait_worker_threads(self, threads):
-        """Wait for worker threads to complete. """
+        """Wait for worker threads to complete."""
         test_timeout = config.get_item('global_config', 'test_timeout')
         try:
             while threads:
@@ -276,7 +276,7 @@ class TestScheduler(object):
             raise
 
     def schedule_jobs(self):
-        """scheduler. """
+        """scheduler."""
         if not self.tests_list:
             return
 

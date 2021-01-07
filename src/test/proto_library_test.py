@@ -13,13 +13,13 @@ import blade_test
 
 
 class TestProtoLibrary(blade_test.TargetTest):
-    """Test proto_library """
+    """Test proto_library."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('proto')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.dryRun('--generate-java'))
 
         com_uses_line = self.findCommand(['use_protos.cpp.o', '-c'])

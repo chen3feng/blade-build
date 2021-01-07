@@ -26,8 +26,10 @@ from blade import console
 
 
 def _incs_list_to_string(incs):
-    """ Convert incs list to string
-    ['thirdparty', 'include'] -> -I thirdparty -I include
+    """Convert incs list to string.
+
+    Example:
+        ['thirdparty', 'include'] -> "-I thirdparty -I include"
     """
     return ' '.join(['-I ' + path for path in incs])
 
@@ -37,7 +39,7 @@ def protoc_import_path_option(incs):
 
 
 def _shell_support_pipefail():
-    """Whether current shell support the `pipefail` option"""
+    """Whether current shell support the `pipefail` option."""
     return subprocess.call('set -o pipefail 2>/dev/null', shell=True) == 0
 
 
@@ -61,7 +63,7 @@ class _NinjaFileHeaderGenerator(object):
         self.__all_rule_names = set()
 
     def _add_rule(self, rule):
-        """Append one rule to buffer. """
+        """Append one rule to buffer."""
         self.rules_buf.append('%s\n' % rule)
 
     def get_all_rule_names(self):
@@ -152,7 +154,7 @@ class _NinjaFileHeaderGenerator(object):
         return cppflags, linkflags
 
     def _get_warning_flags(self):
-        """Get the warning flags. """
+        """Get the warning flags."""
         cc_config = config.get_section('cc_config')
         cppflags = cc_config['warnings']
         cxxflags = cc_config['cxx_warnings']
@@ -597,7 +599,7 @@ class _NinjaFileHeaderGenerator(object):
         return ' '.join(cmd)
 
     def generate(self):
-        """Generate ninja rules. """
+        """Generate ninja rules."""
         self.generate_file_header()
         self.generate_common_rules()
         self.generate_cc_rules()
@@ -615,7 +617,7 @@ class _NinjaFileHeaderGenerator(object):
 
 
 class NinjaFileGenerator(object):
-    """Generate ninja rules to build.ninja. """
+    """Generate ninja rules to build.ninja."""
 
     def __init__(self, ninja_path, blade_path, blade):
         self.script_path = ninja_path
@@ -629,7 +631,7 @@ class NinjaFileGenerator(object):
         return self.__all_rule_names
 
     def generate_build_rules(self):
-        """Generate ninja rules to build.ninja. """
+        """Generate ninja rules to build.ninja."""
         ninja_script_header_generator = _NinjaFileHeaderGenerator(
             self.blade.get_options(),
             self.build_dir,
@@ -642,7 +644,7 @@ class NinjaFileGenerator(object):
         return rules
 
     def generate_build_script(self):
-        """Generate build script for underlying build system. """
+        """Generate build script for underlying build system."""
         rules = self.generate_build_rules()
         script = open(self.script_path, 'w')
         script.writelines(rules)

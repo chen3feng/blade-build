@@ -15,13 +15,13 @@ import blade_test
 
 
 class TestGenRule(blade_test.TargetTest):
-    """Test gen_rule """
+    """Test gen_rule."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('gen_rule')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.runBlade())
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_use_line = self.findCommand(['use_media.cpp.o', '-c'])

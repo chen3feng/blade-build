@@ -15,13 +15,13 @@ import blade_test
 
 
 class TestLexYacc(blade_test.TargetTest):
-    """Test lex_yacc """
+    """Test lex_yacc."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('lex_yacc')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.dryRun())
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_bison_line = self.findCommand(['bison', '-d', '-o'])

@@ -27,7 +27,7 @@ _package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
 
 
 class GoTarget(Target):
-    """This class is the base of all go targets. """
+    """This class is the base of all go targets."""
 
     _go_os = None
     _go_arch = None
@@ -40,7 +40,7 @@ class GoTarget(Target):
                  extra_goflags,
                  visibility,
                  kwargs):
-        """Init the go target. """
+        """Init the go target."""
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
         extra_goflags = ' '.join(var_to_list(extra_goflags))
@@ -138,7 +138,7 @@ class GoTarget(Target):
 
 
 class GoLibrary(GoTarget):
-    """GoLibrary generates build rules for a go package. """
+    """GoLibrary generates build rules for a go package."""
 
     def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
         super(GoLibrary, self).__init__(
@@ -153,7 +153,7 @@ class GoLibrary(GoTarget):
         self.attr['go_label'] = 'gopkg'
 
     def _go_target_path(self):  # Override
-        """Return package object path according to the standard go directory layout. """
+        """Return package object path according to the standard go directory layout."""
         go_home = config.get_item('go_config', 'go_home')
         return os.path.join(go_home, 'pkg',
                             '%s_%s' % (GoTarget._go_os, GoTarget._go_arch),
@@ -161,7 +161,7 @@ class GoLibrary(GoTarget):
 
 
 class GoBinary(GoTarget):
-    """GoBinary generates build rules for a go command executable. """
+    """GoBinary generates build rules for a go command executable."""
 
     def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
         super(GoBinary, self).__init__(
@@ -177,7 +177,7 @@ class GoBinary(GoTarget):
 
 
 class GoTest(GoTarget):
-    """GoTest generates build rules for a go test binary. """
+    """GoTest generates build rules for a go test binary."""
 
     def __init__(self, name, srcs, deps, visibility, testdata, extra_goflags, kwargs):
         super(GoTest, self).__init__(

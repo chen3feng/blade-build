@@ -18,18 +18,14 @@ import blade_test
 
 
 class TestDepsAnalyzing(blade_test.TargetTest):
-    """Test dependency analyzing. """
+    """Test dependency analyzing."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('test_dependency')
 
     @unittest.skip('TODO: use query to finish this test')
     def testExpandedTargets(self):
-        """Test that all targets dependency relationship are
-
-        populated correctly.
-
-        """
+        """Test that all targets dependency relationship are populated correctly."""
         self.assertTrue(self.blade.is_expanded())
         self.assertTrue(self.all_targets)
 

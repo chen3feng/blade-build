@@ -39,12 +39,12 @@ class JacocoReporter(object):
     # Copied from BinaryRunner
     # TODO(chen3feng): DRY
     def _executable(self, target):
-        """Returns the executable path. """
+        """Returns the executable path."""
         return os.path.join(self.__build_dir, target.path, target.name)
 
     # Copied from BinaryRunner
     def _runfiles_dir(self, target):
-        """Returns runfiles dir. """
+        """Returns runfiles dir."""
         return '%s.runfiles' % self._executable(target)
 
     @staticmethod

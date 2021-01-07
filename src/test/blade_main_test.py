@@ -37,7 +37,7 @@ from test_target_test import TestTestRunner
 
 
 def _main():
-    """main method. """
+    """main method."""
     suite_test = unittest.TestSuite()
     suite_test.addTests([
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcLibrary),

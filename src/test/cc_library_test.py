@@ -15,9 +15,9 @@ import blade_test
 
 
 class TestCcLibrary(blade_test.TargetTest):
-    """Test cc_library """
+    """Test cc_library."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('cc')
 
     def testGenerateRules(self):

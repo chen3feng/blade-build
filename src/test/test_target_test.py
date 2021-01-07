@@ -16,14 +16,14 @@ import blade_test
 
 
 class TestTestRunner(blade_test.TargetTest):
-    """Test cc_library """
+    """Test cc_test."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('test_test_runner', 'string_test_main',
                      full_test=False, args='', test_jobs=1, show_details=True)
 
     def testTestRunnerCorrectly(self):
-        """Test query targets dependency relationship correctly. """
+        """Test query targets dependency relationship correctly."""
         self.assertTrue(self.dryRun())
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])

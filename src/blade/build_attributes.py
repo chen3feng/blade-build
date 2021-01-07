@@ -15,7 +15,7 @@ attributes = None
 
 
 class TargetAttributes(object):
-    """Build target attributes. """
+    """Build target attributes."""
 
     def __init__(self, options):
         self.options = options

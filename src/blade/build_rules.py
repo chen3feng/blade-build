@@ -21,13 +21,13 @@ __build_rules = { 'native' : Native() }
 
 
 def register_variable(name, value):
-    """Register a variable that accessiable in BUILD file """
+    """Register a variable that accessiable in BUILD file."""
     __build_rules[name] = value
     setattr(__build_rules['native'], name, value)
 
 
 def register_function(f):
-    """Register a function as a build rule that callable in BUILD file """
+    """Register a function as a build rule that callable in BUILD file."""
     register_variable(f.__name__, f)
 
 
