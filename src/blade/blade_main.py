@@ -88,8 +88,8 @@ from blade import command_line
 from blade import config
 from blade import console
 from blade import target
-from blade.blade_util import find_blade_root_dir, find_file_bottom_up
-from blade.blade_util import get_cwd, iteritems, to_string
+from blade.blade_util import find_blade_root_dir
+from blade.blade_util import get_cwd, to_string
 from blade.blade_util import lock_file, unlock_file
 
 # Run target
@@ -99,95 +99,11 @@ _BLADE_ROOT_DIR = None
 _WORKING_DIR = None
 
 
-# For our open source projects (toft, thirdparty, foxy etc.), we make a project
-# dir , add subdirs are github repos, here we need to fix out the git ROOT for
-# each build target
-def find_scm_root(target, scm):
-    scm_dir = find_file_bottom_up('.' + scm, target)
-    if not scm_dir:
-        return ''
-    return os.path.dirname(scm_dir)
-
-
 def _target_in_dir(path, dirtotest):
     '''Test whether path is in the dirtotest'''
     if dirtotest == '.':
         return True
     return os.path.commonprefix([path, dirtotest]) == dirtotest
-
-
-def split_targets_into_scm_root(targets, working_dir):
-    '''Split all targets by scm root dirs'''
-    scm_root_dirs = {}  # scm_root_dir : (scm_type, target_dirs)
-    checked_dir = set()
-    scms = ('svn', 'git')
-    for target in targets:
-        target_dir = target.split(':')[0]
-        if target_dir in checked_dir:
-            continue
-        checked_dir.add(target_dir)
-        # Only check targets under working dir
-        if not _target_in_dir(target_dir, working_dir):
-            continue
-        for scm in scms:
-            scm_root = find_scm_root(target_dir, scm)
-            if scm_root:
-                rel_target_dir = os.path.relpath(target_dir, scm_root)
-                if scm_root in scm_root_dirs:
-                    scm_root_dirs[scm_root][1].append(rel_target_dir)
-                else:
-                    scm_root_dirs[scm_root] = (scm, [rel_target_dir])
-    return scm_root_dirs
-
-
-def _get_changed_files(targets, blade_root_dir, working_dir):
-    scm_root_dirs = split_targets_into_scm_root(targets, working_dir)
-    changed_files = set()
-    for scm_root, (scm, dirs) in iteritems(scm_root_dirs):
-        try:
-            os.chdir(scm_root)
-            if scm == 'svn':
-                output = os.popen('svn st %s' % ' '.join(dirs)).read().split('\n')
-            elif scm == 'git':
-                status_cmd = 'git status --porcelain %s' % ' '.join(dirs)
-                output = os.popen(status_cmd).read().split('\n')
-            for f in output:
-                seg = f.strip().split()
-                if not seg or seg[0] != 'M' and seg[0] != 'A':
-                    continue
-                f = seg[-1]
-                fullpath = os.path.join(scm_root, f)
-                changed_files.add(fullpath)
-        finally:
-            os.chdir(blade_root_dir)
-    return changed_files
-
-
-def _check_code_style(targets):
-    cpplint = config.get_item('cc_config', 'cpplint')
-    if not cpplint:
-        console.info('Cpplint is disabled')
-        return 0
-    changed_files = _get_changed_files(targets, _BLADE_ROOT_DIR, _WORKING_DIR)
-    if not changed_files:
-        return 0
-    console.info('Begin to check code style for changed source code')
-    p = subprocess.Popen(('%s %s' % (cpplint, ' '.join(changed_files))), shell=True)
-    try:
-        p.wait()
-        if p.returncode != 0:
-            if p.returncode == 127:
-                msg = ("Can't execute '{0}' to check style, you can config the "
-                       "'cpplint' option to be a valid cpplint path in the "
-                       "'cc_config' section of blade.conf or BLADE_ROOT, or "
-                       "make sure '{0}' command is correct.").format(cpplint)
-            else:
-                msg = 'Please fixing style warnings before submitting the code!'
-            console.warning(msg)
-    except KeyboardInterrupt as e:
-        console.error(str(e))
-        return 1
-    return 0
 
 
 def _run_backend_builder(cmdstr):
@@ -282,7 +198,6 @@ def _ninja_build(options):
 
 
 def build(options):
-    _check_code_style(_TARGETS)
     console.info('Building...')
     console.flush()
     returncode = _ninja_build(options)
@@ -356,7 +271,7 @@ def unlock_workspace(lock_file_fd):
 
 
 def load_config(options, blade_root_dir):
-    """load the configuration file and parse."""
+    """Load the configuration file and parse."""
     # Init global build attributes
     build_attributes.initialize(options)
     config.load_files(blade_root_dir, options.load_local_config)
@@ -377,7 +292,7 @@ def setup_build_dir(options):
 
 
 def get_source_dirs():
-    '''Get workspace dir and working dir relative to workspace dir'''
+    """Get workspace dir and working dir relative to workspace dir."""
     working_dir = get_cwd()
     blade_root_dir = find_blade_root_dir(working_dir)
     working_dir = os.path.relpath(working_dir, blade_root_dir)

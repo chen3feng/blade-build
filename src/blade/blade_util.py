@@ -13,25 +13,19 @@
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import fcntl
+import hashlib
 import inspect
-import os
 import json
-import sys
-import string
+import os
 import signal
+import string
 import subprocess
+import sys
 
 from blade import console
-
-try:
-    import hashlib as md5
-except ImportError:
-    import md5
-
 
 _IN_PY3 = sys.version_info[0] == 3
 
@@ -39,7 +33,7 @@ _IN_PY3 = sys.version_info[0] == 3
 def md5sum_bytes(content):
     """Calculate md5sum of a byte string."""
     assert isinstance(content, bytes), 'Invalid type %s' % type(content)
-    m = md5.md5()
+    m = hashlib.md5()
     m.update(content)
     return m.hexdigest()
 

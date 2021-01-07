@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import blade.config
 import blade.console
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 def workspace_root_dir():
     """Get the root dir of current workspace."""

@@ -125,7 +125,6 @@ syn keyword bladeArg benchmark_main_libs
 syn keyword bladeArg c_warnings
 syn keyword bladeArg cflags
 syn keyword bladeArg cppflags
-syn keyword bladeArg cpplint
 syn keyword bladeArg cxx_warnings
 syn keyword bladeArg cxxflags
 syn keyword bladeArg extra_incs

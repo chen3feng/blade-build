@@ -10,9 +10,9 @@
 
 """
 
+import unittest
 
 import blade_test
-import unittest
 
 
 class TestSwigLibrary(blade_test.TargetTest):
