@@ -59,7 +59,7 @@ class CuTarget(CcTarget):
                 kwargs=kwargs)
 
     def _get_cu_flags(self):
-        """Return the nvcc flags according to the BUILD file and other configs. """
+        """Return the nvcc flags according to the BUILD file and other configs."""
         nvcc_flags = []
 
         # Warnings

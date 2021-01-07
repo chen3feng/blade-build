@@ -15,13 +15,13 @@ import blade_test
 
 
 class TestResourceLibrary(blade_test.TargetTest):
-    """Test resource_library """
+    """Test resource_library."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('cc')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.dryRun())
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_forms_line = self.findCommand(['forms.js.c.o', '-c'])

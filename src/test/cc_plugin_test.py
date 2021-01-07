@@ -15,13 +15,13 @@ import blade_test
 
 
 class TestCcPlugin(blade_test.TargetTest):
-    """Test cc_plugin """
+    """Test cc_plugin."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('cc')
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.runBlade())
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])

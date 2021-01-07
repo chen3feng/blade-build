@@ -21,11 +21,11 @@ import blade.config
 
 
 class TargetTest(unittest.TestCase):
-    """base class Test """
+    """base class Test."""
 
     def doSetUp(self, path, target='...', full_targets=None,
                 command='build', generate_php=True, **kwargs):
-        """setup method. """
+        """setup method."""
         self.command = command
         if full_targets:
             self.targets = full_targets
@@ -41,7 +41,7 @@ class TargetTest(unittest.TestCase):
         self.build_output_file = 'build_output.txt'
 
     def tearDown(self):
-        """tear down method. """
+        """tear down method."""
         try:
             shutil.rmtree('build64_release', ignore_errors=True)
         except OSError as e:

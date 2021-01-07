@@ -15,18 +15,18 @@ import blade_test
 
 
 class TestJava(blade_test.TargetTest):
-    """Test java_jar """
+    """Test java targets."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('java', generate_php=False)
         self.upper_target_path = 'test_java'
 
     def testLoadBuildsNotNone(self):
-        """Test direct targets and all command targets are not none. """
+        """Test direct targets and all command targets are not none."""
         pass
 
     def testGenerateRules(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.assertTrue(self.dryRun())
 
         com_proto_java_option = self.findCommand(['protobuf/bin/protoc', 'java_out', 'rpc_option.proto'])

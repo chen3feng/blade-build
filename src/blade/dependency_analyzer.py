@@ -60,7 +60,7 @@ def _expand_deps(targets):
 
 
 def _check_dep_visibility(target_id, dep_id, targets):
-    """Check whether target is able to depend on dep. """
+    """Check whether target is able to depend on dep."""
     target = targets[target_id]
 
     # Targets are visible inside the same BUILD file by default

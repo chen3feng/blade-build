@@ -27,7 +27,7 @@ from blade.thrift_helper import ThriftHelper
 
 # TODO(chen3feng): Support java generation
 class ThriftLibrary(CcTarget):
-    """A thrift library target derived from CcTarget. """
+    """A thrift library target derived from CcTarget."""
 
     def __init__(
             self,
@@ -74,27 +74,27 @@ class ThriftLibrary(CcTarget):
         self.attr['generated_hdrs'] = headers
 
     def _check_thrift_srcs_name(self, srcs):
-        """Check whether the thrift file's name ends with .thrift. """
+        """Check whether the thrift file's name ends with .thrift."""
         for src in srcs:
             if not src.endswith('.thrift'):
                 self.error('Invalid thrift file %s' % src)
 
     def _thrift_gen_cpp_files(self, src):
-        """Get the c++ files generated from thrift file. """
+        """Get the c++ files generated from thrift file."""
         files = []
         for f in self.thrift_helpers[src].get_generated_cpp_files():
             files.append(self._target_file_path(f))
         return files
 
     def _thrift_gen_py_files(self, src):
-        """Get the python files generated from thrift file. """
+        """Get the python files generated from thrift file."""
         files = []
         for f in self.thrift_helpers[src].get_generated_py_files():
             files.append(self._target_file_path(f))
         return files
 
     def _thrift_gen_java_files(self, src):
-        """Get the java files generated from thrift file. """
+        """Get the java files generated from thrift file."""
         files = []
         for f in self.thrift_helpers[src].get_generated_java_files():
             files.append(self._target_file_path(f))
@@ -122,7 +122,7 @@ def thrift_library(
         optimize=None,
         deprecated=False,
         **kwargs):
-    """thrift_library target. """
+    """thrift_library target."""
     thrift_library_target = ThriftLibrary(
             name=name,
             srcs=srcs,

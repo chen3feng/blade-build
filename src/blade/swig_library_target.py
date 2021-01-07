@@ -57,22 +57,22 @@ class SwigLibrary(CcTarget):
                 d.attr['generate_php'] = True
 
     def _pyswig_gen_python_file(self, path, src):
-        """Generate swig python file for python. """
+        """Generate swig python file for python."""
         swig_name = src[:-2]
         return os.path.join(self.build_dir, path, '%s.py' % swig_name)
 
     def _pyswig_gen_file(self, path, src):
-        """Generate swig cxx files for python. """
+        """Generate swig cxx files for python."""
         swig_name = src[:-2]
         return os.path.join(self.build_dir, path, '%s_pywrap.cxx' % swig_name)
 
     def _javaswig_gen_file(self, path, src):
-        """Generate swig cxx files for java. """
+        """Generate swig cxx files for java."""
         swig_name = src[:-2]
         return os.path.join(self.build_dir, path, '%s_javawrap.cxx' % swig_name)
 
     def _phpswig_gen_file(self, path, src):
-        """Generate swig cxx files for php. """
+        """Generate swig cxx files for php."""
         swig_name = src[:-2]
         return os.path.join(self.build_dir, path, '%s_phpwrap.cxx' % swig_name)
 
@@ -100,7 +100,7 @@ def swig_library(
         optimize=None,
         extra_swigflags=[],
         **kwargs):
-    """swig_library target. """
+    """swig_library target."""
     target = SwigLibrary(
             name=name,
             srcs=srcs,

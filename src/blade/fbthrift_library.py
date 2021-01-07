@@ -31,7 +31,7 @@ from blade.thrift_helper import FBThriftHelper
 
 
 class FBThriftLibrary(CcTarget):
-    """A fbthrift library target derived from CcTarget. """
+    """A fbthrift library target derived from CcTarget."""
     def __init__(self,
                  name,
                  srcs,
@@ -74,7 +74,7 @@ class FBThriftLibrary(CcTarget):
                 os.path.join(self.path, src))
 
     def _check_thrift_srcs_name(self, srcs):
-        """Checks whether the thrift file's name ends with 'thrift'. """
+        """Checks whether the thrift file's name ends with 'thrift'."""
         error = 0
         for src in srcs:
             base_name = os.path.basename(src)
@@ -88,12 +88,12 @@ class FBThriftLibrary(CcTarget):
                 error += 1
 
     def _thrift_gen_cpp_files(self, src):
-        """Get the c++ files generated from thrift file. """
+        """Get the c++ files generated from thrift file."""
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp_files()]
 
     def _thrift_gen_cpp2_files(self, src):
-        """Get the c++ files generated from thrift file. """
+        """Get the c++ files generated from thrift file."""
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp2_files()]
 
@@ -109,7 +109,7 @@ def fbthrift_library(name=None,
                      visibility=None,
                      deprecated=False,
                      **kwargs):
-    """fbthrift_library target. """
+    """fbthrift_library target."""
     fbthrift_library_target = FBThriftLibrary(
             name=name,
             srcs=srcs,

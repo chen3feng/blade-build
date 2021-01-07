@@ -51,7 +51,7 @@ def md5sum_str(content):
 
 
 def md5sum_file(file_name):
-    """Calculate md5sum of a file. """
+    """Calculate md5sum of a file."""
     with open(file_name, 'rb') as f:
         digest = md5sum_bytes(f.read())
     return digest
@@ -67,7 +67,7 @@ def md5sum(obj):
 
 
 def lock_file(filename):
-    """lock file. """
+    """lock file."""
     try:
         fd = os.open(filename, os.O_CREAT | os.O_RDWR)
         old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
@@ -79,7 +79,7 @@ def lock_file(filename):
 
 
 def unlock_file(fd):
-    """unlock file. """
+    """unlock file."""
     try:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
@@ -169,7 +169,7 @@ def find_blade_root_dir(working_dir=None):
 
 
 def _echo(stdout, stderr):
-    """Echo messages to stdout and stderr. """
+    """Echo messages to stdout and stderr."""
     if stdout:
         sys.stdout.write(stdout)
     if stderr:

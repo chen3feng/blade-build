@@ -134,7 +134,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self.env_md5 = md5sum(str(sorted(iteritems(new_env))))
 
     def _save_test_history(self, passed_run_results, failed_run_results):
-        """update test history and save it to file. """
+        """update test history and save it to file."""
         self._merge_passed_run_results_to_history(passed_run_results)
         self._merge_failed_run_results_to_history(failed_run_results)
         with open(self.test_history_file, 'w') as f:
@@ -198,7 +198,7 @@ class TestRunner(binary_runner.BinaryRunner):
                     result=run_result)
 
     def _get_test_target_md5sum(self, target):
-        """Get test target md5sum. """
+        """Get test target md5sum."""
         # pylint: disable=too-many-locals
         related_file_list = []
         related_file_data_list = []
@@ -300,7 +300,7 @@ class TestRunner(binary_runner.BinaryRunner):
         return None
 
     def _collect_test_jobs(self):
-        """Get incremental test run list. """
+        """Get incremental test run list."""
         for target in self._build_targets.values():
             if not target.type.endswith('_test'):
                 continue
@@ -342,7 +342,7 @@ class TestRunner(binary_runner.BinaryRunner):
         return len(passed_run_results) == len(self.test_jobs) + len(self.unrepaired_tests)
 
     def _show_tests_list(self, tests, kind, level='info'):
-        """Show tests list. """
+        """Show tests list."""
         output = getattr(console, level)
         if tests:
             output('There are %d %s tests:' % (len(tests), kind))
@@ -350,7 +350,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 output('  %s' % key, prefix=False)
 
     def _show_run_results(self, run_results, is_error=False):
-        """Show the tests detail after scheduling them. """
+        """Show the tests detail after scheduling them."""
         tests = []
         for key, result in iteritems(run_results):
             reason = self.test_jobs[key].reason
@@ -396,7 +396,7 @@ class TestRunner(binary_runner.BinaryRunner):
                 console.warning('  %.4gs\t//%s' % (cost_time, key), prefix=False)
 
     def _show_tests_summary(self, passed_run_results, failed_run_results):
-        """Show tests summary. """
+        """Show tests summary."""
         self._show_banner('Testing Summary')
         console.info('%d tests scheduled to run by scheduler.' % (len(self.test_jobs)))
         if self.unchanged_tests:
@@ -434,7 +434,7 @@ class TestRunner(binary_runner.BinaryRunner):
             console.notice('All %d tests passed!' % total)
 
     def _show_tests_result(self, passed_run_results, failed_run_results):
-        """Show test details and summary according to the options. """
+        """Show test details and summary according to the options."""
         if self.options.show_details:
             self._show_banner('Testing Details')
             self._show_tests_list(self.unchanged_tests, 'unchanged')
@@ -453,7 +453,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self._show_tests_summary(passed_run_results, failed_run_results)
 
     def run(self):
-        """Run all the test target programs. """
+        """Run all the test target programs."""
         self._collect_test_jobs()
         tests_run_list = []
         for target_key in self.test_jobs:

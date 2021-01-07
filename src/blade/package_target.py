@@ -90,7 +90,7 @@ class PackageTarget(Target):
                 self._add_package_source(src, dst)
 
     def _add_location_reference(self, m, dst):
-        """Add target location reference. """
+        """Add target location reference."""
         key, type = self._add_location_reference_target(m)
         self.attr['locations'].append((key, type, dst))
 
@@ -112,7 +112,7 @@ class PackageTarget(Target):
         return path, dst
 
     def _add_package_source(self, src, dst):
-        """Add regular file or directory. """
+        """Add regular file or directory."""
         src, dst = self._get_source_path(src, dst)
         if not os.path.exists(src):
             self.error('Package source %s does not exist.' % src)

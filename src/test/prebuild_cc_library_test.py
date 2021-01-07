@@ -15,9 +15,9 @@ import blade_test
 
 
 class TestPrebuildCcLibrary(blade_test.TargetTest):
-    """Test cc_library """
+    """Test prebuilt cc_library."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('cc')
 
     def testGenerateRules(self):

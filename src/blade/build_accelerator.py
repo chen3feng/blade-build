@@ -19,7 +19,7 @@ from blade import console
 
 
 class BuildAccelerator(object):
-    """Managers ccache, distcc. """
+    """Managers ccache, distcc."""
 
     def __init__(self, blade_root_dir, toolchain, distcc_host_list=None):
         # ccache
@@ -40,7 +40,7 @@ class BuildAccelerator(object):
 
     @staticmethod
     def _check_ccache_install():
-        """Check ccache is installed or not. """
+        """Check ccache is installed or not."""
         CC = os.getenv('CC')
         CXX = os.getenv('CXX')
         # clang scan-build always fail with ccache.
@@ -67,7 +67,7 @@ class BuildAccelerator(object):
 
     @staticmethod
     def _check_distcc_install():
-        """Check distcc is installed or not. """
+        """Check distcc is installed or not."""
         p = subprocess.Popen(
             'distcc --version',
             env={},
@@ -84,7 +84,7 @@ class BuildAccelerator(object):
         return False
 
     def get_distcc_hosts_list(self):
-        """Returns the hosts list. """
+        """Returns the hosts list."""
         return [x for x in self.distcc_host_list.split(' ') if x]
 
     def get_cc_commands(self):

@@ -43,7 +43,7 @@ _NINJA_FILE_RULE_HASH_START = '#RuleHash='
 
 
 class Blade(object):
-    """Blade. A blade manager class. """
+    """Blade. A blade manager class."""
 
     # pylint: disable=too-many-public-methods
     def __init__(self,
@@ -120,7 +120,7 @@ class Blade(object):
         self.__all_rule_names = []
 
     def load_targets(self):
-        """Load the targets. """
+        """Load the targets."""
         console.info('Loading BUILD files...')
         (self.__direct_targets,
          self.__expanded_command_targets,
@@ -143,7 +143,7 @@ class Blade(object):
         return all_command_targets
 
     def analyze_targets(self):
-        """Expand the targets. """
+        """Expand the targets."""
         console.info('Analyzing dependency graph...')
         self.__sorted_targets_keys = analyze_deps(self.__build_targets)
         self.__targets_expanded = True
@@ -156,7 +156,7 @@ class Blade(object):
         return self.__build_script
 
     def generate_build_rules(self):
-        """Generate the constructing rules. """
+        """Generate the constructing rules."""
         maven_cache = maven.MavenCache.instance(self.__build_dir)
         maven_cache.download_all()
 
@@ -168,12 +168,12 @@ class Blade(object):
         return rules
 
     def generate(self):
-        """Generate the build script. """
+        """Generate the build script."""
         if self.__command != 'query':
             self.generate_build_rules()
 
     def verify(self):
-        """Verify specific targets after build is complete. """
+        """Verify specific targets after build is complete."""
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
@@ -225,12 +225,12 @@ class Blade(object):
         return self.__blade_revision
 
     def run(self, target):
-        """Run the target. """
+        """Run the target."""
         runner = BinaryRunner(self.__options, self.__target_database, self.__build_targets)
         return runner.run_target(target)
 
     def test(self):
-        """Run tests. """
+        """Run tests."""
         exclude_tests = []
         if self.__options.exclude_tests:
             exclude_tests = target.normalize(self.__options.exclude_tests.split(','),
@@ -270,7 +270,7 @@ class Blade(object):
         return 0
 
     def query(self):
-        """Query the targets. """
+        """Query the targets."""
         output_file_name = self.__options.output_file
         if output_file_name:
             output_file_name = os.path.join(self.__working_dir, output_file_name)
@@ -341,7 +341,7 @@ class Blade(object):
             self.__print_dot_graph('dependents', output_file)
 
     def query_dependency_tree(self, output_file):
-        """Query the dependency tree of the specified targets. """
+        """Query the dependency tree of the specified targets."""
         path_to = self._parse_qyery_path_to()
         query_attr = 'dependents' if self.__options.dependents else 'deps'
         print(file=output_file)
@@ -362,7 +362,7 @@ class Blade(object):
         return result
 
     def _query_dependency_tree(self, key, level, query_attr, path_to, output_file):
-        """Query the dependency tree of the specified target recursively. """
+        """Query the dependency tree of the specified target recursively."""
         if level == 0:
             output = '%s' % key
         elif level == 1:
@@ -398,43 +398,43 @@ class Blade(object):
         return self.__build_time
 
     def get_build_dir(self):
-        """The current building dir. """
+        """The current building dir."""
         return self.__build_dir
 
     def get_root_dir(self):
-        """Return the blade root path. """
+        """Return the blade root path."""
         return self.__root_dir
 
     def get_command(self):
-        """Get the blade command. """
+        """Get the blade command."""
         return self.__command
 
     def set_current_source_path(self, current_source_path):
-        """Set the current source path. """
+        """Set the current source path."""
         self.__current_source_path = current_source_path
 
     def get_current_source_path(self):
-        """Get the current source path. """
+        """Get the current source path."""
         return self.__current_source_path
 
     def get_target_database(self):
-        """Get the whole target database that haven't been expanded. """
+        """Get the whole target database that haven't been expanded."""
         return self.__target_database
 
     def get_direct_targets(self):
-        """Return the direct targets. """
+        """Return the direct targets."""
         return self.__direct_targets
 
     def get_build_targets(self):
-        """Get all the targets to be build. """
+        """Get all the targets to be build."""
         return self.__build_targets
 
     def get_options(self):
-        """Get the global command options. """
+        """Get the global command options."""
         return self.__options
 
     def is_expanded(self):
-        """Whether the targets are expanded. """
+        """Whether the targets are expanded."""
         return self.__targets_expanded
 
     def register_target(self, target):
@@ -502,7 +502,7 @@ class Blade(object):
         return None
 
     def gen_targets_rules(self):
-        """Get the build rules and return to the object who queries this. """
+        """Get the build rules and return to the object who queries this."""
         rules_buf = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
@@ -527,7 +527,7 @@ class Blade(object):
         return rules_buf
 
     def get_build_toolchain(self):
-        """Return build toolchain instance. """
+        """Return build toolchain instance."""
         return self.__build_toolchain
 
     def get_sources_keyword_list(self):

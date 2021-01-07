@@ -15,14 +15,14 @@ import blade_test
 
 
 class TestQuery(blade_test.TargetTest):
-    """Test cc_library """
+    """Test the query command."""
     def setUp(self):
-        """setup method. """
+        """setup method."""
         self.doSetUp('test_query', full_targets=['.:...'], command='query')
 
     @unittest.skip('TODO: rewrite with `blade query`')
     def testQueryCorrectly(self):
-        """Test query targets dependency relationship correctly. """
+        """Test query targets dependency relationship correctly."""
         self.assertTrue(self.all_targets)
         result_map = {}
         result_map = self.blade.query_helper(self.query_targets)

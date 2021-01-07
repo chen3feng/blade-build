@@ -68,7 +68,7 @@ class BuildArchitecture(object):
 
     @staticmethod
     def get_canonical_architecture(arch):
-        """Get the canonical architecture from the specified arch. """
+        """Get the canonical architecture from the specified arch."""
         canonical_arch = None
         for k, v in iteritems(BuildArchitecture._build_architecture):
             if arch == k or arch in v['alias']:
@@ -78,7 +78,7 @@ class BuildArchitecture(object):
 
     @staticmethod
     def get_architecture_bits(arch):
-        """Get the architecture bits. """
+        """Get the architecture bits."""
         arch = BuildArchitecture.get_canonical_architecture(arch)
         if arch:
             return BuildArchitecture._build_architecture[arch]['bits']
@@ -103,7 +103,7 @@ class BuildArchitecture(object):
 
 
 class ToolChain(object):
-    """The build platform handles and gets the platform information. """
+    """The build platform handles and gets the platform information."""
 
     def __init__(self):
         self.cc = self._get_cc_command('CC', 'gcc')
@@ -142,7 +142,7 @@ class ToolChain(object):
 
     @staticmethod
     def get_cc_target_arch():
-        """Get the cc target architecture. """
+        """Get the cc target architecture."""
         cc = ToolChain._get_cc_command('CC', 'gcc')
         if 'gcc' in cc:
             returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpmachine')
@@ -159,7 +159,7 @@ class ToolChain(object):
 
     @staticmethod
     def _get_nvcc_version():
-        """Get the nvcc version. """
+        """Get the nvcc version."""
         nvcc = os.environ.get('NVCC', 'nvcc')
         returncode, stdout, stderr = ToolChain._execute(nvcc + ' --version')
         if returncode == 0:
@@ -242,27 +242,27 @@ class ToolChain(object):
         return self.cc_version
 
     def cc_is(self, vendor):
-        """Is cc is used for C/C++ compilation match vendor. """
+        """Is cc is used for C/C++ compilation match vendor."""
         return vendor in self.cc
 
     def get_php_include(self):
-        """Returns a list of php include. """
+        """Returns a list of php include."""
         return self.php_inc_list
 
     def get_java_include(self):
-        """Returns a list of java include. """
+        """Returns a list of java include."""
         return self.java_inc_list
 
     def get_nvcc_version(self):
-        """Returns nvcc version. """
+        """Returns nvcc version."""
         return self.nvcc_version
 
     def get_cuda_include(self):
-        """Returns a list of cuda include. """
+        """Returns a list of cuda include."""
         return self.cuda_inc_list
 
     def filter_cc_flags(self, flag_list, language='c'):
-        """Filter out the unrecognized compilation flags. """
+        """Filter out the unrecognized compilation flags."""
         flag_list = var_to_list(flag_list)
         valid_flags, unrecognized_flags = [], []
 

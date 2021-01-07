@@ -87,7 +87,7 @@ class GenRuleTarget(Target):
             self.attr['export_incs'] = self._expand_incs(var_to_list(export_incs))
 
     def _srcs_list(self, path, srcs):
-        """Returns srcs list. """
+        """Returns srcs list."""
         return ','.join(['"%s"' % os.path.join(self.build_dir, path, src)
                          for src in srcs])
 
@@ -96,7 +96,7 @@ class GenRuleTarget(Target):
         return [self._target_file_path(inc) for inc in incs]
 
     def _process_location_reference(self, m):
-        """Process target location reference in the command. """
+        """Process target location reference in the command."""
         key, type = self._add_location_reference_target(m)
         self.attr['locations'].append((key, type))
         return '%s'  # Will be expanded in `_expand_command`

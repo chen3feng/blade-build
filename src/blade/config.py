@@ -38,7 +38,7 @@ def config_rule(func):
 
 
 class BladeConfig(object):
-    """BladeConfig. A configuration parser class. """
+    """BladeConfig. A configuration parser class."""
 
     def __init__(self):
         self.current_file_name = ''  # For error reporting
@@ -256,7 +256,7 @@ class BladeConfig(object):
         console.fatal('%s error: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def try_parse_file(self, filename):
-        """load the configuration file and parse. """
+        """load the configuration file and parse."""
         try:
             self.current_file_name = filename
             if os.path.exists(filename):
@@ -275,7 +275,7 @@ class BladeConfig(object):
         return self.__md5.hexdigest()
 
     def update_config(self, section_name, append, user_config):
-        """update config section by name. """
+        """update config section by name."""
         section = self.configs.get(section_name)
         if section:
             if append:
@@ -316,7 +316,7 @@ class BladeConfig(object):
         section.update(user_config)
 
     def get_section(self, section_name):
-        """get config section, returns default values if not set """
+        """get config section, returns default values if not set."""
         return self.configs[section_name]
 
     def dump(self, output_file_name):
@@ -400,7 +400,7 @@ def config_items(**kwargs):
 
 @config_rule
 def global_config(append=None, **kwargs):
-    """global_config section. """
+    """global_config section."""
     _check_kwarg_enum_value(kwargs, 'duplicated_source_action', _DUPLICATED_SOURCE_ACTION_VALUES)
     debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
@@ -410,26 +410,26 @@ def global_config(append=None, **kwargs):
 
 @config_rule
 def cc_test_config(append=None, **kwargs):
-    """cc_test_config section. """
+    """cc_test_config section."""
     _check_kwarg_enum_value(kwargs, 'heap_check', HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 
 @config_rule
 def cc_binary_config(append=None, **kwargs):
-    """cc_binary_config section. """
+    """cc_binary_config section."""
     _blade_config.update_config('cc_binary_config', append, kwargs)
 
 
 @config_rule
 def cc_library_config(append=None, **kwargs):
-    """cc_library_config section. """
+    """cc_library_config section."""
     _blade_config.update_config('cc_library_config', append, kwargs)
 
 
 @config_rule
 def cc_config(append=None, **kwargs):
-    """extra cc config, like extra cpp include path splited by space. """
+    """extra cc config, like extra cpp include path splited by space."""
     _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['debug', 'info', 'warning', 'error'])
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
@@ -441,19 +441,19 @@ def cc_config(append=None, **kwargs):
 
 @config_rule
 def distcc_config(append=None, **kwargs):
-    """distcc_config. """
+    """distcc_config."""
     _blade_config.update_config('distcc_config', append, kwargs)
 
 
 @config_rule
 def link_config(append=None, **kwargs):
-    """link_config. """
+    """link_config."""
     _blade_config.update_config('link_config', append, kwargs)
 
 
 @config_rule
 def java_config(append=None, **kwargs):
-    """java_config. """
+    """java_config."""
     _check_kwarg_enum_value(kwargs, 'maven_snapshot_update_policy',
             _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES)
     _blade_config.update_config('java_config', append, kwargs)
@@ -461,37 +461,37 @@ def java_config(append=None, **kwargs):
 
 @config_rule
 def java_binary_config(append=None, **kwargs):
-    """java_test_config. """
+    """java_test_config."""
     _blade_config.update_config('java_binary_config', append, kwargs)
 
 
 @config_rule
 def java_test_config(append=None, **kwargs):
-    """java_test_config. """
+    """java_test_config."""
     _blade_config.update_config('java_test_config', append, kwargs)
 
 
 @config_rule
 def scala_config(append=None, **kwargs):
-    """scala_config. """
+    """scala_config."""
     _blade_config.update_config('scala_config', append, kwargs)
 
 
 @config_rule
 def scala_test_config(append=None, **kwargs):
-    """scala_test_config. """
+    """scala_test_config."""
     _blade_config.update_config('scala_test_config', append, kwargs)
 
 
 @config_rule
 def go_config(append=None, **kwargs):
-    """go_config. """
+    """go_config."""
     _blade_config.update_config('go_config', append, kwargs)
 
 
 @config_rule
 def proto_library_config(append=None, **kwargs):
-    """protoc config. """
+    """protoc config."""
     path = kwargs.get('protobuf_include_path')
     if path:
         _blade_config.warning('proto_library_config: protobuf_include_path has '
@@ -507,7 +507,7 @@ def proto_library_config(append=None, **kwargs):
 
 @config_rule
 def protoc_plugin(**kwargs):
-    """protoc_plugin. """
+    """protoc_plugin."""
     from blade.proto_library_target import ProtocPlugin  # pylint: disable=import-outside-toplevel
     if 'name' not in kwargs:
         _blade_config.error('Missing "name" in protoc_plugin parameters: %s' % kwargs)
@@ -518,11 +518,11 @@ def protoc_plugin(**kwargs):
 
 @config_rule
 def thrift_library_config(append=None, **kwargs):
-    """thrift config. """
+    """thrift config."""
     _blade_config.update_config('thrift_config', append, kwargs)
 
 
 @config_rule
 def fbthrift_library_config(append=None, **kwargs):
-    """fbthrift config. """
+    """fbthrift config."""
     _blade_config.update_config('fbthrift_config', append, kwargs)

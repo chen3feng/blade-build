@@ -63,7 +63,7 @@ def generate_fat_jar_metadata(jar, dependencies, conflicts):
 
 
 def generate_fat_jar(target, jars):
-    """Generate a fat jar containing the contents of all the jar dependencies. """
+    """Generate a fat jar containing the contents of all the jar dependencies."""
     target_dir = os.path.dirname(target)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)

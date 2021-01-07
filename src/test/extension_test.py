@@ -14,9 +14,9 @@ import blade_test
 
 
 class TestExtension(blade_test.TargetTest):
-    """Test cc_binary """
+    """Test cc_binary."""
     def testGood(self):
-        """Test that rules are generated correctly. """
+        """Test that rules are generated correctly."""
         self.doSetUp('test_extension/good', command='build')
         self.assertTrue(self.runBlade())
 
