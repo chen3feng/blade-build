@@ -70,9 +70,10 @@ awesome_library(  # Use imported rule
 )
 ```
 
-Globals symbols such as functions and constants can be imported.
+Globals symbols such as functions and constants can be imported. Symbols beginning with an underscore(`_`) will not be
+exported and therefore cannot be imported.
 
-Alias mechanism can be used to resolve name conflicts:
+Alias mechanism is used to resolve name conflicts:
 
 ```python
 load('//common/awesome_build_rules1.bld', my_awesome_library='awesome_library')

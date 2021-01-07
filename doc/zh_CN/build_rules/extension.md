@@ -13,7 +13,7 @@ def awesome_library(name, srcs=[], deps=[]):
     cc_library(name=name, srcs=cc_srcs, deps=deps)
 ```
 
-请记住，当你自定义规则时，`gen_rule` 是个很有用的内置规则。
+请记住，当你创建自定义规则时，`gen_rule` 是个很有用的内置规则。
 
 由于通过扩展的方式可以覆盖内置规则，你可以用 `native.` 前缀来确保不受影响地使用内置规则。
 
@@ -37,7 +37,7 @@ GTEST_LIBS = ["//thirdparty/gtest:gtest"]
 ## 使用扩展
 
 Blade 支持 2 种方式使用扩展，分别是 `load` 和 `include`，无论那种方式，都支持相对当前目录的子目录路径和 `//`
-开头的相对 workspace 的路径，并**仅对当前文件 `BUILD` 文件有效**。
+开头的相对 workspace 的路径，并且导入的符号**仅对当前 `BUILD` 文件有效**。
 
 ### load 函数
 
@@ -49,7 +49,8 @@ Blade 支持 2 种方式使用扩展，分别是 `load` 和 `include`，无论�
 def load(extension_label, *symbols, **aliases):
 ```
 
-symbols 为要导入的符号名，aliases 则支持以别名的方式导入，都是数目的可变参数。下划线开头的符号不会被导出因此也无法被导入。
+其中 symbols 为要导入的符号名，aliases 参数则用来支持以别名的方式导入，这两个参数都是可变个数的参数。
+下划线开头的符号不会被导出因此也无法被导入。
 
 用法：
 
@@ -64,7 +65,7 @@ awesome_library(  # 使用扩展规则
 
 全局符号，例如函数和常量均可导入。
 
-如果可能存在名字冲突，则可以通过别名机制来解决。
+如果可能存在名字冲突，则可以通过别名机制来解决：
 
 ```python
 load('//common/awesome_build_rules1.bld', my_awesome_library='awesome_library')
