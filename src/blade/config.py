@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import hashlib
 import os
 import pprint
 import re
@@ -42,7 +43,7 @@ class BladeConfig(object):
 
     def __init__(self):
         self.current_file_name = ''  # For error reporting
-        self.__md5 = blade_util.md5.md5()
+        self.__md5 = hashlib.md5()
 
         # Support generate comments when dump the config by the special '__doc__' convention.
         # __doc__ field is for section
@@ -82,7 +83,6 @@ class BladeConfig(object):
                 'c_warnings': [],
                 'cxx_warnings': [],
                 'warnings': [],
-                'cpplint': 'cpplint.py',
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],

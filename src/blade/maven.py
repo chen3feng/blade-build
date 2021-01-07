@@ -23,7 +23,7 @@ import time
 try:
     import queue
 except ImportError:
-    import Queue as queue
+    import Queue as queue  # python2
 
 from blade import config
 from blade import console
