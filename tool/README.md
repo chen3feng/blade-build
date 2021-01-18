@@ -13,7 +13,7 @@
 列出那些目录下有Makefile而没有BUILD文件，用于协助采用递归Make的项目迁移到Blade。
 
 - lsrc
-按srcs = 需要的格式列出当前目录下所有的C/C++源文件（不包含测试源文件例如*_test.cc）
+按srcs = 需要的格式列出当前目录下所有的C/C++源文件（不包含测试源文件例如`*_test.cc`）
 
 - merge-static-libs
 把一个blade库及其它直接和间接依赖的所有其他库打包成一个大的静态库

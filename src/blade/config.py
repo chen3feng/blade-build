@@ -159,7 +159,7 @@ class BladeConfig(object):
                     'List of directories and their subdirectories where maven_jar is allowed',
                 'maven_jar_allowed_dirs_exempts' : set(),
                 'maven_jar_allowed_dirs_exempts__doc__' :
-                    'List of targets which are exempt from maven_jar_disallowed_dirs check',
+                    'List of targets which are exempted from maven_jar_disallowed_dirs check',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
                 'java_home': '',

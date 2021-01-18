@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Collect the cc_library.hdrs missing reports and generate a suppress list.
+Collect the disallowed `maven_jar`s due to the `java_config.maven_jar_allowed_dirs` restriction.
 You must run it from the root dir of the workspace.
 """
 

@@ -162,7 +162,7 @@ About maven:
   NOTE there are multiple available versions, the version in the example code of the document is not the latest one.
 * In order to avoid duplication of descriptions of maven artificts with the same id in the code base, and version redundancy and conflicts,
   it is recommended to set `maven_jar_allowed_dirs` to prohibit calling `maven_jar` outside these directories and their subdirectories.
-  Existing `maven_jar` targets that have escaped outside the desired directories can be exempted by the `maven_jar_allowed_dirs_exempts` configuration item.
+  Existing `maven_jar` targets that are already outside the allowed directories can be exempted by the `maven_jar_allowed_dirs_exempts` configuration item.
   We also provide an auxiliary tool [`collect-disallowed-maven-jars.py`](../../tool) to easily generate this list.
   If there are too many entries, it is recommended to load them from a separate file:
 
