@@ -144,6 +144,8 @@ Java related configurations
 | target_version                 | string | take `version`            |                | Generate class files for specific VM version            |
 | maven                          | string | 'mvn'                     |                | The command to run `mvn`                                |
 | maven_central                  | string |                           |                | Maven repository URL                                    |
+| maven_jar_allowed_dirs         | list   | empty                     |                | Directories and subdirectors which `maven_jar` is allowed |
+| maven_jar_allowed_dirs_exempts | list   | empty                     |                | Targets which are exempted from the `maven_jar_allowed_dirs` check |
 | maven_snapshot_update_policy   | string | daily                     |                | Update policy of snapshot version in maven repository   |
 | maven_snapshot_update_interval | int    | empty                     |                | Update interval of snapshot version in maven repository |
 | maven_download_concurrency     | int    | 0                         |                | Number of processes when download maven artifacts       |
@@ -158,6 +160,17 @@ About maven:
 * Setting `maven_download_concurrency` to above `1` can speedup maven artifacts downloading, but [maven local repository is not concurrent-safe defaultly](https://issues.apache.org/jira/browse/MNG-2802),
   you can try to install [takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository) to make it safe.
   NOTE there are multiple available versions, the version in the example code of the document is not the latest one.
+* In order to avoid duplication of descriptions of maven artificts with the same id in the code base, and version redundancy and conflicts,
+  it is recommended to set `maven_jar_allowed_dirs` to prohibit calling `maven_jar` outside these directories and their subdirectories.
+  Existing `maven_jar` targets that have escaped outside the desired directories can be exempted by the `maven_jar_allowed_dirs_exempts` configuration item.
+  We also provide an auxiliary tool [`collect-disallowed-maven-jars.py`](../../tool) to easily generate this list.
+  If there are too many entries, it is recommended to load them from a separate file:
+
+  ```python
+  java_config(
+      maven_jar_allowed_dirs_exempts = eval(open('exempted_maven_jars.conf').read()),
+  )
+  ```
 
 ### proto_library_config
 

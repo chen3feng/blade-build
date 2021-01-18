@@ -110,14 +110,13 @@ maven_jar (
 除了 name 和 id 属性，maven_jar 也提供了如下属性，兼容 maven 仓库中选取依赖的多种方式。
 
 - classifier 属性
-
-指定 classifier 值，对于同一组 id（group:artifact:version），可以用 classifier 来指定不同的 jar 包，
-如 hadoop-common-2.2.0.jar 和 hadoop-common-2.2.0-tests.jar。
-
+  指定 classifier 值，对于同一组 id（group:artifact:version），可以用 classifier 来指定不同的 jar 包，
+  如 hadoop-common-2.2.0.jar 和 hadoop-common-2.2.0-tests.jar。
 - transitive 属性
+  指定是否传递，默认是 True，下载 jar 包及其传递依赖，指定为 False 时表示只下载 id 对应的 standalone
+  jar 包，不下载依赖，用于解决某些运行时依赖下载传递依赖时的失败。
 
-指定是否传递，默认是 True，下载 jar 包及其传递依赖，指定为 False 时表示只下载 id 对应的 standalone
-jar 包，不下载依赖，用于解决某些运行时依赖下载传递依赖时的失败。
+为了避免对同一个 id 的制品重复描述以及避免潜在的版本冲突，建议对 maven_jar 进行[集中管理](../config.md#java_config)。
 
 ## java_fat_library ##
 

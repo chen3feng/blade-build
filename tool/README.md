@@ -23,3 +23,6 @@
 
 - collect-hdrs-missing.py
   Collect the `cc_library.hdr` missing report and generate a suppress list.
+
+- collect-disallowed-maven-jars.py
+  Collect the disallowed `maven_jar`s due to the `java_config.maven_jar_allowed_dirs` restriction.

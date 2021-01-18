@@ -38,6 +38,7 @@ class MavenJar(Target):
                 visibility=visibility,
                 kwargs={})
         self._check_id(id)
+        self._check_allowed_dirs()
         self.attr['id'] = id
         self.attr['classifier'] = classifier
         self.attr['transitive'] = transitive
@@ -50,6 +51,26 @@ class MavenJar(Target):
         if not maven.is_valid_id(id):
             self.error('Invalid id %s: Id should be group:artifact:version, '
                        'such as jaxen:jaxen:1.1.6' % id)
+
+    def _check_allowed_dirs(self):
+        """Check whether the use of maven_jar is in allowed dirs"""
+        allowed_dirs = config.get_item('java_config', 'maven_jar_allowed_dirs')
+        if not allowed_dirs:
+            return
+        path = self.path
+        while True:
+            if path in allowed_dirs:
+                return
+            dirname = os.path.dirname(path)
+            if dirname == path:
+                break
+            path = dirname
+
+        msg = 'maven_jar is only allowed under %s and their subdirectories' % list(allowed_dirs)
+        if self.key in config.get_item('java_config', 'maven_jar_allowed_dirs_exempts'):
+            self.debug(msg)
+        else:
+            self.error(msg)
 
     def _get_java_pack_deps(self):
         return [], self.attr.get('maven_deps', [])

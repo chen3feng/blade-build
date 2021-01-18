@@ -12,9 +12,8 @@ import pprint
 import re
 
 # Example:
-# thirdparty/glog/BUILD:3:0: warning: glog: Missing "hdrs" declaration.
-_PATTERN = re.compile(r'(?P<path>[^:]+):.*: (?P<name>[^ ]+): Missing "hdrs" declaration')
-
+# java/targeting/common/BUILD:3:0: error: scalatra_rl: maven_jar is only allowed under ['thirdparty/java/deps'] and their subdirectories
+_PATTERN = re.compile(r'(?P<path>[^:]+):.*: (?P<name>[^ ]+): maven_jar is only allowed under')
 
 def main():
     result = []
@@ -26,7 +25,6 @@ def main():
                 name = match.group('name')
                 result.append(os.path.dirname(build) + ':' + name)
     pprint.pprint(sorted(result))
-
 
 if __name__ == '__main__':
     main()

@@ -121,6 +121,9 @@ Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
 Whether use transitive maven dependency, the default value is True, blade will download jar and its
 transitive dependencies; otherwise only the jar file of this target will be downloaded.
 
+In order to avoid duplicate descriptions of artificts with the same id and avoid potential version conflicts,
+it is recommended to [centralize management](../config.md#java_config) for `maven_jar`s.
+
 ## java_fat_library ##
 
 Merge all java_library/maven_jar, generate a fatjar, can be used for deploy, same as `jar-with-dependencies` in maven.
