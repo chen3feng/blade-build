@@ -134,18 +134,23 @@ class MavenCache(object):
             return artifact + '-' + version + '-' + classifier
         return artifact + '-' + version
 
+    @staticmethod
+    def _add_prefix(filename, prefix):
+        """Add a prefix to filename if any."""
+        if not prefix:
+            return filename
+        return prefix + '_' + filename
+
     def _download_jar(self, id, classifier, target):
         group, artifact, version = id.split(':')
         basename = self._filename_base(artifact, version, classifier)
         jar = basename + '.jar'
 
         # Write log to build dir temporarily, and move it into the artifact_dir after success.
-        log_path = os.path.join(self.__log_dir, basename + '_download.log')
+        log_name = self._add_prefix('download.log', classifier)
+        log_path = os.path.join(self.__log_dir, basename + '_' + log_name)
         artifact_dir = self._artifact_dir(id)
-        target_log = 'download.log'
-        if classifier:
-            target_log = classifier + '_download.log'
-        target_log = os.path.join(artifact_dir, target_log)
+        target_log = os.path.join(artifact_dir, log_name)
 
         if not self._need_download(os.path.join(artifact_dir, jar), version, target_log):
             return True
@@ -183,8 +188,8 @@ class MavenCache(object):
     def _download_dependency(self, id, classifier, target):
         group, artifact, version = id.split(':')
         artifact_dir = self._artifact_dir(id)
-        classpath = 'classpath.txt'
-        log = 'classpath.log'
+        classpath = self._add_prefix('classpath.txt', classifier)
+        log = self._add_prefix('classpath.log', classifier)
         log = os.path.join(artifact_dir, log)
         if not self._need_download(os.path.join(artifact_dir, classpath), version, log):
             return True
@@ -243,7 +248,7 @@ class MavenCache(object):
                 # Ignore dependency download error
                 pass
             else:
-                classpath = os.path.join(artifact_dir, 'classpath.txt')
+                classpath = os.path.join(artifact_dir, self._add_prefix('classpath.txt', classifier))
                 with open(classpath) as f:
                     # Read the first line
                     deps = f.readline()

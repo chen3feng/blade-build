@@ -69,7 +69,7 @@ syn keyword bladeArg main_class exclusions
 syn keyword bladeTarget java_test
 
 syn keyword bladeTarget maven_jar
-syn keyword bladeArg binary_jar transitive
+syn keyword bladeArg binary_jar classifier transitive
 
 " Scala Targets
 syn keyword bladeTarget scala_library scala_test scala_fat_library
