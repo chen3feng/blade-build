@@ -2,7 +2,7 @@
 
 [What is Blade](intro.md)
 
-[Featutes](features.md)
+[Features](features.md)
 
 [Prerequisites](prerequisites.md)
 
