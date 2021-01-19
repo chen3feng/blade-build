@@ -151,6 +151,8 @@ Java构建相关的配置
 | target\_version                   | string | 取 version 的值             |              | 生成特定 VM 版本的类文件             |
 | maven                             | string | 'mvn'                       |              | 调用 `mvn` 命令需要的路径            |
 | maven\_central                    | string | 空                          |              | maven 仓库的URL                      |
+| maven_jar_allowed_dirs            | list   | 空                          |              | 允许调用 `maven_jar` 的目录列表（及其子目录）   |
+| maven_jar_allowed_dirs_exempts    | list   | 空                          |              | 豁免 maven_jar_allowed_dirs 检查的目标列表 |
 | maven\_snapshot\_update\_policy   | string | daily                       |              | maven 仓库的 SNAPSHOT 版本的更新策略 |
 | maven\_snapshot\_update\_interval | int    | 空                          |              | maven 仓库的 SNAPSHOT 版本的更新间隔 |
 | maven_download_concurrency        | int    | 0                           |              | 并发下载 maven_jar 的进程数          |
@@ -164,6 +166,15 @@ Java构建相关的配置
 * maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
 * 设置 `maven_download_concurrency` 大于 1 可以提高下载速度，但是由于[maven 本地仓库缓存默认不是并发安全的](https://issues.apache.org/jira/browse/MNG-2802),
   你可以尝试安装[takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository) 来确保安全, 注意其实有多个可用的版本，文档示例里的不是最新的。
+* 为了避免代码库中对同一个 id 的 maven 制品重复描述以及产生版本冗余和冲突，建议通过设置 `maven_jar_allowed_dirs` 禁止在这些目录及其子目录外调用 `maven_jar`。
+  对于现存的已经散落在期望的目录列表之外的 `maven_jar` 目标，可以通过 `maven_jar_allowed_dirs_exempts` 配置项来豁免。
+  我们还提供了一个辅助工具 [`collect-disallowed-maven-jars.py`](../../tool)方便地生成这个列表，如果条目数量太多，建议放在单独的文件中加载：
+
+  ```python
+  java_config(
+      maven_jar_allowed_dirs_exempts = eval(open('exempted_maven_jars.conf').read()),
+  )
+  ```
 
 ### proto\_library\_config ###
 

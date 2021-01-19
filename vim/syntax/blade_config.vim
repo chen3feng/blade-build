@@ -60,6 +60,8 @@ syn keyword bladeArg java_home
 syn keyword bladeArg maven
 syn keyword bladeArg maven_central
 syn keyword bladeArg maven_download_concurrency
+syn keyword bladeArg maven_jar_allowed_dirs
+syn keyword bladeArg maven_jar_allowed_dirs_exempts
 syn keyword bladeArg maven_snapshot_update_interval
 syn keyword bladeArg maven_snapshot_update_policy
 syn keyword bladeArg source_encoding

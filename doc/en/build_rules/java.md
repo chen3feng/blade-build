@@ -112,14 +112,15 @@ maven_jar (
 Besides `name` and `id`, maven_jar also provides the following attributes to fit the use of maven repository.
 
 - classifier attribute
-
-Specify `classifier`, for the same maven id(group:artifact:version), you can use classifier to locate different jar file.
-Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
+  Specify `classifier`, for the same maven id(group:artifact:version), you can use classifier to locate different jar file.
+  Such as hadoop-common-2.2.0.jar and hadoop-common-2.2.0-tests.jar。
 
 - transitive attribute
+  Whether use transitive maven dependency, the default value is True, blade will download jar and its
+  transitive dependencies; otherwise only the jar file of this target will be downloaded.
 
-Whether use transitive maven dependency, the default value is True, blade will download jar and its
-transitive dependencies; otherwise only the jar file of this target will be downloaded.
+In order to avoid duplicated descriptions of artificts with the same id and avoid potential version conflicts,
+it is recommended to [centralized management](../config.md#java_config) for `maven_jar`s.
 
 ## java_fat_library ##
 

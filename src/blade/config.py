@@ -20,7 +20,6 @@ import pprint
 import re
 import sys
 
-from blade import blade_util
 from blade import build_attributes
 from blade import console
 from blade.blade_util import var_to_list, iteritems, exec_file_content, source_location
@@ -155,6 +154,12 @@ class BladeConfig(object):
                 'maven_download_concurrency': 0,
                 'maven_download_concurrency__doc__':
                     'Number of processes to pre-download maven_jar, 0 to disable pre-downloading',
+                'maven_jar_allowed_dirs' : set(),
+                'maven_jar_allowed_dirs__doc__':
+                    'List of directories and their subdirectories where maven_jar is allowed',
+                'maven_jar_allowed_dirs_exempts' : set(),
+                'maven_jar_allowed_dirs_exempts__doc__' :
+                    'List of targets which are exempted from maven_jar_disallowed_dirs check',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
                 'java_home': '',
