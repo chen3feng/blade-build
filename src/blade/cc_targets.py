@@ -1028,7 +1028,7 @@ class PrebuiltCcLibrary(CcTarget):
         self._check_binary_link_only()
 
     def generate(self):
-        """Generate ninja build rules for cc object/library."""
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         # We allow a prebuilt cc_library doesn't exist if it is not used.
         # So if this library is not depended by any target, don't generate any
@@ -1211,7 +1211,7 @@ class ForeignCcLibrary(CcTarget):
         self._add_target_file('so', so_path if self.attr['has_dynamic'] else a_path)
 
     def generate(self):
-        """Generate ninja build rules for cc object/library."""
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         self._ninja_rules()
 
@@ -1373,7 +1373,7 @@ class CcBinary(CcTarget):
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
     def generate(self):
-        """Generate ninja build rules for cc binary/test."""
+        """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         self._cc_binary(objs, self.attr['dynamic_link'])
@@ -1474,7 +1474,7 @@ class CcPlugin(CcTarget):
         self.attr['strip'] = strip
 
     def generate(self):
-        """Generate ninja build rules for cc plugin."""
+        """Generate build code for cc plugin."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
