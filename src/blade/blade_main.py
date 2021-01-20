@@ -241,7 +241,7 @@ def dump(options):
     elif options.dump_targets:
         return build_manager.instance.dump_targets(output_file_name)
     else:
-        assert False, "Invalod dump option"
+        assert False, "Invalid dump option"
 
 
 def _dump_compdb(options, output_file_name):
