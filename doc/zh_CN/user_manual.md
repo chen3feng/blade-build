@@ -13,7 +13,7 @@ Blade用户手册
 
 [编写BUILD文件](build_file.md)
 
-[运行Blade](command_line.md)
+[命令行参考](command_line.md)
 
 [测试支持](test.md)
 

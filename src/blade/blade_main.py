@@ -237,9 +237,11 @@ def query(options):
 def dump(options):
     output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
     if options.dump_compdb:
-        _dump_compdb(options, output_file_name)
+        return _dump_compdb(options, output_file_name)
     elif options.dump_targets:
-        build_manager.instance.dump_targets(output_file_name)
+        return build_manager.instance.dump_targets(output_file_name)
+    else:
+        assert False, "Invalod dump option"
 
 
 def _dump_compdb(options, output_file_name):

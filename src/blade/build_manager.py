@@ -391,8 +391,9 @@ class Blade(object):
             for target_key in self.__expanded_command_targets:
                 target = self.__target_database[target_key]
                 result.append(target.dump())
-            json.dump(result, fp=f, indent=2)
+            json.dump(result, fp=f, indent=2, sort_keys=True)
             print(file=f)
+        return 0
 
     def get_build_time(self):
         return self.__build_time

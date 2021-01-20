@@ -10,11 +10,12 @@ Blade <subcommand> [options]... [targets]...
 
 Subcommand is a subcommand that currently has:
 
-* build means build project
-* test means build and run unit test
-* clean indicates the result of the cleanup target
-* query query target dependencies and dependencies
-* run build and run a single target
+* `build` Build specified targets
+* `test`  Build and run tests
+* `clean` Cleanup specified targets
+* `dump`  Dump some useful information
+* `query` Query target dependencies
+* `run`   Build and run a single executable target
 
 ## Target Syntax ##
 
