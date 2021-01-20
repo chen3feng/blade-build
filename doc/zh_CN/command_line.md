@@ -10,11 +10,12 @@ blade <subcommand> [options]... [targets]...
 
 subcommand是一个子命令，目前有：
 
-* build 表示构建项目
-* test  表示构建并且跑单元测试
-* clean 表示清除目标的构建结果
-* query 查询目标的依赖项与被依赖项
-* run   构建并run一个单一目标
+* `build` 构建指定的目标
+* `test`  构建并且运行指定的测试
+* `clean` 清除指定目标的构建结果
+* `dump`  输出一些内部信息
+* `query` 查询目标的依赖项与被依赖项
+* `run`   构建并运行单个可执行的目标
 
 ## Target语法 ##
 
