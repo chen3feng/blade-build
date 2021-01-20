@@ -79,7 +79,7 @@ class ShellTest(Target):
     def generate(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
         output = self._target_file_path(self.name)
-        self.ninja_build('shelltest', output, inputs=srcs)
+        self.generate_build('shelltest', output, inputs=srcs)
         targets = self.blade.get_build_targets()
         inputs, testdata = [], []
         for key, type, dst in self.attr['locations']:
@@ -94,8 +94,8 @@ class ShellTest(Target):
                     testdata.append(dst)
         if inputs:
             output = self._target_file_path(self.name + '.testdata')
-            self.ninja_build('shelltestdata', output, inputs=inputs,
-                             variables={'testdata': ' '.join(testdata)})
+            self.generate_build('shelltestdata', output, inputs=inputs,
+                                variables={'testdata': ' '.join(testdata)})
 
 
 def sh_test(name=None,

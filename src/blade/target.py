@@ -577,7 +577,7 @@ class Target(object):
 
     def _remove_on_clean(self, *paths):
         """Add paths to clean list, to be removed in clean sub command.
-        In most cases, you needn't to call this function manually, because in the `ninja_build`,
+        In most cases, you needn't to call this function manually, because in the `generate_build`,
         the outputs will be used to call this function defaultly, unless you need to clean extra
         generated files.
         """
@@ -599,7 +599,7 @@ class Target(object):
         """Generate build code for specific target."""
         raise NotImplementedError(self.fullname)
 
-    def ninja_build(self, rule, outputs, inputs=None,
+    def generate_build(self, rule, outputs, inputs=None,
                     implicit_deps=None, order_only_deps=None,
                     variables=None, implicit_outputs=None, clean=None):
         """Generate a ninja build statement with specified parameters.

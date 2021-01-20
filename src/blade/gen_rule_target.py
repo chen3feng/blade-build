@@ -161,8 +161,8 @@ class GenRuleTarget(Target):
             vars['_out_1'] = outputs[0]
         if self.attr['heavy']:
             vars['pool'] = 'heavy_pool'
-        self.ninja_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
-                         variables=vars)
+        self.generate_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
+                            variables=vars)
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
 

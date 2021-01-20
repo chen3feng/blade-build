@@ -96,7 +96,7 @@ class PythonLibrary(PythonTarget):
         output = self._target_file_path(self.name + '.pylib')
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self._vars()
-        self.ninja_build('pythonlibrary', output, inputs=inputs, variables=vars)
+        self.generate_build('pythonlibrary', output, inputs=inputs, variables=vars)
         self._add_target_file('pylib', output)
         return output
 
@@ -225,7 +225,7 @@ class PythonBinary(PythonLibrary):
         vars = self._vars()
         vars['mainentry'] = self._get_entry()
         vars['exclusions'] = ','.join(self.attr['exclusions'])
-        self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)
+        self.generate_build('pythonbinary', output, inputs=inputs, variables=vars)
         self._add_default_target_file('bin', output)
 
 

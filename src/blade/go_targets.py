@@ -129,9 +129,9 @@ class GoTarget(Target):
         variables = {'package': self.attr['go_package']}
         if self.attr['extra_goflags']:
             variables['extra_goflags'] = self.attr['extra_goflags']
-        self.ninja_build(self.attr['go_rule'], output,
-                         implicit_deps=implicit_deps,
-                         variables=variables)
+        self.generate_build(self.attr['go_rule'], output,
+                            implicit_deps=implicit_deps,
+                            variables=variables)
         label = self.attr.get('go_label')
         if label:
             self._add_target_file(label, output)
