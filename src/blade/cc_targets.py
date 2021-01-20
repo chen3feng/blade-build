@@ -890,8 +890,8 @@ class CcLibrary(CcTarget):
         self._remove_on_clean(objs_dir)
         return objs
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc object/library."""
+    def generate(self):
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         if self.srcs:
             if self.attr.get('secure'):
@@ -1027,7 +1027,7 @@ class PrebuiltCcLibrary(CcTarget):
         """Override"""
         self._check_binary_link_only()
 
-    def ninja_rules(self):
+    def generate(self):
         """Generate ninja build rules for cc object/library."""
         self._check_deprecated_deps()
         # We allow a prebuilt cc_library doesn't exist if it is not used.
@@ -1210,7 +1210,7 @@ class ForeignCcLibrary(CcTarget):
         self._add_default_target_file('a', a_path)
         self._add_target_file('so', so_path if self.attr['has_dynamic'] else a_path)
 
-    def ninja_rules(self):
+    def generate(self):
         """Generate ninja build rules for cc object/library."""
         self._check_deprecated_deps()
         self._ninja_rules()
@@ -1372,7 +1372,7 @@ class CcBinary(CcTarget):
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
-    def ninja_rules(self):
+    def generate(self):
         """Generate ninja build rules for cc binary/test."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
@@ -1473,7 +1473,7 @@ class CcPlugin(CcTarget):
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
 
-    def ninja_rules(self):
+    def generate(self):
         """Generate ninja build rules for cc plugin."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])

@@ -97,7 +97,7 @@ class FBThriftLibrary(CcTarget):
         return [self._target_file_path(f)
                 for f in self.fbthrift_helpers[src].get_generated_cpp2_files()]
 
-    def ninja_rules(self):
+    def generate(self):
         self.error('FIXME: fbthrift is still not supported by the ninja backend.')
         # (don't forget `generated_hdrs`)
 

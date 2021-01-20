@@ -76,7 +76,7 @@ class ShellTest(Target):
             else:
                 self.attr['testdata'].append(td)
 
-    def ninja_rules(self):
+    def generate(self):
         srcs = [self._source_file_path(s) for s in self.srcs]
         output = self._target_file_path(self.name)
         self.ninja_build('shelltest', output, inputs=srcs)

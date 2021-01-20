@@ -392,8 +392,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         base = source[:-6]
         return ['%s.pb.cc' % base, '%s.pb.h' % base]
 
-    def ninja_rules(self):
-        """Generate ninja rules for proto files."""
+    def generate(self):
+        """Generate build code for proto files."""
         self._check_deprecated_deps()
         self._check_proto_deps()
         if not self.srcs:

@@ -47,7 +47,7 @@ class ResourceLibrary(cc_targets.CcTarget):
         self.attr['generated_hdrs'] = hdrs
         cc_targets._declare_hdrs(self, hdrs)
 
-    def ninja_rules(self):
+    def generate(self):
         self._check_deprecated_deps()
         if not self.srcs:
             return

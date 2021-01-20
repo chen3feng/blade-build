@@ -100,7 +100,7 @@ class ThriftLibrary(CcTarget):
             files.append(self._target_file_path(f))
         return files
 
-    def ninja_rules(self):
+    def generate(self):
         if not self.srcs:
             return
         target_dir = os.path.join(self.build_dir, self.path)

@@ -80,7 +80,7 @@ class MavenJar(Target):
         maven_cache.schedule_download(self.attr['id'], self.attr['classifier'],
                                       self.attr['transitive'], self)
 
-    def ninja_rules(self):
+    def generate(self):
         # This muthod doesn't generate build rules, so it is always executed without caching.
         if not self.dependents:  # Only download really used artifacts
             return
@@ -709,7 +709,7 @@ class JavaLibrary(JavaTarget):
             self.attr['binary_jar'] = self._source_file_path(binary_jar)
         self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
-    def ninja_rules(self):
+    def generate(self):
         if self.type == 'prebuilt_java_library':
             jar = os.path.join(self.blade.get_root_dir(),
                                self.attr['binary_jar'])
@@ -767,7 +767,7 @@ class JavaBinary(JavaTarget):
         self._add_target_file('onejar', output)
         return output
 
-    def ninja_rules(self):
+    def generate(self):
         self._generate_jar()
         dep_jars, maven_jars = self._get_pack_deps()
         maven_jars = self._detect_maven_conflicted_deps('package', maven_jars)
@@ -804,7 +804,7 @@ class JavaFatLibrary(JavaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def ninja_rules(self):
+    def generate(self):
         jar = self._generate_fat_jar()
         self._add_default_target_file('fatjar', jar)
 
@@ -849,7 +849,7 @@ class JavaTest(JavaBinary):
         }
         return vars
 
-    def ninja_rules(self):
+    def generate(self):
         if not self.srcs:
             self.warning('Empty java test sources')
             return

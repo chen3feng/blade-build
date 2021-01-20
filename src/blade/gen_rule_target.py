@@ -144,7 +144,7 @@ class GenRuleTarget(Target):
                 result.append(self._target_file_path(s))
         return result
 
-    def ninja_rules(self):
+    def generate(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self._expand_command()
         description = console.colored('%s %s' % (self.attr['cmd_name'], self.fullname), 'dimpurple')

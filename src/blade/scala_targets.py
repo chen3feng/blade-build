@@ -133,7 +133,7 @@ class ScalaLibrary(ScalaTarget):
         self.attr['provided_deps'] = self._unify_deps(provided_deps)
         self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
-    def ninja_rules(self):
+    def generate(self):
         jar = self._generate_jar()
         if jar:
             self._add_default_target_file('jar', jar)
@@ -166,7 +166,7 @@ class ScalaFatLibrary(ScalaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def ninja_rules(self):
+    def generate(self):
         jar = self._generate_fat_jar()
         self._add_default_target_file('fatjar', jar)
 
@@ -208,7 +208,7 @@ class ScalaTest(ScalaFatLibrary):
         else:
             console.warning('Config: "scala_test_config.scalatest_libs" is not configured')
 
-    def ninja_rules(self):
+    def generate(self):
         if not self.srcs:
             return
         jar = self._generate_jar()

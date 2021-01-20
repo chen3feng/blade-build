@@ -85,7 +85,7 @@ class SwigLibrary(CcTarget):
                     dep.append(line)
         return [i for i in dep if os.path.exists(i)]
 
-    def ninja_rules(self):
+    def generate(self):
         self.error('Not implemented')
 
 

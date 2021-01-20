@@ -595,8 +595,8 @@ class Target(object):
         """
         self.__build_rules.append('%s\n' % rule)
 
-    def ninja_rules(self):
-        """Generate ninja rules for specific target."""
+    def generate(self):
+        """Generate build code for specific target."""
         raise NotImplementedError(self.fullname)
 
     def ninja_build(self, rule, outputs, inputs=None,
@@ -642,7 +642,7 @@ class Target(object):
         # Add a cache to make it idempotent
         if self.__build_rules is None:
             self.__build_rules = []
-            self.ninja_rules()
+            self.generate()
         return self.__build_rules
 
 
@@ -660,5 +660,5 @@ class SystemLibrary(Target):
         self.key = '#:' + name
         self.fullname = '//' + self.key
 
-    def ninja_rules(self):
+    def generate(self):
         pass

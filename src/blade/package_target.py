@@ -127,7 +127,7 @@ class PackageTarget(Target):
                     rel_path = os.path.relpath(f, src)
                     self.attr['sources'].append((f, os.path.join(dst, rel_path)))
 
-    def ninja_rules(self):
+    def generate(self):
         inputs, entries = [], []
         for src, dst in self.attr['sources']:
             inputs.append(src)
