@@ -67,7 +67,7 @@ def _report_not_exist(kind, path, source_dir, blade):
     """Report dir or BUILD file does not exist."""
     msg = '%s "//%s" does not exist' % (kind, path)
     dependent = _find_dir_dependent(source_dir, blade)
-    (dependent or console).fatal(msg)
+    (dependent or console).error(msg)
 
 
 def enable_if(cond, true_value, false_value=None):
