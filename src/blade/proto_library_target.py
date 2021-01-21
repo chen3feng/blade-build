@@ -64,7 +64,7 @@ class ProtocPlugin(object):
 
     def __repr__(self):
         # This object is a member of proto target's data, provide a textual repr here to make
-        # rule_hash reproducable between each build.
+        # fingerprint reproducable between each build.
         return 'ProtocPlugin(%s)' % self.__dict__
 
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):

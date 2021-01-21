@@ -360,7 +360,7 @@ def load_files(blade_root_dir, load_local_config):
 
 def digest():
     """Hex md5 digest of all loaded config files"""
-    # Used in rule hash entropy
+    # Used in fingerprint entropy
     return _blade_config.digest()
 
 

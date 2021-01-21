@@ -38,8 +38,8 @@ from blade.test_runner import TestRunner
 instance = None
 
 
-# Start of rule hash line in each per-target ninja file
-_NINJA_FILE_RULE_HASH_START = '#RuleHash='
+# Start of fingerprint line in each per-target ninja file
+_NINJA_FILE_FINGERPRINT_START = '#Fingerprint='
 
 
 class Blade(object):
@@ -459,24 +459,24 @@ class Blade(object):
         """
         return target_type != 'system_library'
 
-    def _read_rule_hash(self, ninja_file):
-        """Read rule hash from per-target ninja file"""
+    def _read_fingerprint(self, ninja_file):
+        """Read fingerprint from per-target ninja file"""
         try:
             with open(ninja_file) as f:
                 first_line = f.readline()
-                if first_line.startswith(_NINJA_FILE_RULE_HASH_START):
-                    return first_line[len(_NINJA_FILE_RULE_HASH_START):].strip()
+                if first_line.startswith(_NINJA_FILE_FINGERPRINT_START):
+                    return first_line[len(_NINJA_FILE_FINGERPRINT_START):].strip()
         except IOError:
             pass
         return None
 
-    def _write_target_ninja_file(self, target, ninja_file, rules, rule_hash):
+    def _write_target_ninja_file(self, target, ninja_file, rules, fingerprint):
         """Generate per-target ninja file"""
         target_dir = target._target_file_path('')
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
         with open(ninja_file, 'w') as f:
-            f.write('%s%s\n\n' % (_NINJA_FILE_RULE_HASH_START, rule_hash))
+            f.write('%s%s\n\n' % (_NINJA_FILE_FINGERPRINT_START, fingerprint))
             f.writelines(rules)
 
     def _find_or_generate_target_ninja_file(self, target):
@@ -484,20 +484,20 @@ class Blade(object):
         # same name as the main build.ninja file (when target.name == 'build')
         target_ninja = target._target_file_path('%s.build.ninja' % target.name)
 
-        old_rule_hash = self._read_rule_hash(target_ninja)
-        rule_hash = target.rule_hash()
+        old_fingerprint = self._read_fingerprint(target_ninja)
+        fingerprint = target.fingerprint()
 
-        if rule_hash == old_rule_hash:
+        if fingerprint == old_fingerprint:
             console.debug('Using cached %s' % target_ninja)
             # If the command is "clean", we still need to generate rules to obtain the clean list
             if self.__command == 'clean':
-                target.get_rules()
+                target.get_build_code()
             return target_ninja
 
-        rules = target.get_rules()
+        rules = target.get_build_code()
         if rules:
             console.debug('Generating %s' % target_ninja)
-            self._write_target_ninja_file(target, target_ninja, rules, rule_hash)
+            self._write_target_ninja_file(target, target_ninja, rules, fingerprint)
             return target_ninja
 
         return None
