@@ -51,7 +51,8 @@ class _NinjaFileHeaderGenerator(object):
     for the underlying build system.
     """
     # pylint: disable=too-many-public-methods
-    def __init__(self, options, build_dir, blade_path, build_toolchain, blade):
+    def __init__(self, command, options, build_dir, blade_path, build_toolchain, blade):
+        self.command = command
         self.options = options
         self.build_dir = build_dir
         self.blade_path = blade_path
@@ -181,17 +182,6 @@ class _NinjaFileHeaderGenerator(object):
                 ''') % (' '.join(c_warnings), ' '.join(cxx_warnings),
                         ' '.join(optimize_flags), optimize))
 
-    def _hdrs_command(self, cc, flags, cppflags, includes):
-        """Command to generate cc inclusion information file"""
-        args = '-o /dev/null -E -H %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}' % (
-                ' '.join(flags), ' '.join(cppflags), includes)
-        # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
-        # but errors may occur under certain boundary conditions (for example, check `__COUNTER__`
-        # in the preprocessing directives), rerun the command without it on error.
-        preprocess1 = '%s -fdirectives-only %s' % (cc, args)
-        preprocess2 = '%s %s' % (cc, args)
-        return preprocess1 + ' || ' + preprocess2
-
     def generate_cc_rules(self):
         # pylint: disable=too-many-locals
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
@@ -208,24 +198,7 @@ class _NinjaFileHeaderGenerator(object):
 
         self.generate_cc_vars()
 
-        # To verify whether a header file is included without depends on the library it belongs to,
-        # we use the gcc's `-H` option to generate the inclusion stack information, see
-        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        # But this information is output to stderr mixed with diagnostic messages.
-        # So we use this awk script to split them.
-        #
-        # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
-        # the messages.
-        awk_script = ("""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
-                      """ !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
-
-        if _shell_support_pipefail():
-            # Use `pipefail` to ensure that the exit code is correct.
-            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
-        else:
-            # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
-                        'rm -f ${out}.err; exit $$ec') % awk_script
+        template = self._cc_compile_command_wrapper_template()
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
                       '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
@@ -282,6 +255,32 @@ class _NinjaFileHeaderGenerator(object):
         self.generate_rule(name='strip',
                            command='strip --strip-unneeded -o ${out} ${in}',
                            description='STRIP ${out}')
+
+    def _cc_compile_command_wrapper_template(self):
+        """Calculate the cc compile command wrapper template."""
+        # When dumping compdb, a raw compile command without wrapper should be generated,
+        # otherwise some tools can't handle it.
+        if self.command == 'dump' and self.options.dump_compdb:
+            return '%s'
+        # To verify whether a header file is included without depends on the library it belongs to,
+        # we use the gcc's `-H` option to generate the inclusion stack information, see
+        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
+        # But this information is output to stderr mixed with diagnostic messages.
+        # So we use this awk script to split them.
+        #
+        # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
+        # the messages.
+        awk_script = ("""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
+                      """ !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
+
+        if _shell_support_pipefail():
+            # Use `pipefail` to ensure that the exit code is correct.
+            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
+        else:
+            # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
+            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
+                        'rm -f ${out}.err; exit $$ec') % awk_script
+        return template
 
     def generate_proto_rules(self):
         proto_config = config.get_section('proto_library_config')
@@ -633,6 +632,7 @@ class NinjaFileGenerator(object):
     def generate_build_code(self):
         """Generate ninja code to build.ninja."""
         ninja_script_header_generator = _NinjaFileHeaderGenerator(
+            self.blade.get_command(),
             self.blade.get_options(),
             self.build_dir,
             self.blade_path,
