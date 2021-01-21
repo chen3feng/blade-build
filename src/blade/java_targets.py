@@ -81,7 +81,7 @@ class MavenJar(Target):
                                       self.attr['transitive'], self)
 
     def generate(self):
-        # This muthod doesn't generate build rules, so it is always executed without caching.
+        # This muthod doesn't generate build code, so it is always executed without caching.
         if not self.dependents:  # Only download really used artifacts
             return
         maven_cache = maven.MavenCache.instance(self.build_dir)

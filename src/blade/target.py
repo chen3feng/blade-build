@@ -466,7 +466,7 @@ class Target(object):
         """
 
     def before_generate(self):
-        """Will be called before generating build rules, overridable"""
+        """Will be called before generating build code, overridable"""
 
     def _expand_deps_generation(self):
         """Expand the generation process and generated rules of dependencies.
