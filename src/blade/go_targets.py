@@ -123,15 +123,15 @@ class GoTarget(Target):
         """Return the full path of generate target file"""
         return self._target_file_path(self.name)
 
-    def ninja_rules(self):
+    def generate(self):
         implicit_deps = self._go_dependencies()
         output = self._go_target_path()
         variables = {'package': self.attr['go_package']}
         if self.attr['extra_goflags']:
             variables['extra_goflags'] = self.attr['extra_goflags']
-        self.ninja_build(self.attr['go_rule'], output,
-                         implicit_deps=implicit_deps,
-                         variables=variables)
+        self.generate_build(self.attr['go_rule'], output,
+                            implicit_deps=implicit_deps,
+                            variables=variables)
         label = self.attr.get('go_label')
         if label:
             self._add_target_file(label, output)

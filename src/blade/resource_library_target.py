@@ -47,7 +47,7 @@ class ResourceLibrary(cc_targets.CcTarget):
         self.attr['generated_hdrs'] = hdrs
         cc_targets._declare_hdrs(self, hdrs)
 
-    def ninja_rules(self):
+    def generate(self):
         self._check_deprecated_deps()
         if not self.srcs:
             return
@@ -55,16 +55,16 @@ class ResourceLibrary(cc_targets.CcTarget):
         resources = [self._source_file_path(s) for s in self.srcs]
         index = [self._target_file_path('%s.h' % self.name),
                  self._target_file_path('%s.c' % self.name)]
-        self.ninja_build('resource_index', index, inputs=resources,
-                         variables={
-                             'name': regular_variable_name(self.name),
-                             'path': self.path
-                         })
+        self.generate_build('resource_index', index, inputs=resources,
+                            variables={
+                                'name': regular_variable_name(self.name),
+                                'path': self.path
+                            })
         sources = ['%s.c' % self.name]
         for resource in self.srcs:
             generated_source = '%s.c' % resource
-            self.ninja_build('resource', self._target_file_path(generated_source),
-                             inputs=self._source_file_path(resource))
+            self.generate_build('resource', self._target_file_path(generated_source),
+                                inputs=self._source_file_path(resource))
             sources.append(generated_source)
         objs = self._generated_cc_objects(sources)
         self._cc_library(objs)

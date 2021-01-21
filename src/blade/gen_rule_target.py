@@ -144,7 +144,7 @@ class GenRuleTarget(Target):
                 result.append(self._target_file_path(s))
         return result
 
-    def ninja_rules(self):
+    def generate(self):
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self._expand_command()
         description = console.colored('%s %s' % (self.attr['cmd_name'], self.fullname), 'dimpurple')
@@ -161,8 +161,8 @@ class GenRuleTarget(Target):
             vars['_out_1'] = outputs[0]
         if self.attr['heavy']:
             vars['pool'] = 'heavy_pool'
-        self.ninja_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
-                         variables=vars)
+        self.generate_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
+                            variables=vars)
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
 

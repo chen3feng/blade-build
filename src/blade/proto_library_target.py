@@ -64,7 +64,7 @@ class ProtocPlugin(object):
 
     def __repr__(self):
         # This object is a member of proto target's data, provide a textual repr here to make
-        # rule_hash reproducable between each build.
+        # fingerprint reproducable between each build.
         return 'ProtocPlugin(%s)' % self.__dict__
 
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
@@ -287,7 +287,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
         output = self._proto_gen_descriptor_file(self.name)
-        self.ninja_build('protodescriptors', output, inputs=inputs, variables={'first': inputs[0]})
+        self.generate_build('protodescriptors', output, inputs=inputs, variables={'first': inputs[0]})
 
     def _protoc_plugin_parameters(self, language):
         """Return a tuple of (plugin path, vars) used as parameters for ninja build."""
@@ -315,9 +315,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         cpp_sources = []
         for src in self.srcs:
             full_source, full_header = self._proto_gen_cpp_files(src)
-            self.ninja_build('proto', [full_source, full_header],
-                             inputs=self._source_file_path(src),
-                             implicit_deps=implicit_deps, variables=vars)
+            self.generate_build('proto', [full_source, full_header],
+                                inputs=self._source_file_path(src),
+                                implicit_deps=implicit_deps, variables=vars)
             source, header = self._proto_gen_cpp_file_names(src)
             cpp_sources.append(source)
         objs = self._generated_cc_objects(cpp_sources, generated_headers=self.attr['generated_hdrs'])
@@ -332,8 +332,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             input = self._source_file_path(src)
             package_dir, java_name = self._proto_java_gen_file(src)
             output = self._target_file_path(os.path.join(os.path.dirname(src), package_dir, java_name))
-            self.ninja_build('protojava', output, inputs=input,
-                             implicit_deps=implicit_deps, variables=vars)
+            self.generate_build('protojava', output, inputs=input,
+                                implicit_deps=implicit_deps, variables=vars)
             java_sources.append(output)
 
         jar = self._build_jar(inputs=java_sources,
@@ -346,11 +346,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         for proto in self.srcs:
             input = self._source_file_path(proto)
             output = self._proto_gen_python_file(proto)
-            self.ninja_build('protopython', output, inputs=input)
+            self.generate_build('protopython', output, inputs=input)
             generated_pys.append(output)
         pylib = self._target_file_path(self.name + '.pylib')
-        self.ninja_build('pythonlibrary', pylib, inputs=generated_pys,
-                         variables={'basedir': self.build_dir})
+        self.generate_build('pythonlibrary', pylib, inputs=generated_pys,
+                            variables={'basedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
     def _proto_go_rules(self):
@@ -367,7 +367,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                              package, protobuf_go_path, src))
             basename = os.path.basename(src)
             output = os.path.join(go_home, 'src', package, '%s.pb.go' % basename[:-6])
-            self.ninja_build('protogo', output, inputs=path)
+            self.generate_build('protogo', output, inputs=path)
             generated_goes.append(output)
         self._add_target_file('gopkg', generated_goes)
 
@@ -392,8 +392,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         base = source[:-6]
         return ['%s.pb.cc' % base, '%s.pb.h' % base]
 
-    def ninja_rules(self):
-        """Generate ninja rules for proto files."""
+    def generate(self):
+        """Generate build code for proto files."""
         self._check_deprecated_deps()
         self._check_proto_deps()
         if not self.srcs:

@@ -96,11 +96,11 @@ class PythonLibrary(PythonTarget):
         output = self._target_file_path(self.name + '.pylib')
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self._vars()
-        self.ninja_build('pythonlibrary', output, inputs=inputs, variables=vars)
+        self.generate_build('pythonlibrary', output, inputs=inputs, variables=vars)
         self._add_target_file('pylib', output)
         return output
 
-    def ninja_rules(self):
+    def generate(self):
         self._pylib()
 
 
@@ -130,7 +130,7 @@ class PrebuiltPythonLibrary(PythonTarget):
             self.error(
                     'Invalid src "%s", prebuilt py_library only support egg and whl' % src)
 
-    def ninja_rules(self):
+    def generate(self):
         self._add_target_file('pylib', self._source_file_path(self.srcs[0]))
 
 
@@ -211,7 +211,7 @@ class PythonBinary(PythonLibrary):
         rel_path = os.path.relpath(full_path, base_path)
         return rel_path.replace('/', '.')
 
-    def ninja_rules(self):
+    def generate(self):
         output = self._target_file_path(self.name)
         pylib = self._pylib()
         inputs = [pylib] if pylib else []
@@ -225,7 +225,7 @@ class PythonBinary(PythonLibrary):
         vars = self._vars()
         vars['mainentry'] = self._get_entry()
         vars['exclusions'] = ','.join(self.attr['exclusions'])
-        self.ninja_build('pythonbinary', output, inputs=inputs, variables=vars)
+        self.generate_build('pythonbinary', output, inputs=inputs, variables=vars)
         self._add_default_target_file('bin', output)
 
 

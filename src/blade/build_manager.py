@@ -38,8 +38,8 @@ from blade.test_runner import TestRunner
 instance = None
 
 
-# Start of rule hash line in each per-target ninja file
-_NINJA_FILE_RULE_HASH_START = '#RuleHash='
+# Start of fingerprint line in each per-target ninja file
+_NINJA_FILE_FINGERPRINT_START = '#Fingerprint='
 
 
 class Blade(object):
@@ -87,7 +87,7 @@ class Blade(object):
         # BUILD files containing these command line targets; global target
         # functions, i.e., cc_library, cc_binary and etc, in these BUILD
         # files will register targets into target_database, which then becomes
-        # the input to dependency analyzer and rules generator.  It is
+        # the input to dependency analyzer and backend build code generator.  It is
         # notable that not all targets in target_database are dependencies of
         # command line targets.
         self.__target_database = {}
@@ -96,7 +96,7 @@ class Blade(object):
         self.__build_targets = {}
 
         # The targets keys list after sorting by topological sorting method.
-        # Used to generate build rules in correct order.
+        # Used to generate build code in correct order.
         self.__sorted_targets_keys = []
 
         # Indicate whether the deps list is expanded by expander or not
@@ -155,22 +155,22 @@ class Blade(object):
         """Return build script file name"""
         return self.__build_script
 
-    def generate_build_rules(self):
-        """Generate the constructing rules."""
+    def generate_build_code(self):
+        """Generate the constructing code."""
         maven_cache = maven.MavenCache.instance(self.__build_dir)
         maven_cache.download_all()
 
-        console.info('Generating build rules...')
+        console.info('Generating backend build code...')
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
-        rules = generator.generate_build_script()
+        code = generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
         console.info('Generating done.')
-        return rules
+        return code
 
     def generate(self):
         """Generate the build script."""
         if self.__command != 'query':
-            self.generate_build_rules()
+            self.generate_build_code()
 
     def verify(self):
         """Verify specific targets after build is complete."""
@@ -459,52 +459,52 @@ class Blade(object):
         """
         return target_type != 'system_library'
 
-    def _read_rule_hash(self, ninja_file):
-        """Read rule hash from per-target ninja file"""
+    def _read_fingerprint(self, ninja_file):
+        """Read fingerprint from per-target ninja file"""
         try:
             with open(ninja_file) as f:
                 first_line = f.readline()
-                if first_line.startswith(_NINJA_FILE_RULE_HASH_START):
-                    return first_line[len(_NINJA_FILE_RULE_HASH_START):].strip()
+                if first_line.startswith(_NINJA_FILE_FINGERPRINT_START):
+                    return first_line[len(_NINJA_FILE_FINGERPRINT_START):].strip()
         except IOError:
             pass
         return None
 
-    def _write_target_ninja_file(self, target, ninja_file, rules, rule_hash):
+    def _write_target_ninja_file(self, target, ninja_file, code, fingerprint):
         """Generate per-target ninja file"""
         target_dir = target._target_file_path('')
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
         with open(ninja_file, 'w') as f:
-            f.write('%s%s\n\n' % (_NINJA_FILE_RULE_HASH_START, rule_hash))
-            f.writelines(rules)
+            f.write('%s%s\n\n' % (_NINJA_FILE_FINGERPRINT_START, fingerprint))
+            f.writelines(code)
 
     def _find_or_generate_target_ninja_file(self, target):
         # The `.build.` infix is used to avoid the target ninja file with the
         # same name as the main build.ninja file (when target.name == 'build')
         target_ninja = target._target_file_path('%s.build.ninja' % target.name)
 
-        old_rule_hash = self._read_rule_hash(target_ninja)
-        rule_hash = target.rule_hash()
+        old_fingerprint = self._read_fingerprint(target_ninja)
+        fingerprint = target.fingerprint()
 
-        if rule_hash == old_rule_hash:
+        if fingerprint == old_fingerprint:
             console.debug('Using cached %s' % target_ninja)
             # If the command is "clean", we still need to generate rules to obtain the clean list
             if self.__command == 'clean':
-                target.get_rules()
+                target.get_build_code()
             return target_ninja
 
-        rules = target.get_rules()
-        if rules:
+        code = target.get_build_code()
+        if code:
             console.debug('Generating %s' % target_ninja)
-            self._write_target_ninja_file(target, target_ninja, rules, rule_hash)
+            self._write_target_ninja_file(target, target_ninja, code, fingerprint)
             return target_ninja
 
         return None
 
-    def gen_targets_rules(self):
-        """Get the build rules and return to the object who queries this."""
-        rules_buf = []
+    def generate_targets_build_code(self):
+        """Generate backend build code for each build targets."""
+        code = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
         for k in self.__sorted_targets_keys:
@@ -523,9 +523,9 @@ class Blade(object):
             target_ninja = self._find_or_generate_target_ninja_file(target)
             if target_ninja:
                 target._remove_on_clean(target_ninja)
-                rules_buf += 'include %s\n' % target_ninja
+                code += 'include %s\n' % target_ninja
 
-        return rules_buf
+        return code
 
     def get_build_toolchain(self):
         """Return build toolchain instance."""

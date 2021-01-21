@@ -87,12 +87,12 @@ class ScalaTarget(Target, JavaTargetMixIn):
             classes_jar = self._target_file_path(self.name + '__classes__.jar')
             scalacflags = self.scalac_flags()
             self._build_jar(classes_jar, inputs=srcs, scala=True, scalacflags=scalacflags)
-            self.ninja_build('javajar', jar, inputs=[classes_jar] + resources)
+            self.generate_build('javajar', jar, inputs=[classes_jar] + resources)
         elif srcs:
             scalacflags = self.scalac_flags()
             self._build_jar(jar, inputs=srcs, scala=True, scalacflags=scalacflags)
         elif resources:
-            self.ninja_build('javajar', jar, inputs=resources)
+            self.generate_build('javajar', jar, inputs=resources)
         else:
             jar = ''
         if jar:
@@ -133,7 +133,7 @@ class ScalaLibrary(ScalaTarget):
         self.attr['provided_deps'] = self._unify_deps(provided_deps)
         self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
-    def ninja_rules(self):
+    def generate(self):
         jar = self._generate_jar()
         if jar:
             self._add_default_target_file('jar', jar)
@@ -166,7 +166,7 @@ class ScalaFatLibrary(ScalaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def ninja_rules(self):
+    def generate(self):
         jar = self._generate_fat_jar()
         self._add_default_target_file('fatjar', jar)
 
@@ -208,7 +208,7 @@ class ScalaTest(ScalaFatLibrary):
         else:
             console.warning('Config: "scala_test_config.scalatest_libs" is not configured')
 
-    def ninja_rules(self):
+    def generate(self):
         if not self.srcs:
             return
         jar = self._generate_jar()
@@ -217,7 +217,7 @@ class ScalaTest(ScalaFatLibrary):
         vars = {
             'packages_under_test': self._packages_under_test()
         }
-        self.ninja_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
+        self.generate_build('scalatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
 def scala_library(name=None,

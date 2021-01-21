@@ -425,7 +425,7 @@ class CcTarget(Target):
             # the generated ninja file. For more details, see:
             # https://ninja-build.org/manual.html#_the_literal_phony_literal_rule
             stamp = self._target_file_path(self.name + '__compile_deps__')
-            self.ninja_build('phony', stamp, inputs=deps, clean=[])
+            self.generate_build('phony', stamp, inputs=deps, clean=[])
             deps = [stamp]
         return deps
 
@@ -472,9 +472,9 @@ class CcTarget(Target):
         for src, input in expanded_srcs:
             obj = '%s.o' % os.path.join(objs_dir, src)
             rule = self._get_rule_from_suffix(src)
-            self.ninja_build(rule, obj, inputs=input,
-                             implicit_deps=implicit_deps,
-                             variables=vars, clean=[])
+            self.generate_build(rule, obj, inputs=input,
+                                implicit_deps=implicit_deps,
+                                variables=vars, clean=[])
             objs.append(obj)
 
         self._remove_on_clean(objs_dir)
@@ -487,7 +487,7 @@ class CcTarget(Target):
 
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
-        self.ninja_build('ar', output, inputs=objs)
+        self.generate_build('ar', output, inputs=objs)
         self._add_default_target_file('a', output)
 
     def _dynamic_cc_library(self, objs):
@@ -512,11 +512,11 @@ class CcTarget(Target):
             vars['ldflags'] = ' '.join(ldflags)
         if extra_ldflags:
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
-        self.ninja_build(rule, output,
-                         inputs=objs + deps,
-                         implicit_deps=implicit_deps,
-                         order_only_deps=order_only_deps,
-                         variables=vars)
+        self.generate_build(rule, output,
+                            inputs=objs + deps,
+                            implicit_deps=implicit_deps,
+                            order_only_deps=order_only_deps,
+                            variables=vars)
 
     def _need_verify_generate_hdrs(self):
         for path in self.blade.get_sources_keyword_list():
@@ -872,9 +872,9 @@ class CcLibrary(CcTarget):
         path = self._source_file_path(src)
         if not os.path.exists(path):
             path = self._target_file_path(src)
-        self.ninja_build('securecccompile', secure_obj, inputs=path,
-                         implicit_deps=implicit_deps, variables=vars, clean=[])
-        self.ninja_build('securecc', obj, inputs=secure_obj, clean=[])
+        self.generate_build('securecccompile', secure_obj, inputs=path,
+                            implicit_deps=implicit_deps, variables=vars, clean=[])
+        self.generate_build('securecc', obj, inputs=secure_obj, clean=[])
 
     def _securecc_objects(self, sources):
         """Generate securecc compile rules in ninja."""
@@ -890,8 +890,8 @@ class CcLibrary(CcTarget):
         self._remove_on_clean(objs_dir)
         return objs
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc object/library."""
+    def generate(self):
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         if self.srcs:
             if self.attr.get('secure'):
@@ -1027,8 +1027,8 @@ class PrebuiltCcLibrary(CcTarget):
         """Override"""
         self._check_binary_link_only()
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc object/library."""
+    def generate(self):
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         # We allow a prebuilt cc_library doesn't exist if it is not used.
         # So if this library is not depended by any target, don't generate any
@@ -1038,7 +1038,7 @@ class PrebuiltCcLibrary(CcTarget):
         dynamic_source = self.attr.get('dynamic_source')
         dynamic_target = self.attr.get('dynamic_target')
         if dynamic_source and dynamic_target:
-            self.ninja_build('copy', dynamic_target, inputs=dynamic_source)
+            self.generate_build('copy', dynamic_target, inputs=dynamic_source)
 
 
 def prebuilt_cc_library(
@@ -1210,8 +1210,8 @@ class ForeignCcLibrary(CcTarget):
         self._add_default_target_file('a', a_path)
         self._add_target_file('so', so_path if self.attr['has_dynamic'] else a_path)
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc object/library."""
+    def generate(self):
+        """Generate build code for cc object/library."""
         self._check_deprecated_deps()
         self._ninja_rules()
 
@@ -1372,8 +1372,8 @@ class CcBinary(CcTarget):
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc binary/test."""
+    def generate(self):
+        """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         self._cc_binary(objs, self.attr['dynamic_link'])
@@ -1473,8 +1473,8 @@ class CcPlugin(CcTarget):
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
 
-    def ninja_rules(self):
-        """Generate ninja build rules for cc plugin."""
+    def generate(self):
+        """Generate build code for cc plugin."""
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
@@ -1498,7 +1498,7 @@ class CcPlugin(CcTarget):
                           ldflags=ldflags, extra_ldflags=extra_ldflags,
                           implicit_deps=implicit_deps)
             if self.attr['strip']:
-                self.ninja_build('strip', output, inputs=link_output)
+                self.generate_build('strip', output, inputs=link_output)
             self._add_default_target_file('so', output)
 
 

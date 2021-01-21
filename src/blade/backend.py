@@ -630,23 +630,23 @@ class NinjaFileGenerator(object):
     def get_all_rule_names(self):
         return self.__all_rule_names
 
-    def generate_build_rules(self):
-        """Generate ninja rules to build.ninja."""
+    def generate_build_code(self):
+        """Generate ninja code to build.ninja."""
         ninja_script_header_generator = _NinjaFileHeaderGenerator(
             self.blade.get_options(),
             self.build_dir,
             self.blade_path,
             self.build_toolchain,
             self.blade)
-        rules = ninja_script_header_generator.generate()
-        rules += self.blade.gen_targets_rules()
+        code = ninja_script_header_generator.generate()
+        code += self.blade.generate_targets_build_code()
         self.__all_rule_names = ninja_script_header_generator.get_all_rule_names()
-        return rules
+        return code
 
     def generate_build_script(self):
         """Generate build script for underlying build system."""
-        rules = self.generate_build_rules()
+        code = self.generate_build_code()
         script = open(self.script_path, 'w')
-        script.writelines(rules)
+        script.writelines(code)
         script.close()
-        return rules
+        return code

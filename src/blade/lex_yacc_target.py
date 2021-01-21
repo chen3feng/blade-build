@@ -117,7 +117,7 @@ class LexYaccLibrary(CcTarget):
     def _lex_rules(self, source, implicit_deps, vars):
         cc, cc_path = self._lex_generated_files(source)
         input = self._source_file_path(source)
-        self.ninja_build('lex', cc_path, inputs=input, implicit_deps=implicit_deps, variables=vars)
+        self.generate_build('lex', cc_path, inputs=input, implicit_deps=implicit_deps, variables=vars)
         return cc, cc_path
 
     def _yacc_generated_files(self, source):
@@ -132,10 +132,10 @@ class LexYaccLibrary(CcTarget):
     def _yacc_rules(self, source, rule, vars):
         cc, cc_path, h_path = self._yacc_generated_files(source)
         input = self._source_file_path(source)
-        self.ninja_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
+        self.generate_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
         return cc, cc_path, h_path
 
-    def ninja_rules(self):
+    def generate(self):
         lex_file, yacc_file = self.srcs
         yacc_cc, yacc_cc_path, yacc_h_path = self._yacc_rules(yacc_file, 'yacc',
                                                               vars=self._yacc_vars())
