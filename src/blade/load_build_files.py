@@ -177,7 +177,8 @@ def include(name):
     """Include another file into current BUILD file"""
     full_path = _expand_include_path(name)
     if not os.path.isfile(full_path):
-        console.error('file "%s" does not exist' % full_path)
+        console.error('%s error: File "%s" does not exist' % (_current_source_location(), name),
+                prefix=False)
         return
     exec_file(full_path, __current_globals, None)
 
@@ -192,6 +193,12 @@ def _load_extension(name):
     full_path = _expand_include_path(name)
     if full_path in __loaded_extension_info:
         return __loaded_extension_info[full_path]
+
+    if not os.path.isfile(full_path):
+        console.error('%s error: File "%s" does not exist' % (_current_source_location(), name),
+                prefix=False)
+        return
+
     # The symbols in the current context should be invisible to the extension,
     # make an isolated symbol set to implement this approach.
     origin_globals = build_rules.get_all()
