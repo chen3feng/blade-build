@@ -649,4 +649,3 @@ class NinjaFileGenerator(object):
         script = open(self.script_path, 'w')
         script.writelines(code)
         script.close()
-        return code

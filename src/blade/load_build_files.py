@@ -52,6 +52,16 @@ def _load_build_rules():
     import blade.fbthrift_library
 
 
+def _find_dependent(dkey, blade):
+    """Find which target depends on the target with dkey."""
+    target_database = blade.get_target_database()
+    for key in target_database:
+        target = target_database[key]
+        if dkey in target.deps:
+            return target
+    return None
+
+
 def _find_dir_dependent(dir, blade):
     """Find which target depends on the dir."""
     target_database = blade.get_target_database()
@@ -165,7 +175,11 @@ def _expand_include_path(name):
 
 def include(name):
     """Include another file into current BUILD file"""
-    exec_file(_expand_include_path(name), __current_globals, None)
+    full_path = _expand_include_path(name)
+    if not os.path.isfile(full_path):
+        console.error('file "%s" does not exist' % full_path)
+        return
+    exec_file(full_path, __current_globals, None)
 
 
 # Loaded extensions information
@@ -253,7 +267,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
         return
     processed_source_dirs.add(source_dir)
 
-    if not os.path.exists(source_dir):
+    if not os.path.isdir(source_dir):
         _report_not_exist('Directory', source_dir, source_dir, blade)
         return
 
@@ -261,7 +275,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
     try:
         blade.set_current_source_path(source_dir)
         build_file = os.path.join(source_dir, 'BUILD')
-        if os.path.exists(build_file) and not os.path.isdir(build_file):
+        if os.path.isfile(build_file):
             try:
                 # The magic here is that a BUILD file is a Python script,
                 # which can be loaded and executed by execfile().
@@ -279,18 +293,27 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
         blade.set_current_source_path(old_current_source_path)
 
 
-def _find_dependent(dkey, blade):
-    """Find which target depends on the target with dkey."""
-    target_database = blade.get_target_database()
-    for key in target_database:
-        target = target_database[key]
-        if dkey in target.deps:
-            return target
-    return None
-
+_BLADE_SKIP_FILE = '.bladeskip'
 
 # File names should be skipped
-_SKIP_FILES = ['BLADE_ROOT', '.bladeskip']
+_SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
+
+
+def _is_under_skipped_dir(dirname):
+    """Is the directory under a directory which contains a `.bladeskip` file."""
+    cache = _is_under_skipped_dir.cache
+    if dirname in cache:
+        return cache[dirname]
+    if os.path.exists(os.path.join(dirname, _BLADE_SKIP_FILE)):
+        cache[dirname] = True
+        return True
+    parent_dir = os.path.dirname(dirname)
+    result = parent_dir != '' and _is_under_skipped_dir(parent_dir)
+    cache[dirname] = result
+    return result
+
+
+_is_under_skipped_dir.cache = {}
 
 
 def _is_load_excluded(root, d):
@@ -348,7 +371,9 @@ def load_targets(target_ids, blade_root_dir, blade):
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
-
+        if _is_under_skipped_dir(source_dir):
+            console.warning('"%s" is under skipped directory, ignored' % target_id)
+            continue
         if target_name not in ('*', '...'):
             cited_targets.add(source_dir + ':' + target_name)
         elif target_name == '...':
@@ -386,6 +411,11 @@ def load_targets(target_ids, blade_root_dir, blade):
         if target_id in related_targets:
             continue
 
+        if _is_under_skipped_dir(source_dir):
+            dependent = _find_dependent(target_id, blade)
+            dependent.error('"%s" is under skipped directory, ignored' % target_id)
+            continue
+
         _load_build_file(source_dir,
                          processed_source_dirs,
                          blade)
@@ -400,12 +430,5 @@ def load_targets(target_ids, blade_root_dir, blade):
         for key in related_targets[target_id].deps:
             if key not in related_targets:
                 cited_targets.add(key)
-
-    # Iterating to get svn root dirs
-    for target_id in related_targets:  # pylint: disable=dict-iter-missing-items
-        path, name = target_id.rsplit(':')
-        root_dir = path.split('/')[0].strip()
-        if root_dir not in blade.svn_root_dirs and '#' not in root_dir:
-            blade.svn_root_dirs.append(root_dir)
 
     return direct_targets, all_command_targets, related_targets

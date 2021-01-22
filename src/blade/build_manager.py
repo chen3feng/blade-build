@@ -109,8 +109,6 @@ class Blade(object):
         self.__build_jobs_num = 0
         self.__test_jobs_num = 0
 
-        self.svn_root_dirs = []
-
         self._verify_history_path = os.path.join(build_dir, '.blade_verify.json')
         self._verify_history = {
             'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
@@ -156,16 +154,15 @@ class Blade(object):
         return self.__build_script
 
     def generate_build_code(self):
-        """Generate the constructing code."""
+        """Generate the backend build code."""
         maven_cache = maven.MavenCache.instance(self.__build_dir)
         maven_cache.download_all()
 
         console.info('Generating backend build code...')
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
-        code = generator.generate_build_script()
+        generator.generate_build_script()
         self.__all_rule_names = generator.get_all_rule_names()
         console.info('Generating done.')
-        return code
 
     def generate(self):
         """Generate the build script."""
