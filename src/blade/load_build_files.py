@@ -256,27 +256,17 @@ build_rules.register_function(include)
 build_rules.register_function(load)
 
 
-def _load_build_file(source_dir, processed_source_dirs, blade):
-    """Load the BUILD and place the targets into database.
-
-    Invoked by _load_targets.  Load and execute the BUILD
-    file, which is a Python script, in source_dir.  Statements in BUILD
-    depends on global variable current_source_dir, and will register build
-    target/rules into global variables target_database.  Report error
-    and exit if path/BUILD does NOT exist.
-    The parameters processed_source_dirs refers to a set defined in the
-    caller and used to avoid duplicated execution of BUILD files.
-
+def __load_build_file(source_dir, blade):
     """
-    source_dir = os.path.normpath(source_dir)
+    Load and execute the BUILD file, which is a Python script, in source_dir.
+    Statements in BUILD depends on global variable current_source_dir, and will
+    register build target/rules into global variables target_database.
+    Report error and exit if path/BUILD does NOT exist.
+    """
     # TODO(yiwang): the character '#' is a magic value.
-    if source_dir in processed_source_dirs or source_dir == '#':
-        return
-    processed_source_dirs.add(source_dir)
-
     if not os.path.isdir(source_dir):
         _report_not_exist('Directory', source_dir, source_dir, blade)
-        return
+        return False
 
     old_current_source_path = blade.get_current_source_path()
     try:
@@ -289,6 +279,7 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
                 global __current_globals
                 __current_globals = build_rules.get_all()
                 exec_file(build_file, __current_globals, None)
+                return True
             except SystemExit:
                 console.fatal('%s: Fatal error' % build_file)
             except:  # pylint: disable=bare-except
@@ -298,6 +289,20 @@ def _load_build_file(source_dir, processed_source_dirs, blade):
             _report_not_exist('File', build_file, source_dir, blade)
     finally:
         blade.set_current_source_path(old_current_source_path)
+
+
+def _load_build_file(source_dir, processed_source_dirs, blade):
+    """
+    Load the BUILD and place the targets into database.
+    The parameters processed_source_dirs refers to a dict defined in the
+    caller and used to avoid duplicated execution of BUILD files.
+    """
+    source_dir = os.path.normpath(source_dir)
+    if source_dir in processed_source_dirs:
+        return processed_source_dirs[source_dir]
+    result = __load_build_file(source_dir, blade)
+    processed_source_dirs[source_dir] = result
+    return result
 
 
 _BLADE_SKIP_FILE = '.bladeskip'
@@ -356,24 +361,33 @@ def load_targets(target_ids, blade_root_dir, blade):
 
     """
     _load_build_rules()
-
     # pylint: disable=too-many-locals
     build_rules.register_variable('build_target', build_attributes.attributes)
-    target_database = blade.get_target_database()
-    # targets specified in command line
-    cited_targets = set()
-    # cited_targets and all its dependencies
-    related_targets = {}
-    # source dirs mentioned in command line
-    source_dirs = []
-    # to prevent duplicated loading of BUILD files
-    processed_source_dirs = set()
 
-    direct_targets = []
-    all_command_targets = []
-    # Parse command line target_ids.  For those in the form of <path>:<target>,
-    # record (<path>,<target>) in cited_targets; for the rest (with <path>
+    # targets specified in command line
+    # source dirs mentioned in command line
+    direct_targets, source_dirs = _expand_target_patterns(target_ids)
+
+    # to prevent duplicated loading of BUILD files
+    processed_source_dirs = {}
+
+    all_command_targets = _load_command_line_build_files(blade, direct_targets,
+            source_dirs, processed_source_dirs)
+
+    # load_all its dependencies
+    related_targets = _load_related_build_files(blade, all_command_targets,
+            processed_source_dirs)
+
+    return direct_targets, all_command_targets, related_targets
+
+
+def _expand_target_patterns(target_ids):
+    """Expand target patterns from command line."""
+    # Parse command line target_ids. For those in the form of <path>:<target>,
+    # record (<path>,<target>) in direct_targets; for the rest (with <path>
     # but without <target>), record <path> into paths.
+    direct_targets = []
+    source_dirs = []
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
@@ -381,9 +395,7 @@ def load_targets(target_ids, blade_root_dir, blade):
         if _is_under_skipped_dir(source_dir):
             console.warning('"%s" is under skipped directory, ignored' % target_id)
             continue
-        if target_name not in ('*', '...'):
-            cited_targets.add(source_dir + ':' + target_name)
-        elif target_name == '...':
+        if target_name == '...':
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
@@ -393,29 +405,45 @@ def load_targets(target_ids, blade_root_dir, blade):
                     source_dirs.append(root)
         else:
             source_dirs.append(source_dir)
+            if target_name != '*' and target_id not in direct_targets:
+                direct_targets.append(source_id)
 
-    direct_targets = list(cited_targets)
+    return direct_targets, source_dirs
 
-    # Load BUILD files in paths, and add all loaded targets into
-    # cited_targets.  Together with above step, we can ensure that all
-    # targets mentioned in the command line are now in cited_targets.
+
+def _load_command_line_build_files(blade, direct_targets, source_dirs, processed_source_dirs):
+    """Load all build files specified in command line."""
+
+    # Load BUILD files in paths, and return all loaded targets.
+    # Together with above step, we can ensure that all targets mentioned in the
+    # command line are now loaded.
+
     for source_dir in source_dirs:
-        _load_build_file(source_dir,
-                         processed_source_dirs,
-                         blade)
+        _load_build_file(source_dir, processed_source_dirs, blade)
+    target_database = blade.get_target_database()
+    return list(target_database.keys())
 
-    for key in target_database:
-        cited_targets.add(key)
-    all_command_targets = list(cited_targets)
 
+def _load_related_build_files(blade, all_command_targets, processed_source_dirs):
+    """Load related build files referenced by command line targets."""
     # Starting from targets specified in command line, breath-first
     # propagate to load BUILD files containing directly and indirectly
     # dependent targets.  All these targets form related_targets,
     # which is a subset of target_database created by loading  BUILD files.
+
+    target_database = blade.get_target_database()
+    related_targets = {}
+    cited_targets = set(all_command_targets)
+
     while cited_targets:
         target_id = cited_targets.pop()
         source_dir, target_name = target_id.split(':')
+
         if target_id in related_targets:
+            continue
+
+        if source_dir == '#':
+            related_targets[target_id] = target_database[target_id]
             continue
 
         if _is_under_skipped_dir(source_dir):
@@ -423,9 +451,8 @@ def load_targets(target_ids, blade_root_dir, blade):
             dependent.error('"%s" is under skipped directory, ignored' % target_id)
             continue
 
-        _load_build_file(source_dir,
-                         processed_source_dirs,
-                         blade)
+        if not _load_build_file(source_dir, processed_source_dirs, blade):
+            continue
 
         if target_id not in target_database:
             msg = 'Target "//%s" does not exist' % target_id
@@ -438,4 +465,4 @@ def load_targets(target_ids, blade_root_dir, blade):
             if key not in related_targets:
                 cited_targets.add(key)
 
-    return direct_targets, all_command_targets, related_targets
+    return related_targets
