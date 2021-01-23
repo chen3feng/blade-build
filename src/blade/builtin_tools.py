@@ -44,31 +44,6 @@ from blade import console
 from blade import fatjar
 
 
-def parse_command_line(argv):
-    """Simple command line parsing.
-
-    options can only be passed as the form of `--name=value`, any other arguments are treated as
-    normal arguments.
-
-    Returns:
-        tuple(options: dict, args: list)
-    """
-    options = {}
-    args = []
-    for arg in argv:
-        if arg.startswith('--'):
-            pos = arg.find('=')
-            if pos < 0:
-                args.append(arg)
-                continue
-            name = arg[2:pos]
-            value = arg[pos+1:]
-            options[name] = value
-        else:
-            args.append(arg)
-    return options, args
-
-
 def generate_scm(scm, revision, url, profile, compiler, args):
     """Generate `scm.c` file"""
     version = '%s@%s' % (url, revision)
@@ -123,8 +98,7 @@ _TAR_WRITE_MODES = {
 }
 
 
-def generate_tar_package(path, sources, destinations, suffix):
-    mode = _TAR_WRITE_MODES[suffix]
+def generate_tar_package(path, sources, destinations, mode):
     tar = tarfile.open(path, mode, dereference=True)
     manifest = archive_package_sources(tar.add, sources, destinations)
     manifest_path = '%s.MANIFEST' % path
@@ -133,6 +107,14 @@ def generate_tar_package(path, sources, destinations, suffix):
     m.close()
     tar.add(manifest_path, _PACKAGE_MANIFEST)
     tar.close()
+
+
+def _tar_write_mode(path):
+    """Get the tar write mode from extname of path"""
+    for ext, mode in _TAR_WRITE_MODES.items():
+        if path.endswith(ext):
+            return mode
+    return ''
 
 
 def generate_package(args):
@@ -145,11 +127,8 @@ def generate_package(args):
     if path.endswith('.zip'):
         generate_zip_package(path, sources, destinations)
     else:
-        for ext in _TAR_WRITE_MODES:
-            if path.endswith(ext):
-                suffix = ext
-                break
-        generate_tar_package(path, sources, destinations, suffix)
+        mode = _tar_write_mode(path)
+        generate_tar_package(path, sources, destinations, mode)
 
 
 def generate_securecc_object(args):
@@ -312,11 +291,10 @@ def generate_java_test(script, main_class, jacocoagent, packages_under_test, arg
     os.chmod(script, 0o755)
 
 
-def generate_fat_jar(args):
-    jar = args[0]
-    console.set_log_file('%s.log' % jar.replace('.fat.jar', '__fatjar__'))
+def generate_fat_jar(output, **kwargs):
+    console.set_log_file('%s.log' % output.replace('.fat.jar', '__fatjar__'))
     console.enable_color(True)
-    fatjar.generate_fat_jar(jar, args[1:])
+    fatjar.generate_fat_jar(output=output, **kwargs)
 
 
 def generate_one_jar(onejar, main_class, bootjar, args):
@@ -562,7 +540,7 @@ _BUILTIN_TOOLS = {
 def main():
     name = sys.argv[1]
     try:
-        options, args = parse_command_line(sys.argv[2:])
+        options, args = blade_util.parse_command_line(sys.argv[2:])
         ret = _BUILTIN_TOOLS[name](args=args, **options)
     except Exception as e:  # pylint: disable=broad-except
         ret = 1
