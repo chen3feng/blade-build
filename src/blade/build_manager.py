@@ -77,11 +77,11 @@ class Blade(object):
 
         self.__blade_revision = None
 
-        # The targets which are specified in command line explicitly, not pattern expanded.
-        self.__direct_targets = []
+        # The targets which are specified in command line explicitly, not the pattern expanded.
+        self.__direct_targets = set()
 
         # All command targets, includes direct targets and expanded target patterns.
-        self.__expanded_command_targets = []
+        self.__expanded_command_targets = set()
 
         # Given some targets specified in the command line, Blade will load
         # BUILD files containing these command line targets; global target

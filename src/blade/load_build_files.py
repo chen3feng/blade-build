@@ -51,6 +51,8 @@ def _load_build_rules():
     import blade.thrift_library
     import blade.fbthrift_library
 
+    build_rules.register_variable('build_target', build_attributes.attributes)
+
 
 def _find_dependent(dkey, blade):
     """Find which target depends on the target with dkey."""
@@ -211,7 +213,7 @@ def _load_extension(name):
             continue
         if symbol in origin_globals and value is origin_globals[symbol]:
             continue
-        if type(value) is types.ModuleType:
+        if isinstance(value, types.ModuleType):
             continue
         result[symbol] = value
     __loaded_extension_info[full_path] = result
@@ -263,7 +265,7 @@ def __load_build_file(source_dir, blade):
     register build target/rules into global variables target_database.
     Report error and exit if path/BUILD does NOT exist.
     """
-    # TODO(yiwang): the character '#' is a magic value.
+
     if not os.path.isdir(source_dir):
         _report_not_exist('Directory', source_dir, source_dir, blade)
         return False
@@ -289,6 +291,8 @@ def __load_build_file(source_dir, blade):
             _report_not_exist('File', build_file, source_dir, blade)
     finally:
         blade.set_current_source_path(old_current_source_path)
+
+    return False
 
 
 def _load_build_file(source_dir, processed_source_dirs, blade):
@@ -358,36 +362,36 @@ def load_targets(target_ids, blade_root_dir, blade):
     Parse and load targets, including those specified in command line
     and their direct and indirect dependencies, by loading related BUILD
     files.  Returns a map which contains all these targets.
-
     """
+
     _load_build_rules()
-    # pylint: disable=too-many-locals
-    build_rules.register_variable('build_target', build_attributes.attributes)
 
     # targets specified in command line
-    # source dirs mentioned in command line
-    direct_targets, source_dirs = _expand_target_patterns(target_ids)
+    # starting dirs mentioned in command line
+    direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids)
 
     # to prevent duplicated loading of BUILD files
     processed_source_dirs = {}
 
-    all_command_targets = _load_command_line_build_files(blade, direct_targets,
-            source_dirs, processed_source_dirs)
+    command_targets = _load_starting_build_files(blade, starting_dirs,
+            processed_source_dirs)
+    command_targets |= direct_targets
 
     # load_all its dependencies
-    related_targets = _load_related_build_files(blade, all_command_targets,
+    related_targets = _load_related_build_files(blade, command_targets,
             processed_source_dirs)
 
-    return direct_targets, all_command_targets, related_targets
+    return direct_targets, command_targets, related_targets
 
 
-def _expand_target_patterns(target_ids):
+def _expand_target_patterns(blade, target_ids):
     """Expand target patterns from command line."""
+
     # Parse command line target_ids. For those in the form of <path>:<target>,
     # record (<path>,<target>) in direct_targets; for the rest (with <path>
-    # but without <target>), record <path> into paths.
-    direct_targets = []
-    source_dirs = []
+    # but without <target>), record <path> into starting_dirs.
+    direct_targets = set()
+    starting_dirs = set()
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
@@ -402,30 +406,31 @@ def _expand_target_patterns(target_ids):
                 # that os.walk() will not process deleted directories.
                 dirs[:] = [d for d in dirs if not _is_load_excluded(root, d)]
                 if 'BUILD' in files:
-                    source_dirs.append(root)
+                    starting_dirs.add(root)
+        elif target_name == '*':
+            starting_dirs.add(source_dir)
         else:
-            source_dirs.append(source_dir)
-            if target_name != '*' and target_id not in direct_targets:
-                direct_targets.append(source_id)
+            direct_targets.add(target_id)
 
-    return direct_targets, source_dirs
+    return direct_targets, starting_dirs
 
 
-def _load_command_line_build_files(blade, direct_targets, source_dirs, processed_source_dirs):
-    """Load all build files specified in command line."""
+def _load_starting_build_files(blade, starting_dirs, processed_source_dirs):
+    """Load all build files in starting_dirs."""
 
     # Load BUILD files in paths, and return all loaded targets.
     # Together with above step, we can ensure that all targets mentioned in the
     # command line are now loaded.
 
-    for source_dir in source_dirs:
+    for source_dir in starting_dirs:
         _load_build_file(source_dir, processed_source_dirs, blade)
     target_database = blade.get_target_database()
-    return list(target_database.keys())
+    return set(target_database.keys())
 
 
-def _load_related_build_files(blade, all_command_targets, processed_source_dirs):
-    """Load related build files referenced by command line targets."""
+def _load_related_build_files(blade, command_targets, processed_source_dirs):
+    """Load all related build files referenced by command line targets."""
+
     # Starting from targets specified in command line, breath-first
     # propagate to load BUILD files containing directly and indirectly
     # dependent targets.  All these targets form related_targets,
@@ -433,7 +438,7 @@ def _load_related_build_files(blade, all_command_targets, processed_source_dirs)
 
     target_database = blade.get_target_database()
     related_targets = {}
-    cited_targets = set(all_command_targets)
+    cited_targets = set(command_targets)
 
     while cited_targets:
         target_id = cited_targets.pop()
