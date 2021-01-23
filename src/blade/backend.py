@@ -270,8 +270,8 @@ class _NinjaFileHeaderGenerator(object):
         #
         # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
         # the messages.
-        awk_script = ("""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
-                      """ !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
+        awk_script = (r"""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
+                      r""" !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
 
         if _shell_support_pipefail():
             # Use `pipefail` to ensure that the exit code is correct.
@@ -344,7 +344,7 @@ class _NinjaFileHeaderGenerator(object):
     def generate_resource_rules(self):
         args = '${name} ${path} ${out} ${in}'
         self.generate_rule(name='resource_index',
-                           command=self._builtin_command('resource_index', suffix=args),
+                           command=self._builtin_command('resource_index', args),
                            description='RESOURCE INDEX ${out}')
         self.generate_rule(name='resource',
                            command='xxd -i ${in} | '
@@ -404,14 +404,14 @@ class _NinjaFileHeaderGenerator(object):
         args = ('--script=${out} --main_class=${mainclass} --jacocoagent=%s '
                 '--packages_under_test=${packages_under_test} ${in}') % jacocoagent
         self.generate_rule(name='javatest',
-                           command=self._builtin_command('java_test', suffix=args),
+                           command=self._builtin_command('java_test', args),
                            description='JAVA TEST ${out}')
 
     def generate_java_binary_rules(self):
         bootjar = config.get_item('java_binary_config', 'one_jar_boot_jar')
         args = '--onejar=${out} --bootjar=%s --main_class=${mainclass} ${in}' % bootjar
         self.generate_rule(name='onejar',
-                           command=self._builtin_command('java_onejar', suffix=args),
+                           command=self._builtin_command('java_onejar', args),
                            description='ONE JAR ${out}')
         self.generate_rule(name='javabinary',
                            command=self._builtin_command('java_binary'),
@@ -448,8 +448,7 @@ class _NinjaFileHeaderGenerator(object):
         jacocoagent = self.get_jacocoagent()
         args = ('--java=%s --scala=%s --jacocoagent=%s --packages_under_test=${packages_under_test} '
                 '--script=${out} ${in}') % (java, scala, jacocoagent)
-        self.generate_rule(name='scalatest', command=self._builtin_command('scala_test',
-                                suffix=args),
+        self.generate_rule(name='scalatest', command=self._builtin_command('scala_test', args),
                            description='SCALA TEST ${out}')
 
     def generate_java_scala_rules(self):
@@ -459,11 +458,11 @@ class _NinjaFileHeaderGenerator(object):
         jar = self.get_java_command(java_config, 'jar')
         args = '%s ${out} ${in}' % jar
         self.generate_rule(name='javajar',
-                           command=self._builtin_command('java_jar', suffix=args),
+                           command=self._builtin_command('java_jar', args),
                            description='JAVA JAR ${out}')
         self.generate_java_test_rules()
         self.generate_rule(name='fatjar',
-                           command=self._builtin_command('java_fatjar'),
+                           command=self._builtin_command('java_fatjar', '--output=${out} ${in}'),
                            description='FAT JAR ${out}')
         self.generate_java_binary_rules()
         self.generate_scalac_rule(java_config)
@@ -487,12 +486,12 @@ class _NinjaFileHeaderGenerator(object):
     def generate_python_rules(self):
         args = '--basedir=${basedir} --pylib=${out} ${in}'
         self.generate_rule(name='pythonlibrary',
-                           command=self._builtin_command('python_library', suffix=args),
+                           command=self._builtin_command('python_library', args),
                            description='PYTHON LIBRARY ${out}')
         args = ('--basedir=${basedir} --exclusions=${exclusions} --mainentry=${mainentry} '
                 '--pybin=${out} ${in}')
         self.generate_rule(name='pythonbinary',
-                           command=self._builtin_command('python_binary', suffix=args),
+                           command=self._builtin_command('python_binary', args),
                            description='PYTHON BINARY ${out}')
 
     def generate_go_rules(self):
@@ -539,7 +538,7 @@ class _NinjaFileHeaderGenerator(object):
                            description='SHELL TEST ${out}')
         args = '${out} ${in} ${testdata}'
         self.generate_rule(name='shelltestdata',
-                           command=self._builtin_command('shell_testdata', suffix=args),
+                           command=self._builtin_command('shell_testdata', args),
                            description='SHELL TEST DATA ${out}')
 
     def generate_lex_yacc_rules(self):
@@ -553,7 +552,7 @@ class _NinjaFileHeaderGenerator(object):
     def generate_package_rules(self):
         args = '${out} ${in} ${entries}'
         self.generate_rule(name='package',
-                           command=self._builtin_command('package', suffix=args),
+                           command=self._builtin_command('package', args),
                            description='PACKAGE ${out}')
         self.generate_rule(name='package_tar',
                            command='tar -c -f ${out} ${tarflags} -C ${packageroot} ${entries}',
@@ -570,7 +569,7 @@ class _NinjaFileHeaderGenerator(object):
         revision, url = blade_util.load_scm(self.build_dir)
         args = '--scm=${out} --revision=${revision} --url=${url} --profile=${profile} --compiler="${compiler}"'
         self.generate_rule(name='scm',
-                           command=self._builtin_command('scm', suffix=args),
+                           command=self._builtin_command('scm', args),
                            description='SCM ${out}')
         scm = os.path.join(self.build_dir, 'scm.cc')
         self._add_rule(textwrap.dedent('''\
@@ -586,13 +585,11 @@ class _NinjaFileHeaderGenerator(object):
                   cxx_warnings =
                 ''') % (scm + '.o', scm))
 
-    def _builtin_command(self, builder, prefix='', suffix=''):
+    def _builtin_command(self, builder, args=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
-        if prefix:
-            cmd.append(prefix)
         cmd.append('%s -m blade.builtin_tools %s' % (sys.executable, builder))
-        if suffix:
-            cmd.append(suffix)
+        if args:
+            cmd.append(args)
         else:
             cmd.append('${out} ${in}')
         return ' '.join(cmd)

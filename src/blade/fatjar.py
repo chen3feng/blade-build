@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import os
 import sys
 import time
+import traceback
 import zipfile
 
 from blade import blade_util
@@ -62,9 +63,12 @@ def generate_fat_jar_metadata(jar, dependencies, conflicts):
     jar.writestr('%s/MERGE-INFO' % metadata_path, '\n'.join(content))
 
 
-def generate_fat_jar(target, jars):
+def generate_fat_jar(output, args):
     """Generate a fat jar containing the contents of all the jar dependencies."""
-    target_dir = os.path.dirname(target)
+    target = output
+    jars = args
+
+    target_dir = os.path.dirname(output)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
@@ -116,5 +120,14 @@ def generate_fat_jar(target, jars):
     target_fat_jar.close()
 
 
+def main():
+    try:
+        options, args = blade_util.parse_command_line(sys.argv[1:])
+        generate_fat_jar(args=args, **options)
+    except Exception as e:  # pylint: disable=broad-except
+        console.error('fatjar error: %s %s' % (str(e), traceback.format_exc()))
+        sys.exit(1)
+
+
 if __name__ == '__main__':
-    generate_fat_jar(sys.argv[1], sys.argv[2:])
+    main()

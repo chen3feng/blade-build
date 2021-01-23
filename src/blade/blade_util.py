@@ -260,3 +260,28 @@ def source_location(filename):
         frame = frame.f_back
     # NOTE: The ':0:'(column) is required for VSCode problem matcher
     return '%s:%s:0:' % (filename, lineno)
+
+
+def parse_command_line(argv):
+    """Simple command line parsing.
+
+    options can only be passed as the form of `--name=value`, any other arguments are treated as
+    normal arguments.
+
+    Returns:
+        tuple(options: dict, args: list)
+    """
+    options = {}
+    args = []
+    for arg in argv:
+        if arg.startswith('--'):
+            pos = arg.find('=')
+            if pos < 0:
+                args.append(arg)
+                continue
+            name = arg[2:pos]
+            value = arg[pos+1:]
+            options[name] = value
+        else:
+            args.append(arg)
+    return options, args
