@@ -7,21 +7,8 @@
 """
 This module defines various build functions for building
 targets from sources and custom parameters.
-The build function is defined as follows:
-
-    def build_function_name(kwargs..., args):
-        pass
-
-    Return None on success, otherwise a non-zero value to
-    indicate failure.
-
-    Parameters:
-        * kwargs...: name=value pairs as parameters in command line
-        * args: any other non-kw args
-    When call this from the command line, all arguments which match `--name=value`
-    pattern will be converted into a kwarg, any other arguments merged into the
-    `args` argument.
 """
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -42,6 +29,47 @@ import zipfile
 from blade import blade_util
 from blade import console
 from blade import fatjar
+
+
+_outputs = []
+
+# These following helper functions is designed to centralize error handling
+
+def _declare_outputs(*outputs):
+    """Declare output files, which can be verified after ran and cleanup on error."""
+    _outputs[:] = outputs
+
+
+def _verify_outputs():
+    """Verify whether the declared output files were correctly generated."""
+    missing = [o for o in _outputs if not os.path.exists(o)]
+    if missing:
+        raise FileNotFoundError('"%s" is not generated' % missing)
+
+
+def _cleanup_outputs():
+    """Cleanup declared output files on error."""
+    for output in _outputs:
+        try:
+            os.remove(output)
+        except OSError:
+            pass
+
+
+# The build functions are defined as follows form:
+#
+#    def build_function_name(kwargs..., args):
+#        pass
+#
+#    Return None on success, otherwise raise an exception to indicate failure.
+#
+#    Args:
+#        * kwargs...: name=value pairs as parameters in command line
+#        * args: any other non-kw args
+#
+#    When call this from the command line, all arguments which match `--name=value`
+#    pattern will be converted into a kwarg, any other arguments merged into the
+#    `args` argument. So any `name` must be a valid python identifier.
 
 
 def generate_scm(scm, revision, url, profile, compiler, args):
@@ -89,15 +117,6 @@ def generate_zip_package(path, sources, destinations):
     zip.close()
 
 
-_TAR_WRITE_MODES = {
-    'tar': 'w',
-    'tar.gz': 'w:gz',
-    'tgz': 'w:gz',
-    'tar.bz2': 'w:bz2',
-    'tbz': 'w:bz2',
-}
-
-
 def generate_tar_package(path, sources, destinations, mode):
     tar = tarfile.open(path, mode, dereference=True)
     manifest = archive_package_sources(tar.add, sources, destinations)
@@ -107,6 +126,15 @@ def generate_tar_package(path, sources, destinations, mode):
     m.close()
     tar.add(manifest_path, _PACKAGE_MANIFEST)
     tar.close()
+
+
+_TAR_WRITE_MODES = {
+    'tar': 'w',
+    'tar.gz': 'w:gz',
+    'tgz': 'w:gz',
+    'tar.bz2': 'w:bz2',
+    'tbz': 'w:bz2',
+}
 
 
 def _tar_write_mode(path):
@@ -541,12 +569,12 @@ def main():
     name = sys.argv[1]
     try:
         options, args = blade_util.parse_command_line(sys.argv[2:])
-        ret = _BUILTIN_TOOLS[name](args=args, **options)
+        _BUILTIN_TOOLS[name](args=args, **options)
+        _verify_outputs()
     except Exception as e:  # pylint: disable=broad-except
-        ret = 1
         console.error('Blade build tool %s error: %s %s' % (name, str(e), traceback.format_exc()))
-    if ret:
-        sys.exit(ret)
+        _cleanup_outputs()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
