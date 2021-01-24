@@ -63,7 +63,7 @@ def generate_fat_jar_metadata(jar, dependencies, conflicts):
     jar.writestr('%s/MERGE-INFO' % metadata_path, '\n'.join(content))
 
 
-def generate_fat_jar(output, args):
+def generate_fat_jar(output, conflict_severity, args):
     """Generate a fat jar containing the contents of all the jar dependencies."""
     target = output
     jars = args
@@ -105,7 +105,10 @@ def generate_fat_jar(output, args):
         jar.close()
 
     if conflicts:
-        console.warning('%s: Found %d conflicts when packaging.' % (target, len(conflicts)))
+        getattr(console, conflict_severity)('%s: Found %d conflicts when packaging.' % (target, len(conflicts)))
+        if conflict_severity == 'error':
+            raise RuntimeError('fat jar packing conflict')
+
     generate_fat_jar_metadata(target_fat_jar, jars, conflicts)
 
     contents = [

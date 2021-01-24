@@ -142,6 +142,7 @@ Java related configurations
 | version                        | string | empty                     | "6" "1.6", ... | Provide compatibility with specified release            |
 | source_version                 | string | take `version`            |                | Provide source compatibility with specified release     |
 | target_version                 | string | take `version`            |                | Generate class files for specific VM version            |
+| fat_jar_conflict_severity      | string | warning                   |                | Severity when fat jar conflict occurs                   |
 | maven                          | string | 'mvn'                     |                | The command to run `mvn`                                |
 | maven_central                  | string |                           |                | Maven repository URL                                    |
 | maven_jar_allowed_dirs         | list   | empty                     |                | Directories and subdirectors which `maven_jar` is allowed |
@@ -153,8 +154,9 @@ Java related configurations
 | source_encoding                | string | None                      |                | Specify character encoding used by source files         |
 | java_home                      | string | Take from '$JAVA_HOME'    |                | Set JAVA_HOME                                           |
 
-About maven:
+Description:
 
+* Valid values of `fat_jar_conflict_severity` are: "debug", "info", "warning", "error"
 * Valid values of `maven_snapshot_updata_policy` are: "always", "daily"(default), "interval",  "never"
 * The unit of `maven_snapshot_update_interval` is minutes。See [Maven Documents](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html) for details.
 * Setting `maven_download_concurrency` to above `1` can speedup maven artifacts downloading, but [maven local repository is not concurrent-safe defaultly](https://issues.apache.org/jira/browse/MNG-2802),

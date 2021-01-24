@@ -144,6 +144,9 @@ class BladeConfig(object):
                 'version': '1.8',
                 'source_version': '',
                 'target_version': '',
+                'fat_jar_conflict_severity': 'warning',
+                'fat_jar_conflict_severity__doc__':
+                    'The severity of java fat jar packing conflict, can be "debug", "warning", "error"',
                 'maven': 'mvn',
                 'maven_central': '',
                 'maven_snapshot_update_policy': 'daily',

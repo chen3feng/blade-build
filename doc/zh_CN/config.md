@@ -149,6 +149,7 @@ Java构建相关的配置
 | version                           | string | 空                          | "6" "1.6" 等 | JDK 兼容性版本号                     |
 | source\_version                   | string | 取 version 的值             |              | 提供与指定发行版的源代码版本兼容性   |
 | target\_version                   | string | 取 version 的值             |              | 生成特定 VM 版本的类文件             |
+| fat_jar_conflict_severity         | string | warning                     |              | 打包 fat jar 时发生冲突的严重性      |
 | maven                             | string | 'mvn'                       |              | 调用 `mvn` 命令需要的路径            |
 | maven\_central                    | string | 空                          |              | maven 仓库的URL                      |
 | maven_jar_allowed_dirs            | list   | 空                          |              | 允许调用 `maven_jar` 的目录列表（及其子目录）   |
@@ -160,8 +161,9 @@ Java构建相关的配置
 | source\_encoding                  | string | None                        |              | 设置源代码的默认编码                 |
 | java\_home                        | string | 读取 '$JAVA\_HOME' 环境变量 |              | 设置JAVA_HOME                        |
 
-关于 Maven：
+描述：
 
+* fat_jar_conflict_severity 允许的值："debug", "info", "warning", "error", 设置为 "error" 会导致构建错误
 * maven\_snapshot\_updata\_policy 允许的值："always", "daily"(默认), "interval",  "never"
 * maven\_snapshot\_update\_interval 的单位为分钟。语义遵守[Maven文档](https://maven.apache.org/ref/3.6.3/maven-settings/settings.html)
 * 设置 `maven_download_concurrency` 大于 1 可以提高下载速度，但是由于[maven 本地仓库缓存默认不是并发安全的](https://issues.apache.org/jira/browse/MNG-2802),
