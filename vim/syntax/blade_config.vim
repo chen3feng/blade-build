@@ -57,6 +57,7 @@ syn keyword bladeArg link_on_tmp
 
 syn keyword bladeTarget java_config
 syn keyword bladeArg java_home
+syn keyword bladeArg fat_jar_conflict_severity
 syn keyword bladeArg maven
 syn keyword bladeArg maven_central
 syn keyword bladeArg maven_download_concurrency

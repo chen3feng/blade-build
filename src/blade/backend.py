@@ -399,6 +399,13 @@ class _NinjaFileHeaderGenerator(object):
                            command=self._builtin_command('java_resource'),
                            description='JAVA RESOURCE ${in}')
 
+    def generate_java_jar_rules(self, java_config):
+        jar = self.get_java_command(java_config, 'jar')
+        args = '%s ${out} ${in}' % jar
+        self.generate_rule(name='javajar',
+                           command=self._builtin_command('java_jar', args),
+                           description='JAVA JAR ${out}')
+
     def generate_java_test_rules(self):
         jacocoagent = self.get_jacocoagent()
         args = ('--script=${out} --main_class=${mainclass} --jacocoagent=%s '
@@ -406,6 +413,13 @@ class _NinjaFileHeaderGenerator(object):
         self.generate_rule(name='javatest',
                            command=self._builtin_command('java_test', args),
                            description='JAVA TEST ${out}')
+
+    def generate_fatjar_rules(self, java_config):
+        conflict_severity = java_config.get('fat_jar_conflict_severity', 'warning')
+        args = '--output=${out} --conflict_severity=%s ${in}' % conflict_severity
+        self.generate_rule(name='fatjar',
+                           command=self._builtin_command('java_fatjar', args),
+                           description='FAT JAR ${out}')
 
     def generate_java_binary_rules(self):
         bootjar = config.get_item('java_binary_config', 'one_jar_boot_jar')
@@ -457,13 +471,9 @@ class _NinjaFileHeaderGenerator(object):
         self.generate_java_resource_rules()
         jar = self.get_java_command(java_config, 'jar')
         args = '%s ${out} ${in}' % jar
-        self.generate_rule(name='javajar',
-                           command=self._builtin_command('java_jar', args),
-                           description='JAVA JAR ${out}')
+        self.generate_java_jar_rules(java_config)
         self.generate_java_test_rules()
-        self.generate_rule(name='fatjar',
-                           command=self._builtin_command('java_fatjar', '--output=${out} ${in}'),
-                           description='FAT JAR ${out}')
+        self.generate_fatjar_rules(java_config)
         self.generate_java_binary_rules()
         self.generate_scalac_rule(java_config)
         self.generate_scalatest_rule(java_config)
