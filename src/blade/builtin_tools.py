@@ -74,6 +74,9 @@ def _cleanup_outputs():
 
 def generate_scm(scm, revision, url, profile, compiler, args):
     """Generate `scm.c` file"""
+
+    _declare_outputs(scm)
+
     version = '%s@%s' % (url, revision)
     with open(scm, 'w') as f:
         f.write(textwrap.dedent(r'''\
@@ -148,6 +151,7 @@ def _tar_write_mode(path):
 def generate_package(args):
     path = args[0]
     manifest = args[1:]
+    _declare_outputs(path)
     assert len(manifest) % 2 == 0
     middle = len(manifest) // 2
     sources = manifest[:middle]
@@ -161,6 +165,7 @@ def generate_package(args):
 
 def generate_securecc_object(args):
     obj, phony_obj = args
+    _declare_outputs(obj)
     if not os.path.exists(obj):
         shutil.copy(phony_obj, obj)
     else:
@@ -229,11 +234,13 @@ def generate_resource_index(args):
     name, path = args[0], args[1]
     targets = args[2], args[3]
     sources = args[4:]
+    _declare_outputs(*targets)
     return _generate_resource_index(targets, sources, name, path)
 
 
 def generate_java_jar(args):
     jar, target = args[0], args[1]
+    _declare_outputs(target)
     resources_dir = target.replace('.jar', '.resources')
     arg = args[2]
     if arg.endswith('__classes__.jar'):
@@ -267,6 +274,7 @@ def generate_java_resource(args):
     middle = len(args) // 2
     targets = args[:middle]
     sources = args[middle:]
+    _declare_outputs(*targets)
     for i in range(middle):
         shutil.copy(sources[i], targets[i])
 
@@ -301,6 +309,7 @@ def _jacoco_test_coverage_flag(jacocoagent, packages_under_test):
 
 
 def generate_java_test(script, main_class, jacocoagent, packages_under_test, args):
+    _declare_outputs(script)
     jars = args
     test_jar = jars[0]
     test_classes = ' '.join(_get_all_test_class_names_in_jar(test_jar))
@@ -320,12 +329,14 @@ def generate_java_test(script, main_class, jacocoagent, packages_under_test, arg
 
 
 def generate_fat_jar(output, **kwargs):
+    _declare_outputs(output)
     console.set_log_file('%s.log' % output.replace('.fat.jar', '__fatjar__'))
     console.enable_color(True)
     fatjar.generate_fat_jar(output=output, **kwargs)
 
 
 def generate_one_jar(onejar, main_class, bootjar, args):
+    _declare_outputs(onejar)
     # Assume the first jar is the main jar, others jars are dependencies.
     main_jar = args[0]
     jars = args[1:]
@@ -374,6 +385,7 @@ def generate_one_jar(onejar, main_class, bootjar, args):
 
 def generate_java_binary(args):
     script, onejar = args
+    _declare_outputs(script)
     basename = os.path.basename(onejar)
     fullpath = os.path.abspath(onejar)
     with open(script, 'w') as f:
@@ -392,6 +404,7 @@ def generate_java_binary(args):
 
 
 def generate_scala_test(script, java, scala, jacocoagent, packages_under_test, args):
+    _declare_outputs(script)
     jars = args
     test_jar = jars[0]
     test_class_names = _get_all_test_class_names_in_jar(test_jar)
@@ -419,6 +432,7 @@ def generate_scala_test(script, java, scala, jacocoagent, packages_under_test, a
 def generate_shell_test(args):
     wrapper = args[0]
     scripts = args[1:]
+    _declare_outputs(wrapper)
     with open(wrapper, 'w') as f:
         f.write(textwrap.dedent("""\
                 #!/bin/sh
@@ -435,6 +449,7 @@ def generate_shell_test(args):
 def generate_shell_testdata(args):
     path = args[0]
     testdata = args[1:]
+    _declare_outputs(path)
     assert len(testdata) % 2 == 0
     middle = len(testdata) // 2
     sources = testdata[:middle]
@@ -445,6 +460,7 @@ def generate_shell_testdata(args):
 
 
 def generate_python_library(pylib, basedir, args):
+    _declare_outputs(pylib)
     sources = []
     for py in args:
         digest = blade_util.md5sum_file(py)
@@ -514,6 +530,7 @@ def _pybin_add_whl(pybin, libname, exclusions, dirs, dirs_with_init_py):
 
 
 def generate_python_binary(pybin, basedir, exclusions, mainentry, args):
+    _declare_outputs(pybin)
     pybin_zip = zipfile.ZipFile(pybin, 'w', zipfile.ZIP_DEFLATED)
     exclusions = exclusions.split(',')
     dirs, dirs_with_init_py = set(), set()
