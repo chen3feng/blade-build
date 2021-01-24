@@ -7,8 +7,8 @@
 # pylint: disable=too-many-lines
 
 """
- This is the cc_target module which is the super class
- of all of the cc targets, like cc_library, cc_binary.
+This is the cc_target module which is the super class
+of all of the cc targets, like cc_library, cc_binary.
 """
 
 from __future__ import absolute_import

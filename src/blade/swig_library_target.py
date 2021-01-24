@@ -51,7 +51,7 @@ class SwigLibrary(CcTarget):
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
-        for dep in self.expanded_deps:
+        for dep in self.expanded_deps:  # pylint: disable=not-an-iterable
             d = build_targets[dep]
             if d.type == 'proto_library':
                 d.attr['generate_php'] = True

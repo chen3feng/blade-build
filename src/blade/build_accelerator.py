@@ -5,7 +5,7 @@
 # Date:   August 02, 2012
 
 """
- build accelerator (ccache, distcc, etc.) checking and managing module.
+Build accelerator (ccache, distcc, etc.) checking and managing module.
 """
 
 from __future__ import absolute_import

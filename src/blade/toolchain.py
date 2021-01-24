@@ -6,7 +6,7 @@
 
 
 """
- This module deals with the build toolchains.
+This module deals with the build toolchains.
 """
 
 from __future__ import absolute_import

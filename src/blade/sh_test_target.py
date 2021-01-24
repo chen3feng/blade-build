@@ -21,7 +21,8 @@ from blade.target import Target, LOCATION_RE
 
 
 class ShellTest(Target):
-    """ShellTest is derived from Target and used to execute a shell script.
+    """
+    ShellTest is derived from Target and used to execute a shell script.
 
     Normally by use of testdata you could establish test environment
     with all the necessary data and files placed in the runfiles directory
@@ -30,7 +31,6 @@ class ShellTest(Target):
     In addition to the regular files, the user is able to reference
     the output of another target in testdata using location references
     syntax.
-
     """
 
     def __init__(self,

@@ -14,10 +14,9 @@ class Native(object):
     A built-in object to support native rules and other helper functions.
     make native rules such as `cc_library` can always be accessed in the form of `native.cc_library`.
     """
-    pass
 
 
-__build_rules = { 'native' : Native() }
+__build_rules = {'native' : Native()}
 
 
 def register_variable(name, value):
