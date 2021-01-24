@@ -31,9 +31,11 @@ from blade import console
 from blade import fatjar
 
 
+# These following helper functions is designed to centralize error handling
+
+
 _outputs = []
 
-# These following helper functions is designed to centralize error handling
 
 def _declare_outputs(*outputs):
     """Declare output files, which can be verified after ran and cleanup on error."""
