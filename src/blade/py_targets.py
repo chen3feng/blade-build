@@ -56,7 +56,7 @@ class PythonTarget(Target):
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
-        for dep in self.expanded_deps:
+        for dep in self.expanded_deps:  # pylint: disable=not-an-iterable
             d = build_targets[dep]
             d.attr['generate_python'] = True
 
@@ -216,7 +216,7 @@ class PythonBinary(PythonLibrary):
         pylib = self._pylib()
         inputs = [pylib] if pylib else []
         targets = self.blade.get_build_targets()
-        for key in self.expanded_deps:
+        for key in self.expanded_deps:  # pylint: disable=not-an-iterable
             dep = targets[key]
             pylib = dep._get_target_file('pylib')
             if pylib:

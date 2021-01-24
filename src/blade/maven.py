@@ -5,10 +5,8 @@
 # Date:   August 28, 2015
 
 """
-
 This is the maven module which manages jar files downloaded
 from maven repository
-
 """
 
 from __future__ import absolute_import
@@ -23,7 +21,7 @@ import time
 try:
     import queue
 except ImportError:
-    import Queue as queue  # python2
+    import Queue as queue  # pyright: reportMissingImports=false, for python2
 
 from blade import config
 from blade import console

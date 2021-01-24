@@ -9,8 +9,7 @@
 
 
 """
- This is the util module which provides command functions.
-
+This is the util module which provides some helper functions.
 """
 
 from __future__ import absolute_import, print_function

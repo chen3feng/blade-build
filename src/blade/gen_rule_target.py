@@ -130,7 +130,7 @@ class GenRuleTarget(Target):
     def implicit_dependencies(self):
         targets = self.blade.get_build_targets()
         implicit_deps = []
-        for dep in self.expanded_deps:
+        for dep in self.expanded_deps:  # pylint: disable=not-an-iterable
             implicit_deps += targets[dep]._get_target_files()
         return implicit_deps
 

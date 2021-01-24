@@ -6,9 +6,8 @@
 
 
 """
- This is the CmdOptions module which parses the users'
- input and provides hint for users.
-
+This is the CmdOptions module which parses the users'
+input and provides hint for users.
 """
 
 from __future__ import absolute_import

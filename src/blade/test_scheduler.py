@@ -6,9 +6,7 @@
 
 
 """
- This is a thread module for blade which is used to spawn
- threads to finish some kind of work.
-
+This module use threads to run tests concurrently.
 """
 
 from __future__ import absolute_import

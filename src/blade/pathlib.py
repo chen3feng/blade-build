@@ -1,5 +1,6 @@
 # Copyright (c) 2012-2014 Antoine Pitrou and contributors
 # pylint: skip-file
+# type: ignore
 
 import fnmatch
 import functools

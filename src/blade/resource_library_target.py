@@ -14,6 +14,7 @@ from blade import build_rules
 from blade import cc_targets
 from blade.blade_util import regular_variable_name
 
+
 class ResourceLibrary(cc_targets.CcTarget):
     """This class is used to generate C/C++ resource library rules."""
 
