@@ -20,7 +20,7 @@ class TestProtoLibrary(blade_test.TargetTest):
 
     def testGenerateRules(self):
         """Test that rules are generated correctly."""
-        self.assertTrue(self.dryRun('--generate-java'))
+        self.assertTrue(self.dryRun('build', '--generate-java'))
 
         com_uses_line = self.findCommand(['use_protos.cpp.o', '-c'])
         com_proto_cpp_option = self.findCommand(['protobuf/bin/protoc', 'cpp_out', 'rpc_option.proto'])

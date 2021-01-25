@@ -43,5 +43,10 @@ class TestCcLibrary(blade_test.TargetTest):
         self.assertIn('libuppercase.so', string_depends_libs)
 
 
+    def testGenerateRules(self):
+        """Test that rules are generated correctly."""
+        self.assertTrue(self.runBlade())
+
+
 if __name__ == '__main__':
     blade_test.run(TestCcLibrary)
