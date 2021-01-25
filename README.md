@@ -95,11 +95,10 @@ blade test -m32 -pdebug common...
 
 ## Credits
 
-* Blade is inspired by Google's public information about their build system. Here is a reference article from Google's official blog.
+* Blade is inspired by Google's public information about their build system. Here is a reference article from Google's official blog:
+  [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html).
 
-[build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
-
-Later in 2015, they opensourced it with partial written as `bazel` build system.
+  Later in 2015, they opensourced it with partial written as `bazel` build system.
 
 * Blade generates [Ninja](https://ninja-build.org/) script internally, so of cause it depends on ninja.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
