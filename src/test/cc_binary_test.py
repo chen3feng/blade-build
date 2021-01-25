@@ -18,11 +18,11 @@ class TestCcBinary(blade_test.TargetTest):
     """Test cc_binary."""
     def setUp(self):
         """setup method."""
-        self.doSetUp('cc', command='run', target='string_main_prog')
+        self.doSetUp('cc', target='string_main_prog')
 
     def testGenerateRules(self):
         """Test that rules are generated correctly."""
-        self.assertTrue(self.runBlade())
+        self.assertTrue(self.runBlade('run'))
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])

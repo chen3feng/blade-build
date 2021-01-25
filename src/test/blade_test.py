@@ -23,10 +23,8 @@ import blade.config
 class TargetTest(unittest.TestCase):
     """base class Test."""
 
-    def doSetUp(self, path, target='...', full_targets=None,
-                command='build', generate_php=True, **kwargs):
+    def doSetUp(self, path, target='...', full_targets=None, generate_php=True, **kwargs):
         """setup method."""
-        self.command = command
         if full_targets:
             self.targets = full_targets
         else:
@@ -38,7 +36,10 @@ class TargetTest(unittest.TestCase):
         self.working_dir = '.'
         self.current_building_path = 'build64_release'
         self.current_source_dir = '.'
+        self.build_output = []
         self.build_output_file = 'build_output.txt'
+        self.build_error = []
+        self.build_error_file = 'build_error.txt'
 
     def tearDown(self):
         """tear down method."""
@@ -50,25 +51,27 @@ class TargetTest(unittest.TestCase):
 
         os.chdir(self.cur_dir)
 
-    def runBlade(self, extra_args='', print_error=True):
+    def runBlade(self, command='build', extra_args='', print_error=True):
         # We can use pipe to capture stdout, but keep the output file make it
         # easy debugging.
         p = subprocess.Popen(
-            '../../../blade %s %s --generate-dynamic --verbose %s > %s' % (
-                self.command, self.targets, extra_args, self.build_output_file),
+            '../../../blade %s %s --generate-dynamic --verbose %s > %s 2> %s' % (
+                command, self.targets, extra_args, self.build_output_file, self.build_error_file),
             shell=True)
         try:
             p.wait()
             self.build_output = io.open(self.build_output_file, encoding='utf-8').readlines()
-            if p.returncode != 0:
-                sys.stderr.write('Exit with: %d\nstdout:\n%s\n' % (p.returncode, ''.join(self.build_output)))
+            self.build_error = io.open(self.build_error_file, encoding='utf-8').readlines()
+            if p.returncode != 0 and print_error:
+                sys.stderr.write('Exit with: %d\nstdout:\n%s\nstderr:\n%s\n' % (
+                    p.returncode, ''.join(self.build_output), ''.join(self.build_error)))
             return p.returncode == 0
         except:
             sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
         return False
 
-    def dryRun(self, extra_args=''):
-        return self.runBlade('--dry-run ' + extra_args)
+    def dryRun(self, command='build', extra_args=''):
+        return self.runBlade(command, '--dry-run ' + extra_args)
 
     def printOutput(self):
         """Helper method for debugging"""
