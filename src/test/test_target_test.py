@@ -19,12 +19,12 @@ class TestTestRunner(blade_test.TargetTest):
     """Test cc_test."""
     def setUp(self):
         """setup method."""
-        self.doSetUp('test_test_runner', 'string_test_main',
+        self.doSetUp('test_test_runner', 'string_test_main', command='test',
                      full_test=False, args='', test_jobs=1, show_details=True)
 
     def testTestRunnerCorrectly(self):
         """Test query targets dependency relationship correctly."""
-        self.assertTrue(self.dryRun())
+        self.assertTrue(self.runBlade())
 
         com_lower_line = self.findCommand(['plowercase.cpp.o', '-c'])
         com_upper_line = self.findCommand(['puppercase.cpp.o', '-c'])
