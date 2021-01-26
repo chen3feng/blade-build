@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Tencent Inc.
 # All rights reserved.
 #
-# Author: Michaelpeng <michaelpeng@tencent.com>
+# Author: CHEN Feng <chen3feng@gmail.com>
 # Date:   Jan 27, 2021
 
 import blade_test
