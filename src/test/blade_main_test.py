@@ -31,6 +31,7 @@ from query_target_test import TestQuery
 from resource_library_test import TestResourceLibrary
 from swig_library_test import TestSwigLibrary
 from target_dependency_test import TestDepsAnalyzing
+from target_pattern_test import TargetPatternTest
 
 from html_test_runner import HTMLTestRunner
 from test_target_test import TestTestRunner
@@ -40,6 +41,7 @@ def _main():
     """main method."""
     suite_test = unittest.TestSuite()
     suite_test.addTests([
+        unittest.defaultTestLoader.loadTestsFromTestCase(TargetPatternTest),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcLibrary),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcBinary),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcPlugin),
@@ -55,7 +57,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestDepsAnalyzing),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestQuery),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestTestRunner),
-        unittest.defaultTestLoader.loadTestsFromTestCase(TestPrebuildCcLibrary)
+        unittest.defaultTestLoader.loadTestsFromTestCase(TestPrebuildCcLibrary),
         ])
 
     generate_html = len(sys.argv) > 1 and sys.argv[1].startswith('html')
