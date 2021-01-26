@@ -350,11 +350,11 @@ class Blade(object):
         if not self.__options.query_path_to:
             return set()
         result = set()
-        for id in target_pattern.normalize(
+        for id in target_pattern.normalize_list(
                 self.__options.query_path_to.split(','),
                 self.__working_dir):
             if id not in self.__target_database:
-                console.fatal('Invalid argument: "--path_to=%s", target "%s" does not exist' % (
+                console.fatal('Invalid argument: "--path-to=%s", target "%s" does not exist' % (
                         self.__options.query_path_to, id))
                 result.add(id)
         return result
