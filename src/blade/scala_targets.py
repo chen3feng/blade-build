@@ -5,7 +5,7 @@
 # Date:   November 25, 2015
 
 """
-Implement scala_library, scala_fat_library and scala_test
+Implement scala_library, scala_fat_library and scala_test.
 """
 
 from __future__ import absolute_import

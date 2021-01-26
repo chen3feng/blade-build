@@ -8,7 +8,6 @@
 """
 This module defines cu_library, cu_binary and cu_test rules
 for cuda development.
-
 """
 
 from __future__ import absolute_import

@@ -9,8 +9,8 @@
 
 
 """
- This is the build rules genearator module which invokes all the builder
- objects to generate build rules.
+This is the build rules genearator module which invokes all the builder
+objects to generate build rules.
 """
 
 from __future__ import absolute_import

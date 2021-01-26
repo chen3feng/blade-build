@@ -6,9 +6,8 @@
 
 
 """
- This is the blade module which mainly holds the global database and
- do the coordination work between classes.
-
+This is the blade module which mainly holds the global database and
+do the coordination work between classes.
 """
 
 from __future__ import absolute_import
@@ -24,7 +23,7 @@ import time
 from blade import config
 from blade import console
 from blade import maven
-from blade import target
+from blade import target_pattern
 from blade.binary_runner import BinaryRunner
 from blade.toolchain import ToolChain
 from blade.blade_util import cpu_count, md5sum_file
@@ -136,7 +135,7 @@ class Blade(object):
         all_command_targets = []
         for tkey in self.__build_targets:
             for pattern in self.__command_targets:
-                if target.match(tkey, pattern):
+                if target_pattern.match(tkey, pattern):
                     all_command_targets.append(tkey)
         return all_command_targets
 
@@ -230,8 +229,8 @@ class Blade(object):
         """Run tests."""
         exclude_tests = []
         if self.__options.exclude_tests:
-            exclude_tests = target.normalize(self.__options.exclude_tests.split(','),
-                                             self.__working_dir)
+            exclude_tests = target_pattern.normalize_list(self.__options.exclude_tests.split(','),
+                                                          self.__working_dir)
         test_runner = TestRunner(
                 self.__options,
                 self.__target_database,
@@ -351,7 +350,9 @@ class Blade(object):
         if not self.__options.query_path_to:
             return set()
         result = set()
-        for id in target.normalize(self.__options.query_path_to.split(','), self.__working_dir):
+        for id in target_pattern.normalize(
+                self.__options.query_path_to.split(','),
+                self.__working_dir):
             if id not in self.__target_database:
                 console.fatal('Invalid argument: "--path_to=%s", target "%s" does not exist' % (
                         self.__options.query_path_to, id))

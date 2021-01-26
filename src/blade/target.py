@@ -6,7 +6,7 @@
 
 
 """
- This is the target module which is the super class of all of the targets.
+This is the target module which is the super class of all of the targets.
 """
 
 from __future__ import absolute_import
@@ -16,58 +16,12 @@ import re
 
 from blade import config
 from blade import console
+from blade import target_pattern
 from blade.blade_util import var_to_list, iteritems, source_location, md5sum
 
 
 # Location reference macro regex
 LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
-
-
-def _normalize_one(target, working_dir):
-    """Normalize target from command line form into canonical form.
-
-    Target canonical form: dir:name
-        dir: relative to blade_root_dir, use '.' for blade_root_dir
-        name: name  if target is dir:name
-              '*'   if target is dir
-              '...' if target is dir/...
-    """
-    if target.startswith('//'):
-        target = target[2:]
-    elif target.startswith('/'):
-        console.error('Invalid target "%s" starting from root path.' % target)
-    else:
-        if working_dir != '.':
-            target = os.path.join(working_dir, target)
-
-    if ':' in target:
-        path, name = target.rsplit(':', 1)
-    else:
-        if target.endswith('...'):
-            path = target[:-3]
-            name = '...'
-        else:
-            path = target
-            name = '*'
-    path = os.path.normpath(path)
-    return '%s:%s' % (path, name)
-
-
-def normalize(targets, working_dir):
-    """Normalize target list from command line form into canonical form."""
-    return [_normalize_one(target, working_dir) for target in targets]
-
-
-def match(target_id, pattern):
-    """Check whether a atrget id match a target pattern"""
-    t_path, t_name = target_id.split(':')
-    p_path, p_name = pattern.split(':')
-
-    if p_name == '...':
-        return t_path == p_path or t_path.startswith(p_path) and t_path[len(p_path)] == os.sep
-    if p_name == '*':
-        return t_path == p_path
-    return target_id == pattern
 
 
 class Target(object):
@@ -110,7 +64,7 @@ class Target(object):
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
-        self.visibility = 'PUBLIC'
+        self.visibility = set(['PUBLIC'])
 
         if not name:
             self.fatal('Missing "name"')
@@ -439,26 +393,51 @@ class Target(object):
         Visibility determines whether another target is able to depend
         on this target.
 
-        Visibility specify a list of targets in the same form as deps,
-        i.e. //path/to:target. The default value of visibility is PUBLIC,
+        Visibility specify a list of target patterns in the same form as deps,
+        i.e. //path:target, '//path/:...'. The default visibility is "PUBLIC",
         which means this target is visible globally within the code base.
-        Note that targets inside the same BUILD file are always visible
-        to each other.
-
+        Note that targets inside the same BUILD file are always visible to each
+        other.
         """
         if visibility is None:
             return
 
         visibility = var_to_list(visibility)
-        if visibility == ['PUBLIC']:
+        if 'PUBLIC' in visibility:
             return
 
-        self.visibility = []
+        self.visibility.clear()
         for v in visibility:
-            self._check_format(v)
-            key = self._unify_dep(v)
-            if key not in self.visibility:
-                self.visibility.append(key)
+            if not target_pattern.is_valid_in_build(v):
+                self.error('Invalid build target pattern "%s" for visibility' % v)
+                continue
+            key = target_pattern.normalize(v, self.path)
+            self.visibility.add(key)
+
+    def _match_visibility(self, dep):
+        """Check whether the target_id matches dep's visibility."""
+        visibility = getattr(dep, 'visibility')
+        if 'PUBLIC' in visibility:
+            return True
+        if self.key in visibility:  # Strict match
+            return True
+        for pattern in visibility:
+            if target_pattern.match(self.key, pattern):
+                return True
+        return False
+
+    def check_visibility(self):
+        """Check whether this target is able to depend on its deps."""
+        # Targets are visible inside the same BUILD file by default
+        for dep_id in self.deps:
+            dep_dir = dep_id.rsplit(':')[0]
+            if self.path == dep_dir:
+                continue
+
+            dep = self.target_database[dep_id]
+            if not self._match_visibility(dep):
+                self.error('Not allowed to depend on "//%s" because of its visibility,' % dep_id)
+                dep.info('which is declared here')
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon deprecated target.

@@ -6,7 +6,7 @@
 
 """
 This is the maven module which manages jar files downloaded
-from maven repository
+from maven repository.
 """
 
 from __future__ import absolute_import

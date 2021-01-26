@@ -9,10 +9,9 @@
 
 
 """
- This is the dependencies expander module which accepts the targets loaded
- from BUILD files and will find all of the targets needed by the target and
- add extra options according to different target types.
-
+This is the dependencies expander module which accepts the targets loaded
+from BUILD files and will find all of the targets needed by the target and
+add extra options according to different target types.
 """
 from __future__ import absolute_import
 
@@ -59,25 +58,6 @@ def _expand_deps(targets):
         target._expand_deps_generation()
 
 
-def _check_dep_visibility(target_id, dep_id, targets):
-    """Check whether target is able to depend on dep."""
-    target = targets[target_id]
-
-    # Targets are visible inside the same BUILD file by default
-    target_dir = target_id.rsplit(':')[0]
-    dep_dir = dep_id.rsplit(':')[0]
-    if target_dir == dep_dir:
-        return
-
-    dep = targets[dep_id]
-    visibility = getattr(dep, 'visibility', 'PUBLIC')
-    if visibility == 'PUBLIC':
-        return
-    if target_id not in visibility:
-        target.error('Not allowed to depend on //%s because of visibility,' % dep_id)
-        dep.info('which is declared here')
-
-
 def _unique_deps(new_deps_list):
     # Append new_deps_piece to new_deps_list, be aware of de-duplication
     result = []
@@ -113,9 +93,10 @@ def _expand_target_deps(target_id, targets, root_targets=None):
             for t in root_targets:
                 err_msg += '//%s --> ' % t
             console.fatal('Loop dependency found: //%s --> [%s]' % (d, err_msg))
-        _check_dep_visibility(target_id, d, targets)
         new_deps_list.append(d)
         new_deps_list += _expand_target_deps(d, targets, root_targets)
+
+    target.check_visibility()
 
     new_deps_list = _unique_deps(new_deps_list)
     target.expanded_deps = new_deps_list
