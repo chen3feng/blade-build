@@ -26,7 +26,9 @@ Click here to read [English README](README.md).
 [![codebeat badge](https://codebeat.co/badges/e0d861b7-47cc-4023-9784-7d54246a3576)](https://codebeat.co/projects/github-com-chen3feng-blade-build-master)
 [![Coverage](https://coveralls.io/repos/chen3feng/blade-build/badge.svg?branch=master)](https://coveralls.io/github/chen3feng/blade-build)
 
-## First, let's see the beautiful demo
+## 演示
+
+我们先来看一个漂亮的演示：
 
 [![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
@@ -142,15 +144,16 @@ blade test -m32 -pdebug common...
 ## 致谢
 
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
-[云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
+  [云构建：构建系统是如何工作的](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)。
+  后来在 2015 年，他们把部分重写后系统的以 `bazel` 的新名字开源。
 * Blade 生成 [Ninja](https://ninja-build.org/) 脚本进行构建，因此 Blade 的运行还需要依赖 Ninja。
 * [Python](http://www.python.org) 是一种简单易用而又强大的语言，我们喜欢python。
 * Google 开放的一些库强大而好用，我们很喜欢，我们把对这些库的支持集成进了Blade中，既方便了库的使用，
-又增强了 Blade，这些库包括
-[glog](http://code.google.com/p/google-glog/),
-[protobuf](http://code.google.com/p/protobuf/),
-[gtest](http://code.google.com/p/googletest/),
-[gperftools](http://code.google.com/p/gperftools/)。
+又增强了 Blade，这些库包括：
+  [glog](http://code.google.com/p/google-glog/),
+  [protobuf](http://code.google.com/p/protobuf/),
+  [gtest](http://code.google.com/p/googletest/),
+  [gperftools](http://code.google.com/p/gperftools/)。
 
 我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
 

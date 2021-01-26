@@ -82,24 +82,23 @@ blade test -m32 -pdebug common...
 * Auto dependency analysis, includes header files and libraries.
 * Test integration: built-in support of gtest. Support incremental testing and parallel testing.
 * Simple syntax, easy to use.
-* Simple command line interface similar to svn.
-* Memory leak checking(with gperftools).
+* Simple command line interface similar to git/svn.
+* Memory leak checking in tests(with gperftools).
 * Bash command line completion.
 * Colorful diagnostic message displaying.
 * Vim integration, includes syntax hi-light, quickfix.
 
 ## Documentation
 
-Sorry for Chinese only, English documentation is under construction.
-
 * [Full Documentation](/doc/en/index.md)
 * [FAQ](/doc/en/FAQ.md)
 
 ## Credits
 
-* Blade is inspired by Google's public information about their building system. Here is a reference article from Google's official blog.
+* Blade is inspired by Google's public information about their build system. Here is a reference article from Google's official blog:
+  [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html).
 
-[build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html)
+  Later in 2015, they opensourced it with partial written as `bazel` build system.
 
 * Blade generates [Ninja](https://ninja-build.org/) script internally, so of cause it depends on ninja.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
