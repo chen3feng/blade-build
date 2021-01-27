@@ -15,6 +15,21 @@ import os
 from blade import console
 
 
+def _split(target):
+    """Split target patten into path and name."""
+    if ':' in target:
+        path, name = target.rsplit(':', 1)
+    else:
+        if target.endswith('...'):
+            path = target[:-3]
+            name = '...'
+        else:
+            path = target
+            name = '*'
+    path = os.path.normpath(path)
+    return path, name
+
+
 def normalize(target, working_dir):
     """Normalize target from command line form into canonical form.
 
@@ -28,20 +43,11 @@ def normalize(target, working_dir):
         target = target[2:]
     elif target.startswith('/'):
         console.error('Invalid target "%s" starting from root path.' % target)
-    else:
+        target = target[1:]  # Try correct to keep going
+    else:  # Relative path
         if working_dir != '.':
             target = os.path.join(working_dir, target)
-
-    if ':' in target:
-        path, name = target.rsplit(':', 1)
-    else:
-        if target.endswith('...'):
-            path = target[:-3]
-            name = '...'
-        else:
-            path = target
-            name = '*'
-    path = os.path.normpath(path)
+    path, name = _split(target)
     return '%s:%s' % (path, name)
 
 
