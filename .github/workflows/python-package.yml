@@ -26,9 +26,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install coverage coveralls
+        python -m pip install coverage coveralls ninja
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        apt install ninja-build
     - name: Run tests
       run: |
         src/test/runall.sh
