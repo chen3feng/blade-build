@@ -39,7 +39,9 @@ cat > $ROOT/.coveragerc << EOF
 data_file = $ROOT/.coverage
 EOF
 
-export BLADE_PYTHON_INTERPRETER="coverage run --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
+rm -f $ROOT/.coverage
+
+export BLADE_PYTHON_INTERPRETER="coverage run -a --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
 
 python -B $@
 exit_code=$?

@@ -1,4 +1,4 @@
-"""Public API for user rules"""
+"""Public API for user rules."""
 
 from __future__ import absolute_import
 

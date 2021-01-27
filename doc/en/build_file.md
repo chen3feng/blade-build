@@ -43,7 +43,9 @@ Blade uses a set of target functions to define targets. The common properties of
 * name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
 * srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
 * deps: list or string, other targets on which the object depends
-* visibility: list or string, control visibility to the listed targets, there is a special value: 'PUBLIC', means visible to everyone.
+* visibility: list or string of build target pattern, control visibility to the listed targets,
+  there is a special value: 'PUBLIC', means visible to everyone, the targets in the same directory
+  are always visible to each other
 
 We also provide a [glob](functions.md#glob) function to generate the source files list.
 

@@ -4,7 +4,8 @@
 # Author: Feng Chen <phongchen@tencent.com>
 
 
-"""Define swig_library target
+"""
+Define swig_library target.
 """
 
 from __future__ import absolute_import

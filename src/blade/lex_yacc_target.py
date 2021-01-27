@@ -4,7 +4,8 @@
 # Author: Feng Chen <phongchen@tencent.com>
 
 
-"""Define lex_yacc_library target
+"""
+Define lex_yacc_library target.
 """
 
 from __future__ import absolute_import

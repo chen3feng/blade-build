@@ -5,9 +5,7 @@
 # Date:   June 2, 2016
 
 """
-
 This module defines sh_test target which executes a shell script.
-
 """
 
 from __future__ import absolute_import

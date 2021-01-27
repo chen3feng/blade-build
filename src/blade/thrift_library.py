@@ -10,7 +10,6 @@
 """
 The module defines thrift_library target to generate code in
 different languages from .thrift file.
-
 """
 
 from __future__ import absolute_import

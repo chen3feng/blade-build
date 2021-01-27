@@ -7,7 +7,6 @@
 """
 This module defines the global build target attributes,
 such as bits: 32/64, profile: debug/release.
-
 """
 
 # Global target attributes object

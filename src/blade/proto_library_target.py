@@ -4,7 +4,8 @@
 # Author: Feng Chen <phongchen@tencent.com>
 
 
-"""Define proto_library target
+"""
+Define proto_library target.
 """
 
 from __future__ import absolute_import

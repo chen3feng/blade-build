@@ -6,9 +6,8 @@
 
 
 """
- This is the configuration parse module which parses
- the BLADE_ROOT as a configuration file.
-
+This is the configuration parse module which parses
+the BLADE_ROOT as a configuration file.
 """
 
 from __future__ import absolute_import

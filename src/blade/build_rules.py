@@ -5,7 +5,7 @@
 
 
 """
- Manage symbols can be used in BUILD files.
+Manage symbols can be used in BUILD files.
 """
 
 

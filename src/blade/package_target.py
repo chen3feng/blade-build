@@ -5,10 +5,8 @@
 # Date:   April 18, 2016
 
 """
-
 This is the package target module which packages files
 into an (compressed) archive.
-
 """
 
 from __future__ import absolute_import

@@ -87,7 +87,7 @@ from blade import build_manager
 from blade import command_line
 from blade import config
 from blade import console
-from blade import target
+from blade import target_pattern
 from blade.blade_util import find_blade_root_dir
 from blade.blade_util import get_cwd, to_string
 from blade.blade_util import lock_file, unlock_file
@@ -490,7 +490,7 @@ def _main(blade_path, argv):
     global _TARGETS
     if not targets:
         targets = ['.']
-    targets = target.normalize(targets, _WORKING_DIR)
+    targets = target_pattern.normalize_list(targets, _WORKING_DIR)
     _TARGETS = targets
 
     build_dir = setup_build_dir(options)

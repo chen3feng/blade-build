@@ -7,7 +7,7 @@
 # pylint: disable=too-many-lines
 
 """
-Implement java_library, java_binary, java_test and java_fat_library
+Implement java_library, java_binary, java_test and java_fat_library.
 """
 
 from __future__ import absolute_import

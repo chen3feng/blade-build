@@ -5,10 +5,8 @@
 # Date:   April 14, 2016
 
 """
-
 This is the fatjar module which packages multiple jar files
 into a single fatjar file.
-
 """
 
 from __future__ import absolute_import

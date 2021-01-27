@@ -4,7 +4,8 @@
 # Author: Feng Chen <phongchen@tencent.com>
 
 
-"""Define resource_library target
+"""
+Define resource_library target.
 """
 
 from __future__ import absolute_import
