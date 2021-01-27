@@ -32,7 +32,5 @@ jobs:
       run: |
         src/test/runall.sh
     - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: .coverage
+      run: |
+        coveralls
