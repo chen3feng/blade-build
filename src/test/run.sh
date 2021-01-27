@@ -43,7 +43,7 @@ rm -f $ROOT/.coverage
 
 export BLADE_PYTHON_INTERPRETER="coverage run -a --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
 
-$BLADE_PYTHON_INTERPRETER $@
+python -B $@
 exit_code=$?
 
 coverage report --rcfile=$ROOT/.coveragerc
