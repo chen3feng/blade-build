@@ -563,6 +563,7 @@ class JavaTargetMixIn(object):
             if javacflags:
                 vars['javacflags'] = ' '.join(javacflags)
         dep_jars, maven_jars = self._get_compile_deps()
+        self.warning(dep_jars)
         implicit_deps = self._java_implicit_dependencies(dep_jars, maven_jars)
         jars = dep_jars + maven_jars
         if jars:
