@@ -20,7 +20,7 @@ There are many improvement in V2, include performance，new features, code refac
 
 ### Python Version
 
-V2 only support python 2.7 and 3.x, no longer support old versions. And for python 3.x, only 3.6 were tests.
+V2 only support python 2.7 and 3.x, no longer support old versions. And for python 3.x, only 3.6 and 3.9 were tests.
 
 ### Ninja
 
