@@ -461,19 +461,20 @@ class CcTarget(Target):
 
     def _cc_objects(self, expanded_srcs, generated_headers=None):
         """Generate cc objects build rules in ninja."""
-        # pylint: disable=too-many-locals
         vars = self._get_cc_vars()
-        implicit_deps = []
-        implicit_deps += self._cc_compile_deps()
+        # Use `order_only_deps` for generated header files,
+        # See https://ninja-build.org/manual.html#ref_dependencies for details.
+        order_only_deps = []
+        order_only_deps += self._cc_compile_deps()
         if generated_headers and len(generated_headers) > 1:
-            implicit_deps += generated_headers
+            order_only_deps += generated_headers
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
         for src, input in expanded_srcs:
             obj = '%s.o' % os.path.join(objs_dir, src)
             rule = self._get_rule_from_suffix(src)
             self.generate_build(rule, obj, inputs=input,
-                                implicit_deps=implicit_deps,
+                                order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
 
