@@ -11,6 +11,9 @@ Blade 只有一种配置文件格式，但是支持多重配置文件，按以�
 
 后面描述的所有多个参数的配置的每个配置参数都有默认值，并不需要全部写出，也没有顺序要求。
 
+所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，
+如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
+
 配置的语法和构建规则一样，也类似函数调用，例如：
 
 ```python
@@ -200,7 +203,28 @@ Java构建相关的配置
 | thrift\_incs        | list   |                                   |      | 编译 thrift 生成的 C++ 时额外的头文件搜索路径 |
 | thrift\_gen\_params | string | 'cpp:include\_prefix,pure\_enums' |      | thrift 的编译参数                             |
 
-所有的 config 的列表类型的选项均支持追加模式，用法如下：
+## 追加配置项值 ##
+
+所有 `list` 和 `set` 类型的配置项都支持追加，其中 `list` 还支持在前面添加，用法是在配置项名前加上 `append_` 或 `prepend_` 前缀：
+
+```python
+cc_config(
+    append_linkflags = ['-fuse-ld=gold'],
+    prepend_warnings = ['-Wfloat-compare'],
+)
+```
+
+同一个配置项不能同时赋值和追加：
+
+```python
+# 错误！
+cc_config(
+    linkflags = ['-fuse-ld=gold'],
+    append_linkflags = ['-fuse-ld=gold'],
+)
+```
+
+还有一种旧的 `append` 的方法，因为语法繁琐且不支持在前面添加，已废弃：
 
 ```python
 cc_config(
@@ -209,9 +233,6 @@ cc_config(
     )
 )
 ```
-
-所有这些配置项都有默认值，如果不需要覆盖就无需列入相应的参数。默认值都是假设安装到系统目录下，
-如果你的项目中把这些库放进进了自己的代码中（比如我们内部），请修改相应的配置。
 
 ## 环境变量 ##
 
