@@ -9,6 +9,10 @@ Blade supports three configuration files, which are loaded in the following orde
 * BLADE_ROOT is actually a configuration file, written here is a project-level configuration.
 * BLADE_ROOT.local developer's own local configuration file for temporary adjustment of parameters, etc.
 
+All of these configuration items have default values, and you don't need to include the appropriate parameters if you don't need to override them.
+The default config values of libraries are assumed to be installed in the system directory.
+If you put these libraries into your own code in your project (such as our internals), please modify the corresponding configuration.
+
 Each configuration parameter of the configuration of all the multiple parameters described later has a default value, and does not need to be completely written or ordered.
 
 You can run `blade dump` command to dump current configuration, and modify it as your need:
@@ -112,6 +116,36 @@ cc_config(
 )
 ```
 
+### cc_library_config
+
+C/C++ library configuration
+
+| parameter                  | type   | default   | values                      | description                                              |
+|----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------|
+| prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory             |
+| hdrs_missing_severity      | string | error     | debug, info, warning, error | The severity of missing `cc_library.hdrs`                |
+| hdrs_missing_suppress      | list   | []        | list of targets             | List of target labels to be suppressed for above problem |
+
+Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
+So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:
+
+* ${bit}  Target bits, such as 32，64。
+* ${arch} Target CPU architecture name, such as i386, x86_64 等。
+
+In this way, library files of multiple target platforms can be stored in different subdirectories
+without conflict. This attribute can also be empty string, which means no subdirectory.
+If you only concern to one target platform, it is sure OK to have only one directory or have no directory at all.
+
+The format of `hdrs_missing_suppress` is a list of build targets (do not have a'//' at the beginning).
+We also provide an auxiliary tool [`collect-hdrs-missing.py`](../../tool) to easily generate this list.
+If there are too many entries, it is recommended to load them from a separated file:
+
+```python
+cc_library_config(
+    hdrs_missing_suppress = eval(open('blade_hdr_missing_spppress').read()),
+)
+```
+
 ### cc_test_config
 
 The configuration required to build and run the test
@@ -200,47 +234,35 @@ thrift_library_config(
 )
 ```
 
-All config's list type options support append mode, as follows:
+## Append configuration item values
+
+All configuration items of `list` and `set` types support appending, among which `list` also supports prepending.
+The usage is to prefix the configuration item name with `append_` or `prepend_`:
+
+```python
+cc_config(
+     append_linkflags = ['-fuse-ld=gold'],
+     prepend_warnings = ['-Wfloat-compare'],
+)
+```
+
+For the one configuration item, you cannot assign and append at the same time:
+
+```python
+# Wrong!
+cc_config(
+     linkflags = ['-fuse-ld=gold'],
+     append_linkflags = ['-fuse-ld=gold'],
+)
+```
+
+There was an old `append` form, is deprecated.
 
 ```python
 cc_config(
     append = config_items(
         Warnings = [...]
     )
-)
-```
-
-All of these configuration items have default values, and you don't need to include the appropriate parameters if you don't need to override them.
-The default config values of libraries are assumed to be installed in the system directory.
-If you put these libraries into your own code in your project (such as our internals), please modify the corresponding configuration.
-
-### cc_library_config
-
-C/C++ library configuration
-
-| parameter                  | type   | default   | values                      | description                                              |
-|----------------------------|--------|-----------|-----------------------------|----------------------------------------------------------|
-| prebuilt_libpath_pattern   | string |lib${bits} |                             | The pattern of prebuilt library subdirectory             |
-| hdrs_missing_severity      | string | error     | debug, info, warning, error | The severity of missing `cc_library.hdrs`                |
-| hdrs_missing_suppress      | list   | []        | list of targets             | List of target labels to be suppressed for above problem |
-
-Blade suppor built target for different platforms, such as, under the x64 linux, you can build 32/64 bit targets with the -m option.
-So, prebuilt_libpath_pattern is really a pattern, allow some variables which can be substituted:
-
-* ${bit}  Target bits, such as 32，64。
-* ${arch} Target CPU architecture name, such as i386, x86_64 等。
-
-In this way, library files of multiple target platforms can be stored in different subdirectories
-without conflict. This attribute can also be empty string, which means no subdirectory.
-If you only concern to one target platform, it is sure OK to have only one directory or have no directory at all.
-
-The format of `hdrs_missing_suppress` is a list of build targets (do not have a'//' at the beginning).
-We also provide an auxiliary tool [`collect-hdrs-missing.py`](../../tool) to easily generate this list.
-If there are too many entries, it is recommended to load them from a separated file:
-
-```python
-cc_library_config(
-    hdrs_missing_suppress = eval(open('blade_hdr_missing_spppress').read()),
 )
 ```
 

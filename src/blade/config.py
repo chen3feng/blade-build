@@ -293,6 +293,7 @@ class BladeConfig(object):
 
     def _append_config(self, section_name, section, append):
         """Append config section items"""
+        self.warning('"append" is deprecated, please use the "append_" prefix to append')
         if not isinstance(append, dict):
             self.error('%s: Append must be a dict' % section_name)
         for k in append:
@@ -308,19 +309,52 @@ class BladeConfig(object):
 
     def _replace_config(self, section_name, section, user_config):
         """Replace config section items"""
-        unknown_keys = []
-        for k in user_config:
-            if k in section:
-                if isinstance(section[k], list):
-                    user_config[k] = var_to_list(user_config[k])
-                elif isinstance(section[k], set):  # Allow using `list` to config `set`
-                    user_config[k] = set(user_config[k])
-            else:
-                self.warning('%s: Unknown config item name: %s' % (section_name, k))
-                unknown_keys.append(k)
-        for k in unknown_keys:
-            del user_config[k]
-        section.update(user_config)
+        for name, value in user_config.items():
+            if name in section:
+                self._assign_item_value(section, name, value)
+                continue
+            if name.startswith('append_'):
+                item_name = name[len('append_'):]
+                if item_name in section:
+                    self._append_item_value(section, name, item_name, value, user_config)
+                    continue
+            if name.startswith('prepend_'):
+                item_name = name[len('prepend_'):]
+                if item_name in section:
+                    self._append_item_value(section, name, item_name, value, user_config)
+                    continue
+            self.warning('%s: Unknown config item name: %s' % (section_name, name))
+
+    def _assign_item_value(self, section, name, value):
+        """Assign value to config item."""
+        if isinstance(section[name], list):
+            section[name] = var_to_list(value)
+        elif isinstance(section[name], set):  # Allow using `list` to config `set`
+            section[name] = set(var_to_list(value))
+        else:
+            section[name] = value
+
+    def _append_item_value(self, section, name, item_name, value, user_config):
+        """Append value to config item."""
+        if item_name in user_config:
+            self.error('"%s" and "%s" can not be used together' % (name, item_name))
+            return
+        if isinstance(section[item_name], list):
+            section[item_name] += var_to_list(value)
+        elif isinstance(section[item_name], set):
+            section[item_name].update(var_to_list(value))
+        else:
+            self.warning('Invalid "%s", "%s" is not appendable' % (name, item_name))
+
+    def _append_item_value(self, section, name, item_name, value, user_config):
+        """Prepend value to config item."""
+        if item_name in user_config:
+            self.error('"%s" and "%s" can not be used together' % (name, item_name))
+            return
+        if isinstance(section[item_name], list):
+            section[item_name] = var_to_list(value) + section[item_name]
+        else:
+            self.warning('Invalid "%s", "%s" is not prependable' % (name, item_name))
 
     def get_section(self, section_name):
         """get config section, returns default values if not set."""
