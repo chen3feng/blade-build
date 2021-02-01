@@ -283,21 +283,20 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         Calculate direct proto dependencies for this target, recompile protos of this target
         when any of these dependencies is changed.
         """
-        # TODO: protoc 3.0.0+'s `--dependency_out` option generate more accurate dependency.
+        # TODO: protoc 3.0.0+'s `--dependency_out` option generates more accurate dependency,
         # which can be used to reduce false dependency.
 
-        # Include self's proto files as a dependency because if there are multiple proto files in
-        # this target, there may be import relationships between these files.
-        key = 'protoc_direct_dependencies'
+        # Including self's proto files because if there are multiple proto files in this target,
+        # there may be import relationships between these files.
+        key = 'protoc_direct_dependencies'  # Cache the result
         if key in self.data:
-            protos = self.data[key]
-        else:
-            self_protos = self.attr.get('public_protos')
-            protos = self_protos[:] if len(self_protos) > 1 else []
-            for key in self.deps:
-                dep = self.target_database[key]
-                protos += dep.attr.get('public_protos', [])
-            self.data[key] = protos
+            return self.data[key][:]
+        self_protos = self.attr.get('public_protos')
+        protos = self_protos[:] if len(self_protos) > 1 else []
+        for key in self.deps:
+            dep = self.target_database[key]
+            protos += dep.attr.get('public_protos', [])
+        self.data[key] = protos
         return protos[:]
 
     def _proto_descriptor_rules(self):
