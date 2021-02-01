@@ -279,11 +279,25 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         return package_dir, java_name
 
     def protoc_direct_dependencies(self):
-        protos = self.attr.get('public_protos')[:]
+        """
+        Calculate direct proto dependencies for this target, recompile protos of this target
+        when any of these dependencies is changed.
+        """
+        # TODO: protoc 3.0.0+'s `--dependency_out` option generates more accurate dependency,
+        # which can be used to reduce false dependency.
+
+        # Including self's proto files because if there are multiple proto files in this target,
+        # there may be import relationships between these files.
+        key = 'protoc_direct_dependencies'  # Cache the result
+        if key in self.data:
+            return self.data[key][:]
+        self_protos = self.attr.get('public_protos')
+        protos = self_protos[:] if len(self_protos) > 1 else []
         for key in self.deps:
             dep = self.target_database[key]
             protos += dep.attr.get('public_protos', [])
-        return protos
+        self.data[key] = protos
+        return protos[:]
 
     def _proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
@@ -301,7 +315,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 break
         return path, vars
 
-    def _protoc_direct_dependencies(self, vars):
+    def _add_protoc_direct_dependencies(self, vars):
+        """ Add a `--direct_dependencies` optiopn to protocflags.
+
+        This option enforces correct dependency is declared for any imported proto file.
+        """
+        # Because cpp_out is always generated, we needn't add this option to other language's out.
         if config.get_item('proto_library_config', 'protoc_direct_dependencies'):
             dependencies = self.protoc_direct_dependencies()
             dependencies += config.get_item('proto_library_config', 'well_known_protos')
@@ -309,8 +328,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_cpp_rules(self):
         plugin, vars = self._protoc_plugin_parameters('cpp')
-        self._protoc_direct_dependencies(vars)
-        implicit_deps = []
+        self._add_protoc_direct_dependencies(vars)
+        implicit_deps = self.protoc_direct_dependencies()
         if plugin:
             implicit_deps.append(plugin)
         cpp_sources = []
@@ -325,10 +344,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._cc_library(objs)
 
     def _proto_java_rules(self):
-        java_sources, implicit_deps = [], []
         plugin, vars = self._protoc_plugin_parameters('java')
+        implicit_deps = self.protoc_direct_dependencies()
         if plugin:
             implicit_deps.append(plugin)
+        java_sources = []
         for src in self.srcs:
             input = self._source_file_path(src)
             package_dir, java_name = self._proto_java_gen_file(src)
@@ -337,12 +357,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                                 implicit_deps=implicit_deps, variables=vars)
             java_sources.append(output)
 
-        jar = self._build_jar(inputs=java_sources,
-                                   source_encoding=self.attr.get('source_encoding'))
+        jar = self._build_jar(inputs=java_sources, source_encoding=self.attr.get('source_encoding'))
         self._add_target_file('jar', jar)
 
     def _proto_python_rules(self):
         # plugin, vars = self._protoc_plugin_parameters('python')
+        implicit_deps = self.protoc_direct_dependencies()
         generated_pys = []
         for proto in self.srcs:
             input = self._source_file_path(proto)
@@ -351,7 +371,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             generated_pys.append(output)
         pylib = self._target_file_path(self.name + '.pylib')
         self.generate_build('pythonlibrary', pylib, inputs=generated_pys,
-                            variables={'basedir': self.build_dir})
+                            implicit_deps=implicit_deps, variables={'basedir': self.build_dir})
         self._add_target_file('pylib', pylib)
 
     def _proto_go_rules(self):

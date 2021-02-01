@@ -3,6 +3,7 @@ language: python
 python:
   - "2.7"
   - "3.6"
+  - "3.9"
 
 before_install: true
 
