@@ -321,7 +321,7 @@ class BladeConfig(object):
             if name.startswith('prepend_'):
                 item_name = name[len('prepend_'):]
                 if item_name in section:
-                    self._append_item_value(section, name, item_name, value, user_config)
+                    self._prepend_item_value(section, name, item_name, value, user_config)
                     continue
             self.warning('%s: Unknown config item name: %s' % (section_name, name))
 
@@ -346,7 +346,7 @@ class BladeConfig(object):
         else:
             self.warning('Invalid "%s", "%s" is not appendable' % (name, item_name))
 
-    def _append_item_value(self, section, name, item_name, value, user_config):
+    def _prepend_item_value(self, section, name, item_name, value, user_config):
         """Prepend value to config item."""
         if item_name in user_config:
             self.error('"%s" and "%s" can not be used together' % (name, item_name))
