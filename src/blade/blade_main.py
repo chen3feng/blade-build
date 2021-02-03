@@ -241,7 +241,7 @@ def dump(options):
     if options.dump_targets:
         return build_manager.instance.dump_targets(output_file_name)
     # The "--config" is already handled before this
-    assert False, "Invalid dump option"
+    raise AssertionError("Invalid dump option")
 
 
 def _dump_compdb(options, output_file_name):

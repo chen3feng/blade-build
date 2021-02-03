@@ -60,7 +60,11 @@ class Target(object):
         self.type = type
         self.srcs = srcs
         self.deps = []
-        self.expanded_deps = None  # Expanded dependencies, includes direct and indirect dependies.
+
+        # Expanded dependencies, includes direct and indirect dependies.
+        self.expanded_deps = []  # Provide type info then make lints happy(not-an-iterable).
+        self.expanded_deps = None # Set to None to indicate not constructed.
+
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
