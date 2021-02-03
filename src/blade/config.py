@@ -250,17 +250,17 @@ class BladeConfig(object):
         }
 
     def info(self, msg):
-        console.info('%s info: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.info('%s: info: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def warning(self, msg):
-        console.warning('%s warning: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.warning('%s: warning: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def error(self, msg):
-        console.error('%s error: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.error('%s: error: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def fatal(self, msg):
         # NOTE: VSCode's problem matcher doesn't recognize 'fatal', use 'error' instead
-        console.fatal('%s error: %s' % (source_location(self.current_file_name), msg), prefix=False)
+        console.fatal('%s: error: %s' % (source_location(self.current_file_name), msg), prefix=False)
 
     def try_parse_file(self, filename):
         """load the configuration file and parse."""

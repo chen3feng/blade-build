@@ -152,7 +152,7 @@ class Target(object):
         return self.__fingerprint
 
     def _format_message(self, level, msg):
-        return '%s %s: %s: %s' % (self.source_location, level, self.name, msg)
+        return '%s: %s: %s: %s' % (self.source_location, level, self.name, msg)
 
     def debug(self, msg):
         """Print message with target full name prefix"""
