@@ -114,15 +114,16 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     source_loc = _current_source_location()
     include = var_to_list(include)
     severity = config.get_item('global_config', 'glob_error_severity')
-    output = getattr(console, severity)
     if excludes:
-        output('%s %s: "excludes" is deprecated, use "exclude" instead' % (source_loc, severity),
-               prefix=False)
+        console.diagnose(source_loc, severity, '"excludes" is deprecated, use "exclude" instead')
     exclude = var_to_list(exclude) + var_to_list(excludes)
 
     def includes_iterator():
         results = []
         for pattern in include:
+            if not pattern:
+                console.diagnose(source_loc, 'error', '"glob": Empty pattern is not allowed')
+                continue
             for path in source_dir.glob(pattern):
                 if path.is_file() and not path.name.startswith('.'):
                     results.append(path.relative_to(source_dir))
@@ -154,9 +155,9 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
         args = repr(include)
         if exclude:
             args += ', exclude=%s' % repr(exclude)
-        output('%s %s: "glob(%s)" got an empty result. If it is the expected behavior, '
-               'specify "allow_empty=True" to eliminate this message' % (source_loc, severity, args),
-               prefix=False)
+        console.diagnose(source_loc, severity,
+                         '"glob(%s)" got an empty result. If it is the expected behavior, '
+                         'specify "allow_empty=True" to eliminate this message' % args)
 
     return result
 
@@ -178,8 +179,7 @@ def include(name):
     """Include another file into current BUILD file"""
     full_path = _expand_include_path(name)
     if not os.path.isfile(full_path):
-        console.error('%s error: File "%s" does not exist' % (_current_source_location(), name),
-                prefix=False)
+        console.diagnose(_current_source_location(), 'error', 'File "%s" does not exist' % name)
         return
     exec_file(full_path, __current_globals, None)
 
@@ -196,8 +196,7 @@ def _load_extension(name):
         return __loaded_extension_info[full_path]
 
     if not os.path.isfile(full_path):
-        console.error('%s error: File "%s" does not exist' % (_current_source_location(), name),
-                prefix=False)
+        console.diagnose(_current_source_location(), 'error', 'File "%s" does not exist' % name)
         return
 
     # The symbols in the current context should be invisible to the extension,
@@ -228,14 +227,12 @@ def load(name, *symbols, **aliases):
     """
     src_loc = _current_source_location()
     if not symbols and not aliases:
-        console.error('%s error: The symbols to be imported must be explicitly declared' % src_loc,
-                      prefix=False)
+        console.diagnose(src_loc, 'error', 'The symbols to be imported must be explicitly declared')
 
     extension_globals = _load_extension(name)
 
     def error(symbol):
-        console.error('%s error: "%s" is not defined in "%s"' % (src_loc, symbol, name),
-                      prefix=False)
+        console.diagnose(src_loc, 'error', '"%s" is not defined in "%s"' % (symbol, name))
 
     # Only import declared symbols into current file
     for symbol in symbols:
