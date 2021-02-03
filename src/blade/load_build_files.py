@@ -197,7 +197,7 @@ def _load_extension(name):
 
     if not os.path.isfile(full_path):
         console.diagnose(_current_source_location(), 'error', 'File "%s" does not exist' % name)
-        return
+        return {}
 
     # The symbols in the current context should be invisible to the extension,
     # make an isolated symbol set to implement this approach.
