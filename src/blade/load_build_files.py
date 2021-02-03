@@ -294,17 +294,17 @@ def __load_build_file(source_dir, blade):
     return False
 
 
-def _load_build_file(source_dir, processed_source_dirs, blade):
+def _load_build_file(source_dir, processed_dirs, blade):
     """
     Load the BUILD and place the targets into database.
-    The parameters processed_source_dirs refers to a dict defined in the
+    The parameters processed_dirs refers to a dict defined in the
     caller and used to avoid duplicated execution of BUILD files.
     """
     source_dir = os.path.normpath(source_dir)
-    if source_dir in processed_source_dirs:
-        return processed_source_dirs[source_dir]
+    if source_dir in processed_dirs:
+        return processed_dirs[source_dir]
     result = __load_build_file(source_dir, blade)
-    processed_source_dirs[source_dir] = result
+    processed_dirs[source_dir] = result
     return result
 
 
@@ -313,6 +313,8 @@ _BLADE_SKIP_FILE = '.bladeskip'
 # File names should be skipped
 _SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
 
+# TODO: Eliminate hardcoded
+_EXCLUDED_DIRS = set(['build32_debug', 'build32_release', 'build64_debug', 'build64_release'])
 
 def _is_under_skipped_dir(dirname):
     """Is the directory under a directory which contains a `.bladeskip` file."""
@@ -327,29 +329,24 @@ def _is_under_skipped_dir(dirname):
     cache[dirname] = result
     return result
 
-
 _is_under_skipped_dir.cache = {}
 
 
 def _is_load_excluded(root, d):
-    """Whether exclude the directory when loading BUILD.
-    """
-    # TODO(wentingli): Exclude directories matching patterns configured globally
-
-    # Exclude directories starting with '.', e.g. '.', '..', '.svn', '.git'.
+    """Whether exclude the directory when loading BUILD."""
+    # Exclude directories starting with '.', e.g. '.svn', '.git', '.vscode'.
     if d.startswith('.'):
         return True
 
     # Exclude build dirs
-    for build_dir in ('build32_debug', 'build32_release',
-                       'build64_debug', 'build64_release'):
-        if d.startswith(build_dir):
-            return True
+    if d in _EXCLUDED_DIRS:
+        return True
 
     # Exclude directories containing special files
+    full_dir = os.path.join(root, d)
     for skip_file in _SKIP_FILES:
-        if os.path.exists(os.path.join(root, d, skip_file)):
-            console.info('Skip "%s" due to "%s" file' % (os.path.join(root, d), skip_file))
+        if os.path.exists(os.path.join(full_dir, skip_file)):
+            console.info('Skip "%s" due to "%s" file' % (full_dir, skip_file))
             return True
 
     return False
@@ -370,15 +367,13 @@ def load_targets(target_ids, blade_root_dir, blade):
     direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids)
 
     # to prevent duplicated loading of BUILD files
-    processed_source_dirs = {}
+    processed_dirs = {}
 
-    command_targets = _load_starting_build_files(blade, starting_dirs,
-            processed_source_dirs)
+    command_targets = _load_starting_build_files(blade, starting_dirs, processed_dirs)
     command_targets |= direct_targets
 
-    # load_all its dependencies
-    related_targets = _load_related_build_files(blade, command_targets,
-            processed_source_dirs)
+    # load all their dependencies
+    related_targets = _load_related_build_files(blade, command_targets, processed_dirs)
 
     return direct_targets, command_targets, related_targets
 
@@ -414,7 +409,7 @@ def _expand_target_patterns(blade, target_ids):
     return direct_targets, starting_dirs
 
 
-def _load_starting_build_files(blade, starting_dirs, processed_source_dirs):
+def _load_starting_build_files(blade, starting_dirs, processed_dirs):
     """Load all build files in starting_dirs."""
 
     # Load BUILD files in paths, and return all loaded targets.
@@ -422,12 +417,12 @@ def _load_starting_build_files(blade, starting_dirs, processed_source_dirs):
     # command line are now loaded.
 
     for source_dir in starting_dirs:
-        _load_build_file(source_dir, processed_source_dirs, blade)
+        _load_build_file(source_dir, processed_dirs, blade)
     target_database = blade.get_target_database()
     return set(target_database.keys())
 
 
-def _load_related_build_files(blade, command_targets, processed_source_dirs):
+def _load_related_build_files(blade, command_targets, processed_dirs):
     """Load all related build files referenced by command line targets."""
 
     # Starting from targets specified in command line, breath-first
@@ -455,7 +450,7 @@ def _load_related_build_files(blade, command_targets, processed_source_dirs):
             dependent.error('"%s" is under skipped directory, ignored' % target_id)
             continue
 
-        if not _load_build_file(source_dir, processed_source_dirs, blade):
+        if not _load_build_file(source_dir, processed_dirs, blade):
             continue
 
         if target_id not in target_database:
