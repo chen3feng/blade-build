@@ -1185,7 +1185,7 @@ class ForeignCcLibrary(CcTarget):
 
     def _library_full_path(self, type):
         """Return full path of the library file with specified type"""
-        assert type == 'a' or type == 'so'
+        assert type in ('a', 'so')
         return self._target_file_path(os.path.join(self.attr['install_dir'], self.attr['lib_dir'],
                 'lib%s.%s' % (self.name, type)))
 
