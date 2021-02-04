@@ -155,14 +155,15 @@ class TestRunner(binary_runner.BinaryRunner):
                     ret[key] = history
                 return ret
 
-            summary = {}
-            summary['time'] = time.time()
-            summary['passed'] = expand(passed_run_results)
-            summary['failed'] = expand(failed_run_results)
-            summary['unrepaired'] = expand(self.unrepaired_tests)
-            summary['repaired'] = self.repaired_tests
-            summary['unchanged'] = self.unchanged_tests
-            summary['excluded'] = self.excluded_tests
+            summary = {
+                'time': time.time(),
+                'passed': expand(passed_run_results),
+                'failed': expand(failed_run_results),
+                'unrepaired': expand(self.unrepaired_tests),
+                'repaired': self.repaired_tests,
+                'unchanged': self.unchanged_tests,
+                'excluded': self.excluded_tests,
+            }
             json.dump(summary, f, indent=4)
 
     def _merge_passed_run_results_to_history(self, run_results):
