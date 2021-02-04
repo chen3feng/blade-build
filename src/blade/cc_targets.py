@@ -636,21 +636,29 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs, undeclared_hdrs):
+    def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs,
+                               undeclared_hdrs, missing_dep_hdrs, verify_msg):
+        """
+        Verify directly included header files is in deps.
+
+        Returns:
+            whether it is correct, regardless of whether it is suppressed.
+        """
         allowed_undeclared_hdrs = config.get_item('cc_config', 'allowed_undeclared_hdrs')
-        verified_hdrs = set()
-        missing_dep_hdrs = set()
+        ok = True
         msg = []
         for hdr in direct_hdrs:
             nominal_hdr = self._remove_build_dir_prefix(hdr)
             libs = _find_libs_by_header(hdr)
             if not libs:
+                ok = False
                 if nominal_hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
                 undeclared_hdrs.add(nominal_hdr)
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
+                ok = False
                 # NOTE:
                 # We just don't report a suppressd hdr, but still need to record it as a failure.
                 # Because a passed src will not be verified again, even if we remove it from the
@@ -659,10 +667,10 @@ class CcTarget(Target):
                 missing_dep_hdrs.add(nominal_hdr)
                 if hdr not in suppressd_hdrs and nominal_hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
-            verified_hdrs.add(hdr)
         if msg:
-            msg.insert(0, '  In "%s",' % src)
-        return verified_hdrs, missing_dep_hdrs, msg
+            verify_msg.append('  In "%s",' % src)
+            verify_msg += msg
+        return ok
 
     def _header_undeclared_message(self, hdr):
         msg = '"%s" is not declared in any cc target. ' % hdr
@@ -684,15 +692,22 @@ class CcTarget(Target):
         return '"%s", which belongs to %s' % (hdr, libs)
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,
-                                  suppressd_hdrs, verified_hdrs):
-        missing_dep_hdrs = set()
+                                  suppressd_hdrs, direct_hdrs, missing_dep_hdrs, verify_msg):
+        """
+        Verify indirectly included generated header files is in deps.
+
+        Returns:
+            whether it is correct, regardless of whether it is suppressed.
+        """
+        ok = True
         msg = []
         for stack in stacks:
             generated_hdr = stack[-1]
-            if generated_hdr in verified_hdrs:  # Already verified as direct_hdrs
+            if generated_hdr in direct_hdrs:  # Already verified as direct_hdrs
                 continue
             if self._hdr_is_declared(generated_hdr, declared_hdrs, declared_incs):
                 continue
+            ok = False
             stack.pop()
             nominal_hdr = self._remove_build_dir_prefix(generated_hdr)
             missing_dep_hdrs.add(nominal_hdr)
@@ -708,7 +723,8 @@ class CcTarget(Target):
                 prefix = '                     from "%s"'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
                 msg.append(prefix % source)
-        return missing_dep_hdrs, msg
+        verify_msg += msg
+        return ok
 
     def _cleanup_target_files(self):
         """Clean up built result files"""
@@ -752,19 +768,17 @@ class CcTarget(Target):
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
 
-            verified_hdrs, missing_dep_hdrs, msg = self._verify_direct_headers(
-                    src, direct_hdrs, suppress.get(src, []), undeclared_hdrs)
-            if msg or missing_dep_hdrs:
+            missing_dep_hdrs = set()
+            if not self._verify_direct_headers(
+                    src, direct_hdrs, suppress.get(src, []),
+                    undeclared_hdrs, missing_dep_hdrs, direct_verify_msg):
                 failed_preprocess_paths.add(path)
-                direct_verify_msg += msg
 
             # But direct headers can not cover all, so it is still useful
-            missing_generated_dep_hdrs, msg = self._verify_generated_headers(
-                    src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
-            if msg or missing_generated_dep_hdrs:
+            if not self._verify_generated_headers(
+                    src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), direct_hdrs,
+                    missing_dep_hdrs, generated_verify_msg):
                 failed_preprocess_paths.add(path)
-                generated_verify_msg += msg
-                missing_dep_hdrs |= missing_generated_dep_hdrs
 
             if missing_dep_hdrs:
                 details[src] = list(missing_dep_hdrs)
