@@ -32,6 +32,7 @@ jobs:
       run: |
         src/test/runall.sh
     - name: Coveralls
-      env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         coveralls
