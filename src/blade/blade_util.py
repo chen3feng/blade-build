@@ -14,6 +14,7 @@ This is the util module which provides some helper functions.
 
 from __future__ import absolute_import, print_function
 
+import ast
 import fcntl
 import hashlib
 import inspect
@@ -161,6 +162,11 @@ def find_blade_root_dir(working_dir=None):
     return os.path.dirname(blade_root)
 
 
+def path_under_dir(path, dir):
+    """Check whether path is under dir."""
+    return path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
+
+
 def _echo(stdout, stderr):
     """Echo messages to stdout and stderr."""
     if stdout:
@@ -244,6 +250,16 @@ def exec_file(filename, globals, locals):
     # pylint: disable=exec-used
     with open(filename, 'rb') as f:
         exec_file_content(filename, f.read(), globals, locals)
+
+
+def eval_file(filepath):
+    """Load a value from file.
+
+    Safely evaluate an expression node or a string containing a Python literal or container display.
+    The string or node provided may only consist of the following Python literal structures:
+    strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None.
+    """
+    return ast.literal_eval(open(filepath).read())
 
 
 def source_location(filename):

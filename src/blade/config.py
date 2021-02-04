@@ -21,7 +21,7 @@ import sys
 
 from blade import build_attributes
 from blade import console
-from blade.blade_util import var_to_list, iteritems, exec_file_content, source_location
+from blade.blade_util import var_to_list, iteritems, eval_file, exec_file_content, source_location
 from blade.constants import HEAP_CHECK_VALUES
 
 
@@ -95,7 +95,9 @@ class BladeConfig(object):
                 'hdr_dep_missing_severity__doc__': 'The severity of the missing dependency on the '
                     'library to which the header file belongs, can be "info", "warning", "error"',
                 'hdr_dep_missing_suppress': {},
-                'hdr_dep_missing_suppress__doc__': 'header deps missing suppress control, see docs for details',
+                'hdr_dep_missing_suppress__doc__': 'Header deps missing suppress control, see docs for details',
+                'allowed_undeclared_hdrs': set(),
+                'allowed_undeclared_hdrs__doc__': 'Allowed undeclared header files',
             },
 
             'cc_library_config': {
@@ -429,6 +431,12 @@ def _check_test_related_envs(kwargs):
 
 
 _DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+
+
+@config_rule
+def load_value(filepath):
+    """Safely evaluate containing literal from file."""
+    return eval_file(filepath)
 
 
 @config_rule

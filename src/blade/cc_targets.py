@@ -24,12 +24,12 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
-from blade.blade_util import stable_unique, var_to_list, var_to_list_or_none
+from blade.blade_util import path_under_dir, stable_unique, var_to_list, var_to_list_or_none
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
-
-_HEADER_FILE_EXTS = ('h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'tcc')
+# See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
+_HEADER_FILE_EXTS = set(['h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'inl', 'tcc'])
 
 
 def is_header_file(filename):
@@ -99,7 +99,7 @@ def _find_libs_by_header(hdr):
         old_hdr_dir = hdr_dir
         hdr_dir = os.path.dirname(hdr_dir)
         if hdr_dir == old_hdr_dir:
-            return None
+            return []
 
 
 class CcTarget(Target):
@@ -187,7 +187,7 @@ class CcTarget(Target):
                 severity = config.get_item('cc_library_config', 'hdrs_missing_severity')
                 getattr(self, severity)(
                         'Missing "hdrs" declaration. The public header files should be declared '
-                        'explicitly, if it does not exist, set it to empty (hdrs = [])')
+                        'explicitly, if no public header file, set "hdrs" to empty (hdrs = [])')
         if not hdrs:
             return
         expanded_hdrs = []
@@ -565,7 +565,8 @@ class CcTarget(Target):
             . ./common/rpc/rpc_client.h
             .. build64_release/common/rpc/rpc_options.pb.h
 
-        Return a list with each item being a list representing where the header
+        Return a list of all directly included header files and a list with each item being a list
+        representing where the header
         is included from in the current translation unit.
 
         Note that we will STOP tracking at the first generated header (if any)
@@ -573,7 +574,15 @@ class CcTarget(Target):
         ignored since that part of dependency is ensured by the generator, such
         as proto_library.
 
-        As shown in the example above, it returns the following stacks:
+        As shown in the example above, it returns the following directly header list:
+
+            [
+                'app/example/foo.h',
+                'build64_release/app/example/proto/bar.pb.h',
+                'common/rpc/rpc_client.h',
+            ]
+
+        and the inclusion stacks:
 
             [
                 ['app/example/foo.h', 'build64_release/app/example/proto/foo.pb.h'],
@@ -634,12 +643,18 @@ class CcTarget(Target):
         return False
 
     def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs):
+        allowed_undeclared_hdrs = config.get_item('cc_config', 'allowed_undeclared_hdrs')
         verified_hdrs = set()
-        problematic_hdrs = set()
+        missing_dep_hdrs = set()
+        undeclared_hdrs = set()
         msg = []
         for hdr in direct_hdrs:
             libs = _find_libs_by_header(hdr)
+            nominal_hdr = self._remove_build_dir_prefix(hdr)
             if not libs:
+                if nominal_hdr not in allowed_undeclared_hdrs:
+                    msg.append('    %s' % self._header_undeclared_message(hdr))
+                undeclared_hdrs.add(nominal_hdr)
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
@@ -649,13 +664,21 @@ class CcTarget(Target):
                 # suppress list.
                 # Same reason in the _verify_generated_headers.
                 nominal_hdr = self._remove_build_dir_prefix(hdr)
-                problematic_hdrs.add(nominal_hdr)
+                missing_dep_hdrs.add(nominal_hdr)
                 if hdr not in suppressd_hdrs and nominal_hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
             verified_hdrs.add(hdr)
         if msg:
-            msg.insert(0, '  In %s,' % src)
-        return verified_hdrs, problematic_hdrs, msg
+            msg.insert(0, '  In "%s",' % src)
+        return verified_hdrs, missing_dep_hdrs, undeclared_hdrs, msg
+
+    def _header_undeclared_message(self, hdr):
+        msg = '"%s" is not declared in any cc library, ' % hdr
+        if path_under_dir(hdr, self.path):
+            msg += 'declare it in "hdrs" if it is public, or in "srcs" if it is private'
+        else:
+            msg += 'declare it in "hdrs" of the cc_library it belongs to'
+        return msg
 
     @staticmethod
     def _hdr_declaration_message(hdr, libs=None):
@@ -663,12 +686,12 @@ class CcTarget(Target):
             libs = _find_libs_by_header(hdr)
         if not libs:
             return hdr
-        libs = ' or '.join(['//%s' % lib for lib in libs])
-        return '%s, which belongs to %s' % (hdr, libs)
+        libs = ' or '.join(['"//%s"' % lib for lib in libs])
+        return '"%s", which belongs to %s' % (hdr, libs)
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,
                                   suppressd_hdrs, verified_hdrs):
-        problematic_hdrs = set()
+        missing_dep_hdrs = set()
         msg = []
         for stack in stacks:
             generated_hdr = stack[-1]
@@ -678,27 +701,27 @@ class CcTarget(Target):
                 continue
             stack.pop()
             nominal_hdr = self._remove_build_dir_prefix(generated_hdr)
-            problematic_hdrs.add(nominal_hdr)
+            missing_dep_hdrs.add(nominal_hdr)
             if generated_hdr in suppressd_hdrs or nominal_hdr in suppressd_hdrs:
                 continue
             source = self._source_file_path(src)
-            msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
+            msg.append('  For "%s"' % self._hdr_declaration_message(generated_hdr))
             if not stack:
-                msg.append('    In file included from %s' % source)
+                msg.append('    In file included from "%s"' % source)
             else:
                 stack.reverse()
-                msg.append('    In file included from %s' % self._hdr_declaration_message(stack[0]))
-                prefix = '                     from %s'
+                msg.append('    In file included from "%s"' % self._hdr_declaration_message(stack[0]))
+                prefix = '                     from "%s"'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
                 msg.append(prefix % source)
-        return problematic_hdrs, msg
+        return missing_dep_hdrs, msg
 
     def _cleanup_target_files(self):
         """Clean up built result files"""
         for f in self._get_target_files():
             try:
                 os.remove(f)
-                console.debug('Remove %s due to hdr dep missing' % f)
+                console.debug('Remove "%s" due to hdr dep missing' % f)
             except OSError:
                 pass
 
@@ -725,6 +748,7 @@ class CcTarget(Target):
 
         # Verify
         details = {}  # {src: list(hdrs)}
+        undeclared_hdrs = set()
         preprocess_paths, failed_preprocess_paths = set(), set()
 
         direct_verify_msg = []
@@ -738,24 +762,25 @@ class CcTarget(Target):
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
 
-            verified_hdrs, problematic_hdrs, msg = self._verify_direct_headers(
+            verified_hdrs, missing_dep_hdrs, src_undeclared_hdrs, msg = self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []))
-            if problematic_hdrs:
-                details[src] = list(problematic_hdrs)
+            undeclared_hdrs |= src_undeclared_hdrs
+            if missing_dep_hdrs:
+                details[src] = list(missing_dep_hdrs)
                 failed_preprocess_paths.add(path)
                 direct_verify_msg += msg
                 # Direct headers verification can cover the under one
                 continue
 
             # But direct headers can not cover all, so it is still useful
-            problematic_hdrs, msg = self._verify_generated_headers(
+            missing_dep_hdrs, msg = self._verify_generated_headers(
                     src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
-            if problematic_hdrs:
+            generated_verify_msg += msg
+            if missing_dep_hdrs:
                 if src in details:
-                    details[src] += problematic_hdrs
+                    details[src] += missing_dep_hdrs
                 else:
-                    details[src] = list(problematic_hdrs)
-                generated_verify_msg += msg
+                    details[src] = list(missing_dep_hdrs)
                 failed_preprocess_paths.add(path)
 
         severity = config.get_item('cc_config', 'hdr_dep_missing_severity')
@@ -776,7 +801,7 @@ class CcTarget(Target):
         if failed:
             self._cleanup_target_files()
 
-        return not failed, details
+        return not failed, details, undeclared_hdrs
 
     def _soname_of(self, so_path):
         """Get the `soname` of a shared library."""
