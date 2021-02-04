@@ -754,17 +754,17 @@ class CcTarget(Target):
 
             verified_hdrs, missing_dep_hdrs, msg = self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []), undeclared_hdrs)
-            direct_verify_msg += msg
             if msg or missing_dep_hdrs:
                 failed_preprocess_paths.add(path)
+                direct_verify_msg += msg
 
             # But direct headers can not cover all, so it is still useful
             missing_generated_dep_hdrs, msg = self._verify_generated_headers(
                     src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
             if msg or missing_generated_dep_hdrs:
                 failed_preprocess_paths.add(path)
-            generated_verify_msg += msg
-            missing_dep_hdrs |= missing_generated_dep_hdrs
+                generated_verify_msg += msg
+                missing_dep_hdrs |= missing_generated_dep_hdrs
 
             if missing_dep_hdrs:
                 details[src] = list(missing_dep_hdrs)
