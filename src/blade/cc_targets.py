@@ -519,12 +519,6 @@ class CcTarget(Target):
                             order_only_deps=order_only_deps,
                             variables=vars)
 
-    def _need_verify_generate_hdrs(self):
-        for path in self.blade.get_sources_keyword_list():
-            if self.path.startswith(path):
-                return False
-        return True
-
     @staticmethod
     def _parse_hdr_level_line(line):
         """Parse a normal line of a header stack file
@@ -642,15 +636,14 @@ class CcTarget(Target):
                 return True
         return False
 
-    def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs):
+    def _verify_direct_headers(self, src, direct_hdrs, suppressd_hdrs, undeclared_hdrs):
         allowed_undeclared_hdrs = config.get_item('cc_config', 'allowed_undeclared_hdrs')
         verified_hdrs = set()
         missing_dep_hdrs = set()
-        undeclared_hdrs = set()
         msg = []
         for hdr in direct_hdrs:
-            libs = _find_libs_by_header(hdr)
             nominal_hdr = self._remove_build_dir_prefix(hdr)
+            libs = _find_libs_by_header(hdr)
             if not libs:
                 if nominal_hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
@@ -663,14 +656,13 @@ class CcTarget(Target):
                 # Because a passed src will not be verified again, even if we remove it from the
                 # suppress list.
                 # Same reason in the _verify_generated_headers.
-                nominal_hdr = self._remove_build_dir_prefix(hdr)
                 missing_dep_hdrs.add(nominal_hdr)
                 if hdr not in suppressd_hdrs and nominal_hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
             verified_hdrs.add(hdr)
         if msg:
             msg.insert(0, '  In "%s",' % src)
-        return verified_hdrs, missing_dep_hdrs, undeclared_hdrs, msg
+        return verified_hdrs, missing_dep_hdrs, msg
 
     def _header_undeclared_message(self, hdr):
         msg = '"%s" is not declared in any cc library, ' % hdr
@@ -732,10 +724,6 @@ class CcTarget(Target):
         Returns:
             Whether nothing is wrong.
         """
-        # pylint: disable=too-many-locals
-        if not self._need_verify_generate_hdrs():
-            return True, {}
-
         # Collect header/include declarations
         declared_hdrs = set()
         declared_incs = set()
@@ -762,9 +750,8 @@ class CcTarget(Target):
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
 
-            verified_hdrs, missing_dep_hdrs, src_undeclared_hdrs, msg = self._verify_direct_headers(
-                    src, direct_hdrs, suppress.get(src, []))
-            undeclared_hdrs |= src_undeclared_hdrs
+            verified_hdrs, missing_dep_hdrs, msg = self._verify_direct_headers(
+                    src, direct_hdrs, suppress.get(src, []), undeclared_hdrs)
             if missing_dep_hdrs:
                 details[src] = list(missing_dep_hdrs)
                 failed_preprocess_paths.add(path)
