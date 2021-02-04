@@ -17,14 +17,10 @@ endif
 
 syn case match
 
-" Globals and Functions
+" Keywords
 " NOTE: Please keep alphabatical order
 
-syn keyword bladeTarget build_target
-syn keyword bladeArg arch
-syn keyword bladeArg bits
-syn keyword bladeArg is_debug
-
+" Global
 syn keyword bladeTarget global_config
 syn keyword bladeArg backend_builder
 syn keyword bladeArg build_jobs
@@ -36,6 +32,36 @@ syn keyword bladeArg run_unrepaired_tests
 syn keyword bladeArg test_jobs
 syn keyword bladeArg test_timeout
 
+" C/C++
+syn keyword bladeTarget cc_config
+syn keyword bladeArg allowed_undeclared_hdrs
+syn keyword bladeArg arflags
+syn keyword bladeArg benchmark_libs
+syn keyword bladeArg benchmark_main_libs
+syn keyword bladeArg c_warnings
+syn keyword bladeArg cflags
+syn keyword bladeArg cppflags
+syn keyword bladeArg cxx_warnings
+syn keyword bladeArg cxxflags
+syn keyword bladeArg extra_incs
+syn keyword bladeArg hdr_dep_missing_severity
+syn keyword bladeArg hdr_dep_missing_suppress
+syn keyword bladeArg linkflags
+syn keyword bladeArg optimize
+syn keyword bladeArg ranlibflags
+syn keyword bladeArg securecc
+syn keyword bladeArg warnings
+
+syn keyword bladeTarget cc_library_config
+syn keyword bladeArg generate_dynamic
+syn keyword bladeArg hdrs_missing_severity
+syn keyword bladeArg hdrs_missing_suppress
+syn keyword bladeArg prebuilt_libpath_pattern
+
+syn keyword bladeTarget cc_binary_config
+syn keyword bladeArg extra_libs
+syn keyword bladeArg run_lib_paths
+
 syn keyword bladeTarget cc_test_config
 syn keyword bladeArg dynamic_link
 syn keyword bladeArg gperftools_debug_libs
@@ -45,16 +71,13 @@ syn keyword bladeArg gtest_main_libs
 syn keyword bladeArg heap_check
 syn keyword bladeArg pprof_path
 
-syn keyword bladeTarget cc_binary_config
-syn keyword bladeArg extra_libs
-syn keyword bladeArg run_lib_paths
-
 syn keyword bladeTarget distcc_config
 syn keyword bladeArg enabled
 
 syn keyword bladeTarget link_config
 syn keyword bladeArg link_on_tmp
 
+" Java
 syn keyword bladeTarget java_config
 syn keyword bladeArg java_home
 syn keyword bladeArg fat_jar_conflict_severity
@@ -79,6 +102,7 @@ syn keyword bladeArg coverage_reporter
 syn keyword bladeArg jacoco_home
 syn keyword bladeArg junit_libs
 
+" Scala
 syn keyword bladeTarget scala_config
 syn keyword bladeArg scala_home
 syn keyword bladeArg source_encoding
@@ -88,10 +112,12 @@ syn keyword bladeArg warnings
 syn keyword bladeTarget scala_test_config
 syn keyword bladeArg scalatest_libs
 
+" Go
 syn keyword bladeTarget go_config
 syn keyword bladeArg go
 syn keyword bladeArg go_home
 
+" Thrift
 syn keyword bladeTarget thrift_config
 syn keyword bladeTarget thrift_library_config
 syn keyword bladeArg thrift
@@ -105,6 +131,7 @@ syn keyword bladeArg fbthrift2
 syn keyword bladeArg fbthrift_libs
 syn keyword bladeArg fbthrift_incs
 
+" Protobuf
 syn keyword bladeTarget proto_library_config
 syn keyword bladeArg protobuf_go_path
 syn keyword bladeArg protobuf_incs
@@ -121,34 +148,18 @@ syn keyword bladeArg protoc_java
 syn keyword bladeArg protoc_php_plugin
 syn keyword bladeArg well_known_protos
 
-syn keyword bladeTarget cc_config
-syn keyword bladeArg arflags
-syn keyword bladeArg benchmark_libs
-syn keyword bladeArg benchmark_main_libs
-syn keyword bladeArg c_warnings
-syn keyword bladeArg cflags
-syn keyword bladeArg cppflags
-syn keyword bladeArg cxx_warnings
-syn keyword bladeArg cxxflags
-syn keyword bladeArg extra_incs
-syn keyword bladeArg hdr_dep_missing_severity
-syn keyword bladeArg hdr_dep_missing_suppress
-syn keyword bladeArg linkflags
-syn keyword bladeArg optimize
-syn keyword bladeArg ranlibflags
-syn keyword bladeArg securecc
-syn keyword bladeArg warnings
-
-syn keyword bladeTarget cc_library_config
-syn keyword bladeArg generate_dynamic
-syn keyword bladeArg hdrs_missing_severity
-syn keyword bladeArg hdrs_missing_suppress
-syn keyword bladeArg prebuilt_libpath_pattern
-
 syn keyword bladeTarget protoc_plugin
 syn keyword bladeArg code_generation
 syn keyword bladeArg name
 syn keyword bladeArg path
+
+" Other helpers
+syn keyword bladeTarget build_target
+syn keyword bladeArg arch
+syn keyword bladeArg bits
+syn keyword bladeArg is_debug
+
+syn keyword bladeTarget load_value
 
 if version >= 508 || !exists("did_blade_config_syn_inits")
     if version < 508

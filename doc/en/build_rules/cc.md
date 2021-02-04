@@ -181,6 +181,14 @@ Blade can detect two kind of missing dependencies:
   This can solve the root cause, but it does require some effort. The simple and rude solution is to add the reported missing library to the current
   target `deps`, which is equivalent to relying on the implementation details of some libraries, which is not recommended.
 
+Since Blade fully managed the dependency of header files, for any header files that are not declared in the `hdrs` or `src` of any library,
+an error will be reported after the build. If these header files should belong to the current target,
+According to whether it is public or private, add it to `hdrs` or `srcs` respectively.
+If it belongs to other libraries, it should be added to `hdrs` of other libraries, and you cannot include undeclared or private header files of other libraries.
+
+For undeclared header files that already existed in the code base before the upgrade, you can use the
+[cc_config.allowed_undeclared_hdrs](../config.md#cc_config) configuration item to mask the check.
+
 ## prebuilt_cc_library ##
 
 For libraries without source code, library should be put under the lib{32,64} sub dir accordingly.
@@ -413,7 +421,7 @@ Attributes:
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
 set `prefix=''`, then it becomes `file. so`.
 
-`cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries 
+`cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries
 that are dynamically loaded by calling certain functions during runtime.
 It will be ignored when linking even if it appears in the `deps` of other cc targets.
 

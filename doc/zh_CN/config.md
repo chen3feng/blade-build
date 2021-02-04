@@ -66,6 +66,7 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 | optimize       | list   | 内置     |                                          | 优化专用选项，debug模式下会被忽略，比如 -O2，-omit-frame-pointer 等 |
 | hdr\_dep\_missing\_severity | string | warning | info, warning, error         | 对头文件所属的库的依赖的缺失的严重性                                |
 | hdr_dep_missing_suppress    | dict   | {}        | 参见下面详情               | 对头文件所属的库的依赖的缺失检查的抑制列表                          |
+| allowed_undeclared_hdrs     | list   | []        | 参见下面详情               | 允许的未声明的头文件的列表                                          |
 
 所有选项均为可选，如果不存在，则保持先前值。发布带的blade.conf中的警告选项均经过精心挑选，建议保持。
 有些编译器警告仅用于 C 或 C++，设置时注意不要放错位置。单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。
@@ -90,11 +91,25 @@ Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，�
 
 ```python
 cc_config(
-    hdr_dep_missing_suppress = eval(open('blade_hdr_verify.details').read()),
+    hdr_dep_missing_suppress = load_value('blade_hdr_verify.details'),
 )
 ```
 
 这样，现存的头文件依赖缺失错误都会被屏蔽掉，但是新增的则会正常报告出来。
+
+* allowed_undeclared_hdrs: list 允许的未声明的头文件的列表
+
+  由于 Blade 2 中头文件也被纳入了依赖管理，所有的头文件都必须显式地声明。但是对于历史遗留代码库，会有大量的未声明的头文件，短期内难以一下子补全。
+  这个选项允许在检查时忽略这些头文件。
+  Blade 构建后会生成一个本次构建涉及的未声明头文件列表的 `blade-bin/blade_undeclared_hdrs.details` 文件，可以复制出来加载使用。
+
+  ```python
+  cc_config(
+      allowed_undeclared_hdrs = load_value('allowed_undeclared_hdrs.conf'),
+  )
+  ```
+
+  从代码库的长期健康考虑，最终还是应当修正这些问题。
 
 ### cc_library_config ###
 
@@ -120,7 +135,7 @@ Blade 支持生成多个目标平台的目标，比如在 x64 环境下，支持
 
 ```python
 cc_library_config(
-    hdrs_missing_suppress = eval(open('blade_hdr_missing_spppress').read()),
+    hdrs_missing_suppress = load_value('blade_hdr_missing_spppress'),
 )
 ```
 
@@ -177,7 +192,7 @@ Java构建相关的配置
 
   ```python
   java_config(
-      maven_jar_allowed_dirs_exempts = eval(open('exempted_maven_jars.conf').read()),
+      maven_jar_allowed_dirs_exempts = load_value('exempted_maven_jars.conf'),
   )
   ```
 
@@ -203,7 +218,7 @@ Java构建相关的配置
 | thrift\_incs        | list   |                                   |      | 编译 thrift 生成的 C++ 时额外的头文件搜索路径 |
 | thrift\_gen\_params | string | 'cpp:include\_prefix,pure\_enums' |      | thrift 的编译参数                             |
 
-## 追加配置项值 ##
+### 追加配置项值 ###
 
 所有 `list` 和 `set` 类型的配置项都支持追加，其中 `list` 还支持在前面添加，用法是在配置项名前加上 `append_` 或 `prepend_` 前缀：
 
@@ -233,6 +248,18 @@ cc_config(
     )
 )
 ```
+
+### load_value 函数 ###
+
+load_value 函数可以用于从指定文件中安全地加载一个值：
+
+```python
+cc_config(
+    allowed_undeclared_hdrs = load_value('allowed_undeclared_hdrs.conf'),
+)
+```
+
+值必须符合 Python 字面量规范，不能包含执行语句。
 
 ## 环境变量 ##
 

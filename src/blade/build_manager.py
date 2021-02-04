@@ -174,20 +174,23 @@ class Blade(object):
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
         verify_details = {}
+        undeclared_hdrs = set()
         verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         # Sorting helps reduce jumps between BUILD files when fixng reported problems
         for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
-                ok, details = target.verify_hdr_dep_missing(
+                ok, details, target_undeclared_hdrs = target.verify_hdr_dep_missing(
                         header_inclusion_history,
                         verify_suppress.get(target.key, {}))
                 if not ok:
                     error += 1
                 if details:
                     verify_details[target.key] = details
+                undeclared_hdrs |= target_undeclared_hdrs
         self._dump_verify_details(verify_details)
         self._dump_verify_history()
+        self._dump_undeclared_hdrs(undeclared_hdrs)
         return error == 0
 
     def _load_verify_history(self):
@@ -208,6 +211,11 @@ class Blade(object):
         verify_details_file = os.path.join(self.__build_dir, 'blade_hdr_verify.details')
         with open(verify_details_file, 'w') as f:
             pprint.pprint(verify_details, stream=f)
+
+    def _dump_undeclared_hdrs(self, undeclared_hdrs):
+        file_path = os.path.join(self.__build_dir, 'blade_undeclared_hdrs.details')
+        with open(file_path, 'w') as f:
+            pprint.pprint(sorted(undeclared_hdrs), stream=f)
 
     def revision(self):
         """Blade revision to identify changes"""

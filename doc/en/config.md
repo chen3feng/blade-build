@@ -96,9 +96,25 @@ To make the upgrade process easier, for all header missing errors, we write them
 
 So you can copy it to somewhere and load it in you `BLADE_ROOT`:
 
+* allowed_undeclared_hdrs: list list of allowed undeclared header files
+
+  Since the header files in Blade 2 are also included in dependency management, all header files must be explicitly declared.
+  But for historical code bases, there will be a large number of undeclared header files, which are difficult to complete in a short time.
+  This option allows these header files to be ignored when checking.
+  After built, a `blade-bin/blade_undeclared_hdrs.details` file with a list of undeclared header
+  files involved in this build will be generated, which can be copied and loaded for use.
+
+  ```python
+  cc_config(
+      allowed_undeclared_hdrs = load_value('allowed_undeclared_hdrs.conf'),
+  )
+  ```
+
+  Considering the long-term health of the code base, these problems should eventually be corrected.
+
 ```python
 cc_config(
-    hdr_dep_missing_ignore = eval(open('blade_hdr_verify.details').read()),
+    hdr_dep_missing_ignore = load_value('blade_hdr_verify.details'),
 )
 ```
 
@@ -142,7 +158,7 @@ If there are too many entries, it is recommended to load them from a separated f
 
 ```python
 cc_library_config(
-    hdrs_missing_suppress = eval(open('blade_hdr_missing_spppress').read()),
+    hdrs_missing_suppress = load_value('blade_hdr_missing_spppress'),
 )
 ```
 
@@ -204,7 +220,7 @@ Description:
 
   ```python
   java_config(
-      maven_jar_allowed_dirs_exempts = eval(open('exempted_maven_jars.conf').read()),
+      maven_jar_allowed_dirs_exempts = load_value('exempted_maven_jars.conf'),
   )
   ```
 
@@ -234,7 +250,7 @@ thrift_library_config(
 )
 ```
 
-## Append configuration item values
+### Append configuration item values
 
 All configuration items of `list` and `set` types support appending, among which `list` also supports prepending.
 The usage is to prefix the configuration item name with `append_` or `prepend_`:
@@ -265,6 +281,18 @@ cc_config(
     )
 )
 ```
+
+### load_value function
+
+The `load_value` function can be used to load an expression as a value from a file:
+
+```python
+cc_config(
+    allowed_undeclared_hdrs = load_value('allowed_undeclared_hdrs.conf'),
+)
+```
+
+The value must conform to the Python literal specification and cannot contain execution statements.
 
 ## Environment Variable
 
