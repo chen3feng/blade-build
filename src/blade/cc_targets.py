@@ -665,11 +665,13 @@ class CcTarget(Target):
         return verified_hdrs, missing_dep_hdrs, msg
 
     def _header_undeclared_message(self, hdr):
-        msg = '"%s" is not declared in any cc library, ' % hdr
+        msg = '"%s" is not declared in any cc target. ' % hdr
         if path_under_dir(hdr, self.path):
-            msg += 'declare it in "hdrs" if it is public, or in "srcs" if it is private'
-        else:
-            msg += 'declare it in "hdrs" of the cc_library it belongs to'
+            msg += 'If it belongs to this target, it should be declared in "src"'
+            if self.type.endswith('_library'):
+                msg += ' if it is private or in "hdrs" if it is public'
+            msg += ', otherwise '
+        msg += 'it should be declared in "hdrs" of the appropriate library to which it belongs'
         return msg
 
     @staticmethod
@@ -752,23 +754,20 @@ class CcTarget(Target):
 
             verified_hdrs, missing_dep_hdrs, msg = self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []), undeclared_hdrs)
-            if missing_dep_hdrs:
-                details[src] = list(missing_dep_hdrs)
+            direct_verify_msg += msg
+            if msg or missing_dep_hdrs:
                 failed_preprocess_paths.add(path)
-                direct_verify_msg += msg
-                # Direct headers verification can cover the under one
-                continue
 
             # But direct headers can not cover all, so it is still useful
-            missing_dep_hdrs, msg = self._verify_generated_headers(
+            missing_generated_dep_hdrs, msg = self._verify_generated_headers(
                     src, stacks, declared_hdrs, declared_incs, suppress.get(src, []), verified_hdrs)
-            generated_verify_msg += msg
-            if missing_dep_hdrs:
-                if src in details:
-                    details[src] += missing_dep_hdrs
-                else:
-                    details[src] = list(missing_dep_hdrs)
+            if msg or missing_generated_dep_hdrs:
                 failed_preprocess_paths.add(path)
+            generated_verify_msg += msg
+            missing_dep_hdrs |= missing_generated_dep_hdrs
+
+            if missing_dep_hdrs:
+                details[src] = list(missing_dep_hdrs)
 
         severity = config.get_item('cc_config', 'hdr_dep_missing_severity')
         output = getattr(self, severity)
