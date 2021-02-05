@@ -102,6 +102,21 @@ def _find_libs_by_header(hdr):
             return []
 
 
+# dict(hdr, set(targets))
+_private_hdrs_target_map = collections.defaultdict(set)
+
+
+def _declare_private_hdrs(target, hdrs):
+    for h in hdrs:
+        hdr = target._source_file_path(h)
+        _private_hdrs_target_map[hdr].add(target.key)
+
+
+def _find_targets_by_private_hdr(hdr):
+    """Find targets by private header"""
+    return _private_hdrs_target_map[hdr]
+
+
 class CcTarget(Target):
     """
     This class is derived from Target and it is the base class
@@ -157,6 +172,7 @@ class CcTarget(Target):
         self.attr['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
         self.attr['expanded_srcs'] = self._expand_srcs()
+        _declare_private_hdrs(self, private_hdrs)
 
     def _expand_srcs(self):
         """Expand src to [(src, full_path)]"""
@@ -196,7 +212,6 @@ class CcTarget(Target):
             if not os.path.exists(hdr):
                 if _is_likely_concatenated_filenames(h, _HEADER_FILE_EXTS):
                     self.warning('File "%s" does not exist, missing "," between file names?' % h)
-                hdr = self._target_file_path(h)
             expanded_hdrs.append(hdr)
         self.attr['hdrs'] = expanded_hdrs
         _declare_hdrs(self, expanded_hdrs)
@@ -593,10 +608,10 @@ class CcTarget(Target):
                 skip_level = level
             elif hdr.startswith(build_dir):
                 skip_level = level
-                stacks.append(hdrs_stack + [hdr])
+                stacks.append(hdrs_stack + [self._remove_build_dir_prefix(hdr)])
             else:
                 current_level = level
-                hdrs_stack.append(hdr)
+                hdrs_stack.append(self._remove_build_dir_prefix(hdr))
                 skip_level = -1
             return current_level, skip_level
 
@@ -613,7 +628,7 @@ class CcTarget(Target):
                     console.log('%s: Unrecognized line %s' % (path, line))
                     break
                 if level == 1 and not hdr.startswith('/'):
-                    direct_hdrs.append(hdr)
+                    direct_hdrs.append(self._remove_build_dir_prefix(hdr))
                 if level > current_level:
                     if skip_level != -1 and level > skip_level:
                         continue
@@ -648,13 +663,17 @@ class CcTarget(Target):
         ok = True
         msg = []
         for hdr in direct_hdrs:
-            nominal_hdr = self._remove_build_dir_prefix(hdr)
             libs = _find_libs_by_header(hdr)
             if not libs:
                 ok = False
-                if nominal_hdr not in allowed_undeclared_hdrs:
+                libs =  _find_targets_by_private_hdr(hdr)
+                if libs:
+                    if self.key not in libs:
+                        msg.append('    "%s" is a private header file of %s' % (hdr, list(libs)))
+                    continue
+                if hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
-                undeclared_hdrs.add(nominal_hdr)
+                undeclared_hdrs.add(hdr)
                 continue
             deps = set(self.deps + [self.key])  # Don't forget self
             if not (libs & deps):  # pylint: disable=superfluous-parens
@@ -664,8 +683,8 @@ class CcTarget(Target):
                 # Because a passed src will not be verified again, even if we remove it from the
                 # suppress list.
                 # Same reason in the _verify_generated_headers.
-                missing_dep_hdrs.add(nominal_hdr)
-                if hdr not in suppressd_hdrs and nominal_hdr not in suppressd_hdrs:
+                missing_dep_hdrs.add(hdr)
+                if hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
         if msg:
             verify_msg.append('  In "%s",' % src)
@@ -709,9 +728,8 @@ class CcTarget(Target):
                 continue
             ok = False
             stack.pop()
-            nominal_hdr = self._remove_build_dir_prefix(generated_hdr)
-            missing_dep_hdrs.add(nominal_hdr)
-            if generated_hdr in suppressd_hdrs or nominal_hdr in suppressd_hdrs:
+            missing_dep_hdrs.add(generated_hdr)
+            if generated_hdr in suppressd_hdrs:
                 continue
             source = self._source_file_path(src)
             msg.append('  For "%s"' % self._hdr_declaration_message(generated_hdr))
@@ -767,7 +785,7 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-
+            print(src, direct_hdrs)
             missing_dep_hdrs = set()
             if not self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []),
