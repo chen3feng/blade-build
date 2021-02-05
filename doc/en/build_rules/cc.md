@@ -8,7 +8,7 @@ The common CC attributes are：
 | warning | whether suppress all warnings  | warning='no' | the default values is 'yes', so can be omitted |
 | defs | user define macros | defs=['_MT'] | Can also has value, eg. 'A=1' |
 | incs | header search paths | incs=['poppy/myinc'] | Usually used for thirdparty library, use full include path in our code is more recommended |
-| optimize | optimize flags | optimize=['O3'] | ignored in the debug mode |
+| optimize | optimize flags | optimize=['-O3'] | ignored in the debug mode |
 | extra_cppflags | extra C/C++ compile flags | extra_cppflags=['-Wno-format-literal'] | many useful flags, such as `-g`，`-fPIC` are builtin |
 | extra_linkflags | extra link flags | extra_linkflags=['-fopenmp'] | many useful flags such `-g` are already built in |
 
