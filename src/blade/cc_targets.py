@@ -107,13 +107,14 @@ _private_hdrs_target_map = collections.defaultdict(set)
 
 
 def _declare_private_hdrs(target, hdrs):
+    """Declare private header files of a cc target."""
     for h in hdrs:
         hdr = target._source_file_path(h)
         _private_hdrs_target_map[hdr].add(target.key)
 
 
 def _find_targets_by_private_hdr(hdr):
-    """Find targets by private header"""
+    """Find targets by private header file."""
     return _private_hdrs_target_map[hdr]
 
 
