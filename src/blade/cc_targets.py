@@ -74,6 +74,8 @@ def _declare_hdrs(target, hdrs):
         hdrs:list, the full path (based in workspace troot) of hdrs
     """
     for hdr in hdrs:
+        assert not hdr.startswith(target.build_dir)
+        hdr = target._source_file_path(hdr)
         _hdr_targets_map[hdr].add(target.key)
 
 
@@ -84,6 +86,7 @@ def _declare_hdr_dir(target, inc):
         target: the target which owns the include dir
         inc:str, the full path (based in workspace troot) of include dir
     """
+    inc = target._source_file_path(inc)
     _hdr_dir_targets_map[inc].add(target.key)
 
 
@@ -172,13 +175,14 @@ class CcTarget(Target):
         options = self.blade.get_options()
         self.attr['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
-        self.attr['expanded_srcs'] = self._expand_srcs()
+        self.attr['expanded_srcs'] = self._expand_sources(srcs)
+        self.attr['expanded_hdrs'] = self._expand_sources(private_hdrs)
         _declare_private_hdrs(self, private_hdrs)
 
-    def _expand_srcs(self):
+    def _expand_sources(self, files):
         """Expand src to [(src, full_path)]"""
         result = []
-        for src in self.srcs:
+        for src in files:
             full_path = self._source_file_path(src)
             if not os.path.exists(full_path):
                 # Assume generated
@@ -207,15 +211,16 @@ class CcTarget(Target):
                         'explicitly, if no public header file, set "hdrs" to empty (hdrs = [])')
         if not hdrs:
             return
-        expanded_hdrs = []
-        for h in var_to_list(hdrs):
+        hdrs = var_to_list(hdrs)
+        _declare_hdrs(self, hdrs)
+        self.attr['expanded_hdrs'] += self._expand_sources(hdrs)
+
+    def _check_sources(self, files):
+        for h in hdrs:
             hdr = self._source_file_path(h)
             if not os.path.exists(hdr):
                 if _is_likely_concatenated_filenames(h, _HEADER_FILE_EXTS):
                     self.warning('File "%s" does not exist, missing "," between file names?' % h)
-            expanded_hdrs.append(hdr)
-        self.attr['hdrs'] = expanded_hdrs
-        _declare_hdrs(self, expanded_hdrs)
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library."""
@@ -487,7 +492,7 @@ class CcTarget(Target):
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
         for src, input in expanded_srcs:
-            obj = '%s.o' % os.path.join(objs_dir, src)
+            obj = os.path.join(objs_dir, src + '.o')
             rule = self._get_rule_from_suffix(src)
             self.generate_build(rule, obj, inputs=input,
                                 order_only_deps=order_only_deps,
@@ -501,6 +506,13 @@ class CcTarget(Target):
         """Compile generated cc sources"""
         expanded_sources = [(src, self._target_file_path(src)) for src in sources]
         return self._cc_objects(expanded_sources, generated_headers)
+
+    def _generate_hdrs_inclusion(self):
+        objs_dir = self._target_file_path(self.name + '.objs')
+        for hdr, full_hdr in self.attr['expanded_hdrs']:
+            output = os.path.join(objs_dir, hdr + '.H')
+            self.generate_build('cxxhdrs', output, inputs=full_hdr,
+                                order_only_deps=self._cc_compile_deps())
 
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
@@ -786,7 +798,6 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-            print(src, direct_hdrs)
             missing_dep_hdrs = set()
             if not self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []),
@@ -888,8 +899,8 @@ class CcLibrary(CcTarget):
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
-        self._set_hdrs(hdrs)
         self._set_secure(secure)
+        self._set_hdrs(hdrs)
 
     def before_generate(self):
         """Override"""
@@ -938,6 +949,7 @@ class CcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
+        self._generate_hdrs_inclusion()
         if self.srcs:
             if self.attr.get('secure'):
                 objs = self._securecc_objects(self.srcs)
@@ -1075,6 +1087,7 @@ class PrebuiltCcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
+        self._generate_hdrs_inclusion()
         # We allow a prebuilt cc_library doesn't exist if it is not used.
         # So if this library is not depended by any target, don't generate any
         # rule to avoid runtime error and also avoid unnecessary runtime cost.
@@ -1218,14 +1231,16 @@ class ForeignCcLibrary(CcTarget):
         self.attr['has_dynamic'] = has_dynamic
 
         if hdrs:
-            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdrs)]
+            hdrs = [os.path.join(install_dir, h) for h in var_to_list(hdrs)]
+            _declare_hdrs(self, hdrs)
+            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in hdrs]
             self.attr['hdrs'] = hdrs
             self.attr['generated_hdrs'] = hdrs
-            _declare_hdrs(self, hdrs)
         else:
-            hdr_dir = self._target_file_path(os.path.join(install_dir, hdr_dir))
-            self.attr['generated_incs'] = [hdr_dir]
+            hdr_dir = os.path.join(install_dir, hdr_dir)
             _declare_hdr_dir(self, hdr_dir)
+            hdr_dir = self._target_file_path(hdr_dir)
+            self.attr['generated_incs'] = [hdr_dir]
 
     def _library_full_path(self, type):
         """Return full path of the library file with specified type"""
@@ -1249,6 +1264,7 @@ class ForeignCcLibrary(CcTarget):
         self._check_binary_link_only()
 
     def _ninja_rules(self):
+        self._generate_hdrs_inclusion()
         a_path = self._library_full_path('a')
         so_path = self._library_full_path('so')
 
@@ -1420,6 +1436,7 @@ class CcBinary(CcTarget):
     def generate(self):
         """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
+        self._generate_hdrs_inclusion()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         self._cc_binary(objs, self.attr['dynamic_link'])
 
@@ -1521,6 +1538,7 @@ class CcPlugin(CcTarget):
     def generate(self):
         """Generate build code for cc plugin."""
         self._check_deprecated_deps()
+        self._generate_hdrs_inclusion()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
         implicit_deps = []
