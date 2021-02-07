@@ -41,6 +41,7 @@ class PythonTarget(Target):
             name=name,
             type=type,
             srcs=srcs,
+            src_exts=['py', 'py2', 'py3', 'egg', 'whl'],
             deps=deps,
             visibility=visibility,
             kwargs=kwargs)

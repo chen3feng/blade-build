@@ -167,7 +167,17 @@ class _NinjaFileHeaderGenerator(object):
 
         return filtered_cppflags, filtered_cxxflags, filtered_cflags
 
-    def generate_cc_vars(self):
+    def generate_cc_rules(self):
+        cc, cxx, ld = self.build_accelerator.get_cc_commands()
+        cppflags, ldflags = self._get_cc_flags()
+        self._generate_cc_compile_rules(cc, cxx, cppflags)
+        self._generate_cc_ar_rules()
+        self._generate_cc_link_rules(ld, ldflags)
+        self.generate_rule(name='strip',
+                           command='strip --strip-unneeded -o ${out} ${in}',
+                           description='STRIP ${out}')
+
+    def _generate_cc_vars(self):
         warnings, cxx_warnings, c_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
@@ -182,21 +192,16 @@ class _NinjaFileHeaderGenerator(object):
                 ''') % (' '.join(c_warnings), ' '.join(cxx_warnings),
                         ' '.join(optimize_flags), optimize))
 
-    def generate_cc_rules(self):
-        # pylint: disable=too-many-locals
-        cc, cxx, ld = self.build_accelerator.get_cc_commands()
+    def _generate_cc_compile_rules(self, cc, cxx, cppflags):
+        self._generate_cc_vars()
+
         cc_config = config.get_section('cc_config')
-        cc_library_config = config.get_section('cc_library_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
-        cppflags, ldflags = self._get_cc_flags()
         cppflags = cc_config['cppflags'] + cppflags
-        arflags = ''.join(cc_library_config['arflags'])
-        ldflags = cc_config['linkflags'] + ldflags
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
-        self.generate_cc_vars()
 
         template = self._cc_compile_command_wrapper_template()
 
@@ -229,9 +234,41 @@ class _NinjaFileHeaderGenerator(object):
                            description='SECURECC ${in}',
                            restat=True)
 
+        self._generate_cc_hdrs_rule(cc, cxx, cppflags, cflags, cxxflags, includes)
+
+    def _generate_cc_hdrs_rule(self, cc, cxx, cppflags, cflags, cxxflags, includes):
+        """
+        Generate inclusion stack file for cc file to check dependency missing.
+        See the '-H' in https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
+        """
+        self.generate_rule(name='cchdrs',
+                           command=self._hdrs_command(cc, cflags, cppflags, includes),
+                           depfile='${out}.d', deps='gcc',
+                           description='CC HDRS ${in}')
+        self.generate_rule(name='cxxhdrs',
+                           command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
+                           depfile='${out}.d', deps='gcc',
+                           description='CXX HDRS ${in}')
+
+    def _hdrs_command(self, cc, flags, cppflags, includes):
+        """Command to generate cc inclusion information file"""
+        args = '-o /dev/null -E -H -MMD -MF ${out}.d %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}' % (
+                ' '.join(flags), ' '.join(cppflags), includes)
+        # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
+        # but errors may occur under certain boundary conditions (for example, check `__COUNTER__`
+        # in the preprocessing directives), rerun the command without it on error.
+        preprocess1 = '%s -fdirectives-only %s' % (cc, args)
+        preprocess2 = '%s %s' % (cc, args)
+        return preprocess1 + ' || ' + preprocess2 + ' || (cat ${out} && false)'
+
+    def _generate_cc_ar_rules(self):
+        arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
         self.generate_rule(name='ar',
                            command='rm -f $out; ar %s $out $in' % arflags,
                            description='AR ${out}')
+
+    def _generate_cc_link_rules(self, ld, ldflags):
+        ldflags = config.get_item('cc_config', 'linkflags') + ldflags
         link_jobs = config.get_item('link_config', 'link_jobs')
         if link_jobs:
             link_jobs = min(link_jobs, self.blade.build_jobs_num())
@@ -252,9 +289,6 @@ class _NinjaFileHeaderGenerator(object):
                                ld, ' '.join(ldflags)),
                            description='SHAREDLINK ${out}',
                            pool=pool)
-        self.generate_rule(name='strip',
-                           command='strip --strip-unneeded -o ${out} ${in}',
-                           description='STRIP ${out}')
 
     def _cc_compile_command_wrapper_template(self):
         """Calculate the cc compile command wrapper template."""

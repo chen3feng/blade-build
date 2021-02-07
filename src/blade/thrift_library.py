@@ -38,11 +38,11 @@ class ThriftLibrary(CcTarget):
             deprecated,
             kwargs):
         srcs = var_to_list(srcs)
-        self._check_thrift_srcs_name(srcs)
         super(ThriftLibrary, self).__init__(
                 name=name,
                 type='thrift_library',
                 srcs=srcs,
+                src_exts=['thrift'],
                 deps=deps,
                 visibility=visibility,
                 warning='',
@@ -71,12 +71,6 @@ class ThriftLibrary(CcTarget):
             thrift_files = self._thrift_gen_cpp_files(src)
             headers += [h for h in thrift_files if h.endswith('.h')]
         self.attr['generated_hdrs'] = headers
-
-    def _check_thrift_srcs_name(self, srcs):
-        """Check whether the thrift file's name ends with .thrift."""
-        for src in srcs:
-            if not src.endswith('.thrift'):
-                self.error('Invalid thrift file %s' % src)
 
     def _thrift_gen_cpp_files(self, src):
         """Get the c++ files generated from thrift file."""

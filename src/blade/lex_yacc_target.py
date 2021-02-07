@@ -44,6 +44,7 @@ class LexYaccLibrary(CcTarget):
                 name=name,
                 type='lex_yacc_library',
                 srcs=srcs,
+                src_exts=['l', 'y', 'll', 'yy'],
                 deps=deps,
                 visibility=visibility,
                 warning=warning,
@@ -69,7 +70,8 @@ class LexYaccLibrary(CcTarget):
         self.attr['extra_linkflags'] = var_to_list(extra_linkflags)
         self.attr['allow_undefined'] = allow_undefined
         self.attr['link_all_symbols'] = True
-        cc, cc_path, h_path = self._yacc_generated_files(self.srcs[1])
+        cc, h, cc_path, h_path = self._yacc_generated_files(self.srcs[1])
+        self._set_hdrs(h)
         self.attr['generated_hdrs'] = [h_path]
 
     def _lex_flags(self):
@@ -123,15 +125,16 @@ class LexYaccLibrary(CcTarget):
 
     def _yacc_generated_files(self, source):
         cc = self._cc_source(source)
-        cc_path = self._target_file_path(cc)
-        if cc_path.endswith('.c'):
-            h_path = '%s.h' % cc_path[:-2]
+        if cc.endswith('.c'):
+            h = '%s.h' % cc[:-2]
         else:
-            h_path = '%s.hh' % cc_path[:-3]
-        return cc, cc_path, h_path
+            h = '%s.hh' % cc[:-3]
+        cc_path = self._target_file_path(cc)
+        h_path = self._target_file_path(h)
+        return cc, h, cc_path, h_path
 
     def _yacc_rules(self, source, rule, vars):
-        cc, cc_path, h_path = self._yacc_generated_files(source)
+        cc, h, cc_path, h_path = self._yacc_generated_files(source)
         input = self._source_file_path(source)
         self.generate_build('yacc', cc_path, inputs=input, implicit_outputs=h_path, variables=vars)
         return cc, cc_path, h_path
@@ -142,7 +145,6 @@ class LexYaccLibrary(CcTarget):
                                                               vars=self._yacc_vars())
         lex_cc, lex_cc_path = self._lex_rules(lex_file, implicit_deps=[yacc_cc_path],
                                               vars=self._lex_vars())
-        self.attr['generated_hdrs'].append(yacc_h_path)
         objs = self._generated_cc_objects([lex_cc, yacc_cc],
                                           generated_headers=self.attr['generated_hdrs'])
         self._cc_library(objs)

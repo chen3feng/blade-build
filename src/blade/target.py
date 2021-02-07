@@ -20,6 +20,24 @@ from blade import target_pattern
 from blade.blade_util import var_to_list, iteritems, source_location, md5sum
 
 
+def _is_likely_concatenated_filenames(string, exts):
+    """Check whether a string is likely a concatenated filenames.
+    This situation is usually caused by missing a comma between file names.
+    For example, if the user writes:
+        ```
+        [
+            'first.h',
+            'second.h'  # NOTE: Missing the ending ","
+            'third.h',
+        ]
+        ```
+        'second.h' will be concatenated with 'third.h' to be 'first.hsecond.h'
+    """
+    # Convert exts to regex, e.g., ['h', 'hpp'] to "(h|hpp)"
+    ext_pattern = '(%s)' % '|'.join(e.replace('+', r'\+') for e in exts)
+    return re.search(r'\w+\.{ext}.+\.{ext}$'.format(ext=ext_pattern), string)
+
+
 # Location reference macro regex
 LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
 
@@ -36,6 +54,7 @@ class Target(object):
                  name,
                  type,
                  srcs,
+                 src_exts,
                  deps,
                  visibility,
                  kwargs):
@@ -91,7 +110,7 @@ class Target(object):
 
         self._check_name()
         self._check_kwargs(kwargs)
-        self._check_srcs()
+        self._check_srcs(src_exts)
         self._check_deps(deps)
         self._init_target_deps(deps)
         self._init_visibility(visibility)
@@ -195,32 +214,44 @@ class Target(object):
         """Whether the target allows duplicate source file with other targets"""
         return False
 
+    def _check_sources(self, file_kind, files, exts):
+        """Check source files."""
+        dups = []
+        srcset = set()
+        for src in files:
+            if src in srcset:
+                dups.append(src)
+            else:
+                srcset.add(src)
+            if '..' in src or src.startswith('/'):
+                self.error('Invalid %s file path: %s. can only be relative path, and must '
+                           'in current directory or subdirectories.' % (file_kind, src))
+            if not exts:
+                continue
+            _, ext = os.path.splitext(src)
+            if ext:
+                ext = ext[1:]
+            if ext not in exts:
+                self.error('Invalid %s file name: "%s", must ends with %s' % (file_kind, src, list(exts)))
+            full_path = self._source_file_path(src)
+            if not os.path.exists(full_path):
+                if ext and _is_likely_concatenated_filenames(src, exts):
+                    self.warning('File "%s" does not exist, missing "," between file names?' % src)
+
+        if dups:
+            self.error('Duplicate %s file paths: %s ' % (file_kind, dups))
+
     # Keep the relationship of all src -> target.
     # Used by build rules to ensure that a source file occurs in
     # exactly one target(only library target).
     __src_target_map = {}
 
-    def _check_srcs(self):
-        """Check source files.
-
-        """
-        dups = []
-        srcset = set()
-        for s in self.srcs:
-            if s in srcset:
-                dups.append(s)
-            else:
-                srcset.add(s)
-        if dups:
-            self.error('Duplicate source file paths: %s ' % dups)
-
+    def _check_srcs(self, src_exts):
+        """Check the "src" attribute."""
+        self._check_sources('source', self.srcs, src_exts)
         # Check if one file belongs to two different targets.
         action = config.get_item('global_config', 'duplicated_source_action')
         for src in self.srcs:
-            if '..' in src or src.startswith('/'):
-                self.error('Invalid source file path: %s. can only be relative path, and must '
-                           'in current directory or subdirectories.' % src)
-
             full_src = os.path.normpath(os.path.join(self.path, src))
             target = self.fullname, self._allow_duplicate_source()
             if full_src not in Target.__src_target_map:
@@ -636,6 +667,7 @@ class SystemLibrary(Target):
                 name=name,
                 type='system_library',
                 srcs=[],
+                src_exts=[],
                 deps=[],
                 visibility=['PUBLIC'],
                 kwargs={})

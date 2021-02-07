@@ -34,6 +34,7 @@ class MavenJar(Target):
                 name=name,
                 type='maven_jar',
                 srcs=[],
+                src_exts=None,
                 deps=[],
                 visibility=visibility,
                 kwargs={})
@@ -616,6 +617,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                 name=name,
                 type=type,
                 srcs=srcs,
+                src_exts=['java'],
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)

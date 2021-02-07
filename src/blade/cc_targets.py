@@ -28,8 +28,10 @@ from blade.blade_util import path_under_dir, stable_unique, var_to_list, var_to_
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 
+
 # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
-_HEADER_FILE_EXTS = set(['h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'inl', 'tcc'])
+_SOURCE_FILE_EXTS = {'c', 'cc', 'cp', 'cxx', 'cpp', 'CPP', 'c++', 'C', 's', 'S', 'asm'}
+_HEADER_FILE_EXTS = {'h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'inl', 'tcc'}
 
 
 def is_header_file(filename):
@@ -37,24 +39,6 @@ def is_header_file(filename):
     ext = ext[1:]  # Remove leading '.'
     # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html
     return ext in _HEADER_FILE_EXTS
-
-
-def _is_likely_concatenated_filenames(string, exts):
-    """Check whether a string is likely a concatenated filenames.
-    This situation is usually caused by missing a comma between file names.
-    For example, if the user writes:
-        ```
-        [
-            'first.h',
-            'second.h'  # NOTE: Missing the ending ","
-            'third.h',
-        ]
-        ```
-        'second.h' will be concatenated with 'third.h' to be 'first.hsecond.h'
-    """
-    # Convert exts to regex, e.g., ['h', 'hpp'] to "(h|hpp)"
-    ext_pattern = '(%s)' % '|'.join(e.replace('+', r'\+') for e in exts)
-    return re.search(r'\w+\.{ext}.+\.{ext}$'.format(ext=ext_pattern), string)
 
 
 # A dict[hdr, set(target)]
@@ -74,6 +58,8 @@ def _declare_hdrs(target, hdrs):
         hdrs:list, the full path (based in workspace troot) of hdrs
     """
     for hdr in hdrs:
+        assert not hdr.startswith(target.build_dir)
+        hdr = target._source_file_path(hdr)
         _hdr_targets_map[hdr].add(target.key)
 
 
@@ -84,6 +70,8 @@ def _declare_hdr_dir(target, inc):
         target: the target which owns the include dir
         inc:str, the full path (based in workspace troot) of include dir
     """
+    assert not inc.startswith(target.build_dir), inc
+    inc = target._source_file_path(inc)
     _hdr_dir_targets_map[inc].add(target.key)
 
 
@@ -137,7 +125,8 @@ class CcTarget(Target):
                  optimize,
                  extra_cppflags,
                  extra_linkflags,
-                 kwargs):
+                 kwargs,
+                 src_exts=_SOURCE_FILE_EXTS):
         """Init method.
 
         Init the cc target.
@@ -153,6 +142,7 @@ class CcTarget(Target):
                 name=name,
                 type=type,
                 srcs=srcs,
+                src_exts=src_exts,
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)
@@ -172,13 +162,14 @@ class CcTarget(Target):
         options = self.blade.get_options()
         self.attr['generate_dynamic'] = (getattr(options, 'generate_dynamic', False) or
                                          config.get_item('cc_library_config', 'generate_dynamic'))
-        self.attr['expanded_srcs'] = self._expand_srcs()
+        self.attr['expanded_srcs'] = self._expand_sources(srcs)
+        self.attr['expanded_hdrs'] = self._expand_sources(private_hdrs)
         _declare_private_hdrs(self, private_hdrs)
 
-    def _expand_srcs(self):
-        """Expand src to [(src, full_path)]"""
+    def _expand_sources(self, files):
+        """Expand files to [(path, full_path)]."""
         result = []
-        for src in self.srcs:
+        for src in files:
             full_path = self._source_file_path(src)
             if not os.path.exists(full_path):
                 # Assume generated
@@ -207,15 +198,10 @@ class CcTarget(Target):
                         'explicitly, if no public header file, set "hdrs" to empty (hdrs = [])')
         if not hdrs:
             return
-        expanded_hdrs = []
-        for h in var_to_list(hdrs):
-            hdr = self._source_file_path(h)
-            if not os.path.exists(hdr):
-                if _is_likely_concatenated_filenames(h, _HEADER_FILE_EXTS):
-                    self.warning('File "%s" does not exist, missing "," between file names?' % h)
-            expanded_hdrs.append(hdr)
-        self.attr['hdrs'] = expanded_hdrs
-        _declare_hdrs(self, expanded_hdrs)
+        hdrs = var_to_list(hdrs)
+        self._check_sources('header', hdrs, _HEADER_FILE_EXTS)
+        _declare_hdrs(self, hdrs)
+        self.attr['expanded_hdrs'] += self._expand_sources(hdrs)
 
     def _check_deprecated_deps(self):
         """Check whether it depends upon a deprecated library."""
@@ -486,13 +472,20 @@ class CcTarget(Target):
             order_only_deps += generated_headers
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
-        for src, input in expanded_srcs:
-            obj = '%s.o' % os.path.join(objs_dir, src)
+        for src, full_src in expanded_srcs:
+            obj = os.path.join(objs_dir, src + '.o')
             rule = self._get_rule_from_suffix(src)
-            self.generate_build(rule, obj, inputs=input,
+            self.generate_build(rule, obj, inputs=full_src,
                                 order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
+
+        for hdr, full_hdr in self.attr['expanded_hdrs']:
+            if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
+                continue
+            output = os.path.join(objs_dir, hdr + '.H')
+            self.generate_build('cxxhdrs', output, inputs=full_hdr,
+                                order_only_deps=order_only_deps, variables=vars, clean=[])
 
         self._remove_on_clean(objs_dir)
         return objs
@@ -738,7 +731,7 @@ class CcTarget(Target):
                 msg.append('    In file included from "%s"' % source)
             else:
                 stack.reverse()
-                msg.append('    In file included from "%s"' % self._hdr_declaration_message(stack[0]))
+                msg.append('    In file included from %s' % self._hdr_declaration_message(stack[0]))
                 prefix = '                     from "%s"'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
                 msg.append(prefix % source)
@@ -761,16 +754,7 @@ class CcTarget(Target):
         Returns:
             Whether nothing is wrong.
         """
-        # Collect header/include declarations
-        declared_hdrs = set()
-        declared_incs = set()
-
-        build_targets = self.blade.get_build_targets()
-        for key in self.expanded_deps:
-            dep = build_targets[key]
-            declared_hdrs.update(dep.attr.get('generated_hdrs', []))
-            declared_incs.update(dep.attr.get('generated_incs', []))
-
+        declared_hdrs, declared_incs = self._collect_declared_generated_includes()
         # Verify
         details = {}  # {src: list(hdrs)}
         undeclared_hdrs = set()
@@ -786,7 +770,6 @@ class CcTarget(Target):
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
-            print(src, direct_hdrs)
             missing_dep_hdrs = set()
             if not self._verify_direct_headers(
                     src, direct_hdrs, suppress.get(src, []),
@@ -821,6 +804,20 @@ class CcTarget(Target):
             self._cleanup_target_files()
 
         return not failed, details, undeclared_hdrs
+
+    def _collect_declared_generated_includes(self):
+        """Collect header/include declarations."""
+        declared_hdrs = set()
+        declared_incs = set()
+
+        build_targets = self.blade.get_build_targets()
+        for key in self.expanded_deps:
+            dep = build_targets[key]
+            for hdr in dep.attr.get('generated_hdrs', []):
+                declared_hdrs.add(self._remove_build_dir_prefix(hdr))
+            for inc in dep.attr.get('generated_incs', []):
+                declared_incs.add(self._remove_build_dir_prefix(inc))
+        return declared_hdrs, declared_incs
 
     def _soname_of(self, so_path):
         """Get the `soname` of a shared library."""
@@ -888,8 +885,8 @@ class CcLibrary(CcTarget):
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
-        self._set_hdrs(hdrs)
         self._set_secure(secure)
+        self._set_hdrs(hdrs)
 
     def before_generate(self):
         """Override"""
@@ -1218,14 +1215,15 @@ class ForeignCcLibrary(CcTarget):
         self.attr['has_dynamic'] = has_dynamic
 
         if hdrs:
-            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in var_to_list(hdrs)]
-            self.attr['hdrs'] = hdrs
-            self.attr['generated_hdrs'] = hdrs
+            hdrs = [os.path.join(install_dir, h) for h in var_to_list(hdrs)]
             _declare_hdrs(self, hdrs)
+            hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in hdrs]
+            self.attr['generated_hdrs'] = hdrs
         else:
-            hdr_dir = self._target_file_path(os.path.join(install_dir, hdr_dir))
-            self.attr['generated_incs'] = [hdr_dir]
+            hdr_dir = os.path.join(install_dir, hdr_dir)
             _declare_hdr_dir(self, hdr_dir)
+            hdr_dir = self._target_file_path(hdr_dir)
+            self.attr['generated_incs'] = [hdr_dir]
 
     def _library_full_path(self, type):
         """Return full path of the library file with specified type"""

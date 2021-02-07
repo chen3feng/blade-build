@@ -49,6 +49,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 name=name,
                 type=type,
                 srcs=srcs,
+                src_exts=['scala', 'java'],
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)
