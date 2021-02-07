@@ -28,6 +28,7 @@ class GenRuleTarget(Target):
     def __init__(self,
                  name,
                  srcs,
+                 src_exts,
                  deps,
                  visibility,
                  outs,
@@ -48,6 +49,7 @@ class GenRuleTarget(Target):
                 name=name,
                 type='gen_rule',
                 srcs=srcs,
+                src_exts=src_exts,
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)
@@ -68,10 +70,11 @@ class GenRuleTarget(Target):
             self._remove_on_clean(self._target_file_path(clean))
 
         if generated_incs is not None:
-            generated_incs = [self._target_file_path(inc) for inc in var_to_list(generated_incs)]
-            self.attr['generated_incs'] = generated_incs
             for inc in generated_incs:
+                generated_incs = var_to_list(generated_incs)
                 cc_targets._declare_hdr_dir(self, inc)
+            generated_incs = [self._target_file_path(inc) for inc in generated_incs]
+            self.attr['generated_incs'] = generated_incs
         else:
             if generated_hdrs is None:
                 # Auto judge
@@ -79,9 +82,9 @@ class GenRuleTarget(Target):
             else:
                 generated_hdrs = var_to_list(generated_hdrs)
             if generated_hdrs:
+                cc_targets._declare_hdrs(self, generated_hdrs)
                 generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
                 self.attr['generated_hdrs'] = generated_hdrs
-                cc_targets._declare_hdrs(self, generated_hdrs)
 
         if export_incs:
             self.attr['export_incs'] = self._expand_incs(var_to_list(export_incs))
@@ -170,6 +173,7 @@ class GenRuleTarget(Target):
 def gen_rule(
         name,
         srcs=[],
+        src_exts=[],
         deps=[],
         visibility=None,
         outs=[],
@@ -183,6 +187,10 @@ def gen_rule(
         **kwargs):
     """General Build Rule
     Args:
+        src_exts: List[str],
+            Valid extension names for file in "srcs", can be None, which means any is valid.
+            NOTE the empty string is also a valid extension, which means NO extension.
+            For example, if it is ['h', ''], 'vector' and 'vector.h' are both valid.
         generated_hdrs: Optional[bool],
             Specify whether this target will generate c/c++ header files.
             Defaultly, gen_rule will calculate a generated header files list automatically
@@ -199,6 +207,7 @@ def gen_rule(
     gen_rule_target = GenRuleTarget(
             name=name,
             srcs=srcs,
+            src_exts=src_exts,
             deps=deps,
             visibility=visibility,
             outs=outs,

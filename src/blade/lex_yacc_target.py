@@ -44,6 +44,7 @@ class LexYaccLibrary(CcTarget):
                 name=name,
                 type='lex_yacc_library',
                 srcs=srcs,
+                src_exts=['l', 'y', 'll', 'yy'],
                 deps=deps,
                 visibility=visibility,
                 warning=warning,

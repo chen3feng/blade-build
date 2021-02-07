@@ -46,6 +46,7 @@ class ShellTest(Target):
                 name=name,
                 type='sh_test',
                 srcs=srcs,
+                src_exts=['sh', 'bash', ''],
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)

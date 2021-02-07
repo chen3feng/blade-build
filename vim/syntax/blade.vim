@@ -93,7 +93,7 @@ syn keyword bladeArg out
 
 " This is the last rule
 syn keyword bladeTarget gen_rule
-syn keyword bladeArg cmd cmd_name cleans outs generate_hdrs generated_incs heavy
+syn keyword bladeArg cmd cmd_name cleans outs src_exts generate_hdrs generated_incs heavy
 
 if version >= 508 || !exists("did_blade_syn_inits")
     if version < 508

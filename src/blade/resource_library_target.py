@@ -35,6 +35,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 name=name,
                 type='resource_library',
                 srcs=srcs,
+                src_exts=None,
                 deps=deps,
                 visibility=None,
                 warning='',
@@ -47,7 +48,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 kwargs=kwargs)
         hdr = '%s.h' % self.name
         self.attr['generated_hdrs'] = [self._target_file_path(hdr)]
-        self.set_hdrs([hdr])
+        self._set_hdrs([hdr])
 
     def generate(self):
         self._check_deprecated_deps()

@@ -49,6 +49,7 @@ class GoTarget(Target):
                 name=name,
                 type=type,
                 srcs=srcs,
+                src_exts=['go'],
                 deps=deps,
                 visibility=visibility,
                 kwargs=kwargs)

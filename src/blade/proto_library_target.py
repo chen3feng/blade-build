@@ -96,6 +96,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 name=name,
                 type='proto_library',
                 srcs=srcs,
+                src_exts=['proto'],
                 deps=deps,
                 visibility=visibility,
                 warning='',

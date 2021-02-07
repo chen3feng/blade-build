@@ -259,7 +259,7 @@ class _NinjaFileHeaderGenerator(object):
         # in the preprocessing directives), rerun the command without it on error.
         preprocess1 = '%s -fdirectives-only %s' % (cc, args)
         preprocess2 = '%s %s' % (cc, args)
-        return preprocess1 + ' || ' + preprocess2
+        return preprocess1 + ' || ' + preprocess2 + ' || (cat ${out} && false)'
 
     def _generate_cc_ar_rules(self):
         arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
