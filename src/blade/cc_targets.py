@@ -16,7 +16,6 @@ from __future__ import print_function
 
 import collections
 import os
-import re
 import subprocess
 from string import Template
 
@@ -660,7 +659,7 @@ class CcTarget(Target):
             libs = _find_libs_by_header(hdr)
             if not libs:
                 ok = False
-                libs =  _find_targets_by_private_hdr(hdr)
+                libs = _find_targets_by_private_hdr(hdr)
                 if libs:
                     if self.key not in libs:
                         msg.append('    "%s" is a private header file of %s' % (hdr, list(libs)))
