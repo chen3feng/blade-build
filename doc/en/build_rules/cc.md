@@ -31,7 +31,8 @@ Example:
 ```python
 cc_library(
     name='lowercase',
-    srcs=['./src/lower/plowercase.cpp'],
+    srcs=['lower/plowercase.cpp'],
+    hdrs=['lower/plowercase.h'],
     deps=['#pthread'],
     link_all_symbols=False
 )
@@ -56,8 +57,8 @@ Attributes:
 
   A header file can belong to multiple `cc_library`. `cc_library` will not automatically export `hdrs` of other `cc_library` that it depends on in
   `deps`.
-  Only public header files should be included in `hdrs`. For private header files, even if they are included in public header files,
-  they do not need to be included. Private header files can be included in its `srcs`.
+  Only public header files should be declared in `hdrs`. For private header files, even if they are included in public header files,
+  they do not need to be included. Private header files should be declared in its `srcs`.
 
   All CC libraries should be described by `cc_library`, especially for headers-only libraries.
   Because most library inevitably depends on other libraries, if dependency of the ordinary library is shortage,
