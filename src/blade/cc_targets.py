@@ -662,7 +662,8 @@ class CcTarget(Target):
                 libs = _find_targets_by_private_hdr(hdr)
                 if libs:
                     if self.key not in libs:
-                        msg.append('    "%s" is a private header file of %s' % (hdr, list(libs)))
+                        msg.append('    "%s" is a private header file of %s' % (
+                            hdr, self._or_joined_libs(libs)))
                     continue
                 if hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
@@ -680,7 +681,7 @@ class CcTarget(Target):
                 if hdr not in suppressd_hdrs:
                     msg.append('    For %s' % self._hdr_declaration_message(hdr, libs))
         if msg:
-            verify_msg.append('  In "%s",' % src)
+            verify_msg.append('  In file included from "%s",' % src)
             verify_msg += msg
         return ok
 
@@ -694,14 +695,16 @@ class CcTarget(Target):
         msg += 'it should be declared in "hdrs" of the appropriate library to which it belongs'
         return msg
 
-    @staticmethod
-    def _hdr_declaration_message(hdr, libs=None):
+    def _hdr_declaration_message(self, hdr, libs=None):
         if libs is None:
             libs = _find_libs_by_header(hdr)
         if not libs:
             return hdr
-        libs = ' or '.join(['"//%s"' % lib for lib in libs])
-        return '"%s", which belongs to %s' % (hdr, libs)
+        return '"%s", which belongs to %s' % (hdr, self._or_joined_libs(libs))
+
+    def _or_joined_libs(self, libs):
+        """Return " or " joind libs descriptive string."""
+        return ' or '.join(['"//%s"' % lib for lib in libs])
 
     def _verify_generated_headers(self, src, stacks, declared_hdrs, declared_incs,
                                   suppressd_hdrs, direct_hdrs, missing_dep_hdrs, verify_msg):
