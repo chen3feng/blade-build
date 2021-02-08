@@ -7,7 +7,7 @@ Used to customize your own construction rules, parameters:
 - src_exts: list(str) The list of file extensions allowed in `src`.
 
   Without `.`, for example, `['m4']` can match `config.m4`. If it is empty, it means that all types of files are allowed.
-  Note that empty strings match files without extensions, such as `['h','']` matches `vector,h` and `vector`.
+  Note that empty strings match files without extensions, such as `['h','']` matches `vector.h` and `vector`.
 
 - outs: list, output file list
 - cmd: str, the called command line, may contain the following variables, which will be replaced with actual values before running:
