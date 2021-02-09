@@ -29,10 +29,11 @@ cc_library生成的动态链接库里不包含其依赖的代码，而是包含�
 
 ```python
 cc_library(
-    name = 'lowercase',
-    srcs = ['./src/lower/plowercase.cpp'],
-    deps = ['#pthread'],
-    link_all_symbols = False,
+    name='lowercase',
+    srcs=['lower/plowercase.cpp'],
+    hdrs=['lower/plowercase.h'],
+    deps=['#pthread'],
+    link_all_symbols=False
 )
 ```
 
@@ -50,7 +51,7 @@ cc_library(
   把头文件纳入到依赖管理中，可以避免包含了头文件但是没有加入依赖的库造成的编译或者链接问题，特别是对动态生成的头文件。
 
   一个头文件可以属于多个 `cc_library`，`cc_library` 不会自动导出其 `deps` 里依赖的其他 `cc_library` 的 `hdrs`。
-  `hdrs` 里只应该列入公开的头文件，对于私有头文件，即使它被公有头文件包含，也不需要列入。私有头文件可以列入到它的 `srcs` 里。
+  `hdrs` 里只应该列入公开的头文件，对于私有头文件，即使它被公有头文件包含，也不需要列入。私有头文件应当列入到它的 `srcs` 里。
 
   所有的 CC 库都应该通过 `cc_library` 来描述，特别是对于只有头文件的库。因为任何库都难免依赖其他库，如果是普通的库缺失，链接期间会报找不到符号的错误，
   根据错误信息比较容易补充缺失的依赖，但是对于只有头文件的库，即使是间接依赖，也是在最终链接时才报告错误，让使用者难以发现。

@@ -238,7 +238,7 @@ class _NinjaFileHeaderGenerator(object):
 
     def _generate_cc_hdrs_rule(self, cc, cxx, cppflags, cflags, cxxflags, includes):
         """
-        Generate inclusion stack file for cc file to check dependency missing.
+        Generate inclusion stack file for header file to check dependency missing.
         See the '-H' in https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
         """
         self.generate_rule(name='cchdrs',

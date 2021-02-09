@@ -479,6 +479,9 @@ class CcTarget(Target):
                                 variables=vars, clean=[])
             objs.append(obj)
 
+        # Generate inclusion stack file for header files.
+        # The source file does not need to generate this file separately, because it is generated
+        # at the same time during compilation.
         for hdr, full_hdr in self.attr['expanded_hdrs']:
             if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
                 continue
@@ -542,15 +545,16 @@ class CcTarget(Target):
             hdr = hdr[2:]
         return level, hdr
 
-    def _find_inclusion_file(self, src):
+    def _find_inclusion_file(self, src, is_header):
         """Find the '.H' file for the given src.
 
         The `.H` file is generated from gcc's `-H` option, see
         https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html
         for details.
         """
+        # NOTE: The inclusion file for header file and impl file has different extension name.
         objs_dir = self._target_file_path(self.name + '.objs')
-        path = '%s.o.H' % os.path.join(objs_dir, src)
+        path = ('%s.H' if is_header else '%s.o.H') % os.path.join(objs_dir, src)
         if not os.path.exists(path):
             return ''
         return path
@@ -765,10 +769,10 @@ class CcTarget(Target):
         direct_verify_msg = []
         generated_verify_msg = []
 
-        for src in self.srcs:
-            path = self._find_inclusion_file(src)
+        def verify_file(src, is_header):
+            path = self._find_inclusion_file(src, is_header)
             if not path or (path in history and int(os.path.getmtime(path)) == history[path]):
-                continue
+                return
 
             direct_hdrs, stacks = self._parse_inclusion_stacks(path)
             preprocess_paths.add(path)
@@ -786,6 +790,12 @@ class CcTarget(Target):
 
             if missing_dep_hdrs:
                 details[src] = list(missing_dep_hdrs)
+
+        for src in self.srcs:
+            verify_file(src, is_header=False)
+
+        for hdr, full_hdr in self.attr['expanded_hdrs']:
+            verify_file(hdr, is_header=True)
 
         severity = config.get_item('cc_config', 'hdr_dep_missing_severity')
         output = getattr(self, severity)
