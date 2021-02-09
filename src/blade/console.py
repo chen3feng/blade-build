@@ -14,6 +14,7 @@ This is the util module which provides command functions.
 
 from __future__ import print_function
 
+import datetime
 import os
 import sys
 import time
@@ -109,7 +110,8 @@ def get_log_file():
 def log(msg):
     """Dump message into log file."""
     if _log:
-        print(msg, file=_log)
+        timestamp = datetime.datetime.now().strftime('%F %T.%f')
+        print(timestamp, msg, file=_log)
 
 
 ##############################################################################

@@ -6,8 +6,7 @@
 
 
 """
- This is the test module for cc_binary target.
-
+This is the test module for cc_binary target.
 """
 
 

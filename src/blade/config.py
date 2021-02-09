@@ -67,7 +67,7 @@ class BladeConfig(object):
                 'run_unrepaired_tests': False,
                 'run_unrepaired_tests__doc__':
                     'Whether run unrepaired(no changw after previous failure) tests during incremental test',
-                'glob_error_severity': 'warning',
+                'glob_error_severity': 'error',
                 'glob_error_severity__doc__': 'The severity of glob error, can be debug, info, warning, error',
             },
 
@@ -91,7 +91,7 @@ class BladeConfig(object):
                     'mid': ['-g'],
                     'high': ['-g3'],
                 },
-                'hdr_dep_missing_severity': 'warning',
+                'hdr_dep_missing_severity': 'error',
                 'hdr_dep_missing_severity__doc__': 'The severity of the missing dependency on the '
                     'library to which the header file belongs, can be "info", "warning", "error"',
                 'hdr_dep_missing_suppress': {},
