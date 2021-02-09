@@ -101,8 +101,6 @@ class Blade(object):
         # Indicate whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
-        self.__build_time = time.time()
-
         self.__build_toolchain = ToolChain()
         self.build_accelerator = BuildAccelerator(self.__root_dir, self.__build_toolchain)
         self.__build_jobs_num = 0
@@ -402,9 +400,6 @@ class Blade(object):
             json.dump(result, fp=f, indent=2, sort_keys=True)
             print(file=f)
         return 0
-
-    def get_build_time(self):
-        return self.__build_time
 
     def get_build_dir(self):
         """The current building dir."""

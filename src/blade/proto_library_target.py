@@ -223,11 +223,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         proto_name = src[:-6]
         return self._target_file_path('%s_pb2.py' % proto_name)
 
-    def _proto_gen_go_file(self, src):
-        """Generate the go file name."""
-        proto_name = src[:-6]
-        return self._target_file_path('%s.pb.go' % proto_name)
-
     def _proto_gen_descriptor_file(self, name):
         """Generate the descriptor file name."""
         return self._target_file_path('%s.descriptors.pb' % name)

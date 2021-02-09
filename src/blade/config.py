@@ -430,7 +430,7 @@ def _check_test_related_envs(kwargs):
                 '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
-_DUPLICATED_SOURCE_ACTION_VALUES = set(['warning', 'error', 'none', None])
+_DUPLICATED_SOURCE_ACTION_VALUES = {'warning', 'error', 'none', None}
 
 
 @config_rule

@@ -87,7 +87,7 @@ class Target(object):
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
-        self.visibility = set(['PUBLIC'])
+        self.visibility = {'PUBLIC'}
 
         if not name:
             self.fatal('Missing "name"')

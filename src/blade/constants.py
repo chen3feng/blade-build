@@ -3,7 +3,7 @@ Constants.
 """
 
 # See http://google-perftools.googlecode.com/svn/trunk/doc/heap_checker.html
-HEAP_CHECK_VALUES = set([
+HEAP_CHECK_VALUES = {
     '',
     'minimal',
     'normal',
@@ -11,4 +11,4 @@ HEAP_CHECK_VALUES = set([
     'draconian',
     'as-is',
     'local',
-])
+}

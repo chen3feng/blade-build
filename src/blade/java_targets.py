@@ -753,9 +753,6 @@ class JavaBinary(JavaTarget):
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
-    def _get_all_depended_jars(self):
-        return []
-
     def _generate_one_jar(self, dep_jars, maven_jars):
         jar = self._get_target_file('jar')
         if jar:
