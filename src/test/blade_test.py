@@ -77,10 +77,11 @@ class TargetTest(unittest.TestCase):
         """Helper method for debugging"""
         print(''.join(self.build_output))
 
-    def findCommandAndLine(self, kwlist):
+    def findBuildOutput(self, kwlist, file='stdout'):
         if not isinstance(kwlist, list):
             kwlist = [kwlist]
-        for lineno, line in enumerate(self.build_output):
+        output = self.build_error if file == 'stderr' else self.build_output
+        for lineno, line in enumerate(output):
             for kw in kwlist:
                 if kw not in line:
                     break
@@ -89,8 +90,14 @@ class TargetTest(unittest.TestCase):
         self.assertFalse('%s not found' % kwlist)
         return '', 0
 
+    def findCommandAndLine(self, kwlist):
+        return self.findBuildOutput(kwlist, file='stdout')
+
     def findCommand(self, kwlist):
         return self.findCommandAndLine(kwlist)[0]
+
+    def inBuildError(self, kwlist):
+        return self.findBuildOutput(kwlist, file='stderr')[0]
 
     if getattr(unittest.TestCase, 'assertIn', None) is None:
         # New asserts since 2.7, add for old version

@@ -170,6 +170,7 @@ class Blade(object):
 
     def verify(self):
         """Verify specific targets after build is complete."""
+        console.debug('Verifing header dependency missing...')
         verify_history = self._load_verify_history()
         header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
@@ -191,6 +192,7 @@ class Blade(object):
         self._dump_verify_details(verify_details)
         self._dump_verify_history()
         self._dump_undeclared_hdrs(undeclared_hdrs)
+        console.debug('Verifing header dependency missing done.')
         return error == 0
 
     def _load_verify_history(self):

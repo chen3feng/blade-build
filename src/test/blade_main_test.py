@@ -22,6 +22,7 @@ from cc_plugin_test import TestCcPlugin
 from cc_test_test import TestCcTest
 from extension_test import TestExtension
 from gen_rule_test import TestGenRule
+from hdr_dep_check_test import TestHdrDepCheck
 from java_test import TestJava
 from lex_yacc_test import TestLexYacc
 from load_builds_test import TestLoadBuilds
@@ -48,6 +49,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestCcTest),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestExtension),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestGenRule),
+        unittest.defaultTestLoader.loadTestsFromTestCase(TestHdrDepCheck),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestJava),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLexYacc),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestLoadBuilds),
