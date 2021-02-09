@@ -91,8 +91,7 @@ class ParsedCommandLine(object):
             self.options.bits = m
             self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
             if self.options.arch is None:
-                console.fatal('"-m%s" is not supported by the architecture %s'
-                                   % (m, compiler_arch))
+                console.fatal('"-m%s" is not supported by the architecture %s' % (m, compiler_arch))
 
     def _check_clean_options(self):
         """check the clean options."""

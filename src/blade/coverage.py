@@ -145,7 +145,7 @@ class JacocoReporter(object):
             mapping = target.get_java_package_source_mapping()
             for package, sources in mapping.items():
                 merged[package] += sources
-        return {package : self._common_dir(sources) for package, sources in merged.items()}
+        return {package: self._common_dir(sources) for package, sources in merged.items()}
 
     def _postprocess_report(self, report_dir):
         """Do more works on generated report"""

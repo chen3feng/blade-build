@@ -38,7 +38,7 @@ _TEST_EXPIRE_TIME = 86400  # 1 day
 
 
 TestJob = namedtuple('TestJob',
-        ['reason', 'binary_md5', 'testdata_md5', 'env_md5', 'args'])
+                     ['reason', 'binary_md5', 'testdata_md5', 'env_md5', 'args'])
 TestHistoryItem = namedtuple('TestHistoryItem', [
     'job',  # TestJob
     'first_fail_time',
@@ -89,7 +89,7 @@ class TestRunner(binary_runner.BinaryRunner):
         self.test_jobs = {}  # dict{key : TestJob}
 
         self.exclude_tests = exclude_tests  # Tests to be excluded
-        self.excluded_tests = [] # Tests been excluded
+        self.excluded_tests = []  # Tests been excluded
         self.unchanged_tests = []
         self.unrepaired_tests = []
         self.repaired_tests = []
@@ -142,6 +142,7 @@ class TestRunner(binary_runner.BinaryRunner):
     def _save_test_summary(self, passed_run_results, failed_run_results):
         with open('blade-bin/.blade-test-summary.json', 'w') as f:
             history_items = self.test_history['items']
+
             def expand(tests):
                 ret = {}
                 for key in tests:
@@ -422,7 +423,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if self.new_failed_tests:
             msg.append('%d new failed' % len(self.new_failed_tests))
         if msg:
-            console.notice('Trend: '+ ', '.join(msg) + '.')
+            console.notice('Trend: ' + ', '.join(msg) + '.')
         if self._is_full_success(passed_run_results):
             console.notice('All %d tests passed!' % total)
 
@@ -485,6 +486,5 @@ class TestRunner(binary_runner.BinaryRunner):
         if self.options.coverage:
             self._clean_for_coverage()
             self._generate_coverage_report()
-
 
         return 0 if self._is_full_success(passed_run_results) else 1

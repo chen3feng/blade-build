@@ -154,6 +154,7 @@ _need_clear_line = False  # Whether the last output is progress bar
 _last_progress_value = -1  # The last progress bar value, -1 means none
 _last_progress_time = 0
 
+
 def _progress_bar(progress, current, total):
     """Progress bar drawing text, like this:
     [===========================================================----] 46/50 92%
@@ -275,7 +276,7 @@ def debug(msg, prefix=True):
 def diagnose(source_location, severity, message):
     """Output diagnostic message with source location and severity."""
     assert severity in ('debug', 'info', 'notice', 'warning', 'error')
-    globals()[severity]("%s: %s: %s" %(source_location, severity, message))
+    globals()[severity]("%s: %s: %s" % (source_location, severity, message))
 
 
 def flush():

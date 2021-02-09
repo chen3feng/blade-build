@@ -16,7 +16,7 @@ class Native(object):
     """
 
 
-__build_rules = {'native' : Native()}
+__build_rules = {'native': Native()}
 
 
 def register_variable(name, value):

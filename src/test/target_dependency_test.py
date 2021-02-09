@@ -64,7 +64,7 @@ class TestDepsAnalyzing(blade_test.TargetTest):
         poppy_client_deps = self.all_targets[swig_library].expanded_deps
         self.assertTrue(poppy_client_deps)
         self.assertIn(cc_library_poppy, poppy_client_deps)
-        self.assertIn(cc_lib_prebuild , poppy_client_deps)
+        self.assertIn(cc_lib_prebuild, poppy_client_deps)
 
         self.assertIn(java_jar, self.all_targets)
         java_jar_deps = self.all_targets[java_jar].expanded_deps

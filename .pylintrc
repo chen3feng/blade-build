@@ -1,3 +1,6 @@
+[MASTER]
+init-hook='import sys; sys.path.append("src")'
+
 [pre-commit-hook]
 command=pylint
 limit=9.98

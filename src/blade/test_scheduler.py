@@ -154,7 +154,7 @@ class TestScheduler(object):
 
     def _progress(self, done=0):
         return '[%s/%s/%s]' % (self.num_of_finished_tests + done,
-                self.num_of_running_tests - done, len(self.tests_list))
+                               self.num_of_running_tests - done, len(self.tests_list))
 
     def _show_progress(self, cmd):
         console.info('%s Start %s' % (self._progress(), cmd))

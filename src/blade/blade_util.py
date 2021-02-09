@@ -231,6 +231,7 @@ def regular_variable_name(name):
     """convert some name to a valid identifier name"""
     return name.translate(_TRANS_TABLE)
 
+
 if _IN_PY3:
     def iteritems(d, **kw):
         return iter(d.items(**kw))

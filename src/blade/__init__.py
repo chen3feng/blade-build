@@ -8,6 +8,7 @@ import blade.console
 
 # pylint: disable=import-outside-toplevel
 
+
 def workspace_root_dir():
     """Get the root dir of current workspace."""
     import blade.build_manager

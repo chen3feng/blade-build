@@ -7,7 +7,6 @@
 # Date:   October 20, 2011
 
 
-import os
 import sys
 import blade_test
 

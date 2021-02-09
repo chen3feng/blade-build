@@ -253,7 +253,7 @@ class CcTarget(Target):
 
         illegal_path_list = []
         for keyword in keywords_list:
-            illegal_path_list += [s for s in srcs if not keyword in s]
+            illegal_path_list += [s for s in srcs if keyword not in s]
 
         if illegal_path_list:
             self.warning(""""warning='no'" should only be used for thirdparty libraries.""")
@@ -1241,7 +1241,7 @@ class ForeignCcLibrary(CcTarget):
         """Return full path of the library file with specified type"""
         assert type in ('a', 'so')
         return self._target_file_path(os.path.join(self.attr['install_dir'], self.attr['lib_dir'],
-                'lib%s.%s' % (self.name, type)))
+                                                   'lib%s.%s' % (self.name, type)))
 
     def soname_and_full_path(self):
         """Return soname and full path of the shared library, if any"""
@@ -1392,8 +1392,7 @@ class CcBinary(CcTarget):
     def _generate_cc_binary_link_flags(self, dynamic_link):
         ldflags = []
         toolchain = self.blade.get_build_toolchain()
-        if (not dynamic_link and
-            toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5'):
+        if not dynamic_link and toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5':
             ldflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
             ldflags.append('-rdynamic')

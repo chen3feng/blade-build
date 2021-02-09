@@ -16,6 +16,7 @@ import sys
 import unittest
 
 sys.path.append('..')
+
 import blade.build_manager
 import blade.config
 
@@ -47,7 +48,6 @@ class TargetTest(unittest.TestCase):
             shutil.rmtree('build64_release', ignore_errors=True)
         except OSError as e:
             print(e)
-            pass
 
         os.chdir(self.cur_dir)
 
@@ -98,26 +98,6 @@ class TargetTest(unittest.TestCase):
 
     def inBuildError(self, kwlist):
         return self.findBuildOutput(kwlist, file='stderr')[0]
-
-    if getattr(unittest.TestCase, 'assertIn', None) is None:
-        # New asserts since 2.7, add for old version
-        def _format_message(self, msg):
-            if msg:
-                return ', %s' % msg
-            else:
-                return ''
-
-        def assertIn(self, a, b, msg=None):
-            msg = self._format_message(msg)
-            self.assertTrue(a in b, '"%s" in "%s"%s' % (a, b, msg))
-
-        def assertNotIn(self, a, b, msg=None):
-            msg = self._format_message(msg)
-            self.assertTrue(a not in b, '"%s" not in "%s"%s' % (a, b, msg))
-
-        def assertGreater(self, a, b, msg=None):
-            msg = self._format_message(msg)
-            self.assertTrue(a > b, '"%s" > "%s"%s' % (a, b, msg))
 
     def _assertCxxCommonFlags(self, cmdline):
         self.assertIn('-g', cmdline)

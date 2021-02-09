@@ -9,4 +9,3 @@
 ```bash
 ./runtest.sh <test-file-name>.py
 ```
-

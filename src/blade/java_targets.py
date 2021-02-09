@@ -345,7 +345,7 @@ class JavaTargetMixIn(object):
         """
         Recursively scan direct dependencies and exclude provided dependencies.
         """
-        if 'java_pack_deps' in self.attr: # Cache result
+        if 'java_pack_deps' in self.attr:  # Cache result
             return self.attr['java_pack_deps']
 
         deps = set(self.deps) - set(self.attr.get('provided_deps', []))

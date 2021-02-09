@@ -202,7 +202,6 @@ class _NinjaFileHeaderGenerator(object):
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
-
         template = self._cc_compile_command_wrapper_template()
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
