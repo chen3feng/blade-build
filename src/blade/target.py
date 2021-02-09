@@ -125,7 +125,7 @@ class Target(object):
             'name': self.name,
             'srcs': self.srcs,
             'deps': self.deps,
-            'visibility': self.visibility,
+            'visibility': list(self.visibility),
         }
         target.update(self.attr)
         return target
@@ -154,11 +154,7 @@ class Target(object):
                 'name': self.name,
                 'srcs': self.srcs,
             }
-            deps = []
-            for dkey in self.deps:
-                dep = self.target_database[dkey]
-                deps.append(dep.fingerprint())
-            entropy['deps'] = deps
+            entropy['deps'] = [self.target_database[dep].fingerprint() for dep in self.deps]
 
             # Add more entropy
             entropy.update(self._fingerprint_entropy())

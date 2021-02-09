@@ -92,19 +92,6 @@ from blade.blade_util import find_blade_root_dir
 from blade.blade_util import get_cwd, to_string
 from blade.blade_util import lock_file, unlock_file
 
-# Run target
-_TARGETS = None
-
-_BLADE_ROOT_DIR = None
-_WORKING_DIR = None
-
-
-def _target_in_dir(path, dirtotest):
-    '''Test whether path is in the dirtotest'''
-    if dirtotest == '.':
-        return True
-    return os.path.commonprefix([path, dirtotest]) == dirtotest
-
 
 def _run_backend_builder(cmdstr):
     console.debug('Run build command: ' + cmdstr)
@@ -214,8 +201,7 @@ def run(options):
     ret = build(options)
     if ret != 0:
         return ret
-    run_target = _TARGETS[0]
-    return build_manager.instance.run(run_target)
+    return build_manager.instance.run()
 
 
 def test(options):
@@ -235,7 +221,8 @@ def query(options):
 
 
 def dump(options):
-    output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+    working_dir = build_manager.instance.get_working_dir()
+    output_file_name = os.path.join(working_dir, options.dump_to_file)
     if options.dump_compdb:
         return _dump_compdb(options, output_file_name)
     if options.dump_targets:
@@ -272,11 +259,11 @@ def unlock_workspace(lock_file_fd):
     unlock_file(lock_file_fd)
 
 
-def load_config(options, blade_root_dir):
+def load_config(options, root_dir):
     """Load the configuration file and parse."""
     # Init global build attributes
     build_attributes.initialize(options)
-    config.load_files(blade_root_dir, options.load_local_config)
+    config.load_files(root_dir, options.load_local_config)
 
 
 def setup_build_dir(options):
@@ -296,10 +283,10 @@ def setup_build_dir(options):
 def get_source_dirs():
     """Get workspace dir and working dir relative to workspace dir."""
     working_dir = get_cwd()
-    blade_root_dir = find_blade_root_dir(working_dir)
-    working_dir = os.path.relpath(working_dir, blade_root_dir)
+    root_dir = find_blade_root_dir(working_dir)
+    working_dir = os.path.relpath(working_dir, root_dir)
 
-    return blade_root_dir, working_dir
+    return root_dir, working_dir
 
 
 def setup_console(options):
@@ -393,11 +380,11 @@ def _check_error_log(stage):
     return 0
 
 
-def run_subcommand(command, options, targets, blade_path, build_dir):
+def run_subcommand(command, options, targets, blade_path, root_dir, build_dir, working_dir):
     """Run particular commands before loading"""
     # The 'dump' command is special, some kind of dump items should be ran before loading.
     if command == 'dump' and options.dump_config:
-        output_file_name = os.path.join(_WORKING_DIR, options.dump_to_file)
+        output_file_name = os.path.join(working_dir, options.dump_to_file)
         config.dump(output_file_name)
         return _check_error_log('dump')
 
@@ -408,9 +395,9 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     build_manager.initialize(targets,
                              load_targets,
                              blade_path,
-                             _WORKING_DIR,
+                             working_dir,
                              build_dir,
-                             _BLADE_ROOT_DIR,
+                             root_dir,
                              options,
                              command)
 
@@ -448,14 +435,14 @@ def run_subcommand(command, options, targets, blade_path, build_dir):
     return _check_error_log(command)
 
 
-def run_subcommand_profile(command, options, targets, blade_path, build_dir):
+def run_subcommand_profile(command, options, targets, blade_path, root_dir, build_dir, working_dir):
     pstats_file = os.path.join(build_dir, 'blade.pstats')
     # NOTE: can't use an plain int variable to receive exit_code
     # because in python int is an immutable object, assign to it in the runctx
     # wll not modify the local exit_code.
     # so we use a mutable object list to obtain the return value of run_subcommand
     exit_code = [-1]
-    cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, build_dir)",
+    cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, root_dir, build_dir, working_dir)",
                     globals(), locals(), pstats_file)
     p = pstats.Stats(pstats_file)
     p.sort_stats('cumulative').print_stats(20)
@@ -472,26 +459,22 @@ def _main(blade_path, argv):
     command, options, targets = command_line.parse(argv)
     setup_console(options)
 
-    global _BLADE_ROOT_DIR
-    global _WORKING_DIR
-    _BLADE_ROOT_DIR, _WORKING_DIR = get_source_dirs()
-    if _BLADE_ROOT_DIR != _WORKING_DIR:
+    root_dir, working_dir = get_source_dirs()
+    if root_dir != working_dir:
         # This message is required by vim quickfix mode if pwd is changed during
         # the building, DO NOT change the pattern of this message.
         if options.verbosity != 'quiet':
-            print("Blade: Entering directory `%s'" % _BLADE_ROOT_DIR)
-        os.chdir(_BLADE_ROOT_DIR)
+            print("Blade: Entering directory `%s'" % root_dir)
+        os.chdir(root_dir)
 
-    load_config(options, _BLADE_ROOT_DIR)
+    load_config(options, root_dir)
     adjust_config_by_options(config, options)
     if _check_error_log('config'):
         return 1
 
-    global _TARGETS
     if not targets:
         targets = ['.']
-    targets = target_pattern.normalize_list(targets, _WORKING_DIR)
-    _TARGETS = targets
+    targets = target_pattern.normalize_list(targets, working_dir)
 
     build_dir = setup_build_dir(options)
     setup_log(build_dir, options)
@@ -500,9 +483,8 @@ def _main(blade_path, argv):
 
     lock_file_fd = lock_workspace(build_dir)
     try:
-        if options.profiling:
-            return run_subcommand_profile(command, options, targets, blade_path, build_dir)
-        return run_subcommand(command, options, targets, blade_path, build_dir)
+        run_fn = run_subcommand_profile if options.profiling else run_subcommand
+        return run_fn(command, options, targets, blade_path, root_dir, build_dir, working_dir)
     finally:
         unlock_workspace(lock_file_fd)
 

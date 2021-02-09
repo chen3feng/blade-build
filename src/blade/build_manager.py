@@ -230,10 +230,10 @@ class Blade(object):
                     os.path.join(self.__blade_path, 'blade')))
         return self.__blade_revision
 
-    def run(self, target):
+    def run(self):
         """Run the target."""
         runner = BinaryRunner(self.__options, self.__target_database, self.__build_targets)
-        return runner.run_target(target)
+        return runner.run_target(list(self.__direct_targets)[0])
 
     def test(self):
         """Run tests."""
@@ -413,6 +413,10 @@ class Blade(object):
     def get_root_dir(self):
         """Return the blade root path."""
         return self.__root_dir
+
+    def get_working_dir(self):
+        """Return the working dir (in which user invoke blade)."""
+        return self.__working_dir
 
     def get_command(self):
         """Get the blade command."""
