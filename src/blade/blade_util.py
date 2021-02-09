@@ -224,7 +224,7 @@ def cpu_count():
         return int(os.sysconf('SC_NPROCESSORS_ONLN'))
 
 
-_TRANS_TABLE = (str if _IN_PY3 else string).maketrans(',-/.+*', '______')
+_TRANS_TABLE = (str if _IN_PY3 else string).maketrans(',-/:.+*', '_______')
 
 
 def regular_variable_name(name):

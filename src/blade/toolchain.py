@@ -110,8 +110,6 @@ class ToolChain(object):
         self.cxx = self._get_cc_command('CXX', 'g++')
         self.ld = self._get_cc_command('LD', 'g++')
         self.cc_version = self._get_cc_version()
-        self.php_inc_list = self._get_php_include()
-        self.java_inc_list = self._get_java_include()
         self.nvcc_version = self._get_nvcc_version()
         self.cuda_inc_list = self._get_cuda_include()
 
@@ -169,35 +167,6 @@ class ToolChain(object):
         return ''
 
     @staticmethod
-    def _get_php_include():
-        returncode, stdout, stderr = ToolChain._execute('php-config --includes')
-        if returncode == 0:
-            include_line = stdout.splitlines(True)[0]
-            headers = include_line.split()
-            header_list = ["'%s'" % s[2:] for s in headers]
-            return header_list
-        return []
-
-    @staticmethod
-    def _get_java_include():
-        include_list = []
-        java_home = os.environ.get('JAVA_HOME', '')
-        if java_home:
-            include_list.append('%s/include' % java_home)
-            include_list.append('%s/include/linux' % java_home)
-            return include_list
-        returncode, stdout, stderr = ToolChain._execute(
-            'java -version', redirect_stderr_to_stdout=True)
-        if returncode == 0:
-            version_line = stdout.splitlines(True)[0]
-            version = version_line.split()[2]
-            version = version.replace('"', '')
-            include_list.append('/usr/java/jdk%s/include' % version)
-            include_list.append('/usr/java/jdk%s/include/linux' % version)
-            return include_list
-        return []
-
-    @staticmethod
     def _get_cuda_include():
         include_list = []
         cuda_path = os.environ.get('CUDA_PATH')
@@ -244,14 +213,6 @@ class ToolChain(object):
     def cc_is(self, vendor):
         """Is cc is used for C/C++ compilation match vendor."""
         return vendor in self.cc
-
-    def get_php_include(self):
-        """Returns a list of php include."""
-        return self.php_inc_list
-
-    def get_java_include(self):
-        """Returns a list of java include."""
-        return self.java_inc_list
 
     def get_nvcc_version(self):
         """Returns nvcc version."""

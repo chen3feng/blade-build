@@ -89,11 +89,6 @@ class GenRuleTarget(Target):
         if export_incs:
             self.attr['export_incs'] = self._expand_incs(var_to_list(export_incs))
 
-    def _srcs_list(self, path, srcs):
-        """Returns srcs list."""
-        return ','.join(['"%s"' % os.path.join(self.build_dir, path, src)
-                         for src in srcs])
-
     def _expand_incs(self, incs):
         """Expand incs"""
         return [self._target_file_path(inc) for inc in incs]

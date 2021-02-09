@@ -110,7 +110,7 @@ class CuLibrary(CuTarget):
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
 
-    def ninja_rule(self):
+    def generate(self):
         self.error('To be implemented')
 
 
@@ -171,7 +171,7 @@ class CuBinary(CuTarget):
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
 
-    def ninja_rule(self):
+    def generate(self):
         self.error('To be implemented')
 
 

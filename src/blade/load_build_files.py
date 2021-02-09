@@ -311,7 +311,7 @@ _BLADE_SKIP_FILE = '.bladeskip'
 _SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
 
 # TODO: Eliminate hardcoded
-_EXCLUDED_DIRS = set(['build32_debug', 'build32_release', 'build64_debug', 'build64_release'])
+_EXCLUDED_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
 
 def _is_under_skipped_dir(dirname):
     """Is the directory under a directory which contains a `.bladeskip` file."""

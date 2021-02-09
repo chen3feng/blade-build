@@ -361,13 +361,6 @@ class TestRunner(binary_runner.BinaryRunner):
             output_function('  %s triggered by %s, exit(%s), cost %.2f s' % (
                             key, reason, result, costtime), prefix=False)
 
-    def _show_repaired_results(self, repaired_tests):
-        if not repaired_tests:
-            return
-        console.info('There are %d repaired tests:' % len(repaired_tests))
-        for tests in repaired_tests:
-            console.info('%s' % tests, prefix=False)
-
     def _show_unrepaired_results(self):
         """Show the unrepaired tests"""
         if not self.unrepaired_tests:
