@@ -62,4 +62,4 @@ thrift_library(
 C++中使用生成的头文件时，规则类似proto，需要带上相对BLADE_ROOT的目录前缀。
 
 * thrift 0.9版（之前版本未测）有个[bug](https://issues.apache.org/jira/browse/THRIFT-1859)，
-  需要修正才能使用，此bug已经在开发版本中[修正](https://builds.apache.org/job/Thrift/633/changes#detail13)
+  需要修正才能使用，此bug已经在开发版本中修正)
