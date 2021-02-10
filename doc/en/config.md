@@ -2,18 +2,23 @@
 
 ## configuration file
 
-Blade supports three configuration files, which are loaded in the following order. The loaded configuration will overwrite the previous configuration.
+Blade supports multiple-level configuration files, which are loaded in the following order. The loaded configuration will overwrite the previous configuration.
 
-* blade.conf in the blade installation directory, this is the global configuration.
-* ~/.bladerc The .bladerc file in the user's HOME directory, which is a user-level configuration.
-* BLADE_ROOT is actually a configuration file, written here is a project-level configuration.
-* BLADE_ROOT.local developer's own local configuration file for temporary adjustment of parameters, etc.
+* `blade.conf` in the blade installation directory is the global configuration.
+* `~/.bladerc` in the user's `HOME` directory is a user-level configuration.
+* `BLADE_ROOT` is also actually a configuration file, put your project-level configuration here.
+* `BLADE_ROOT.local` is developer's own local configuration file for temporary adjustment of parameters, etc.
 
-All of these configuration items have default values, and you don't need to include the appropriate parameters if you don't need to override them.
-The default config values of libraries are assumed to be installed in the system directory.
-If you put these libraries into your own code in your project (such as our internals), please modify the corresponding configuration.
+The configuration syntax is similar to the build rules, also through function calls, for example:
 
-Each configuration parameter of the configuration of all the multiple parameters described later has a default value, and does not need to be completely written or ordered.
+```python
+global_config(
+    test_timeout = 600,
+)
+```
+
+There is no order requirement between configuration items. Most of the configuration items have appropriate 
+default values, and there is no need to set them if they do not need to be overwritten.
 
 You can run `blade dump` command to dump current configuration, and modify it as your need:
 
@@ -25,9 +30,7 @@ Without the `--to-file` option, the result will be dumped to stdout.
 
 ### global_config
 
-Blade global configuration
-
-``
+Global configuration:
 
 | parameter                  | type   | default | values             | description                                                                                |
 |----------------------------|--------|---------|--------------------|----------------------------------------------------------------------------                |
@@ -55,7 +58,7 @@ global_config(
 
 ### cc_config
 
-Common configuration of all c/c++ targets
+Common configuration of all c/c++ targets:
 
 | parameter      | type   | default  | values                                   | description              |
 | -------------- | ------ | -------- | ------                                   | ------------------------ |
@@ -164,7 +167,7 @@ cc_library_config(
 
 ### cc_test_config
 
-The configuration required to build and run the test
+The configuration required to build and run the test:
 
 ```python
 cc_test_config(

@@ -257,6 +257,21 @@ global_config(
 
 默认为 `mid`。
 
+#### 开启 DebugFission ####
+
+使用 GCC 的 [DebugFission](https://gcc.gnu.org/wiki/DebugFission) 功能：
+
+```python
+cc_config(
+    ...
+    append_cppflags = ['-gsplit-dwarf'],
+    append_linkflags = ['-fuse-ld=gold', '-Wl,--gdb-index'],
+    ...
+)
+```
+
+经实测，在中等调试符号级别下，能把一个被测可执行文件从 1.9GB 减小到 532MB。
+
 #### 压缩调试符号 ####
 
 可以尝试开启 GCC 的 [`-gz`](https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html) 选项，这个选项可以用于编译和链接阶段，
