@@ -11,7 +11,6 @@
 """
 
 
-import os
 import blade_test
 
 

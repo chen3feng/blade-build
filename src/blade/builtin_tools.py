@@ -290,8 +290,7 @@ def _get_all_test_class_names_in_jar(jar):
         basename = os.path.basename(name)
         # Exclude inner class and Test.class
         if (basename.endswith('Test.class') and
-                len(basename) > len('Test.class') and
-                not '$' in basename):
+                len(basename) > len('Test.class') and '$' not in basename):
             class_name = name.replace('/', '.')[:-6]  # Remove .class suffix
             test_class_names.append(class_name)
     zip_file.close()

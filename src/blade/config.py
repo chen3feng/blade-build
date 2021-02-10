@@ -158,11 +158,11 @@ class BladeConfig(object):
                 'maven_download_concurrency': 0,
                 'maven_download_concurrency__doc__':
                     'Number of processes to pre-download maven_jar, 0 to disable pre-downloading',
-                'maven_jar_allowed_dirs' : set(),
+                'maven_jar_allowed_dirs': set(),
                 'maven_jar_allowed_dirs__doc__':
                     'List of directories and their subdirectories where maven_jar is allowed',
-                'maven_jar_allowed_dirs_exempts' : set(),
-                'maven_jar_allowed_dirs_exempts__doc__' :
+                'maven_jar_allowed_dirs_exempts': set(),
+                'maven_jar_allowed_dirs_exempts__doc__':
                     'List of targets which are exempted from maven_jar_disallowed_dirs check',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': None,
@@ -303,8 +303,7 @@ class BladeConfig(object):
                 if isinstance(section[k], list):
                     section[k] += var_to_list(append[k])
                 else:
-                    self.warning('%s: Config item %s is not a list' %
-                                    (section_name, k))
+                    self.warning('%s: Config item %s is not a list' % (section_name, k))
 
             else:
                 self.warning('%s: Unknown config item name: %s' % (section_name, k))
@@ -504,7 +503,7 @@ def link_config(append=None, **kwargs):
 def java_config(append=None, **kwargs):
     """java_config."""
     _check_kwarg_enum_value(kwargs, 'maven_snapshot_update_policy',
-            _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES)
+                            _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES)
     _blade_config.update_config('java_config', append, kwargs)
 
 

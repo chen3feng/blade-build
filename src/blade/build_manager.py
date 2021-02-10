@@ -18,7 +18,6 @@ import os
 import pprint
 import subprocess
 import sys
-import time
 
 from blade import config
 from blade import console
@@ -320,7 +319,7 @@ class Blade(object):
         targets = self.__build_targets
         deps = targets[node].deps
         for i in deps:
-            if not i in target_set:
+            if i not in target_set:
                 continue
             print('"%s" -> "%s"' % (node, i), file=output_file)
 

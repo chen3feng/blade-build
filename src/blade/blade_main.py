@@ -375,7 +375,7 @@ def adjust_config_by_options(config, options):
 def _check_error_log(stage):
     error_count = console.error_count()
     if error_count > 0:
-        console.error('There are %s errors in the %s stage' %(error_count, stage))
+        console.error('There are %s errors in the %s stage' % (error_count, stage))
         return 1
     return 0
 

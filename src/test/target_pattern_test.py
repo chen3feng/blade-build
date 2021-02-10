@@ -8,6 +8,7 @@ import blade_test
 
 from blade import target_pattern
 
+
 class TargetPatternTest(blade_test.TargetTest):
     def setUp(self):
         self.doSetUp('cc')

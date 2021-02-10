@@ -68,6 +68,7 @@ class ProtocPlugin(object):
         # fingerprint reproducable between each build.
         return 'ProtocPlugin(%s)' % self.__dict__
 
+
 class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     """
     This class manages build rules and dependencies in different languages for proto files.

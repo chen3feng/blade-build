@@ -81,8 +81,8 @@ class Target(object):
         self.deps = []
 
         # Expanded dependencies, includes direct and indirect dependies.
-        self.expanded_deps = []  # Provide type info then make lints happy(not-an-iterable).
-        self.expanded_deps = None # Set to None to indicate not constructed.
+        self.expanded_deps = []    # Provide type info then make lints happy(not-an-iterable).
+        self.expanded_deps = None  # Set to None to indicate not constructed.
 
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
@@ -341,7 +341,7 @@ class Target(object):
             dkey = (os.path.normpath(self.path), dep[1:])
         elif dep.startswith('//'):
             # Depend on library in remote directory
-            if not ':' in dep:
+            if ':' not in dep:
                 raise Exception('Wrong dep format "%s" in %s' % (dep, self.fullname))
             (path, lib) = dep[2:].rsplit(':', 1)
             dkey = (os.path.normpath(path), lib)
@@ -352,13 +352,12 @@ class Target(object):
             self._add_system_library(':'.join(dkey), dep)
         else:
             # Depend on library in relative subdirectory
-            if not ':' in dep:
+            if ':' not in dep:
                 raise Exception('Wrong format in %s' % self.fullname)
             (path, lib) = dep.rsplit(':', 1)
             if '..' in path:
                 raise Exception("Don't use '..' in path")
-            dkey = (os.path.normpath('%s/%s' % (
-                self.path, path)), lib)
+            dkey = (os.path.normpath('%s/%s' % (self.path, path)), lib)
 
         return ':'.join(dkey)
 
@@ -610,8 +609,8 @@ class Target(object):
         raise NotImplementedError(self.fullname)
 
     def generate_build(self, rule, outputs, inputs=None,
-                    implicit_deps=None, order_only_deps=None,
-                    variables=None, implicit_outputs=None, clean=None):
+                       implicit_deps=None, order_only_deps=None,
+                       variables=None, implicit_outputs=None, clean=None):
         """Generate a ninja build statement with specified parameters.
         Args:
             clean:list[str], files to be removed on clean, defaults to outputs + implicit_outputs,
