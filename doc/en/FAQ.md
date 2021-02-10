@@ -267,6 +267,21 @@ Description:
 
 The default value is `mid`.
 
+#### Turn on DebugFission ####
+
+Use GCC's [DebugFission](https://gcc.gnu.org/wiki/DebugFission) function:
+
+```python
+cc_config(
+     ...
+     append_cppflags = ['-gsplit-dwarf'],
+     append_linkflags = ['-fuse-ld=gold','-Wl,--gdb-index'],
+     ...
+)
+```
+
+In out actual test, with the middle debug information level, the size of an executable file has been reduced from 1.9GB to 532MB.
+
 #### Compress debug information ####
 
 You can use the [`-gz`](https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html) option of GCC to compress debug information.
