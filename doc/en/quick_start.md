@@ -113,7 +113,7 @@ Build the `hello-world` program:
 
 ```console
 $ blade build :hello-world
-ninja: no work to do.
+Blade(info): Building...
 Blade(info): Build success.
 ```
 
