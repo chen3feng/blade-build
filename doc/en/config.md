@@ -17,7 +17,7 @@ global_config(
 )
 ```
 
-There is no order requirement between configuration items. Most of the configuration items have appropriate 
+There is no order requirement between configuration items. Most of the configuration items have appropriate
 default values, and there is no need to set them if they do not need to be overwritten.
 
 You can run `blade dump` command to dump current configuration, and modify it as your need:

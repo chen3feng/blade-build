@@ -90,8 +90,8 @@ blade test -m32 -pdebug common...
 
 ## Documentation
 
-* [Full Documentation](/doc/en/README.md)
-* [FAQ](/doc/en/FAQ.md)
+* [Full Documentation](doc/en/README.md)
+* [FAQ](doc/en/FAQ.md)
 
 ## Credits
 

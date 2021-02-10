@@ -23,7 +23,7 @@ Jump back and forth between the source code directory and the corresponding buil
 We have written the gram file of vim, highlighting the blade keyword, and it will take effect automatically after installation.
 
 We wrote a custome `Build` command so that we can execute blade directly in vim and quickly jump to the error line (thanks to vim
-[hquickfix](ttp://easwy.com/blog/archives/advanced-vim-skills-quickfix-mode/) Features).
+[QuickFix](https://vimhelp.org/quickfix.txt.html) Features).
 
 When used directly in the vim ':' mode input (with parameters)
 
