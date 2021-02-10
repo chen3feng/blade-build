@@ -4,12 +4,10 @@
 *.pyc
 .DS_Store
 
-BUILD
-BLADE_ROOT
-
 blade-bin
 .Building.lock
-/build*_*
+build32_*
+build64_*
 
 /blade.zip
 

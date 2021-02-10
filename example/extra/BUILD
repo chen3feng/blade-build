@@ -1,6 +1,7 @@
 cc_library(
     name = 'extra',
-    srcs = 'extra.cpp',
+    srcs = ['extra.cpp'],
+    hdrs = ['extra.h'],
     export_incs = [
         'include'
     ],
@@ -13,6 +14,7 @@ cc_library(
 cc_library(
     name = 'extra_extra',
     srcs = 'extra_extra.cpp',
+    hdrs = [],
     export_incs = [
         './extra'
     ]
