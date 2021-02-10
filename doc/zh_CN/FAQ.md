@@ -182,6 +182,7 @@ blade -c 清除不了项目生成的文件
 cc_library(
     name = 'secrity',
     srcs = 'secrity.cpp',
+    hdrs = ['security.h'],
     deps = [
         '//common/base/string:string',
         '//thirdparty/glog:glog',
@@ -195,6 +196,7 @@ cc_library(
 ```python
 cc_library(
     name = 'secrity',
+    hdrs = ['security.h'],
     prebuilt = True, # srcs 改为这个
     deps = [
         '//common/base/string:string',

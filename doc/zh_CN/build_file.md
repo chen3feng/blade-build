@@ -13,11 +13,15 @@ cc_library(
     name = 'string',
     srcs = [
         'algorithm.cpp',
-        'string_number.cpp',
-        'string_piece.cpp',
         'format.cpp',
         'concat.cpp',
     ],
+    hdrs = [
+    srcs = [
+        'algorithm.h',
+        'format.h',
+        'concat.h',
+    ]
     deps = ['//common/base:int'],
 )
 ```
