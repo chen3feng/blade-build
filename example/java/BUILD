@@ -1,13 +1,6 @@
 java_library(
-    name = 'protobuf-java',
-    prebuilt = True,
-    binary_jar = 'protobuf-java-2.4.1.jar',
-)
-
-java_library(
     name = 'foo',
     srcs = glob('foo/src/main/java/**/*.java'),
-    deps = '//proto:contact_proto',
 )
 
 java_binary(

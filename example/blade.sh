@@ -10,14 +10,7 @@
 
 cd `dirname $0`
 
-# Cleanup before running
-rm -rf blade-bin build{32,64}_{debug,release}/
-
-. setup.sh
-
 ../blade $@
 exit_code=$?
-
-. cleanup.sh
 
 exit $exit_code

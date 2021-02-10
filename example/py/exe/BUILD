@@ -9,7 +9,7 @@ py_binary(
 
 py_binary(
     name = 'exe2',
-    srcs = ['exe2.py', 'exe.py'],
+    srcs = ['exe2.py'],
     deps = [
         '//py/lib:lib',
         '//py/proto:echo_proto',

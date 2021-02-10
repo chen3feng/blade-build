@@ -1,6 +1,7 @@
 cc_library(
     name = 'common',
-    srcs = 'common.cpp'
+    srcs = ['common.cpp'],
+    hdrs = ['common.h'],
 )
 
 cc_test(

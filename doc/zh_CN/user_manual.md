@@ -9,6 +9,8 @@ Blade用户手册
 
 [如何安装](install.md)
 
+[快速上手](quick_start.md)
+
 [代码的组织](workspace.md)
 
 [编写BUILD文件](build_file.md)

@@ -8,6 +8,8 @@
 
 [How to install](install.md)
 
+[Quick Start](quick_start.md)
+
 [Organization of code](workspace.md)
 
 [Write a BUILD file](build_file.md)
