@@ -161,6 +161,6 @@ blade test -m32 -pdebug common...
 
 ## 文档
 
-看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/zh_CN/user_manual.md)，开始使用吧。
+看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](/doc/zh_CN/README.md)，开始使用吧。
 
 如果遇到有问题，可以试试先查一下[FAQ](/doc/zh_CN/FAQ.md)，也许有你需要的信息。
