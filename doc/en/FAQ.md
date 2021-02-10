@@ -267,7 +267,7 @@ Description:
 
 The default value is `mid`.
 
-#### Turn on DebugFission ####
+#### Enable DebugFission ####
 
 Use GCC's [DebugFission](https://gcc.gnu.org/wiki/DebugFission) function:
 
@@ -280,7 +280,7 @@ cc_config(
 )
 ```
 
-In out actual test, with the middle debug information level, the size of an executable file has been reduced from 1.9GB to 532MB.
+In our real test, with the middle debug information level, the size of an executable file has been reduced from 1.9GB to 532MB.
 
 #### Compress debug information ####
 
