@@ -69,6 +69,7 @@ Autotools 的难用和繁琐的问题，参考[Google工程博客上的一些文
 cc_library(
     name = 'foo',
     srcs = ...,
+    hdrs = ...,
     deps = ':common'
 )
 ```

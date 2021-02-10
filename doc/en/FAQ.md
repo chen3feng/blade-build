@@ -187,6 +187,7 @@ Such a library:
 cc_library(
     name = 'secrity',
     srcs = 'secrity.cpp',
+    hdrs = ['security.h'],
     deps = [
         '//common/base/string:string',
         '//thirdparty/glog:glog',
@@ -200,6 +201,7 @@ Modify the BUILD file and remove the srcs
 ```python
 cc_library(
     name = 'secrity',
+    hdrs = ['security.h'],
     prebuilt = True, # srcs changed to this
     deps = [
         '//common/base/string:string',
