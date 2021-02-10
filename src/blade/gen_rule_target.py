@@ -22,6 +22,14 @@ from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
 
 
+# The rule template for gen_rule
+_RULE_FORMAT = '''\
+rule %s
+  command = %s && cd %s && ls ${out} > /dev/null
+  description = %s
+'''
+
+
 class GenRuleTarget(Target):
     """General Rule Target"""
 
@@ -143,13 +151,16 @@ class GenRuleTarget(Target):
         return result
 
     def generate(self):
+        """Generate code for backend build system."""
+        # NOTE: Here is something different with normal targets.
+        # We have to generate each `rule` for a `gen_rule` target but not sharing a predefined rule.
+        # Because the `command` variable is not lazy evaluated althrough it can be overridden in a
+        # `build` statement, so any other build scoped variables are expanded to empty.
         rule = '%s__rule__' % regular_variable_name(self._source_file_path(self.name))
         cmd = self._expand_command()
         description = console.colored('%s %s' % (self.attr['cmd_name'], self.fullname), 'dimpurple')
-        self._write_rule('''rule %s
-  command = %s && cd %s && ls ${out} > /dev/null
-  description = %s
-''' % (rule, cmd, self.blade.get_root_dir(), description))
+        self._write_rule(_RULE_FORMAT % (rule, cmd, self.blade.get_root_dir(), description))
+
         outputs = [self._target_file_path(o) for o in self.attr['outs']]
         inputs = self._expand_srcs()
         vars = {}
@@ -161,6 +172,7 @@ class GenRuleTarget(Target):
             vars['pool'] = 'heavy_pool'
         self.generate_build(rule, outputs, inputs=inputs, implicit_deps=self.implicit_dependencies(),
                             variables=vars)
+
         for i, out in enumerate(outputs):
             self._add_target_file(str(i), out)
 
