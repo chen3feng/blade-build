@@ -5,7 +5,7 @@
 [![Code Style](https://img.shields.io/badge/code%20style-google-blue.svg)](https://google.github.io/styleguide/pyguide.html)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos-lightgrey.svg)](doc/zh_CN/prerequisites.md)
 
-```
+```text
 ██████╗ ██╗      █████╗ ██████╗ ███████╗
 ██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝
 ██████╔╝██║     ███████║██║  ██║█████╗
