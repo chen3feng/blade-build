@@ -12,20 +12,19 @@ import pprint
 import re
 
 # Example:
-# No explicit "visibility" declaration
-# 2021-02-11 18:07:43.205431 thirdparty/gtest/BUILD:3:0: error: gtest: Missing "hdrs" declaration.
-_PATTERN = re.compile(r'[\d-]+ [\d:.]+ (?P<path>[^:]+):.*: (?P<name>[^ ]+): Missing "hdrs" declaration')
+# 2021-02-11 17:36:21.172125 thirdparty/gtest/BUILD:3:0: info: gtest:
+_PATTERN = re.compile(r'[\d-]+ [\d:.]+ (?P<path>[^:]+):.*: (?P<name>[^ ]+): No explicit "visibility" declaration')
 
 
 def main():
-    result = []
+    result = set()
     with open('blade-bin/blade.log') as log:
         for line in log:
             match = _PATTERN.match(line)
             if match:
                 build = match.group('path')
                 name = match.group('name')
-                result.append(os.path.dirname(build) + ':' + name)
+                result.add(os.path.dirname(build) + ':' + name)
     pprint.pprint(sorted(result))
 
 

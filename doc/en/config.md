@@ -82,6 +82,20 @@ global_config(
 )
 ```
 
+- `legacy_public_targets` : list = []
+
+  For targets whose `visibility` is not explicitly set, its visibility is set to `PUBLIC` if it is in this list.
+
+  For existing projects, we provide a too [`tool/collect-missing-visibilty.py`](../../tool), which can be used to generate this list.
+
+  You can save the output of this tool to a file and load it with `load_value()`:
+
+  ```python
+  global_config(
+      legacy_public_targets = load_value('legacy_public_targets.conf')
+  )
+  ```
+
 ### cc_config
 
 Common configuration of all c/c++ targets:

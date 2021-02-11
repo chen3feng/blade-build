@@ -1,10 +1,12 @@
 # Write a BUILD file #
 
-The Blade passes a series of files named "BUILD" (all uppercase), which need to be written by the developer. Each BUILD file describes the source file of a target, other targets it depends on, and other properties through a set of object description functions.
+The Blade passes a series of files named "BUILD" (all uppercase), which need to be written by the
+developer. Each BUILD file describes the source file of a target, other targets it depends on,
+and other properties through a set of object description functions.
 
 ## Example of a BUILD file ##
 
-Building a script is simple:
+Build file is simple:
 
 Example: common/base/string/BUILD
 
@@ -25,7 +27,8 @@ cc_library(
 )
 ```
 
-It is also an explanation, just need to list the target name, source file name and dependency name (may not be).
+It is declarative, just need to list the target name, source file name and dependency name
+(if any), no compiling and linking command is required to specified.
 
 ## Style Suggestion ##
 
@@ -33,9 +36,10 @@ It is also an explanation, just need to list the target name, source file name a
 * Always use single quotes (`'`) rather than double quotes (`"`)
 * Keep target names in lowercase
 * The file names in src are in alphabetical order
-* Deps writes the dependencies (:target) in this directory first, and then writes (//dir:name) in other directories, in alphabetical order
-* When placing 1 parameter per line, the last parameter also ends with a comma (`,`) to reduce the number of lines affected when adding or deleting
-  parameters
+* Deps writes the dependencies (:target) in this directory first, and then writes (//dir:name) in
+  other directories, in alphabetical order
+* When placing 1 parameter per line, the last parameter also ends with a comma (`,`) to reduce the
+  number of lines affected when adding or deleting parameters
 * Put an empty line between different targets, can also put comments before it
 * An empty # after the comment #, such as # This is a comment
 
@@ -43,20 +47,41 @@ It is also an explanation, just need to list the target name, source file name a
 
 Blade uses a set of target functions to define targets. The common properties of these targets are:
 
-* name: string, together with the path to become the unique identifier of the target, also determines the output name of the build
-* srcs: list or string, the source file needed to build the object, usually in the current directory, or in a subdirectory relative to the current directory
+* name: string, together with the path to become the unique identifier of the target, also determines
+  the output name of the build
+* srcs: list or string, the source file needed to build the object, usually in the current directory,
+  or in a subdirectory relative to the current directory
 * deps: list or string, other targets on which the object depends
 * visibility: list or string of build target pattern, control visibility to the listed targets,
   there is a special value: 'PUBLIC', means visible to everyone, the targets in the same directory
-  are always visible to each other
+  are always visible to each other.
+
+  Examples:
+
+  ```python
+  visibility = [] # Private, only visible to the current BUILD file
+  visibility = ['//module1:program12','//module1:program2'] # Only visible to these two targets
+  visibility = ['//module2:*'] # Visible to the target under the module2 directory, but not to its subdirectories
+  visibility = ['//module3:...'] # Visible to the targets in module3 and all its subdirectories
+  ```
+
+  In Blade 1, all targets are `PUBLIC` by default. In Blade 2, in order to adapt to the dependency
+  management of larger projects, it is adjusted to be private by default.
+
+  For targets that already exist in an existing project, they can be set to `PUBLIC` through the
+  [`legacy_public_targets`](config.md#global_config) configuration item, which only requires
+  explicit settings for newly added targets.
 
 We also provide a [glob](functions.md#glob) function to generate the source files list.
 
 The allowed format of deps:
 
-* "//path/to/dir/:name" target in other directories, path is the path from BLADE_ROOT, and name is the target name to be relied upon. When you see it, you know where it is.
-* ":name" The target, path in the current BUILD file can be omitted.
-* "#name" system library. Write # with the name directly, such as #pthread, #z respectively equivalent to link -lpthread and -lz on the command line, but will be passed to other targets that depend on this library.
+* `'//path/to/dir/:name'` target in other directories, path is the path from BLADE_ROOT, and name is
+  the target name to be relied upon. When you see it, you know where it is.
+* `':name'` The target, path in the current BUILD file can be omitted.
+* `'#name'` system library. Write # with the name directly, such as `#pthread`, `#z` respectively
+  equivalent to link `-lpthread` and `-lz` on the command line, but will be passed to other targets
+   that depend on this library.
 
 ## Building Rules ##
 
@@ -74,4 +99,5 @@ The allowed format of deps:
 ## Other features ##
 
 * Some [functions](functions.md) which can be called in BUILD files
-* You can create and use your custom functions and rules via [extension](build_rules/extension.md) mechanism
+* You can create and use your custom functions and rules via [extension](build_rules/extension.md)
+  mechanism

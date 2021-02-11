@@ -69,6 +69,20 @@ blade dump --config --to-file my.config
 
   增量测试时，是否运行未修复的（先前已经失败且未修改的）测试。
 
+- `legacy_public_targets` : list = []
+
+  对于未显式设置可见性（`visibility`）的目标，默认设置可见性为 `PUBLIC` 的目标列表。
+
+  对于现存的项目，我们提供了 [`tool/collect-missing-visibilty.py`](../../tool) 工具，可以用来生成这个列表。
+
+  可以把这个工具的输出保存到文件中，然后通过 `load_value()` 加载：
+
+  ```python
+  global_config(
+      legacy_public_targets = load_value('legacy_public_targets.conf')
+  )
+  ```
+
 ### cc_config
 
 所有c/c++目标的公共配置：
