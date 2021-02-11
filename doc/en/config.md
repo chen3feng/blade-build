@@ -37,7 +37,7 @@ Global configuration:
 
   Backend build system, only `ninja` currently.
 
-  [ninja](https://ninja-build.org/) is a meta-construction system that focuses on building speeds.
+  [ninja](https://ninja-build.org/) is a lower-level system that focuses on building speeds.
   We used to use scons as the backend, but ninja is much faster, so the we only use ninja as
   backend, and the support for scons is removed.
 
@@ -124,7 +124,7 @@ Common configuration of all c/c++ targets:
 
   Optimize options. It is separate from other compile flags because it is ignored in debug mode.
 
-- `hdr_dep_missing_severity` = string : 'warning' | ['info', 'warning', 'error']
+- `hdr_dep_missing_severity` : string = 'warning' | ['info', 'warning', 'error']
 
   The severity of the missing dependency on the library to which the header file belongs.
 
@@ -264,17 +264,29 @@ Note:
 
 Java related configurations:
 
+- `java_home` : string = ''
+
+  Set `$JAVA_HOME`, Take from '$JAVA_HOME' defaultly.
+
 - `version` : string = '' | "8" "1.8", ...
 
-  Provide compatibility with specified release
+  Provide compatibility with specified release.
 
-- `source_version` = string = '' | take `version`
+- `source_version` : string = ''
 
-  Provide source compatibility with specified release.
+  Provide source compatibility with specified release. take value of `version` defaultly.
 
-- `target_version` = string = '' | take `version`
+- `target_version` : string = ''
 
-  Generate class files for specific VM version.
+- `source_encoding` : string = None
+
+  Specify character encoding used by source files.
+
+  Generate class files for specific VM version. take value of `version` defaultly.
+
+- `warnings` : list = ['-Werror', '-Xlint:all']
+
+   Warning flags.
 
 - `fat_jar_conflict_severity` : string = 'warning'
 
@@ -336,18 +348,6 @@ Java related configurations:
   but [maven local repository is not concurrent-safe defaultly](https://issues.apache.org/jira/browse/MNG-2802),
   you can try to install [takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository) to make it safe.
   NOTE there are multiple available versions, the version in the example code of the document is not the latest one.
-
-- `warnings` : list = ['-Werror', '-Xlint:all']
-
-   Warning flags.
-
-- `source_encoding` : string = None
-
-  Specify character encoding used by source files
-
-- `java_home` : string = Take from '$JAVA_HOME'
-
-  Set `$JAVA_HOME`
 
 ### proto_library_config
 

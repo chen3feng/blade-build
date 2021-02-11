@@ -32,32 +32,39 @@ blade dump --config --to-file my.config
 
 全局配置：
 
-- `backend_builder : string = 'ninja'
+- `backend_builder` : string = 'ninja'
 
   Blade所用的后端构建系统，只支持 `ninja`。
 
   Blade 一开始依赖 scons 作为后端，但是后来由于优化的需要，发现 ninja 更合适。
-  [ninja](https://ninja-build.org/)是一个专注构建速度的元构建系统，经实测在构建大型项目时，
-用 ninja 速度比 scons 快很多，因此我们淘汰了对 scons 的支持。
+  [ninja](https://ninja-build.org/)是一个专注构建速度的底层构建系统，经实测在构建大型项目时，
+  用 ninja 速度比 scons 快很多，因此我们淘汰了对 scons 的支持。
 
-- `duplicated_source_action` = string = 'warning' | ['warning', 'error']
+- `duplicated_source_action` : string = 'warning' | ['warning', 'error']
 
   发现同一个源文件属于多个目标时的行为，默认为`warning`，建议设置为`error`。
+
 - `test_timeout` : int = 600
 
   运行每个测试的超时时间，单位秒，超过超时值依然未结束，视为测试失败。
+
 - `debug_info_level` : string = 'mid' | ['no', 'low', 'mid', 'high']
 
   生成的构建结果中调试符号的级别，支持四种级别，越高越详细，可执行文件也越大。
+
 - `build_jobs` : int = 0 | 0~CPU核数
 
   并行构建的最大进程数量，默认会根据机器配置自动计算。
+
 - `test_jobs` : int = 0 | 0~CPU核数/2
 
   并行测试的最大进程数量，默认会根据机器配置自动计算。
+
 - `test_related_envs` : list = []
 
-  字符串或正则表达式 | 是否影响增量测试的环境变量名。
+  是否影响增量测试的环境变量名。
+  支持字符串或正则表达式。
+
 - `run_unrepaired_tests` : bool = False
 
   增量测试时，是否运行未修复的（先前已经失败且未修改的）测试。
@@ -69,18 +76,23 @@ blade dump --config --to-file my.config
 - `extra_incs` : list = []
 
   额外的头文件搜索路径，比如['thirdparty']
+
 - `cppflags` : list = []
 
-  C/C++ 公用编译选项
+  C/C++ 公用编译选项，默认值已经够用，通常不需要设置。
+
 - `cflags` : list = []
 
-  C 专用编译选项
+  C 专用编译选项。
+
 - `cxxflags` : list = []
 
-  C++专用编译选项。
+  C++ 专用编译选项。
+
 - `linkflags` : list = []
 
   构建库和可执行文件以及测试时公用的链接选项，比如库搜索路径等。
+
 - `warnings` : list = 内置
 
   C/C++公用警告。一般是 `-W` 开头，比如 `['-Wall', '-Wextra']` 等。内置的警告选项均经过精心挑选，建议保持。
@@ -89,13 +101,16 @@ blade dump --config --to-file my.config
 - `c_warnings` : list = 内置
 
   编译 C 代码时的专用警告。
+
 - `cxx_warnings` : list = 内置
 
   编译C++代码时的专用警告。
+
 - `optimize` : list = 内置
 
   优化专用选项，debug 模式下会被忽略，比如 `['-O2'，'-omit-frame-pointer'] 等。
   单独分出 optimize 选项是因为这些选项在 debug 模式下需要被忽略。
+
 - `hdr_dep_missing_severity` : string = warning | ['info', 'warning', 'error'
 
   对头文件所属的库的依赖的缺失的严重性。
@@ -222,7 +237,11 @@ C/C++ 库的配置：
 
 ### java_config
 
-Java构建相关的配置：
+Java 构建相关的配置：
+
+- `java_home` : string = 读取 '$JAVA_HOME' 环境变量
+
+  设置JAVA_HOME。
 
 - `version` : string = '' | ['8' '1.8'] 等
 
@@ -235,6 +254,14 @@ Java构建相关的配置：
 - `target_version` : string = ''
 
   生成特定 VM 版本的类文件。默认取 `version` 的值。
+
+- `warnings` : list = ['-Werror', '-Xlint:all']
+
+  警告设置。
+
+- `source_encoding` : string = None
+
+  设置源代码的默认编码。
 
 - `fat_jar_conflict_severity` : string = 'warning' | ['debug', 'info', 'warning', 'error']
 
@@ -286,18 +313,6 @@ Java构建相关的配置：
   设置大于 1 的值可以提高下载速度，但是由于[maven 本地仓库缓存默认不是并发安全的](https://issues.apache.org/jira/browse/MNG-2802),
   你可以尝试安装[takari](http://takari.io/book/30-team-maven.html#concurrent-safe-local-repository)
   来确保安全, 注意这个插件其实有多个可用的版本，文档示例里的不是最新的。
-
-- `warnings` : list = ['-Werror', '-Xlint:all']
-
-  警告设置。
-
-- `source_encoding` : string = None
-
-  设置源代码的默认编码。
-
-- `java_home` : string = 读取 '$JAVA_HOME' 环境变量
-
-  设置JAVA_HOME。
 
 ### proto_library_config
 
