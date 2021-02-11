@@ -87,7 +87,7 @@ class Target(object):
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
-        self.visibility = {'PUBLIC'}
+        self.visibility = set()
 
         if not name:
             self.fatal('Missing "name"')
@@ -412,7 +412,7 @@ class Target(object):
             self._check_format(dep)
 
     def _init_visibility(self, visibility):
-        """
+        """Initialize the `visibility` attribute.
 
         Parameters
         -----------
@@ -424,29 +424,35 @@ class Target(object):
         on this target.
 
         Visibility specify a list of target patterns in the same form as deps,
-        i.e. //path:target, '//path/:...'. The default visibility is "PUBLIC",
+        i.e. //path:target, '//path/:...'. There is a special value is "PUBLIC",
         which means this target is visible globally within the code base.
         Note that targets inside the same BUILD file are always visible to each
         other.
         """
         if visibility is None:
+            self.visibility = None
             return
 
         visibility = var_to_list(visibility)
         if 'PUBLIC' in visibility:
+            self.visibility.add('PUBLIC')
             return
 
         self.visibility.clear()
         for v in visibility:
             if not target_pattern.is_valid_in_build(v):
-                self.error('Invalid build target pattern "%s" for visibility' % v)
+                #self.error('Invalid build target pattern "%s" for visibility' % v)
                 continue
             key = target_pattern.normalize(v, self.path)
             self.visibility.add(key)
 
     def _match_visibility(self, dep):
         """Check whether the target_id matches dep's visibility."""
-        visibility = getattr(dep, 'visibility')
+        if self.path == dep.path:
+            return True
+        visibility = dep.visibility
+        if visibility is None:
+            return dep.key in config.get_item('global_config', 'legacy_public_targets')
         if 'PUBLIC' in visibility:
             return True
         if self.key in visibility:  # Strict match
@@ -460,14 +466,13 @@ class Target(object):
         """Check whether this target is able to depend on its deps."""
         # Targets are visible inside the same BUILD file by default
         for dep_id in self.deps:
-            dep_dir = dep_id.rsplit(':')[0]
-            if self.path == dep_dir:
-                continue
-
             dep = self.target_database[dep_id]
             if not self._match_visibility(dep):
                 self.error('Not allowed to depend on "//%s" because of its visibility,' % dep_id)
-                dep.info('which is declared here')
+                if dep.visibility is None:
+                    dep.info('No explicit "visibility" declaration')
+                else:
+                    dep.info('which is declared here')
 
     def _check_deprecated_deps(self):
         """check that whether it depends upon deprecated target.

@@ -28,11 +28,6 @@ cd `dirname $0`
 # Cleanup before running
 rm -rf testdata/blade-bin/ testdata/build64_release/
 
-for f in `find testdata -name BUILD.TEST`; do
-    cp $f ${f%.TEST}
-done
-cp testdata/BLADE_ROOT.TEST testdata/BLADE_ROOT
-
 ROOT="$(cd ../.. && pwd)"
 cat > $ROOT/.coveragerc << EOF
 [run]

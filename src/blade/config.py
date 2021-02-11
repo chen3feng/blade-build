@@ -69,6 +69,8 @@ class BladeConfig(object):
                     'Whether run unrepaired(no changw after previous failure) tests during incremental test',
                 'glob_error_severity': 'error',
                 'glob_error_severity__doc__': 'The severity of glob error, can be debug, info, warning, error',
+                'legacy_public_targets': set(),
+                'legacy_public_targets__doc__': 'List of targets with legacy public visibility',
             },
 
             'cc_config': {
