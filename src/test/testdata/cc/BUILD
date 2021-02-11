@@ -18,7 +18,8 @@ cc_library(
     incs=['include'],
     optimize=['-O3'],
     always_optimize=True,
-    link_all_symbols=1
+    link_all_symbols=1,
+    visibility = ['PUBLIC'],
 )
 
 

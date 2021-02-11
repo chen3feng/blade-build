@@ -1,36 +1,42 @@
 java_library(
     name = 'log4j',
     binary_jar = 'log4j.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
 java_library(
     name = 'netty',
     binary_jar = 'netty.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
 java_library(
     name = 'protobuf-java',
     binary_jar = 'protobuf-java.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
 java_library(
     name = 'snappy-java',
     binary_jar = 'snappy-java.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
 java_library(
     name = 'zookeeper',
     binary_jar = 'zookeeper.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
 java_library(
     name = 'junit',
     binary_jar = 'junit.jar',
-    prebuilt = 1
+    prebuilt = 1,
+    visibility = ['PUBLIC'],
 )
 
