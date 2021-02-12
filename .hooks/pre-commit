@@ -6,5 +6,8 @@
 set -e
 
 for hook in .hooks/pre-commit.d/*; do
-  $hook
+  if [ -x $hook ]; then
+    echo "Run hook $hook"
+    $hook
+  fi
 done
