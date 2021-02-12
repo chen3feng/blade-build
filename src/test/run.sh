@@ -13,25 +13,13 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-function cleanup() {
-    # Cleanup BLADE_ROOT and BUILDs to avoid ran by 'blade build ...' on upper dirs
-    find testdata -name BUILD | xargs rm
-    rm -rf testdata/BLADE_ROOT
-
-    # Cleanup generated files
-    rm -rf testdata/{BLADE_ROOT,blade-bin,build64_release/} build_output.txt
-    rm -f *.pyc ../blade/*.pyc
-}
-
 cd `dirname $0`
-
-# Cleanup before running
-rm -rf testdata/blade-bin/ testdata/build64_release/
 
 ROOT="$(cd ../.. && pwd)"
 cat > $ROOT/.coveragerc << EOF
 [run]
 data_file = $ROOT/.coverage
+omit = */src/blade/pathlib.py
 EOF
 
 rm -f $ROOT/.coverage
@@ -42,6 +30,5 @@ python -B $@
 exit_code=$?
 
 coverage report --rcfile=$ROOT/.coveragerc
-# cleanup
 
 exit $exit_code
