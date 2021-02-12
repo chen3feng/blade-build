@@ -26,6 +26,7 @@ from blade import binary_runner
 from blade import config
 from blade import console
 from blade import coverage
+from blade import target_pattern
 from blade.blade_util import md5sum, iteritems
 from blade.test_scheduler import TestScheduler
 # pylint: disable=unused-import
@@ -254,13 +255,7 @@ class TestRunner(binary_runner.BinaryRunner):
         if not self.exclude_tests:
             return False
         for pattern in self.exclude_tests:
-            if pattern == target.key:
-                return True
-            path, name = pattern.split(':')
-            if path == target.path and name == '*':
-                return True
-            if (name == '...' and (target.path == path or
-                                   target.path.startswith(path + os.path.sep))):
+            if target_pattern.match(target.key, pattern):
                 return True
         return False
 
