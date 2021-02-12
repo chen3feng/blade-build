@@ -19,25 +19,25 @@ class TestDump(blade_test.TargetTest):
         self.doSetUp('cc', target='...')
 
     def doTearDown(self):
-        self.removeFile('dump.config')
-        self.removeFile('compdb.json')
-        self.removeFile('targets.json')
+        self.removeFile('blade-bin/dump.config')
+        self.removeFile('blade-bin/compdb.json')
+        self.removeFile('blade-bin/targets.json')
 
     def testDumpConfig(self):
         self.assertTrue(self.runBlade('dump', '--config'))
-        self.assertTrue(self.runBlade('dump', '--config --to-file=dump.config'))
-        self.assertTrue(os.path.isfile('dump.config'))
+        self.assertTrue(self.runBlade('dump', '--config --to-file=blade-bin/dump.config'))
+        self.assertTrue(os.path.isfile('blade-bin/dump.config'))
 
 
     def testDumpCompdb(self):
         self.assertTrue(self.runBlade('dump', '--compdb'))
-        self.assertTrue(self.runBlade('dump', '--compdb --to-file=compdb.json'))
-        json.load(open('compdb.json'))
+        self.assertTrue(self.runBlade('dump', '--compdb --to-file=blade-bin/compdb.json'))
+        json.load(open('blade-bin/compdb.json'))
 
     def testDumpTargets(self):
         self.assertTrue(self.runBlade('dump', '--targets'))
-        self.assertTrue(self.runBlade('dump', '--targets  --to-file=targets.json'))
-        json.load(open('targets.json'))
+        self.assertTrue(self.runBlade('dump', '--targets  --to-file=blade-bin/targets.json'))
+        json.load(open('blade-bin/targets.json'))
 
 if __name__ == '__main__':
     blade_test.run(TestDump)
