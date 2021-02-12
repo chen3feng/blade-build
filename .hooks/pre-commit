@@ -2,4 +2,12 @@
 # use pylint to check code,
 # Requirements:
 # pip install git-pylint-commit-hook
-git-pylint-commit-hook
+
+set -e
+
+for hook in .hooks/pre-commit.d/*; do
+  if [ -x $hook ]; then
+    echo "Run hook $hook"
+    $hook
+  fi
+done
