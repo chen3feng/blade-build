@@ -21,7 +21,7 @@ class TestExtension(blade_test.TargetTest):
         self.assertTrue(self.runBlade('build', print_error=False))
 
     def testNonExisted(self):
-        self.doSetUp('test_extension/non-existed', command='build')
+        self.doSetUp('test_extension/non-existed')
         self.assertFalse(self.runBlade('build', print_error=False))
 
 
