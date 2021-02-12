@@ -87,7 +87,8 @@ class Target(object):
         self.dependents = set()  # Target keys which depends on this
         self.expanded_dependents = set()  # Expanded target keys which depends on this
         self._implicit_deps = set()
-        self.visibility = set()
+        self._visibility = set()
+        self._visibility_is_default = True
 
         if not name:
             self.fatal('Missing "name"')
@@ -125,7 +126,7 @@ class Target(object):
             'name': self.name,
             'srcs': self.srcs,
             'deps': self.deps,
-            'visibility': list(self.visibility),
+            'visibility': list(self._visibility),
         }
         target.update(self.attr)
         return target
@@ -430,31 +431,33 @@ class Target(object):
         other.
         """
         if visibility is None:
-            self.visibility = None
+            global_config = config.get_section('global_config')
+            if self.key in global_config.get('legacy_public_targets'):
+                visibility = {'PUBLIC'}
+            else:
+                visibility = global_config.get('default_visibility')
+            self._visibility.update(visibility)
             return
 
+        self._visibility_is_default = False
         visibility = var_to_list(visibility)
         if 'PUBLIC' in visibility:
-            self.visibility.add('PUBLIC')
+            self._visibility.add('PUBLIC')
             return
 
-        self.visibility.clear()
+        self._visibility.clear()
         for v in visibility:
             if not target_pattern.is_valid_in_build(v):
                 #self.error('Invalid build target pattern "%s" for visibility' % v)
                 continue
             key = target_pattern.normalize(v, self.path)
-            self.visibility.add(key)
+            self._visibility.add(key)
 
     def _match_visibility(self, dep):
         """Check whether the target_id matches dep's visibility."""
         if self.path == dep.path:
             return True
-        visibility = dep.visibility
-        if visibility is None:
-            global_config = config.get_section('global_config')
-            return (dep.key in global_config.get('legacy_public_targets') or
-                   'PUBLIC' in global_config.get('default_visibility'))
+        visibility = dep._visibility
         if 'PUBLIC' in visibility:
             return True
         if self.key in visibility:  # Strict match
@@ -471,7 +474,7 @@ class Target(object):
             dep = self.target_database[dep_id]
             if not self._match_visibility(dep):
                 self.error('Not allowed to depend on "//%s" because of its visibility,' % dep_id)
-                if dep.visibility is None:
+                if dep._visibility_is_default:
                     dep.info('No explicit "visibility" declaration')
                 else:
                     dep.info('which is declared here')
