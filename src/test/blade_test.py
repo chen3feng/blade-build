@@ -46,7 +46,6 @@ class TargetTest(unittest.TestCase):
 
     def doTearDown(self):
         """tear down method."""
-        pass
 
     def removeTree(self, path):
         try:
@@ -72,7 +71,7 @@ class TargetTest(unittest.TestCase):
                 sys.stderr.write('Exit with: %d\nstdout:\n%s\nstderr:\n%s\n' % (
                     p.returncode, ''.join(self.build_output), ''.join(self.build_error)))
             return p.returncode == 0
-        except:
+        except Exception:  # pylint: disable=broad-except
             sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
         return False
 

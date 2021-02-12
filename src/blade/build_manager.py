@@ -229,6 +229,7 @@ class Blade(object):
         return self.__blade_revision
 
     def build(self):
+        """Implement the "build" subcommand."""
         console.info('Building...')
         console.flush()
         returncode = ninja_runner.build(
@@ -423,6 +424,7 @@ class Blade(object):
         return False
 
     def dump(self):
+        """Implement the "dump" subcommand."""
         working_dir = self.get_working_dir()
         output_file_name = os.path.join(working_dir, self.__options.dump_to_file)
         if self.__options.dump_compdb:
@@ -433,12 +435,14 @@ class Blade(object):
         raise AssertionError("Invalid dump option")
 
     def _dump_compdb(self, output_file_name):
+        """Implement the "dump --compdb" subcommand."""
         return ninja_runner.dump_compdb(
             self.build_script(),
             self.get_all_rule_names(),
             output_file_name)
 
     def _dump_targets(self, output_file_name):
+        """Implement the "dump --targets" subcommand."""
         result = []
         with open(output_file_name, 'w') as f:
             for target_key in self.__expanded_command_targets:

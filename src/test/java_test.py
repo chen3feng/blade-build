@@ -23,7 +23,6 @@ class TestJava(blade_test.TargetTest):
 
     def testLoadBuildsNotNone(self):
         """Test direct targets and all command targets are not none."""
-        pass
 
     def testGenerateRules(self):
         """Test that rules are generated correctly."""
