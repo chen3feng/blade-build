@@ -86,7 +86,7 @@ def _find_libs_by_header(hdr):
         old_hdr_dir = hdr_dir
         hdr_dir = os.path.dirname(hdr_dir)
         if hdr_dir == old_hdr_dir:
-            return []
+            return set()
 
 
 # dict(hdr, set(targets))

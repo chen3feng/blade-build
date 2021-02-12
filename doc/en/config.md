@@ -96,6 +96,13 @@ global_config(
   )
   ```
 
+-`default_visibility` : list = [] | ['PUBLIC']
+
+  For targets that do not explicitly set visibility (`visibility`), set it to this value.
+
+  Can only be set to empty (`[]`) or `['PUBLIC']`.
+  If set to `['PUBLIC']`, it will be consistent with Blade 1.
+
 ### cc_config
 
 Common configuration of all c/c++ targets:

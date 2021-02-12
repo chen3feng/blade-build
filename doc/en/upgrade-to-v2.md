@@ -35,4 +35,10 @@ To upgrade to V2, you muse install [ninja](https://ninja-build.org/), by either 
 Header file are included in dependency management in V2 defaultly.
 If you use V2 to build old projects which were built by V1.x, many diagnostic errors will occur.
 You can fix or suppress these legancy errors. or turn off this check totally (strongly discouraged!).
-See [config](config.md) and [cc](build_rules/cc.md) for details.
+See [config](config.md) and [cc rules](build_rules/cc.md) for details.
+
+### Target Visibility Control
+
+[Visibility](build_file.md) of the target is private by default. Targets is only visible to other
+ones in same `BUILD` file defaultly. This feature can be disabled [globally](config.md#global_config),
+or only check new added build targets by exempting the existing ones.

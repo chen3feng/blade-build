@@ -452,7 +452,9 @@ class Target(object):
             return True
         visibility = dep.visibility
         if visibility is None:
-            return dep.key in config.get_item('global_config', 'legacy_public_targets')
+            global_config = config.get_section('global_config')
+            return (dep.key in global_config.get('legacy_public_targets') or
+                   'PUBLIC' in global_config.get('default_visibility'))
         if 'PUBLIC' in visibility:
             return True
         if self.key in visibility:  # Strict match
