@@ -15,16 +15,12 @@ import subprocess
 import sys
 import unittest
 
-sys.path.append('..')
 
-import blade.build_manager
-import blade.config
-
-
+# pylint: disable=attribute-defined-outside-init
 class TargetTest(unittest.TestCase):
     """base class Test."""
 
-    def doSetUp(self, path, target='...', full_targets=None, generate_php=True, **kwargs):
+    def doSetUp(self, path, target='...', full_targets=None):
         """setup method."""
         if full_targets:
             self.targets = full_targets
@@ -32,7 +28,6 @@ class TargetTest(unittest.TestCase):
             self.targets = '%s:%s' % (path, target)
         self.target_path = path
         self.cur_dir = os.getcwd()
-        os.chdir('testdata')
         self.blade_path = '../../blade'
         self.working_dir = '.'
         self.current_building_path = 'build64_release'
@@ -41,15 +36,25 @@ class TargetTest(unittest.TestCase):
         self.build_output_file = 'build_output.txt'
         self.build_error = []
         self.build_error_file = 'build_error.txt'
+        os.chdir('testdata')
 
     def tearDown(self):
         """tear down method."""
+        self.doTearDown()
+        self.removeTree('build64_release')
+        os.chdir(self.cur_dir)
+
+    def doTearDown(self):
+        """tear down method."""
+
+    def removeTree(self, path):
         try:
             shutil.rmtree('build64_release', ignore_errors=True)
         except OSError as e:
             print(e)
 
-        os.chdir(self.cur_dir)
+    def removeFile(self, path):
+        self.removeTree(path)
 
     def runBlade(self, command='build', extra_args='', print_error=True):
         # We can use pipe to capture stdout, but keep the output file make it
@@ -66,7 +71,7 @@ class TargetTest(unittest.TestCase):
                 sys.stderr.write('Exit with: %d\nstdout:\n%s\nstderr:\n%s\n' % (
                     p.returncode, ''.join(self.build_output), ''.join(self.build_error)))
             return p.returncode == 0
-        except:
+        except Exception:  # pylint: disable=broad-except
             sys.stderr.write('Failed while dry running:\n%s\n' % str(sys.exc_info()))
         return False
 

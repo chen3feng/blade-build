@@ -11,7 +11,6 @@
  one or more build rules, each has a TARGET NAME, source files and dependent
  targets. Blade supports many types of build rules, such as:
 
-
     cc_binary         -- build an executable binary from C++ source
     cc_library        -- build a library from C++ source
     cc_plugin         -- build a plugin from C++ source
@@ -36,9 +35,9 @@
  transitive.  A dependent target is referred by a TARGET ID, which
  has either of the following forms:
 
-   //<source_dir>:<target_name> -- target defined in <source_dir>/BUILD
-   :<target_name>               -- target defined in the current BUILD file
-   #<target_name>               -- target is a system library, e.g., pthread
+   `//<source_dir>:<target_name>` -- target defined in <source_dir>/BUILD
+   `:<target_name>`               -- target defined in the current BUILD file
+   `#<target_name>`               -- target is a system library, e.g., pthread
 
  where <source_dir> is an absolute path rooted at the source tree and
  specifying where the BUILD file locates, <target_name> specifies a
@@ -93,122 +92,15 @@ from blade.blade_util import get_cwd, to_string
 from blade.blade_util import lock_file, unlock_file
 
 
-def _run_backend_builder(cmdstr):
-    console.debug('Run build command: ' + cmdstr)
-    p = subprocess.Popen(cmdstr, shell=True)
-    try:
-        p.wait()
-        return p.returncode
-    # pylint: disable=bare-except
-    except:  # KeyboardInterrupt
-        return 1
-
-
-def backend_builder_options(options):
-    """Setup some options which are same in different backend builders."""
-    build_options = []
-    if options.dry_run:
-        build_options.append('-n')
-    if options.backend_builder_options:
-        build_options.append(options.backend_builder_options)
-    return build_options
-
-
-def _show_slow_builds(build_start_time, show_builds_slower_than):
-    build_dir = build_manager.instance.get_build_dir()
-    with open(os.path.join(build_dir, '.ninja_log')) as f:
-        head = f.readline()
-        if '# ninja log v5' not in head:
-            console.warning('Unknown ninja log version: %s' % head)
-            return
-        build_times = []
-        for line in f.readlines():
-            start_time, end_time, timestamp, target, cmdhash = line.split()
-            cost_time = (int(end_time) - int(start_time)) / 1000.0  # ms -> s
-            timestamp = int(timestamp)
-            if timestamp >= build_start_time and cost_time > show_builds_slower_than:
-                build_times.append((cost_time, target))
-        if build_times:
-            console.notice('Slow build targets:')
-            for cost_time, target in sorted(build_times):
-                console.notice('%.4gs\t%s' % (cost_time, target), prefix=False)
-
-
-def _show_progress(p, rf):
-    # Convert description message such as '[1/123] CC xxx.cc' into progress bar
-    progress_re = re.compile(r'^\[(\d+)/(\d+)\]\s+')
-    try:
-        while True:
-            p.poll()
-            line = rf.readline().strip()
-            if line:
-                m = progress_re.match(line)
-                if m:
-                    console.show_progress_bar(int(m.group(1)), int(m.group(2)))
-                else:
-                    console.clear_progress_bar()
-                    console.output(line)
-            elif p.returncode is not None:
-                break
-            else:
-                # Avoid cost too much cpu
-                time.sleep(0.1)
-    finally:
-        console.clear_progress_bar()
-
-
-def _run_ninja(cmd, options):
-    cmdstr = subprocess.list2cmdline(cmd)
-    if console.verbosity_compare(options.verbosity, 'quiet') > 0:
-        return _run_backend_builder(cmdstr)
-    ninja_output = 'blade-bin/ninja_output.log'
-    with open(ninja_output, 'w', buffering=1) as wf, open(ninja_output, 'r', buffering=1) as rf:
-        os.environ['NINJA_STATUS'] = '[%f/%t] '  # The progress depends on this format
-        p = subprocess.Popen(cmdstr, shell=True, stdout=wf, stderr=subprocess.STDOUT)
-        _show_progress(p, rf)
-    return p.returncode
-
-
-def _ninja_build(options):
-    cmd = ['ninja', '-f', build_manager.instance.build_script()]
-    cmd += backend_builder_options(options)
-    cmd.append('-j%s' % build_manager.instance.build_jobs_num())
-    if options.keep_going:
-        cmd.append('-k0')
-    if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
-        cmd.append('-v')
-    build_start_time = time.time()
-    ret = _run_ninja(cmd, options)
-    if options.show_builds_slower_than is not None:
-        _show_slow_builds(build_start_time, options.show_builds_slower_than)
-    return ret
-
-
 def build(options):
-    console.info('Building...')
-    console.flush()
-    returncode = _ninja_build(options)
-    if returncode == 0 and not build_manager.instance.verify():
-        returncode = 1
-    if returncode != 0:
-        console.error('Build failure.')
-    else:
-        console.info('Build success.')
-    return returncode
+    return build_manager.instance.run()
 
 
 def run(options):
-    ret = build(options)
-    if ret != 0:
-        return ret
     return build_manager.instance.run()
 
 
 def test(options):
-    if not options.no_build:
-        ret = build(options)
-        if ret != 0:
-            return ret
     return build_manager.instance.test()
 
 
@@ -221,27 +113,7 @@ def query(options):
 
 
 def dump(options):
-    working_dir = build_manager.instance.get_working_dir()
-    output_file_name = os.path.join(working_dir, options.dump_to_file)
-    if options.dump_compdb:
-        return _dump_compdb(options, output_file_name)
-    if options.dump_targets:
-        return build_manager.instance.dump_targets(output_file_name)
-    # The "--config" is already handled before this
-    raise AssertionError("Invalid dump option")
-
-
-def _dump_compdb(options, output_file_name):
-    backend_builder = config.get_item('global_config', 'backend_builder')
-    if backend_builder != 'ninja':
-        console.fatal('Dump compdb only work when backend_builder is ninja')
-    rules = build_manager.instance.get_all_rule_names()
-    cmd = ['ninja', '-f', build_manager.instance.build_script(), '-t', 'compdb']
-    cmd += rules
-    cmdstr = subprocess.list2cmdline(cmd)
-    cmdstr += ' > '
-    cmdstr += output_file_name
-    return _run_backend_builder(cmdstr)
+    return build_manager.instance.dump()
 
 
 def lock_workspace(build_dir):
@@ -422,14 +294,14 @@ def run_subcommand(command, options, targets, blade_path, root_dir, build_dir, w
 
     # Switch case due to different sub command
     action = {
-        'build': build,
-        'clean': clean,
-        'dump': dump,
-        'query': query,
-        'run': run,
-        'test': test,
+        'build': build_manager.instance.build,
+        'clean': build_manager.instance.clean,
+        'dump': build_manager.instance.dump,
+        'query': build_manager.instance.query,
+        'run': build_manager.instance.run,
+        'test': build_manager.instance.test,
     }[command]
-    returncode = action(options)
+    returncode = action()
     if returncode != 0:
         return returncode
     return _check_error_log(command)

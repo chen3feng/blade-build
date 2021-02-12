@@ -22,6 +22,7 @@ import sys
 from blade import config
 from blade import console
 from blade import maven
+from blade import ninja_runner
 from blade import target_pattern
 from blade.binary_runner import BinaryRunner
 from blade.toolchain import ToolChain
@@ -227,12 +228,44 @@ class Blade(object):
                     os.path.join(self.__blade_path, 'blade')))
         return self.__blade_revision
 
+    def build(self):
+        """Implement the "build" subcommand."""
+        console.info('Building...')
+        console.flush()
+        returncode = ninja_runner.build(
+            self.get_build_dir(),
+            self.build_script(),
+            self.build_jobs_num(),
+            self.__options)
+        if returncode == 0 and not self.verify():
+            returncode = 1
+        if returncode != 0:
+            console.error('Build failure.')
+        else:
+            console.info('Build success.')
+        return returncode
+
     def run(self):
+        """Build and run target"""
+        ret = self.build()
+        if ret != 0:
+            return ret
+        return self._run()
+
+    def _run(self):
         """Run the target."""
         runner = BinaryRunner(self.__options, self.__target_database, self.__build_targets)
         return runner.run_target(list(self.__direct_targets)[0])
 
     def test(self):
+        """Build and run tests."""
+        if not self.__options.no_build:
+            ret = self.build()
+            if ret != 0:
+                return ret
+        return self._test()
+
+    def _test(self):
         """Run tests."""
         exclude_tests = []
         if self.__options.exclude_tests:
@@ -390,7 +423,26 @@ class Blade(object):
             return True
         return False
 
-    def dump_targets(self, output_file_name):
+    def dump(self):
+        """Implement the "dump" subcommand."""
+        working_dir = self.get_working_dir()
+        output_file_name = os.path.join(working_dir, self.__options.dump_to_file)
+        if self.__options.dump_compdb:
+            return self._dump_compdb(output_file_name)
+        if self.__options.dump_targets:
+            return self._dump_targets(output_file_name)
+        # The "--config" is already handled before this
+        raise AssertionError("Invalid dump option")
+
+    def _dump_compdb(self, output_file_name):
+        """Implement the "dump --compdb" subcommand."""
+        return ninja_runner.dump_compdb(
+            self.build_script(),
+            self.get_all_rule_names(),
+            output_file_name)
+
+    def _dump_targets(self, output_file_name):
+        """Implement the "dump --targets" subcommand."""
         result = []
         with open(output_file_name, 'w') as f:
             for target_key in self.__expanded_command_targets:
