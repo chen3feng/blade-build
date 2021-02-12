@@ -454,6 +454,17 @@ def _check_test_related_envs(kwargs):
                 '"global_config.test_related_envs": Invalid env name or regex "%s", %s' % (name, e))
 
 
+def _check_default_visibility(kwargs):
+    if 'default_visibility' not in kwargs:
+        return
+    value = var_to_list(kwargs['default_visibility'])
+    if not value:
+        return
+    if len(value) != 1 or 'PUBLIC' not in value:
+        _blade_config.error(
+                '''"global_config.default_visibility" can only be empty("[]") or "['PUBLIC']"''')
+
+
 _DUPLICATED_SOURCE_ACTION_VALUES = {'warning', 'error', 'none', None}
 
 
@@ -478,6 +489,7 @@ def global_config(append=None, **kwargs):
     debug_info_levels = _blade_config.get_section('cc_config')['debug_info_levels'].keys()
     _check_kwarg_enum_value(kwargs, 'debug_info_level', debug_info_levels)
     _check_test_related_envs(kwargs)
+    _check_default_visibility(kwargs)
     _blade_config.update_config('global_config', append, kwargs)
 
 

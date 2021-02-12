@@ -85,7 +85,7 @@ def var_to_list(var):
     """Normalize a singlar or list to list."""
     if isinstance(var, list):
         return var[:]
-    if not var:
+    if var is None:
         return []
     return [var]
 
