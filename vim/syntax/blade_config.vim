@@ -26,6 +26,7 @@ syn keyword bladeArg backend_builder
 syn keyword bladeArg build_jobs
 syn keyword bladeArg build_path_template
 syn keyword bladeArg debug_info_level
+syn keyword bladeArg default_visibility
 syn keyword bladeArg duplicated_source_action
 syn keyword bladeArg glob_error_severity
 syn keyword bladeArg run_unrepaired_tests

@@ -69,6 +69,8 @@ class BladeConfig(object):
                     'Whether run unrepaired(no changw after previous failure) tests during incremental test',
                 'glob_error_severity': 'error',
                 'glob_error_severity__doc__': 'The severity of glob error, can be debug, info, warning, error',
+                'default_visibility': set(),
+                'default_visibility__doc__': 'Default visibility for targets that do not declare this attribute',
                 'legacy_public_targets': set(),
                 'legacy_public_targets__doc__': 'List of targets with legacy public visibility',
             },
@@ -326,7 +328,12 @@ class BladeConfig(object):
                 if item_name in section:
                     self._prepend_item_value(section, name, item_name, value, user_config)
                     continue
-            self.warning('%s: Unknown config item name: %s' % (section_name, name))
+            msg = '%s: Unknown config item name: "%s"' % (section_name, name)
+            other_section = self.suggest_other_section(name)
+            if other_section:
+                msg += ', maybe it is in "%s"?' % other_section
+            self.warning(msg)
+
 
     def _assign_item_value(self, section, name, value):
         """Assign value to config item."""
@@ -358,6 +365,22 @@ class BladeConfig(object):
             section[item_name] = var_to_list(value) + section[item_name]
         else:
             self.warning('Invalid "%s", "%s" is not prependable' % (name, item_name))
+
+    def suggest_other_section(self, name):
+        """Suggest possible section for item name"""
+        for section_name, section in self.configs.items():
+            if name in section:
+                if name in section:
+                    return section_name
+            if name.startswith('append_'):
+                item_name = name[len('append_'):]
+            elif name.startswith('prepend_'):
+                item_name = name[len('prepend_'):]
+            else:
+                continue
+            if item_name in section:
+                return section_name
+        return ''
 
     def get_section(self, section_name):
         """get config section, returns default values if not set."""

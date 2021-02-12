@@ -83,6 +83,11 @@ blade dump --config --to-file my.config
   )
   ```
 
+- `default_visibility` : list = [] | ['PUBLIC']
+
+  对于未显式设置可见性（`visibility`）的目标，默认设置的可见性属性。只能设置为空（`[]`）或 `['PUBLIC']`。
+  如果设置为 `['PUBLIC']`，就和 Blade 1 保持一致。
+
 ### cc_config
 
 所有c/c++目标的公共配置：
