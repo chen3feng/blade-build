@@ -13,16 +13,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import cProfile
-import errno
-import json
 import os
 import pstats
-import re
 import signal
-import subprocess
 import time
 import traceback
-from string import Template
 
 from blade import build_attributes
 from blade import build_manager
@@ -30,24 +25,7 @@ from blade import command_line
 from blade import config
 from blade import console
 from blade import target_pattern
-from blade.blade_util import find_blade_root_dir
-from blade.blade_util import get_cwd, to_string
-from blade.blade_util import lock_file, unlock_file
-
-
-def lock_workspace(build_dir):
-    _BUILDING_LOCK_FILE = '.blade.building.lock'
-    lock_file_fd, ret_code = lock_file(os.path.join(build_dir, _BUILDING_LOCK_FILE))
-    if lock_file_fd == -1:
-        if ret_code == errno.EAGAIN:
-            console.fatal('There is already an active building in current workspace.')
-        else:
-            console.fatal('Lock exception, please try it later.')
-    return lock_file_fd
-
-
-def unlock_workspace(lock_file_fd):
-    unlock_file(lock_file_fd)
+from blade import workspace
 
 
 def load_config(options, root_dir):
@@ -57,100 +35,10 @@ def load_config(options, root_dir):
     config.load_files(root_dir, options.load_local_config)
 
 
-def setup_build_dir(options):
-    build_path_format = config.get_item('global_config', 'build_path_template')
-    s = Template(build_path_format)
-    build_dir = s.substitute(bits=options.bits, profile=options.profile)
-    if not os.path.exists(build_dir):
-        os.mkdir(build_dir)
-    try:
-        os.remove('blade-bin')
-    except os.error:
-        pass
-    os.symlink(os.path.abspath(build_dir), 'blade-bin')
-    return build_dir
-
-
-def get_source_dirs():
-    """Get workspace dir and working dir relative to workspace dir."""
-    working_dir = get_cwd()
-    root_dir = find_blade_root_dir(working_dir)
-    working_dir = os.path.relpath(working_dir, root_dir)
-
-    return root_dir, working_dir
-
-
 def setup_console(options):
     if options.color != 'auto':
         console.enable_color(options.color == 'yes')
     console.set_verbosity(options.verbosity)
-
-
-def setup_log(build_dir, options):
-    log_file = os.path.join(build_dir, 'blade.log')
-    console.set_log_file(log_file)
-
-
-def generate_scm_svn():
-    url = revision = 'unknown'
-    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    stdout = to_string(stdout)
-    stderr = to_string(stderr)
-    if p.returncode != 0:
-        console.debug('Failed to generate svn scm: %s' % stderr)
-    else:
-        for line in stdout.splitlines():
-            if line.startswith('URL: '):
-                url = line.strip().split()[-1]
-            if line.startswith('Revision: '):
-                revision = line.strip().split()[-1]
-                break
-
-    return url, revision
-
-
-def generate_scm_git():
-    url = revision = 'unknown'
-
-    def git(cmd):
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        stdout = to_string(stdout)
-        stderr = to_string(stderr)
-        if p.returncode != 0:
-            console.debug('Failed to generate git scm: %s' % stderr)
-            return ''
-        return stdout
-
-    out = git('git rev-parse HEAD')
-    if out:
-        revision = out.strip()
-    out = git('git remote -v')
-    # $ git remote -v
-    # origin  https://github.com/chen3feng/blade-build.git (fetch)
-    # origin  https://github.com/chen3feng/blade-build.git (push)
-    if out:
-        url = out.splitlines()[0].split()[1]
-        # Remove userinfo (such as username and password) from url, if any.
-        url = re.sub(r'(?<=://).*:.*@', '', url)
-    return url, revision
-
-
-def generate_scm(build_dir):
-    if os.path.isdir('.git'):
-        url, revision = generate_scm_git()
-    elif os.path.isdir('.svn'):
-        url, revision = generate_scm_svn()
-    else:
-        console.debug('Unknown scm.')
-        return
-    path = os.path.join(build_dir, 'scm.json')
-    with open(path, 'w') as f:
-        json.dump({
-            'revision': revision,
-            'url': url,
-        }, f)
 
 
 def adjust_config_by_options(config, options):
@@ -171,21 +59,16 @@ def _check_error_log(stage):
     return 0
 
 
-def run_subcommand(command, options, targets, blade_path, root_dir, build_dir, working_dir):
+def run_subcommand(blade_path, command, options, ws, targets):
     """Run particular commands before loading"""
     # The 'dump' command is special, some kind of dump items should be ran before loading.
     if command == 'dump' and options.dump_config:
-        output_file_name = os.path.join(working_dir, options.dump_to_file)
+        output_file_name = os.path.join(ws.working_dir(), options.dump_to_file)
         config.dump(output_file_name)
         return _check_error_log('dump')
 
     load_targets = targets
-    if command == 'query' and options.dependents:
-        # In query dependents mode, we must load all targets in workspace to get a whole view
-        load_targets = ['.:...']
-    build_manager.initialize(blade_path, targets, load_targets,
-                             root_dir, build_dir, working_dir,
-                             command, options)
+    build_manager.initialize(blade_path, command, options, ws, targets)
 
     # Build the targets
     build_manager.instance.load_targets()
@@ -221,14 +104,14 @@ def run_subcommand(command, options, targets, blade_path, root_dir, build_dir, w
     return _check_error_log(command)
 
 
-def run_subcommand_profile(command, options, targets, blade_path, root_dir, build_dir, working_dir):
-    pstats_file = os.path.join(build_dir, 'blade.pstats')
+def run_subcommand_profile(blade_path, command, options, ws, targets):
+    pstats_file = os.path.join(ws.build_dir(), 'blade.pstats')
     # NOTE: can't use an plain int variable to receive exit_code
     # because in python int is an immutable object, assign to it in the runctx
     # wll not modify the local exit_code.
     # so we use a mutable object list to obtain the return value of run_subcommand
     exit_code = [-1]
-    cProfile.runctx("exit_code[0] = run_subcommand(command, options, targets, blade_path, root_dir, build_dir, working_dir)",
+    cProfile.runctx("exit_code[0] = run_subcommand(blade_path, command, options, ws, targets)",
                     globals(), locals(), pstats_file)
     p = pstats.Stats(pstats_file)
     p.sort_stats('cumulative').print_stats(20)
@@ -245,34 +128,26 @@ def _main(blade_path, argv):
     command, options, targets = command_line.parse(argv)
     setup_console(options)
 
-    root_dir, working_dir = get_source_dirs()
-    if root_dir != working_dir:
-        # This message is required by vim quickfix mode if pwd is changed during
-        # the building, DO NOT change the pattern of this message.
-        if options.verbosity != 'quiet':
-            print("Blade: Entering directory `%s'" % root_dir)
-        os.chdir(root_dir)
+    ws = workspace.initialize(options)
+    load_config(options, ws.root_dir())
+    ws.switch_to_root_dir()
 
-    load_config(options, root_dir)
     adjust_config_by_options(config, options)
     if _check_error_log('config'):
         return 1
 
     if not targets:
         targets = ['.']
-    targets = target_pattern.normalize_list(targets, working_dir)
+    targets = target_pattern.normalize_list(targets, ws.working_dir())
 
-    build_dir = setup_build_dir(options)
-    setup_log(build_dir, options)
+    ws.setup_build_dir()
 
-    generate_scm(build_dir)
-
-    lock_file_fd = lock_workspace(build_dir)
+    lock_id = ws.lock()
     try:
         run_fn = run_subcommand_profile if options.profiling else run_subcommand
-        return run_fn(command, options, targets, blade_path, root_dir, build_dir, working_dir)
+        return run_fn(blade_path, command, options, ws, targets)
     finally:
-        unlock_workspace(lock_file_fd)
+        ws.unlock(lock_id)
 
 
 def format_timedelta(seconds):
