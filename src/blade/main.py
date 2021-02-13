@@ -71,23 +71,17 @@ def run_subcommand(blade_path, command, options, ws, targets):
     builder = build_manager.initialize(blade_path, command, options, ws, targets)
 
     # Build the targets
-    builder.load_targets()
-    if _check_error_log('load'):
-        return 1
-    if options.stop_after == 'load':
-        return 0
-
-    builder.analyze_targets()
-    if _check_error_log('analyze'):
-        return 1
-    if options.stop_after == 'analyze':
-        return 0
-
-    builder.generate()
-    if _check_error_log('generate'):
-        return 1
-    if options.stop_after == 'generate':
-        return 0
+    stages = [
+        ('load', builder.load_targets),
+        ('analyze', builder.analyze_targets),
+        ('generate', builder.generate ),
+    ]
+    for stage, action in stages:
+        action()
+        if _check_error_log(stage):
+            return 1
+        if options.stop_after == stage:
+            return 0
 
     # Run sub command
     returncode = getattr(builder, command)()
