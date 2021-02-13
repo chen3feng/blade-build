@@ -22,9 +22,9 @@ from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import maven
-from blade.blade_util import var_to_list
-from blade.blade_util import iteritems
 from blade.target import Target, LOCATION_RE
+from blade.util import var_to_list
+from blade.util import iteritems
 
 
 class MavenJar(Target):

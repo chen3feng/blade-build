@@ -21,8 +21,9 @@ from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list
 from blade.target import Target
+from blade.util import var_to_list
+
 
 _package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
 

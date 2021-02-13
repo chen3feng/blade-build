@@ -22,7 +22,7 @@ import sys
 
 from blade import config
 from blade import console
-from blade.blade_util import environ_add_path
+from blade.util import environ_add_path
 
 
 class BinaryRunner(object):

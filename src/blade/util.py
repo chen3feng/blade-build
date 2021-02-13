@@ -26,7 +26,6 @@ import string
 import subprocess
 import sys
 
-from blade import console
 
 _IN_PY3 = sys.version_info[0] == 3
 
@@ -143,24 +142,6 @@ def find_file_bottom_up(name, from_dir=None):
             break
         finding_dir = os.path.dirname(finding_dir)
     return ''
-
-
-def find_blade_root_dir(working_dir=None):
-    """find_blade_root_dir to find the dir holds the BLADE_ROOT file.
-
-    The blade_root_dir is the directory which is the closest upper level
-    directory of the current working directory, and containing a file
-    named BLADE_ROOT.
-
-    """
-    blade_root = find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
-    if not blade_root:
-        console.fatal(
-            "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
-            "Blade need this file as a placeholder to locate the root source directory "
-            "(aka the directory where you #include start from).\n"
-            "You should create it manually at the first time.")
-    return os.path.dirname(blade_root)
 
 
 def path_under_dir(path, dir):

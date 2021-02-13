@@ -18,9 +18,9 @@ from blade import build_manager
 from blade import build_rules
 from blade import cc_targets
 from blade import console
-from blade.blade_util import regular_variable_name
-from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
+from blade.util import regular_variable_name
+from blade.util import var_to_list
 
 
 # The rule template for gen_rule

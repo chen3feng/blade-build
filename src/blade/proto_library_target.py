@@ -19,8 +19,8 @@ from blade import build_rules
 from blade import config
 from blade import console
 from blade import java_targets
-from blade.blade_util import var_to_list, iteritems
 from blade.cc_targets import CcTarget
+from blade.util import var_to_list, iteritems
 
 
 class ProtocPlugin(object):

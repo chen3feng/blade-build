@@ -18,8 +18,9 @@ import time
 import traceback
 import zipfile
 
-from blade import blade_util
 from blade import console
+from blade import util
+
 
 _JAR_MANIFEST = 'META-INF/MANIFEST.MF'
 _FATJAR_EXCLUSIONS = frozenset(['LICENSE', 'README', 'NOTICE',
@@ -48,7 +49,7 @@ def _is_fat_jar_excluded(name):
 
 
 def _manifest_scm(build_dir):
-    revision, url = blade_util.load_scm(build_dir)
+    revision, url = util.load_scm(build_dir)
     return [
         'SCM-Url: %s' % url,
         'SCM-Revision: %s' % revision,
@@ -124,7 +125,7 @@ def generate_fat_jar(output, conflict_severity, args):
 
 def main():
     try:
-        options, args = blade_util.parse_command_line(sys.argv[1:])
+        options, args = util.parse_command_line(sys.argv[1:])
         generate_fat_jar(args=args, **options)
     except Exception as e:  # pylint: disable=broad-except
         console.error('fatjar error: %s %s' % (str(e), traceback.format_exc()))

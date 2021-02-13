@@ -23,9 +23,9 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
-from blade.blade_util import path_under_dir, stable_unique, var_to_list, var_to_list_or_none
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
+from blade.util import path_under_dir, stable_unique, var_to_list, var_to_list_or_none
 
 
 # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options

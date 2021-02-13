@@ -27,10 +27,10 @@ from blade import config
 from blade import console
 from blade import coverage
 from blade import target_pattern
-from blade.blade_util import md5sum, iteritems
 from blade.test_scheduler import TestScheduler
 # pylint: disable=unused-import
 from blade.test_scheduler import TestRunResult  # Used by eval
+from blade.util import md5sum, iteritems
 
 
 # Used by eval when loading test history
