@@ -21,8 +21,8 @@ import sys
 
 from blade import build_attributes
 from blade import console
-from blade.blade_util import var_to_list, iteritems, eval_file, exec_file_content, source_location
 from blade.constants import HEAP_CHECK_VALUES
+from blade.util import var_to_list, iteritems, eval_file, exec_file_content, source_location
 
 
 _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES = ['always', 'daily', 'interval', 'never']

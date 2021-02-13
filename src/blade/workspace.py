@@ -18,18 +18,15 @@ import subprocess
 
 from blade import config
 from blade import console
-
-from blade.blade_util import find_blade_root_dir
-from blade.blade_util import get_cwd, to_string
-from blade.blade_util import lock_file, unlock_file
+from blade import util
 
 
 def _generate_scm_svn():
     url = revision = 'unknown'
     p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
-    stdout = to_string(stdout)
-    stderr = to_string(stderr)
+    stdout = util.to_string(stdout)
+    stderr = util.to_string(stderr)
     if p.returncode != 0:
         console.debug('Failed to generate svn scm: %s' % stderr)
     else:
@@ -49,8 +46,8 @@ def _generate_scm_git():
     def git(cmd):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
-        stdout = to_string(stdout)
-        stderr = to_string(stderr)
+        stdout = util.to_string(stdout)
+        stderr = util.to_string(stderr)
         if p.returncode != 0:
             console.debug('Failed to generate git scm: %s' % stderr)
             return ''
@@ -90,8 +87,8 @@ class Workspace(object):
     """Workspace represent a dir tree rooted from the dir where the BLADE_ROOT residents."""
     def __init__(self, options):
         self.__options = options
-        working_dir = get_cwd()
-        self.__root_dir = find_blade_root_dir(working_dir)
+        working_dir = util.get_cwd()
+        self.__root_dir = self._find_root_dir(working_dir)
         self.__working_dir = os.path.relpath(working_dir, self.__root_dir)
         self.__build_dir = ''
 
@@ -137,7 +134,7 @@ class Workspace(object):
     def lock(self):
         """Lock current workspace."""
         _BUILDING_LOCK_FILE = '.blade.building.lock'
-        lock_file_fd, ret_code = lock_file(os.path.join(self.__build_dir, _BUILDING_LOCK_FILE))
+        lock_file_fd, ret_code = util.lock_file(os.path.join(self.__build_dir, _BUILDING_LOCK_FILE))
         if lock_file_fd == -1:
             if ret_code == errno.EAGAIN:
                 console.fatal('There is already an active building in current workspace.')
@@ -147,7 +144,23 @@ class Workspace(object):
 
     def unlock(self, lock_id):
         """Unlock current workspace."""
-        unlock_file(lock_id)
+        util.unlock_file(lock_id)
+
+    def _find_root_dir(self, working_dir):
+        """Find the dir holds the BLADE_ROOT file.
+
+        The blade_root_dir is the directory which is the closest upper level
+        directory of the current working directory, and containing a file
+        named BLADE_ROOT.
+        """
+        blade_root = util.find_file_bottom_up('BLADE_ROOT', from_dir=working_dir)
+        if not blade_root:
+            console.fatal(
+                "Can't find the file 'BLADE_ROOT' in this or any upper directory.\n"
+                "Blade need this file as a placeholder to locate the root source directory "
+                "(aka the directory where you #include start from).\n"
+                "You should create it manually at the first time.")
+        return os.path.dirname(blade_root)
 
 
 __instance = None

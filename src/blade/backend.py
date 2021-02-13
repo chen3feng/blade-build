@@ -21,10 +21,9 @@ import subprocess
 import sys
 import textwrap
 
-from blade import blade_util
 from blade import config
 from blade import console
-
+from blade import util
 
 def _incs_list_to_string(incs):
     """Convert incs list to string.
@@ -610,7 +609,7 @@ class _NinjaFileHeaderGenerator(object):
         cc = self.build_toolchain.get_cc()
         cc_version = self.build_toolchain.get_cc_version()
 
-        revision, url = blade_util.load_scm(self.build_dir)
+        revision, url = util.load_scm(self.build_dir)
         args = '--scm=${out} --revision=${revision} --url=${url} --profile=${profile} --compiler="${compiler}"'
         self.generate_rule(name='scm',
                            command=self._builtin_command('scm', args),

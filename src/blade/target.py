@@ -18,7 +18,7 @@ import re
 from blade import config
 from blade import console
 from blade import target_pattern
-from blade.blade_util import var_to_list, iteritems, source_location, md5sum
+from blade.util import var_to_list, iteritems, source_location, md5sum
 
 
 def _is_likely_concatenated_filenames(string, exts):

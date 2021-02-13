@@ -26,9 +26,9 @@ import traceback
 import time
 import zipfile
 
-from blade import blade_util
 from blade import console
 from blade import fatjar
+from blade import util
 
 
 # These following helper functions is designed to centralize error handling
@@ -111,7 +111,7 @@ def archive_package_sources(package, sources, destinations):
     manifest = []
     for i, s in enumerate(sources):
         package(s, destinations[i])
-        manifest.append('%s %s' % (blade_util.md5sum_file(s), destinations[i]))
+        manifest.append('%s %s' % (util.md5sum_file(s), destinations[i]))
     return manifest
 
 
@@ -171,8 +171,8 @@ def generate_securecc_object(args):
     if not os.path.exists(obj):
         shutil.copy(phony_obj, obj)
     else:
-        digest = blade_util.md5sum_file(obj)
-        phony_digest = blade_util.md5sum_file(phony_obj)
+        digest = util.md5sum_file(obj)
+        phony_digest = util.md5sum_file(phony_obj)
         if digest != phony_digest:
             shutil.copy(phony_obj, obj)
 
@@ -181,7 +181,7 @@ def _generate_resource_index(targets, sources, name, path):
     """Generate resource index description file for a cc resource library"""
     header, source = targets
     with open(header, 'w') as h, open(source, 'w') as c:
-        full_name = blade_util.regular_variable_name(os.path.join(path, name))
+        full_name = util.regular_variable_name(os.path.join(path, name))
         guard_name = 'BLADE_RESOURCE_%s_H_' % full_name.upper()
         index_name = 'RESOURCE_INDEX_%s' % full_name
 
@@ -209,7 +209,7 @@ def _generate_resource_index(targets, sources, name, path):
                 const struct BladeResourceEntry {1}[] = {{''').format(header, index_name))
 
         for s in sources:
-            entry_var = blade_util.regular_variable_name(s)
+            entry_var = util.regular_variable_name(s)
             entry_name = os.path.relpath(s, path)
             entry_size = os.path.getsize(s)
             h.write('// %s\n' % entry_name)
@@ -261,7 +261,7 @@ def generate_java_jar(args):
         for resource in resources:
             cmd.append("-C '%s' '%s'" % (resources_dir,
                                          os.path.relpath(resource, resources_dir)))
-        return blade_util.shell(cmd)
+        return util.shell(cmd)
 
     if classes_jar:
         shutil.copy2(classes_jar, target)
@@ -464,7 +464,7 @@ def generate_python_library(pylib, basedir, args):
     _declare_outputs(pylib)
     sources = []
     for py in args:
-        digest = blade_util.md5sum_file(py)
+        digest = util.md5sum_file(py)
         sources.append((py, digest))
     with open(pylib, 'w') as f:
         print(str({
@@ -586,7 +586,7 @@ _BUILTIN_TOOLS = {
 def main():
     name = sys.argv[1]
     try:
-        options, args = blade_util.parse_command_line(sys.argv[2:])
+        options, args = util.parse_command_line(sys.argv[2:])
         _BUILTIN_TOOLS[name](args=args, **options)
         _verify_outputs()
     except Exception as e:  # pylint: disable=broad-except

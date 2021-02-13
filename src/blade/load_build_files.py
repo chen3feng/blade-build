@@ -25,8 +25,8 @@ from blade import build_attributes
 from blade import build_rules
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list, exec_file, source_location
 from blade.pathlib import Path
+from blade.util import var_to_list, exec_file, source_location
 
 
 # import these modules make build functions registered into build_rules

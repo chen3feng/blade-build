@@ -6,6 +6,9 @@ from __future__ import absolute_import
 import blade.config
 import blade.console
 
+# For old code compatible
+blade_util = blade.util
+
 # pylint: disable=import-outside-toplevel
 
 

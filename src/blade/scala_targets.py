@@ -15,9 +15,9 @@ from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
-from blade.blade_util import var_to_list
 from blade.java_targets import JavaTargetMixIn
 from blade.target import Target
+from blade.util import var_to_list
 
 
 class ScalaTarget(Target, JavaTargetMixIn):

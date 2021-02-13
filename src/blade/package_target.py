@@ -16,8 +16,8 @@ import os
 
 from blade import build_manager
 from blade import build_rules
-from blade.blade_util import var_to_list
 from blade.target import Target, LOCATION_RE
+from blade.util import var_to_list
 
 _package_types = frozenset([
     'tar',

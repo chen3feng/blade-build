@@ -14,7 +14,7 @@ from __future__ import print_function
 from blade import build_manager
 from blade import build_rules
 from blade import cc_targets
-from blade.blade_util import regular_variable_name
+from blade.util import regular_variable_name
 
 
 class ResourceLibrary(cc_targets.CcTarget):
