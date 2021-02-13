@@ -46,14 +46,11 @@ class Blade(object):
 
     # pylint: disable=too-many-public-methods
     def __init__(self,
-                 command_targets,
-                 load_targets,
                  blade_path,
-                 working_dir,
-                 build_dir,
-                 blade_root_dir,
-                 blade_options,
-                 command):
+                 command,
+                 options,
+                 workspace,
+                 targets):
         """init method.
 
         Args:
@@ -62,17 +59,19 @@ class Blade(object):
                 as the command_targets, but in query dependents mode, all targets should be loaded.
             blade_path: str, the path of the `blade` python module, used to be called by builtin tools.
         """
-        self.__command_targets = command_targets
-        self.__load_targets = load_targets
+        self.__command_targets = targets
+        # In query dependents mode, we must load all targets in workspace to get a whole view
+        self.__load_targets = ['.:...'] if command == 'query' and options.dependents else targets
         self.__blade_path = blade_path
-        self.__working_dir = working_dir
-        self.__build_dir = build_dir
-        self.__root_dir = blade_root_dir
-        self.__options = blade_options
+        self.__root_dir = workspace.root_dir()
+        self.__build_dir = workspace.build_dir()
+        self.__working_dir = workspace.working_dir()
+
+        self.__options = options
         self.__command = command
 
         # Source dir of current loading BUILD file
-        self.__current_source_path = blade_root_dir
+        self.__current_source_path = self.__root_dir
 
         self.__blade_revision = None
 
@@ -106,7 +105,7 @@ class Blade(object):
         self.__build_jobs_num = 0
         self.__test_jobs_num = 0
 
-        self._verify_history_path = os.path.join(build_dir, '.blade_verify.json')
+        self._verify_history_path = os.path.join(self.__build_dir, '.blade_verify.json')
         self._verify_history = {
             'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
         }
@@ -637,16 +636,7 @@ class Blade(object):
         return self.__all_rule_names
 
 
-def initialize(
-        command_targets,
-        load_targets,
-        blade_path,
-        working_dir,
-        build_dir,
-        blade_root_dir,
-        blade_options,
-        command):
+def initialize(blade_path, command, options, workspace, targets):
     global instance
-    instance = Blade(command_targets, load_targets,
-                     blade_path, working_dir, build_dir, blade_root_dir,
-                     blade_options, command)
+    instance = Blade(blade_path, command, options, workspace, targets)
+    return instance

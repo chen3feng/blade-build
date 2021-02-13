@@ -1,3 +1,13 @@
+# Copyright (c) 2021 Tencent Inc.
+# All rights reserved.
+#
+# Author: chen3feng <chen3feng@gmail.com>
+# Date:   Feb 12, 2012
+
+"""
+The ninja runner module.
+"""
+
 import os
 import re
 import subprocess
