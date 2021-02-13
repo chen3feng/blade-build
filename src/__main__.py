@@ -11,8 +11,8 @@ command line in this way: python blade.zip
 
 
 import sys
-from blade.blade_main import main
+import blade.main
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[0], sys.argv[1:]))
+    sys.exit(blade.main.main(sys.argv[0], sys.argv[1:]))
