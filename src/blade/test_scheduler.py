@@ -10,6 +10,7 @@ This module use threads to run tests concurrently.
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import signal
 import subprocess

@@ -11,6 +11,7 @@ for cuda development.
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 from blade import build_manager
 from blade import build_rules

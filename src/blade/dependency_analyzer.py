@@ -13,7 +13,9 @@ This is the dependencies expander module which accepts the targets loaded
 from BUILD files and will find all of the targets needed by the target and
 add extra options according to different target types.
 """
+
 from __future__ import absolute_import
+from __future__ import print_function
 
 from collections import deque
 

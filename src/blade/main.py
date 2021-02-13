@@ -70,11 +70,11 @@ def run_subcommand(blade_path, command, options, ws, targets):
 
     builder = build_manager.initialize(blade_path, command, options, ws, targets)
 
-    # Build the targets
+    # Prepare the targets
     stages = [
         ('load', builder.load_targets),
         ('analyze', builder.analyze_targets),
-        ('generate', builder.generate ),
+        ('generate', builder.generate),
     ]
     for stage, action in stages:
         action()
