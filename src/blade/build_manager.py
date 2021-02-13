@@ -46,14 +46,14 @@ class Blade(object):
 
     # pylint: disable=too-many-public-methods
     def __init__(self,
+                 blade_path,
                  command_targets,
                  load_targets,
-                 blade_path,
-                 working_dir,
-                 build_dir,
                  blade_root_dir,
-                 blade_options,
-                 command):
+                 build_dir,
+                 working_dir,
+                 command,
+                 blade_options):
         """init method.
 
         Args:
@@ -637,16 +637,10 @@ class Blade(object):
         return self.__all_rule_names
 
 
-def initialize(
-        command_targets,
-        load_targets,
-        blade_path,
-        working_dir,
-        build_dir,
-        blade_root_dir,
-        blade_options,
-        command):
+def initialize(blade_path, command_targets, load_targets,
+               blade_root_dir, build_dir, working_dir,
+               command, blade_options):
     global instance
-    instance = Blade(command_targets, load_targets,
-                     blade_path, working_dir, build_dir, blade_root_dir,
-                     blade_options, command)
+    instance = Blade(blade_path, command_targets, load_targets,
+                     blade_root_dir, build_dir, working_dir,
+                     command, blade_options)

@@ -264,14 +264,9 @@ def run_subcommand(command, options, targets, blade_path, root_dir, build_dir, w
     if command == 'query' and options.dependents:
         # In query dependents mode, we must load all targets in workspace to get a whole view
         load_targets = ['.:...']
-    build_manager.initialize(targets,
-                             load_targets,
-                             blade_path,
-                             working_dir,
-                             build_dir,
-                             root_dir,
-                             options,
-                             command)
+    build_manager.initialize(blade_path, targets, load_targets,
+                             root_dir, build_dir, working_dir,
+                             command, options)
 
     # Build the targets
     build_manager.instance.load_targets()
