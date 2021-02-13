@@ -6,64 +6,7 @@
 #          Chong Peng <michaelpeng@tencent.com>
 
 """
- Blade is a software building system. With Blade, users wrote a BUILD file and
- put it in each of the source directory.  In each BUILD file, there could be
- one or more build rules, each has a TARGET NAME, source files and dependent
- targets. Blade supports many types of build rules, such as:
-
-    cc_binary         -- build an executable binary from C++ source
-    cc_library        -- build a library from C++ source
-    cc_plugin         -- build a plugin from C++ source
-    cc_test           -- build a test program from C++ source
-    cc_benchmark      -- build a benchmark binary from C++ source
-    gen_rule          -- build targets with a specified general building rule
-    java_library      -- build a java library from java source files
-    java_binary       -- build a java executable from java source files
-    java_test         -- build a java test program from java source files
-    py_library        -- build a python library from python source files
-    py_binary         -- build a python executable from python source files
-    py_test           -- build a python test program from python source files
-    lex_yacc_library  -- build a library from lex/yacc source
-    proto_library     -- build a library from Protobuf source
-    thrift_library    -- build a library from Thrift source
-    fbthrift_library  -- build a library from Thrift source for Facebook's Thrift Cpp2
-    resource_library  -- build resource library and gen header files
-    swig_library      -- build swig extension module for python and java
-    ...
-
- A target may depend on other target(s), where the dependency is
- transitive.  A dependent target is referred by a TARGET ID, which
- has either of the following forms:
-
-   `//<source_dir>:<target_name>` -- target defined in <source_dir>/BUILD
-   `:<target_name>`               -- target defined in the current BUILD file
-   `#<target_name>`               -- target is a system library, e.g., pthread
-
- where <source_dir> is an absolute path rooted at the source tree and
- specifying where the BUILD file locates, <target_name> specifies a
- target in the BUILD file, and '//' denotes the root of the source tree.
-
- Users invoke Blade from the command line to build (or clean, or
- test) one or more rule/targets.  In the command line, a target id
- is specified in either of the following forms:
-
-   <path>:<target_name> -- to build target defined in <path>/BUILD
-   <path>               -- to build all targets defined in <path>/BUILD
-   <path>/...           -- to build all targets in all BUILD files in
-                           <path> and its descendant directories.
-
- Note that <path> in command line targets is an operating system
- path, which might be a relative path, but <source_dir> in a BUILD
- referring to a dependent target must be an absolute path, rooted at
- '//'.
-
- For example, the following command line
-
-    blade build base mapreduce_lite/... parallel_svm:perf_test
-
- builds all targets in base/BUILD, all targets in all BUILDs under
- directory mapreduce_lite, and the target perf_test defined in
- parallel_svm/BUILD
+Main entrence of blade.
 """
 
 from __future__ import absolute_import
@@ -90,30 +33,6 @@ from blade import target_pattern
 from blade.blade_util import find_blade_root_dir
 from blade.blade_util import get_cwd, to_string
 from blade.blade_util import lock_file, unlock_file
-
-
-def build(options):
-    return build_manager.instance.run()
-
-
-def run(options):
-    return build_manager.instance.run()
-
-
-def test(options):
-    return build_manager.instance.test()
-
-
-def clean(options):
-    return build_manager.instance.clean()
-
-
-def query(options):
-    return build_manager.instance.query()
-
-
-def dump(options):
-    return build_manager.instance.dump()
 
 
 def lock_workspace(build_dir):
