@@ -52,6 +52,7 @@ def adjust_config_by_options(config, options):
 
 
 def _check_error_log(stage):
+    """Check whether any error log occur during stage."""
     error_count = console.error_count()
     if error_count > 0:
         console.error('There are %s errors in the %s stage' % (error_count, stage))
@@ -60,51 +61,43 @@ def _check_error_log(stage):
 
 
 def run_subcommand(blade_path, command, options, ws, targets):
-    """Run particular commands before loading"""
+    """Run particular subcommands."""
     # The 'dump' command is special, some kind of dump items should be ran before loading.
     if command == 'dump' and options.dump_config:
         output_file_name = os.path.join(ws.working_dir(), options.dump_to_file)
         config.dump(output_file_name)
         return _check_error_log('dump')
 
-    load_targets = targets
-    build_manager.initialize(blade_path, command, options, ws, targets)
+    builder = build_manager.initialize(blade_path, command, options, ws, targets)
 
     # Build the targets
-    build_manager.instance.load_targets()
+    builder.load_targets()
     if _check_error_log('load'):
         return 1
     if options.stop_after == 'load':
         return 0
 
-    build_manager.instance.analyze_targets()
+    builder.analyze_targets()
     if _check_error_log('analyze'):
         return 1
     if options.stop_after == 'analyze':
         return 0
 
-    build_manager.instance.generate()
+    builder.generate()
     if _check_error_log('generate'):
         return 1
     if options.stop_after == 'generate':
         return 0
 
-    # Switch case due to different sub command
-    action = {
-        'build': build_manager.instance.build,
-        'clean': build_manager.instance.clean,
-        'dump': build_manager.instance.dump,
-        'query': build_manager.instance.query,
-        'run': build_manager.instance.run,
-        'test': build_manager.instance.test,
-    }[command]
-    returncode = action()
+    # Run sub command
+    returncode = getattr(builder, command)()
     if returncode != 0:
         return returncode
     return _check_error_log(command)
 
 
 def run_subcommand_profile(blade_path, command, options, ws, targets):
+    """Run subcommand within profile."""
     pstats_file = os.path.join(ws.build_dir(), 'blade.pstats')
     # NOTE: can't use an plain int variable to receive exit_code
     # because in python int is an immutable object, assign to it in the runctx

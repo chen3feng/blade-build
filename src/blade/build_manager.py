@@ -639,3 +639,4 @@ class Blade(object):
 def initialize(blade_path, command, options, workspace, targets):
     global instance
     instance = Blade(blade_path, command, options, workspace, targets)
+    return instance
