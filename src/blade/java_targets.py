@@ -11,6 +11,7 @@ Implement java_library, java_binary, java_test and java_fat_library.
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import collections
 import os

@@ -10,6 +10,7 @@ This is the target module which is the super class of all of the targets.
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import re

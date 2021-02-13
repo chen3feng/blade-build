@@ -19,7 +19,9 @@ and library from Facebook's own branch:
     https://github.com/facebook/fbthrift
 
 """
+
 from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import re

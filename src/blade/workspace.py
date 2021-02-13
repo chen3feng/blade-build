@@ -6,12 +6,15 @@
 
 """The workspace module represent current workspace."""
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import errno
 import json
 import os
 import re
+import string
 import subprocess
-from string import Template
 
 from blade import config
 from blade import console
@@ -113,7 +116,7 @@ class Workspace(object):
     def setup_build_dir(self):
         """Setup build dir."""
         build_path_format = config.get_item('global_config', 'build_path_template')
-        s = Template(build_path_format)
+        s = string.Template(build_path_format)
         build_dir = s.substitute(bits=self.__options.bits, profile=self.__options.profile)
 
         if not os.path.exists(build_dir):
