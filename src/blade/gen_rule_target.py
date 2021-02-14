@@ -81,7 +81,7 @@ class GenRuleTarget(Target):
         if generated_incs is not None:
             for inc in generated_incs:
                 generated_incs = var_to_list(generated_incs)
-                cc_targets._declare_hdr_dir(self, inc)
+                cc_targets.declare_hdr_dir(self, inc)
             generated_incs = [self._target_file_path(inc) for inc in generated_incs]
             self.attr['generated_incs'] = generated_incs
         else:
@@ -91,7 +91,7 @@ class GenRuleTarget(Target):
             else:
                 generated_hdrs = var_to_list(generated_hdrs)
             if generated_hdrs:
-                cc_targets._declare_hdrs(self, generated_hdrs)
+                cc_targets.declare_hdrs(self, generated_hdrs)
                 generated_hdrs = [self._target_file_path(h) for h in generated_hdrs]
                 self.attr['generated_hdrs'] = generated_hdrs
 
