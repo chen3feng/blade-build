@@ -52,7 +52,7 @@ class BladeConfig(object):
                 'build_path_template': 'build${bits}_${profile}',
                 'duplicated_source_action': 'warning',
                 'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
-                'test_timeout': None,
+                'test_timeout': 0,
                 'test_timeout__doc__': 'In seconds',
                 'test_related_envs__doc__':
                     'Environment variables which need to see whether changed before incremental '
@@ -88,7 +88,7 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
-                'securecc': None,
+                'securecc': '',
                 'debug_info_levels': {
                     'no': ['-g0'],
                     'low': ['-g1'],
@@ -107,7 +107,7 @@ class BladeConfig(object):
             'cc_library_config': {
                 '__doc__': 'C/C++ Library Configuration',
                 'prebuilt_libpath_pattern': 'lib${bits}',
-                'generate_dynamic': None,
+                'generate_dynamic': False,
                 # Options passed to ar/ranlib to control how
                 # the archive is created, such as, let ar operate
                 # in deterministic mode discarding timestamps
@@ -141,7 +141,7 @@ class BladeConfig(object):
             'link_config': {
                 '__doc__': 'Linking Configuration',
                 'link_on_tmp': False,
-                'link_jobs': None,
+                'link_jobs': 0,
             },
 
             'java_config': {
@@ -169,7 +169,7 @@ class BladeConfig(object):
                 'maven_jar_allowed_dirs_exempts__doc__':
                     'List of targets which are exempted from maven_jar_disallowed_dirs check',
                 'warnings': ['-Werror', '-Xlint:all'],
-                'source_encoding': None,
+                'source_encoding': '',
                 'java_home': '',
                 'debug_info_levels': {
                     'no': ['-g:none'],
@@ -195,12 +195,12 @@ class BladeConfig(object):
                 'scala_home': '',
                 'target_platform': '',
                 'warnings': '',
-                'source_encoding': None,
+                'source_encoding': '',
             },
 
             'scala_test_config': {
                 '__doc__': 'Scala Test Configuration',
-                'scalatest_libs': '',
+                'scalatest_libs': [],
             },
 
             'go_config': {
@@ -341,8 +341,11 @@ class BladeConfig(object):
             section[name] = var_to_list(value)
         elif isinstance(section[name], set):  # Allow using `list` to config `set`
             section[name] = set(var_to_list(value))
-        else:
+        elif isinstance(value, type(section[name])):
             section[name] = value
+        else:
+            self.error('Incorrect type for "%s", expect "%s", actual "%s"' % (
+                name, type(section[name]).__name__, type(value).__name__))
 
     def _append_item_value(self, section, name, item_name, value, user_config):
         """Append value to config item."""
