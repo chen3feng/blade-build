@@ -103,12 +103,7 @@ class Blade(object):
         self.__build_toolchain = ToolChain()
         self.build_accelerator = BuildAccelerator(self.__root_dir, self.__build_toolchain)
         self.__build_jobs_num = 0
-        self.__test_jobs_num = 0
 
-        self._verify_history_path = os.path.join(self.__build_dir, '.blade_verify.json')
-        self._verify_history = {
-            'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
-        }
         self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
 
         self.__all_rule_names = []
@@ -168,53 +163,27 @@ class Blade(object):
     def verify(self):
         """Verify specific targets after build is complete."""
         console.debug('Verifing header dependency missing...')
-        verify_history = self._load_verify_history()
-        header_inclusion_history = verify_history['header_inclusion_dependencies']
         error = 0
         verify_details = {}
-        undeclared_hdrs = set()
         verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         # Sorting helps reduce jumps between BUILD files when fixng reported problems
         for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
-                ok, details, target_undeclared_hdrs = target.verify_hdr_dep_missing(
-                        header_inclusion_history,
+                ok, details = target.verify_hdr_dep_missing(
                         verify_suppress.get(target.key, {}))
                 if not ok:
                     error += 1
                 if details:
                     verify_details[target.key] = details
-                undeclared_hdrs |= target_undeclared_hdrs
         self._dump_verify_details(verify_details)
-        self._dump_verify_history()
-        self._dump_undeclared_hdrs(undeclared_hdrs)
         console.debug('Verifing header dependency missing done.')
         return error == 0
-
-    def _load_verify_history(self):
-        if os.path.exists(self._verify_history_path):
-            with open(self._verify_history_path) as f:
-                try:
-                    self._verify_history = json.load(f)
-                except Exception as e:  # pylint: disable=broad-except
-                    console.warning('Error loading %s, ignored. Reason: %s' % (
-                        self._verify_history_path, str(e)))
-        return self._verify_history
-
-    def _dump_verify_history(self):
-        with open(self._verify_history_path, 'w') as f:
-            json.dump(self._verify_history, f, indent=4)
 
     def _dump_verify_details(self, verify_details):
         verify_details_file = os.path.join(self.__build_dir, 'blade_hdr_verify.details')
         with open(verify_details_file, 'w') as f:
             pprint.pprint(verify_details, stream=f)
-
-    def _dump_undeclared_hdrs(self, undeclared_hdrs):
-        file_path = os.path.join(self.__build_dir, 'blade_undeclared_hdrs.details')
-        with open(file_path, 'w') as f:
-            pprint.pprint(sorted(undeclared_hdrs), stream=f)
 
     def revision(self):
         """Blade revision to identify changes"""

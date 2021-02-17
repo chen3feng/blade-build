@@ -37,11 +37,11 @@ class TargetTest(unittest.TestCase):
         self.build_error = []
         self.build_error_file = 'build_error.txt'
         os.chdir('testdata')
+        self.removeTree('build64_release')
 
     def tearDown(self):
         """tear down method."""
         self.doTearDown()
-        self.removeTree('build64_release')
         os.chdir(self.cur_dir)
 
     def doTearDown(self):
