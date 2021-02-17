@@ -10,6 +10,7 @@ import os
 
 from blade import console
 from blade import util
+from blade.util import pickle
 
 
 class GlobalDeclaration(object):
@@ -36,7 +37,7 @@ class GlobalDeclaration(object):
 
     def find_targets_by_private_hdr(self, hdr):
         """Find targets by private header file."""
-        return self._private_hdrs_target_map[hdr]
+        return self._private_hdrs_target_map.get(hdr, set())
 
     def allowed_undeclared_hdrs(self):
         return self._allowed_undeclared_hdrs
@@ -332,6 +333,9 @@ class Checker(object):
         return ok, details
 
 
-def check(target, inclusion_declaration):
+def check(target_check_info_file):
+    target = pickle.load(open(target_check_info_file))
+    inclusion_declaration_file = os.path.join(target['build_dir'], 'inclusion_declaration.data')
+    inclusion_declaration = pickle.load(open(inclusion_declaration_file))
     checker = Checker(target, inclusion_declaration)
     return checker.check()

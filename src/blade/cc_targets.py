@@ -14,7 +14,6 @@ of all of the cc targets, like cc_library, cc_binary.
 from __future__ import absolute_import
 from __future__ import print_function
 
-import collections
 import os
 import subprocess
 from string import Template
@@ -26,7 +25,12 @@ from blade import build_rules
 from blade import inclusion_check
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
-from blade.util import path_under_dir, stable_unique, var_to_list, var_to_list_or_none
+from blade.util import (
+    path_under_dir,
+    pickle,
+    stable_unique,
+    var_to_list,
+    var_to_list_or_none)
 
 
 # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
@@ -44,11 +48,11 @@ def is_header_file(filename):
 
 # A dict[hdr, set(target)]
 # For a header file, which targets declared it.
-_hdr_targets_map = collections.defaultdict(set)
+_hdr_targets_map = {}
 
 # A dict[inc, set(target)]
 # For a include dir, which targets declared it.
-_hdr_dir_targets_map = collections.defaultdict(set)
+_hdr_dir_targets_map = {}
 
 
 def declare_hdrs(target, hdrs):
@@ -61,6 +65,8 @@ def declare_hdrs(target, hdrs):
     for hdr in hdrs:
         assert not hdr.startswith(target.build_dir)
         hdr = target._source_file_path(hdr)
+        if hdr not in _hdr_targets_map:
+            _hdr_targets_map[hdr] = set()
         _hdr_targets_map[hdr].add(target.key)
 
 
@@ -73,18 +79,31 @@ def declare_hdr_dir(target, inc):
     """
     assert not inc.startswith(target.build_dir), inc
     inc = target._source_file_path(inc)
+    if inc not in _hdr_dir_targets_map:
+        _hdr_dir_targets_map[inc] = set()
     _hdr_dir_targets_map[inc].add(target.key)
 
 
 # dict(hdr, set(targets))
-_private_hdrs_target_map = collections.defaultdict(set)
+_private_hdrs_target_map = {}
 
 
 def declare_private_hdrs(target, hdrs):
     """Declare private header files of a cc target."""
     for h in hdrs:
         hdr = target._source_file_path(h)
+        if hdr not in _private_hdrs_target_map:
+            _private_hdrs_target_map[hdr] = set()
         _private_hdrs_target_map[hdr].add(target.key)
+
+
+def inclusion_declaration():
+    return {
+        'public_hdrs': _hdr_targets_map,
+        'public_incs': _hdr_dir_targets_map,
+        'private_hdrs': _private_hdrs_target_map,
+        'allowed_undeclared_hdrs': config.get_item('cc_config', 'allowed_undeclared_hdrs')
+    }
 
 
 class CcTarget(Target):
@@ -535,27 +554,22 @@ class CcTarget(Target):
             except OSError:
                 pass
 
-    def verify_hdr_dep_missing(self, suppress):
+    def verify_hdr_dep_missing(self):
         """
         Verify whether included header files is declared in "deps" correctly.
 
         Returns:
             Whether nothing is wrong.
         """
-        target_check_info = self._make_check_info(suppress)
-        inclusion_declaration = {
-            'public_hdrs': _hdr_targets_map,
-            'public_incs': _hdr_dir_targets_map,
-            'private_hdrs': _private_hdrs_target_map,
-            'allowed_undeclared_hdrs': config.get_item('cc_config', 'allowed_undeclared_hdrs')
-        }
-        ok, details = inclusion_check.check(target_check_info, inclusion_declaration)
+        target_check_info_file = self._write_inclusion_check_info()
+        ok, details = inclusion_check.check(target_check_info_file)
         if not ok:
             self._cleanup_target_files()
 
         return ok, details
 
-    def _make_check_info(self, suppress):
+    def _write_inclusion_check_info(self):
+        verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         declared_hdrs, declared_incs = self._collect_declared_headers()
         declared_genhdrs, declared_genincs = self._collect_declared_generated_includes()
         target_check_info = {
@@ -573,9 +587,12 @@ class CcTarget(Target):
             'declared_genhdrs': declared_genhdrs,
             'declared_genincs': declared_genincs,
             'severity': config.get_item('cc_config', 'hdr_dep_missing_severity'),
-            'suppress': suppress,
+            'suppress': verify_suppress.get(self.key, {}),
         }
-        return target_check_info
+        filename = self._target_file_path(self.name + '.incchk')
+        with open(filename, 'w') as f:
+            pickle.dump(target_check_info, f)
+        return filename
 
     def _collect_declared_headers(self):
         """Collect direct headers declarations."""

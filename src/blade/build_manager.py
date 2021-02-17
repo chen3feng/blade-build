@@ -31,7 +31,10 @@ from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
 from blade.backend import NinjaFileGenerator
 from blade.test_runner import TestRunner
-from blade.util import cpu_count, md5sum_file
+from blade.util import (
+    cpu_count,
+    md5sum_file,
+    pickle)
 
 # Global build manager instance
 instance = None
@@ -146,9 +149,6 @@ class Blade(object):
 
     def generate_build_code(self):
         """Generate the backend build code."""
-        maven_cache = maven.MavenCache.instance(self.__build_dir)
-        maven_cache.download_all()
-
         console.info('Generating backend build code...')
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         generator.generate_build_script()
@@ -157,27 +157,35 @@ class Blade(object):
 
     def generate(self):
         """Generate the build script."""
-        if self.__command != 'query':
-            self.generate_build_code()
+        if self.__command == 'query':
+            return
+        maven_cache = maven.MavenCache.instance(self.__build_dir)
+        maven_cache.download_all()
+        self._write_inclusion_declaration_file()
+        self.generate_build_code()
+
+    def _write_inclusion_declaration_file(self):
+        from blade import cc_targets  # pylint: disable=import-outside-toplevel
+        inclusion_declaration_file = os.path.join(self.__build_dir, 'inclusion_declaration.data')
+        with open(inclusion_declaration_file, 'w') as f:
+            pickle.dump(cc_targets.inclusion_declaration(), f)
 
     def verify(self):
         """Verify specific targets after build is complete."""
         console.debug('Verifing header dependency missing...')
         error = 0
         verify_details = {}
-        verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         # Sorting helps reduce jumps between BUILD files when fixng reported problems
         for k in sorted(self.__expanded_command_targets):
             target = self.__build_targets[k]
             if target.type.startswith('cc_') and target.srcs:
-                ok, details = target.verify_hdr_dep_missing(
-                        verify_suppress.get(target.key, {}))
+                ok, details = target.verify_hdr_dep_missing()
                 if not ok:
                     error += 1
                 if details:
                     verify_details[target.key] = details
         self._dump_verify_details(verify_details)
-        console.debug('Verifing header dependency missing done.')
+        console.info('Verifing header dependency missing done.')
         return error == 0
 
     def _dump_verify_details(self, verify_details):
