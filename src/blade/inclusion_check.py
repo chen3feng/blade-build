@@ -202,7 +202,7 @@ class Checker(object):
         msg = []
         for hdr in direct_hdrs:
             if hdr in self.declared_hdrs:
-                console.diagnose(self.source_location, 'debug', 'Find declared header "%s"' % (hdr))
+                console.diagnose(self.source_location, 'debug', '"%s" is a declared header' % (hdr))
                 continue
             libs = self.global_declaration.find_libs_by_header(hdr)
             if not libs:
@@ -212,10 +212,10 @@ class Checker(object):
                         msg.append('    "%s" is a private header file of %s' % (
                             hdr, self._or_joined_libs(libs)))
                     continue
+                console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
                 allowed_undeclared_hdrs = self.global_declaration.allowed_undeclared_hdrs()
                 if hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
-                console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
                 continue
             deps = set(self.deps + [self.key])  # Don't forget target itself
             if not (libs & deps):  # pylint: disable=superfluous-parens
@@ -323,10 +323,10 @@ class Checker(object):
         severity = self.severity
         if direct_check_msg:
             console.diagnose(self.source_location, severity,
-                'Missing dependency declaration:\n%s' % '\n'.join(direct_check_msg))
+                '%s: Missing dependency declaration:\n%s' % (self.name, '\n'.join(direct_check_msg)))
         if generated_check_msg:
             console.diagnose(self.source_location, severity,
-                'Missing indirect dependency declaration:\n%s' % '\n'.join(generated_check_msg))
+                '%s: Missing indirect dependency declaration:\n%s' % (self.name, '\n'.join(generated_check_msg)))
 
         ok = not direct_check_msg and not generated_check_msg or severity != 'error'
 

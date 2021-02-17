@@ -101,6 +101,9 @@ class TargetTest(unittest.TestCase):
     def findCommand(self, kwlist):
         return self.findCommandAndLine(kwlist)[0]
 
+    def inBuildOutput(self, kwlist):
+        return self.findCommand(kwlist)
+
     def inBuildError(self, kwlist):
         return self.findBuildOutput(kwlist, file='stderr')[0]
 

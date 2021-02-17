@@ -15,7 +15,6 @@ from __future__ import print_function
 
 import json
 import os
-import pprint
 import subprocess
 import sys
 
@@ -170,29 +169,6 @@ class Blade(object):
         with open(inclusion_declaration_file, 'wb') as f:
             pickle.dump(cc_targets.inclusion_declaration(), f)
 
-    def verify(self):
-        """Verify specific targets after build is complete."""
-        console.debug('Verifing header dependency missing...')
-        error = 0
-        verify_details = {}
-        # Sorting helps reduce jumps between BUILD files when fixng reported problems
-        for k in sorted(self.__expanded_command_targets):
-            target = self.__build_targets[k]
-            if target.type.startswith('cc_') and target.srcs:
-                ok, details = target.verify_hdr_dep_missing()
-                if not ok:
-                    error += 1
-                if details:
-                    verify_details[target.key] = details
-        self._dump_verify_details(verify_details)
-        console.info('Verifing header dependency missing done.')
-        return error == 0
-
-    def _dump_verify_details(self, verify_details):
-        verify_details_file = os.path.join(self.__build_dir, 'blade_hdr_verify.details')
-        with open(verify_details_file, 'w') as f:
-            pprint.pprint(verify_details, stream=f)
-
     def revision(self):
         """Blade revision to identify changes"""
         if self.__blade_revision is None:
@@ -213,8 +189,6 @@ class Blade(object):
             self.build_script(),
             self.build_jobs_num(),
             self.__options)
-        if returncode == 0 and not self.verify():
-            returncode = 1
         if returncode != 0:
             console.error('Build failure.')
         else:

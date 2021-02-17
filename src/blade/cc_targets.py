@@ -22,10 +22,10 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
-from blade import inclusion_check
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 from blade.util import (
+    mkdir_p,
     path_under_dir,
     pickle,
     stable_unique,
@@ -480,16 +480,8 @@ class CcTarget(Target):
                                 variables=vars, clean=[])
             objs.append(obj)
 
-        # Generate inclusion stack file for header files.
-        # The source file does not need to generate this file separately, because it is generated
-        # at the same time during compilation.
-        for hdr, full_hdr in self.attr['expanded_hdrs']:
-            if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
-                continue
-            output = os.path.join(objs_dir, hdr + '.H')
-            self.generate_build('cxxhdrs', output, inputs=full_hdr,
-                                order_only_deps=order_only_deps, variables=vars, clean=[])
-
+        if 'inclusion_check_info_file' in self.data:
+            self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
         self._remove_on_clean(objs_dir)
         return objs
 
@@ -498,9 +490,28 @@ class CcTarget(Target):
         expanded_sources = [(src, self._target_file_path(src)) for src in sources]
         return self._cc_objects(expanded_sources, generated_headers)
 
+    def _generate_inclusion_check(self, objs_dir, objs, vars, order_only_deps):
+        implicit_deps = objs[:]
+        # Generate inclusion stack file for header files.
+        # The source file does not need to generate this file separately, because it is generated
+        # at the same time during compilation.
+        for hdr, full_hdr in self.attr['expanded_hdrs']:
+            if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
+                continue
+            output = os.path.join(objs_dir, hdr + '.H')
+            implicit_deps.append(output)
+            self.generate_build('cxxhdrs', output, inputs=full_hdr,
+                                order_only_deps=order_only_deps, variables=vars, clean=[])
+
+        check_info_file = self.data['inclusion_check_info_file']
+        check_result_file = check_info_file + '.result'
+        self.generate_build('ccincchk', outputs=check_result_file, inputs=check_info_file,
+                            implicit_deps=implicit_deps)
+
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
-        self.generate_build('ar', output, inputs=objs)
+        self.generate_build('ar', output, inputs=objs,
+                            implicit_deps=self.data.get('inclusion_check_result_file'))
         self._add_default_target_file('a', output)
 
     def _dynamic_cc_library(self, objs):
@@ -539,6 +550,12 @@ class CcTarget(Target):
             vars['ldflags'] = ' '.join(ldflags)
         if extra_ldflags:
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
+        incchk = self.data.get('inclusion_check_result_file')
+        if incchk:
+            if implicit_deps is None:
+                implicit_deps = [incchk]
+            else:
+                implicit_deps.append(incchk)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -554,21 +571,8 @@ class CcTarget(Target):
             except OSError:
                 pass
 
-    def verify_hdr_dep_missing(self):
-        """
-        Verify whether included header files is declared in "deps" correctly.
-
-        Returns:
-            Whether nothing is wrong.
-        """
-        target_check_info_file = self._write_inclusion_check_info()
-        ok, details = inclusion_check.check(target_check_info_file)
-        if not ok:
-            self._cleanup_target_files()
-
-        return ok, details
-
     def _write_inclusion_check_info(self):
+        """Write a files contains necessary formation for inclusion checking."""
         verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         declared_hdrs, declared_incs = self._collect_declared_headers()
         declared_genhdrs, declared_genincs = self._collect_declared_generated_includes()
@@ -589,10 +593,18 @@ class CcTarget(Target):
             'severity': config.get_item('cc_config', 'hdr_dep_missing_severity'),
             'suppress': verify_suppress.get(self.key, {}),
         }
+        content = pickle.dumps(target_check_info)
         filename = self._target_file_path(self.name + '.incchk')
+        self.data['inclusion_check_info_file'] = filename
+
+        # Only update file when content changes to avoid unnecessary recheck
+        if os.path.exists(filename):
+            if open(filename, 'rb') == content:
+                return
+        else:
+            mkdir_p(self._target_dir())
         with open(filename, 'wb') as f:
-            pickle.dump(target_check_info, f)
-        return filename
+            f.write(content)
 
     def _collect_declared_headers(self):
         """Collect direct headers declarations."""
@@ -687,9 +699,11 @@ class CcLibrary(CcTarget):
         self._set_secure(secure)
         self._set_hdrs(hdrs)
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
+
 
     def _set_secure(self, secure):
         if secure:
@@ -864,8 +878,9 @@ class PrebuiltCcLibrary(CcTarget):
         # So we need to make a symbolic link let the program find the library.
         return self.data.get('soname_and_full_path')
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
 
     def generate(self):
@@ -1041,8 +1056,9 @@ class ForeignCcLibrary(CcTarget):
                     self.data['soname_and_full_path'] = (soname, so_path)
         return self.data['soname_and_full_path']
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
 
     def _ninja_rules(self):
@@ -1213,6 +1229,10 @@ class CcBinary(CcTarget):
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
+    def before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
+
     def generate(self):
         """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
@@ -1313,6 +1333,10 @@ class CcPlugin(CcTarget):
         self.suffix = suffix
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
+
+    def before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
 
     def generate(self):
         """Generate build code for cc plugin."""

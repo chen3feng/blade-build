@@ -277,7 +277,7 @@ def debug(msg, prefix=True):
 def diagnose(source_location, severity, message):
     """Output diagnostic message with source location and severity."""
     assert severity in ('debug', 'info', 'notice', 'warning', 'error')
-    globals()[severity]("%s: %s: %s" % (source_location, severity, message))
+    globals()[severity]("%s: %s: %s" % (source_location, severity, message), prefix=False)
 
 
 def flush():

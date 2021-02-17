@@ -51,6 +51,7 @@ def _verify_outputs():
 
 def _cleanup_outputs():
     """Cleanup declared output files on error."""
+    console.debug('Cleanup:%s' % _outputs)
     for output in _outputs:
         try:
             os.remove(output)
@@ -63,11 +64,14 @@ def _cleanup_outputs():
 #    def build_function_name(kwargs..., args):
 #        pass
 #
-#    Return None on success, otherwise raise an exception to indicate failure.
-#
+
 #    Args:
 #        * kwargs...: name=value pairs as parameters in command line
 #        * args: any other non-kw args
+#
+#    Return:
+#        None or 0 on success, otherwise a positive int (e.g. 1) or raise an
+#        exception to indicate failure.
 #
 #    When call this from the command line, all arguments which match `--name=value`
 #    pattern will be converted into a kwarg, any other arguments merged into the
@@ -102,6 +106,21 @@ def generate_scm(scm, revision, url, profile, compiler, args):
                           socket.gethostname(),
                           compiler))
 
+
+def generate_cc_inclusion_check(args):
+    from blade import inclusion_check  # pylint: disable=import-outside-toplevel
+    result_file = args[0]
+    info_file = args[1]
+    _declare_outputs(result_file)
+    console.set_log_file('%s.log' % result_file)
+    console.enable_color(True)
+    ok, details = inclusion_check.check(args[1])
+    with open(result_file + '.details', 'w') as f:
+        f.write(str(details))
+    if not ok:
+        return 1
+    with open(result_file, 'w') as f:
+        f.write('OK')
 
 _PACKAGE_MANIFEST = 'MANIFEST.TXT'
 
@@ -567,6 +586,7 @@ def generate_python_binary(pybin, basedir, exclusions, mainentry, args):
 _BUILTIN_TOOLS = {
     'scm': generate_scm,
     'package': generate_package,
+    'cc_inclusion_check': generate_cc_inclusion_check,
     'securecc_object': generate_securecc_object,
     'resource_index': generate_resource_index,
     'java_jar': generate_java_jar,
@@ -585,14 +605,19 @@ _BUILTIN_TOOLS = {
 
 def main():
     name = sys.argv[1]
+    exit_code = 0
     try:
         options, args = util.parse_command_line(sys.argv[2:])
-        _BUILTIN_TOOLS[name](args=args, **options)
-        _verify_outputs()
+        exit_code = _BUILTIN_TOOLS[name](args=args, **options)
+        if not exit_code:
+            _verify_outputs()
     except Exception as e:  # pylint: disable=broad-except
         console.error('Blade build tool %s error: %s %s' % (name, str(e), traceback.format_exc()))
-        _cleanup_outputs()
-        sys.exit(1)
+        exit_code = 1
+    finally:
+        if exit_code:
+            _cleanup_outputs()
+        sys.exit(exit_code or 0)
 
 
 if __name__ == '__main__':

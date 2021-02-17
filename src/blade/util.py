@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import ast
+import errno
 import fcntl
 import hashlib
 import inspect
@@ -154,6 +155,18 @@ def find_file_bottom_up(name, from_dir=None):
 def path_under_dir(path, dir):
     """Check whether path is under dir."""
     return path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
+
+
+def mkdir_p(path):
+    """Make directory if it does not exist."""
+    try:
+        if not os.path.isdir(path):
+            os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 
 def _echo(stdout, stderr):

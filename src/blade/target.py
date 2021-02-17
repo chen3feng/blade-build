@@ -485,7 +485,7 @@ class Target(object):
         It should be overridden in subclass.
         """
 
-    def before_generate(self):
+    def before_generate(self):  # abstract
         """Will be called before generating build code, overridable"""
 
     def _expand_deps_generation(self):
@@ -510,6 +510,10 @@ class Target(object):
         """
         # TODO(chen3feng): put to `data`
         return [], []
+
+    def _target_dir(self):
+        """Return the full path of target dir"""
+        return os.path.join(self.build_dir, self.path)
 
     def _source_file_path(self, name):
         """Expand the the source file name to full path"""

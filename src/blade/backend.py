@@ -171,6 +171,7 @@ class _NinjaFileHeaderGenerator(object):
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
         cppflags, ldflags = self._get_cc_flags()
         self._generate_cc_compile_rules(cc, cxx, cppflags)
+        self._generate_cc_inclusion_check_rule()
         self._generate_cc_ar_rules()
         self._generate_cc_link_rules(ld, ldflags)
         self.generate_rule(name='strip',
@@ -259,6 +260,11 @@ class _NinjaFileHeaderGenerator(object):
         preprocess1 = '%s -fdirectives-only %s' % (cc, args)
         preprocess2 = '%s %s' % (cc, args)
         return preprocess1 + ' || ' + preprocess2 + ' || (cat ${out} && false)'
+
+    def _generate_cc_inclusion_check_rule(self):
+        self.generate_rule(name='ccincchk',
+                           command=self._builtin_command('cc_inclusion_check'),
+                           description='CC INCLUSION CHECK ${in}')
 
     def _generate_cc_ar_rules(self):
         arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
