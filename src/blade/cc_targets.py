@@ -590,7 +590,7 @@ class CcTarget(Target):
             'suppress': verify_suppress.get(self.key, {}),
         }
         filename = self._target_file_path(self.name + '.incchk')
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             pickle.dump(target_check_info, f)
         return filename
 

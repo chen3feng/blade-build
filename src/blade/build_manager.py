@@ -167,7 +167,7 @@ class Blade(object):
     def _write_inclusion_declaration_file(self):
         from blade import cc_targets  # pylint: disable=import-outside-toplevel
         inclusion_declaration_file = os.path.join(self.__build_dir, 'inclusion_declaration.data')
-        with open(inclusion_declaration_file, 'w') as f:
+        with open(inclusion_declaration_file, 'wb') as f:
             pickle.dump(cc_targets.inclusion_declaration(), f)
 
     def verify(self):

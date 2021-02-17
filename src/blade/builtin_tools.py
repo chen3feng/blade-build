@@ -559,7 +559,7 @@ def generate_python_binary(pybin, basedir, exclusions, mainentry, args):
     bootstrap = ('#!/bin/sh\n\n'
                  'PYTHONPATH="$0:$PYTHONPATH" exec python -m "%s" "$@"\n') % mainentry
     with open(pybin, 'wb') as f:
-        f.write(bootstrap)
+        f.write(bootstrap.encode('utf-8'))
         f.write(zip_content)
     os.chmod(pybin, 0o755)
 

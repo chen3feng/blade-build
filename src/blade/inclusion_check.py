@@ -334,8 +334,8 @@ class Checker(object):
 
 
 def check(target_check_info_file):
-    target = pickle.load(open(target_check_info_file))
+    target = pickle.load(open(target_check_info_file, 'rb'))
     inclusion_declaration_file = os.path.join(target['build_dir'], 'inclusion_declaration.data')
-    inclusion_declaration = pickle.load(open(inclusion_declaration_file))
+    inclusion_declaration = pickle.load(open(inclusion_declaration_file, 'rb'))
     checker = Checker(target, inclusion_declaration)
     return checker.check()
