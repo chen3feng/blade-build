@@ -162,8 +162,15 @@ Blade can detect two kind of missing dependencies:
 
 * `Missing dependenvy`
 
-  The source file in `srcs` includes a header file, but the library to which it belongs is not declared in `deps`.
-  In this case, just add the missing library to the `deps`.
+  The header files are included in `srcs` or `hdrs` through the `#include` directive, but the library
+  to which they belong is not declared in `deps`, or these header files are not declared in any `hdrs`
+  of `cc_library` at all. Solution:
+
+  * The library to which the header file belongs is not declared in the `deps` of this target, just follow the instruction to fix it
+  * The header file is a private header file of the library to which it belongs, and direct use is prohibited
+  * The header file should be the public header file of this target, it should be declared in its `hdr`
+  * The header file should be the target's private header file, it should be declared in its `src`
+  * The header file should be a public header file of other libraries, but there is no declaration, just declare it in the corresponding library `hdr`
 
 * `Missing indirect dependency`
 

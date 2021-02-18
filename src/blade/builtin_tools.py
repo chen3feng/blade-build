@@ -64,18 +64,18 @@ def _cleanup_outputs():
 #    def build_function_name(kwargs..., args):
 #        pass
 #
-
 #    Args:
 #        * kwargs...: name=value pairs as parameters in command line
 #        * args: any other non-kw args
 #
 #    Return:
-#        None or 0 on success, otherwise a positive int (e.g. 1) or raise an
-#        exception to indicate failure.
+#        Return None(include implicit return) or 0 on success, otherwise return
+#        a positive int (e.g. 1) or raise an exception to indicate failure.
 #
-#    When call this from the command line, all arguments which match `--name=value`
-#    pattern will be converted into a kwarg, any other arguments merged into the
-#    `args` argument. So any `name` must be a valid python identifier.
+#    When call this from the command line, all arguments which match the
+#    `--name=value` pattern will be converted into kwargs, any other arguments
+#    are merged into the `args` argument. So any `name` must be a valid python
+#    identifier.
 
 
 def generate_scm(scm, revision, url, profile, compiler, args):
@@ -112,15 +112,17 @@ def generate_cc_inclusion_check(args):
     result_file = args[0]
     info_file = args[1]
     _declare_outputs(result_file)
-    console.set_log_file('%s.log' % result_file)
+    console.set_log_file('%s.log' % info_file)
     console.enable_color(True)
-    ok, details = inclusion_check.check(args[1])
-    with open(result_file + '.details', 'w') as f:
+    ok, details = inclusion_check.check(info_file)
+    with open(info_file + '.details', 'w') as f:
         f.write(str(details))
     if not ok:
         return 1
     with open(result_file, 'w') as f:
         f.write('OK')
+    return None
+
 
 _PACKAGE_MANIFEST = 'MANIFEST.TXT'
 

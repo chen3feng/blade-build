@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 from blade import config
 from blade import console
@@ -169,6 +170,21 @@ class Blade(object):
         with open(inclusion_declaration_file, 'wb') as f:
             pickle.dump(cc_targets.inclusion_declaration(), f)
 
+    def _write_build_stamp_fime(self, start_time, exit_code):
+        """Record some useful data for other tools."""
+        stamp_data = {
+            'start_time': start_time,
+            'end_time': time.time(),
+            'exit_code': exit_code,
+            'direct_targets': list(self.__direct_targets),
+            'command_targets': list(self.__expanded_command_targets),
+            'build_targets': list(self.__build_targets.keys()),
+            'loaded_targets': list(self.__target_database.keys()),
+        }
+        stamp_file = os.path.join(self.__build_dir, 'blade_build_stamp.json')
+        with open(stamp_file, 'w') as f:
+            json.dump(stamp_data, f, indent=4)
+
     def revision(self):
         """Blade revision to identify changes"""
         if self.__blade_revision is None:
@@ -184,11 +200,13 @@ class Blade(object):
         """Implement the "build" subcommand."""
         console.info('Building...')
         console.flush()
+        start_time = time.time()
         returncode = ninja_runner.build(
             self.get_build_dir(),
             self.build_script(),
             self.build_jobs_num(),
             self.__options)
+        self._write_build_stamp_fime(start_time, returncode)
         if returncode != 0:
             console.error('Build failure.')
         else:

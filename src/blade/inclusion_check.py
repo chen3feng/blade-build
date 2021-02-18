@@ -197,7 +197,8 @@ class Checker(object):
                 return True
         return False
 
-    def _check_direct_headers(self, full_src, direct_hdrs, suppressd_hdrs, missing_dep_hdrs, check_msg):
+    def _check_direct_headers(self, full_src, direct_hdrs, suppressd_hdrs,
+                              missing_dep_hdrs, undeclared_hdrs, check_msg):
         """Verify directly included header files is in deps."""
         msg = []
         for hdr in direct_hdrs:
@@ -213,6 +214,7 @@ class Checker(object):
                             hdr, self._or_joined_libs(libs)))
                     continue
                 console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
+                undeclared_hdrs.add(hdr)
                 allowed_undeclared_hdrs = self.global_declaration.allowed_undeclared_hdrs()
                 if hdr not in allowed_undeclared_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
@@ -287,7 +289,8 @@ class Checker(object):
             Whether nothing is wrong.
         """
         # Verify
-        details = {}  # {src: list(hdrs)}
+        missing_details = {}  # {src: list(hdrs)}
+        undeclared_hdrs = set()
 
         direct_check_msg = []
         generated_check_msg = []
@@ -303,7 +306,7 @@ class Checker(object):
             missing_dep_hdrs = set()
             self._check_direct_headers(
                     full_src, direct_hdrs, self.suppress.get(src, []),
-                    missing_dep_hdrs, direct_check_msg)
+                    missing_dep_hdrs, undeclared_hdrs, direct_check_msg)
 
             # But direct headers can not cover all, so it is still useful
             self._check_generated_headers(
@@ -312,7 +315,7 @@ class Checker(object):
                     missing_dep_hdrs, generated_check_msg)
 
             if missing_dep_hdrs:
-                details[src] = list(missing_dep_hdrs)
+                missing_details[src] = list(missing_dep_hdrs)
 
         for src, full_src in self.expanded_srcs:
             check_file(src, full_src, is_header=False)
@@ -330,6 +333,11 @@ class Checker(object):
 
         ok = not direct_check_msg and not generated_check_msg or severity != 'error'
 
+        details = {}
+        if missing_details:
+            details['missing_dep'] = missing_details
+        if undeclared_hdrs:
+            details['undeclared'] = undeclared_hdrs
         return ok, details
 
 
