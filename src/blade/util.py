@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import ast
+import errno
 import fcntl
 import hashlib
 import inspect
@@ -28,6 +29,13 @@ import sys
 
 
 _IN_PY3 = sys.version_info[0] == 3
+
+# In python 2, cPickle is much faster than pickle, but in python 3, pickle is
+# reimplemented in C extension and then the standardalone cPickle is removed.
+if _IN_PY3:
+    import pickle  # pylint: disable=unused-import
+else:
+    import cPickle as pickle  # pylint: disable=import-error, unused-import
 
 
 def md5sum_bytes(content):
@@ -147,6 +155,18 @@ def find_file_bottom_up(name, from_dir=None):
 def path_under_dir(path, dir):
     """Check whether path is under dir."""
     return path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
+
+
+def mkdir_p(path):
+    """Make directory if it does not exist."""
+    try:
+        if not os.path.isdir(path):
+            os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 
 def _echo(stdout, stderr):

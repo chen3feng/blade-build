@@ -22,10 +22,15 @@ from blade import build_manager
 from blade import config
 from blade import console
 from blade import build_rules
-from blade import inclusion_dependency
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
-from blade.util import path_under_dir, stable_unique, var_to_list, var_to_list_or_none
+from blade.util import (
+    mkdir_p,
+    path_under_dir,
+    pickle,
+    stable_unique,
+    var_to_list,
+    var_to_list_or_none)
 
 
 # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
@@ -34,19 +39,94 @@ _HEADER_FILE_EXTS = {'h', 'hh', 'H', 'hp', 'hpp', 'hxx', 'HPP', 'h++', 'inc', 'i
 
 
 def is_header_file(filename):
+    """Whether a file is a C/C++ header file."""
     _, ext = os.path.splitext(filename)
     ext = ext[1:]  # Remove leading '.'
     # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html
     return ext in _HEADER_FILE_EXTS
 
 
+# A dict[hdr, set(target)]
+# For a header file, which targets declared it.
+_hdr_targets_map = {}
+
+# A dict[inc, set(target)]
+# For a include dir, which targets declared it.
+_hdr_dir_targets_map = {}
+
+
 def declare_hdrs(target, hdrs):
-    """Declare hdr to lib relationships"""
-    inclusion_dependency.declare_hdrs(target, hdrs)
+    """Declare hdr to lib relationships
+
+    Args:
+        target: the target which owns the hdrs
+        hdrs:list, the full path (based in workspace troot) of hdrs
+    """
+    for hdr in hdrs:
+        assert not hdr.startswith(target.build_dir)
+        hdr = target._source_file_path(hdr)
+        if hdr not in _hdr_targets_map:
+            _hdr_targets_map[hdr] = set()
+        _hdr_targets_map[hdr].add(target.key)
 
 
 def declare_hdr_dir(target, inc):
-    inclusion_dependency.declare_hdr_dir(target, inc)
+    """Declare a inc:lib relationship
+
+    Args:
+        target: the target which owns the include dir
+        inc:str, the full path (based in workspace troot) of include dir
+    """
+    assert not inc.startswith(target.build_dir), inc
+    inc = target._source_file_path(inc)
+    if inc not in _hdr_dir_targets_map:
+        _hdr_dir_targets_map[inc] = set()
+    _hdr_dir_targets_map[inc].add(target.key)
+
+
+# dict(hdr, set(targets))
+_private_hdrs_target_map = {}
+
+
+def declare_private_hdrs(target, hdrs):
+    """Declare private header files of a cc target."""
+    for h in hdrs:
+        hdr = target._source_file_path(h)
+        if hdr not in _private_hdrs_target_map:
+            _private_hdrs_target_map[hdr] = set()
+        _private_hdrs_target_map[hdr].add(target.key)
+
+
+def inclusion_declaration():
+    return {
+        'public_hdrs': _hdr_targets_map,
+        'public_incs': _hdr_dir_targets_map,
+        'private_hdrs': _private_hdrs_target_map,
+        'allowed_undeclared_hdrs': config.get_item('cc_config', 'allowed_undeclared_hdrs')
+    }
+
+
+def _transitive_declared_generated_includes(target):
+    """Collect header/include declarations."""
+    attr_key = 'transitive_generated_inludes'
+    if attr_key in target.data:
+        return target.data[attr_key]
+
+    declared_hdrs = set()
+    declared_incs = set()
+    build_targets = target.blade.get_build_targets()
+    for dkey in target.deps:
+        dep = build_targets[dkey]
+        for hdr in dep.attr.get('generated_hdrs', []):
+            declared_incs.add(target._remove_build_dir_prefix(hdr))
+        for inc in dep.attr.get('generated_incs', []):
+            declared_incs.add(target._remove_build_dir_prefix(inc))
+        dep_hdrs, dep_incs = _transitive_declared_generated_includes(dep)
+        declared_incs.update(dep_hdrs)
+        declared_incs.update(dep_incs)
+    result = declared_hdrs, declared_incs
+    target.data[attr_key] = result
+    return result
 
 
 class CcTarget(Target):
@@ -107,7 +187,7 @@ class CcTarget(Target):
                                          config.get_item('cc_library_config', 'generate_dynamic'))
         self.attr['expanded_srcs'] = self._expand_sources(srcs)
         self.attr['expanded_hdrs'] = self._expand_sources(private_hdrs)
-        inclusion_dependency.declare_private_hdrs(self, private_hdrs)
+        declare_private_hdrs(self, private_hdrs)
 
     def _expand_sources(self, files):
         """Expand files to [(path, full_path)]."""
@@ -143,7 +223,7 @@ class CcTarget(Target):
             return
         hdrs = var_to_list(hdrs)
         self._check_sources('header', hdrs, _HEADER_FILE_EXTS)
-        inclusion_dependency.declare_hdrs(self, hdrs)
+        declare_hdrs(self, hdrs)
         self.attr['expanded_hdrs'] += self._expand_sources(hdrs)
 
     def _check_deprecated_deps(self):
@@ -423,16 +503,8 @@ class CcTarget(Target):
                                 variables=vars, clean=[])
             objs.append(obj)
 
-        # Generate inclusion stack file for header files.
-        # The source file does not need to generate this file separately, because it is generated
-        # at the same time during compilation.
-        for hdr, full_hdr in self.attr['expanded_hdrs']:
-            if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
-                continue
-            output = os.path.join(objs_dir, hdr + '.H')
-            self.generate_build('cxxhdrs', output, inputs=full_hdr,
-                                order_only_deps=order_only_deps, variables=vars, clean=[])
-
+        if 'inclusion_check_info_file' in self.data:
+            self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
         self._remove_on_clean(objs_dir)
         return objs
 
@@ -441,9 +513,28 @@ class CcTarget(Target):
         expanded_sources = [(src, self._target_file_path(src)) for src in sources]
         return self._cc_objects(expanded_sources, generated_headers)
 
+    def _generate_inclusion_check(self, objs_dir, objs, vars, order_only_deps):
+        implicit_deps = objs[:]
+        # Generate inclusion stack file for header files.
+        # The source file does not need to generate this file separately, because it is generated
+        # at the same time during compilation.
+        for hdr, full_hdr in self.attr['expanded_hdrs']:
+            if path_under_dir(full_hdr, self.build_dir):  # Don't check generated header files
+                continue
+            output = os.path.join(objs_dir, hdr + '.H')
+            implicit_deps.append(output)
+            self.generate_build('cxxhdrs', output, inputs=full_hdr,
+                                order_only_deps=order_only_deps, variables=vars, clean=[])
+
+        check_info_file = self.data['inclusion_check_info_file']
+        check_result_file = check_info_file + '.result'
+        self.generate_build('ccincchk', outputs=check_result_file, inputs=check_info_file,
+                            implicit_deps=implicit_deps)
+
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
-        self.generate_build('ar', output, inputs=objs)
+        self.generate_build('ar', output, inputs=objs,
+                            implicit_deps=self.data.get('inclusion_check_result_file'))
         self._add_default_target_file('a', output)
 
     def _dynamic_cc_library(self, objs):
@@ -454,6 +545,20 @@ class CcTarget(Target):
         self._cc_link(output, 'solink', objs=objs, deps=usr_libs,
                       ldflags=ldflags, extra_ldflags=extra_ldflags)
         self._add_target_file('so', output)
+
+    def _soname_of(self, so_path):
+        """Get the `soname` of a shared library."""
+        soname = None
+        try:
+            output = subprocess.check_output('objdump -p %s' % so_path, shell=True)
+            for line in output.splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[0] == 'SONAME':
+                    soname = parts[1]
+                    break
+        except subprocess.CalledProcessError:
+            pass
+        return soname
 
     def _cc_library(self, objs):
         self._static_cc_library(objs)
@@ -468,6 +573,12 @@ class CcTarget(Target):
             vars['ldflags'] = ' '.join(ldflags)
         if extra_ldflags:
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
+        incchk = self.data.get('inclusion_check_result_file')
+        if incchk:
+            if implicit_deps is None:
+                implicit_deps = [incchk]
+            else:
+                implicit_deps.append(incchk)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -483,32 +594,55 @@ class CcTarget(Target):
             except OSError:
                 pass
 
-    def verify_hdr_dep_missing(self, history, suppress):
-        """
-        Verify whether included header files is declared in "deps" correctly.
+    def _write_inclusion_check_info(self):
+        """Write a files contains necessary formation for inclusion checking."""
+        verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
+        declared_hdrs, declared_incs = self._collect_declared_headers()
+        declared_genhdrs, declared_genincs = _transitive_declared_generated_includes(self)
+        target_check_info = {
+            'type': self.type,
+            'name': self.name,
+            'path': self.path,
+            'key': self.key,
+            'deps': self.deps,
+            'build_dir': self.build_dir,
+            'source_location': self.source_location,
+            'expanded_srcs': self.attr['expanded_srcs'],
+            'expanded_hdrs': self.attr['expanded_hdrs'],
+            'declared_hdrs': declared_hdrs,
+            'declared_incs': declared_incs,
+            'declared_genhdrs': declared_genhdrs,
+            'declared_genincs': declared_genincs,
+            'severity': config.get_item('cc_config', 'hdr_dep_missing_severity'),
+            'suppress': verify_suppress.get(self.key, {}),
+        }
+        content = pickle.dumps(target_check_info)
+        filename = self._target_file_path(self.name + '.incchk')
+        self.data['inclusion_check_info_file'] = filename
 
-        Returns:
-            Whether nothing is wrong.
-        """
-        ok, details, undeclared_hdrs = inclusion_dependency.check(self, history, suppress)
-        if not ok:
-            self._cleanup_target_files()
+        # Only update file when content changes to avoid unnecessary recheck
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                if f.read() == content:
+                    return
+        else:
+            mkdir_p(self._target_dir())
+        with open(filename, 'wb') as f:
+            f.write(content)
 
-        return ok, details, undeclared_hdrs
+    def _collect_declared_headers(self):
+        """Collect direct headers declarations."""
+        declared_hdrs = set(full_hdr for hdr, full_hdr in self.attr['expanded_hdrs'])
+        declared_incs = set(self.attr.get('generated_incs', []))
 
-    def _soname_of(self, so_path):
-        """Get the `soname` of a shared library."""
-        soname = None
-        try:
-            output = subprocess.check_output('objdump -p %s' % so_path, shell=True)
-            for line in output.splitlines():
-                parts = line.split()
-                if len(parts) == 2 and parts[0] == 'SONAME':
-                    soname = parts[1]
-                    break
-        except subprocess.CalledProcessError:
-            pass
-        return soname
+        build_targets = self.blade.get_build_targets()
+        for key in self.deps:
+            dep = build_targets[key]
+            for hdr, full_hdr in dep.attr.get('expanded_hdrs', []):
+                declared_hdrs.add(self._remove_build_dir_prefix(full_hdr))
+            for inc in dep.attr.get('generated_incs', []):
+                declared_incs.add(self._remove_build_dir_prefix(inc))
+        return declared_hdrs, declared_incs
 
 
 class CcLibrary(CcTarget):
@@ -565,9 +699,11 @@ class CcLibrary(CcTarget):
         self._set_secure(secure)
         self._set_hdrs(hdrs)
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
+
 
     def _set_secure(self, secure):
         if secure:
@@ -742,8 +878,9 @@ class PrebuiltCcLibrary(CcTarget):
         # So we need to make a symbolic link let the program find the library.
         return self.data.get('soname_and_full_path')
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
 
     def generate(self):
@@ -893,12 +1030,12 @@ class ForeignCcLibrary(CcTarget):
 
         if hdrs:
             hdrs = [os.path.join(install_dir, h) for h in var_to_list(hdrs)]
-            inclusion_dependency.declare_hdrs(self, hdrs)
+            declare_hdrs(self, hdrs)
             hdrs = [self._target_file_path(os.path.join(install_dir, h)) for h in hdrs]
             self.attr['generated_hdrs'] = hdrs
         else:
             hdr_dir = os.path.join(install_dir, hdr_dir)
-            inclusion_dependency.declare_hdr_dir(self, hdr_dir)
+            declare_hdr_dir(self, hdr_dir)
             hdr_dir = self._target_file_path(hdr_dir)
             self.attr['generated_incs'] = [hdr_dir]
 
@@ -919,8 +1056,9 @@ class ForeignCcLibrary(CcTarget):
                     self.data['soname_and_full_path'] = (soname, so_path)
         return self.data['soname_and_full_path']
 
-    def before_generate(self):
+    def before_generate(self):  # override
         """Override"""
+        self._write_inclusion_check_info()
         self._check_binary_link_only()
 
     def _ninja_rules(self):
@@ -1091,6 +1229,10 @@ class CcBinary(CcTarget):
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
+    def before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
+
     def generate(self):
         """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
@@ -1191,6 +1333,10 @@ class CcPlugin(CcTarget):
         self.suffix = suffix
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
+
+    def before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
 
     def generate(self):
         """Generate build code for cc plugin."""

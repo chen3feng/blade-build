@@ -11,6 +11,5 @@ build64_*
 
 /blade.zip
 
-/.coverage
-/.coveragerc
+/.coverage*
 

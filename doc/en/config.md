@@ -174,14 +174,19 @@ Common configuration of all c/c++ targets:
   This feature is to help upgrade old projects that do not properly declare and comply with header
   file dependencies.
 
-  To make the upgrade process easier, for all header missing errors, we write them into
-  `blade-bin/blade_hdr_verify.details` file, with this format.
+  To make the upgrade process easier, for all header missing errors, we provied a [tool](../../tool) to generate
+  this information after build.
+
+  ```python
+  blade build ...
+  path/to/collect-inclusion-errors.py --missing > hdr_dep_missing_suppress.conf
+  ```
 
   So you can copy it to somewhere and load it in you `BLADE_ROOT`:
 
   ```python
   cc_config(
-      hdr_dep_missing_ignore = load_value('blade_hdr_verify.details'),
+      hdr_dep_missing_ignore = load_value('hdr_dep_missing_suppress.conf'),
   )
   ```
 
@@ -194,8 +199,14 @@ Common configuration of all c/c++ targets:
   Since the header files in Blade 2 are also included in dependency management, all header files must be explicitly declared.
   But for historical code bases, there will be a large number of undeclared header files, which are difficult to complete in a short time.
   This option allows these header files to be ignored when checking.
-  After built, a `blade-bin/blade_undeclared_hdrs.details` file with a list of undeclared header
-  files involved in this build will be generated, which can be copied and loaded for use.
+  After built, you can also run `tool/collect-inclusion-errors.py` to generate an undeclared headers list file.
+
+  ```python
+  blade build ...
+  path/to/collect-inclusion-errors.py --undeclared > allowed_undeclared_hdrs.conf
+  ```
+
+  And load it:
 
   ```python
   cc_config(

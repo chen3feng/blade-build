@@ -485,7 +485,7 @@ class Target(object):
         It should be overridden in subclass.
         """
 
-    def before_generate(self):
+    def before_generate(self):  # abstract
         """Will be called before generating build code, overridable"""
 
     def _expand_deps_generation(self):
@@ -511,6 +511,10 @@ class Target(object):
         # TODO(chen3feng): put to `data`
         return [], []
 
+    def _target_dir(self):
+        """Return the full path of target dir."""
+        return os.path.join(self.build_dir, self.path)
+
     def _source_file_path(self, name):
         """Expand the the source file name to full path"""
         return os.path.normpath(os.path.join(self.path, name))
@@ -518,6 +522,16 @@ class Target(object):
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
         return os.path.normpath(os.path.join(self.build_dir, self.path, file_name))
+
+    def _remove_build_dir_prefix(self, path):
+        """Remove the build dir prefix of path (e.g. build64_release/)
+        Args:
+            path:str, the full path starts from the workspace root
+        """
+        prefix = self.build_dir + os.sep
+        if path.startswith(prefix):
+            return path[len(prefix):]
+        return path
 
     def _add_target_file(self, label, path):
         """

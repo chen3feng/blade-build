@@ -37,11 +37,11 @@ class TargetTest(unittest.TestCase):
         self.build_error = []
         self.build_error_file = 'build_error.txt'
         os.chdir('testdata')
+        self.removeTree('build64_release')
 
     def tearDown(self):
         """tear down method."""
         self.doTearDown()
-        self.removeTree('build64_release')
         os.chdir(self.cur_dir)
 
     def doTearDown(self):
@@ -100,6 +100,9 @@ class TargetTest(unittest.TestCase):
 
     def findCommand(self, kwlist):
         return self.findCommandAndLine(kwlist)[0]
+
+    def inBuildOutput(self, kwlist):
+        return self.findCommand(kwlist)
 
     def inBuildError(self, kwlist):
         return self.findBuildOutput(kwlist, file='stderr')[0]

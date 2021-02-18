@@ -15,9 +15,9 @@ from __future__ import print_function
 
 import json
 import os
-import pprint
 import subprocess
 import sys
+import time
 
 from blade import config
 from blade import console
@@ -31,7 +31,10 @@ from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
 from blade.backend import NinjaFileGenerator
 from blade.test_runner import TestRunner
-from blade.util import cpu_count, md5sum_file
+from blade.util import (
+    cpu_count,
+    md5sum_file,
+    pickle)
 
 # Global build manager instance
 instance = None
@@ -103,12 +106,7 @@ class Blade(object):
         self.__build_toolchain = ToolChain()
         self.build_accelerator = BuildAccelerator(self.__root_dir, self.__build_toolchain)
         self.__build_jobs_num = 0
-        self.__test_jobs_num = 0
 
-        self._verify_history_path = os.path.join(self.__build_dir, '.blade_verify.json')
-        self._verify_history = {
-            'header_inclusion_dependencies': {},  # path(.H) -> mtime(modification time)
-        }
         self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
 
         self.__all_rule_names = []
@@ -151,9 +149,6 @@ class Blade(object):
 
     def generate_build_code(self):
         """Generate the backend build code."""
-        maven_cache = maven.MavenCache.instance(self.__build_dir)
-        maven_cache.download_all()
-
         console.info('Generating backend build code...')
         generator = NinjaFileGenerator(self.__build_script, self.__blade_path, self)
         generator.generate_build_script()
@@ -162,59 +157,33 @@ class Blade(object):
 
     def generate(self):
         """Generate the build script."""
-        if self.__command != 'query':
-            self.generate_build_code()
+        if self.__command == 'query':
+            return
+        maven_cache = maven.MavenCache.instance(self.__build_dir)
+        maven_cache.download_all()
+        self._write_inclusion_declaration_file()
+        self.generate_build_code()
 
-    def verify(self):
-        """Verify specific targets after build is complete."""
-        console.debug('Verifing header dependency missing...')
-        verify_history = self._load_verify_history()
-        header_inclusion_history = verify_history['header_inclusion_dependencies']
-        error = 0
-        verify_details = {}
-        undeclared_hdrs = set()
-        verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
-        # Sorting helps reduce jumps between BUILD files when fixng reported problems
-        for k in sorted(self.__expanded_command_targets):
-            target = self.__build_targets[k]
-            if target.type.startswith('cc_') and target.srcs:
-                ok, details, target_undeclared_hdrs = target.verify_hdr_dep_missing(
-                        header_inclusion_history,
-                        verify_suppress.get(target.key, {}))
-                if not ok:
-                    error += 1
-                if details:
-                    verify_details[target.key] = details
-                undeclared_hdrs |= target_undeclared_hdrs
-        self._dump_verify_details(verify_details)
-        self._dump_verify_history()
-        self._dump_undeclared_hdrs(undeclared_hdrs)
-        console.debug('Verifing header dependency missing done.')
-        return error == 0
+    def _write_inclusion_declaration_file(self):
+        from blade import cc_targets  # pylint: disable=import-outside-toplevel
+        inclusion_declaration_file = os.path.join(self.__build_dir, 'inclusion_declaration.data')
+        with open(inclusion_declaration_file, 'wb') as f:
+            pickle.dump(cc_targets.inclusion_declaration(), f)
 
-    def _load_verify_history(self):
-        if os.path.exists(self._verify_history_path):
-            with open(self._verify_history_path) as f:
-                try:
-                    self._verify_history = json.load(f)
-                except Exception as e:  # pylint: disable=broad-except
-                    console.warning('Error loading %s, ignored. Reason: %s' % (
-                        self._verify_history_path, str(e)))
-        return self._verify_history
-
-    def _dump_verify_history(self):
-        with open(self._verify_history_path, 'w') as f:
-            json.dump(self._verify_history, f, indent=4)
-
-    def _dump_verify_details(self, verify_details):
-        verify_details_file = os.path.join(self.__build_dir, 'blade_hdr_verify.details')
-        with open(verify_details_file, 'w') as f:
-            pprint.pprint(verify_details, stream=f)
-
-    def _dump_undeclared_hdrs(self, undeclared_hdrs):
-        file_path = os.path.join(self.__build_dir, 'blade_undeclared_hdrs.details')
-        with open(file_path, 'w') as f:
-            pprint.pprint(sorted(undeclared_hdrs), stream=f)
+    def _write_build_stamp_fime(self, start_time, exit_code):
+        """Record some useful data for other tools."""
+        stamp_data = {
+            'start_time': start_time,
+            'end_time': time.time(),
+            'exit_code': exit_code,
+            'direct_targets': list(self.__direct_targets),
+            'command_targets': list(self.__expanded_command_targets),
+            'build_targets': list(self.__build_targets.keys()),
+            'loaded_targets': list(self.__target_database.keys()),
+        }
+        stamp_file = os.path.join(self.__build_dir, 'blade_build_stamp.json')
+        with open(stamp_file, 'w') as f:
+            json.dump(stamp_data, f, indent=4)
 
     def revision(self):
         """Blade revision to identify changes"""
@@ -231,13 +200,13 @@ class Blade(object):
         """Implement the "build" subcommand."""
         console.info('Building...')
         console.flush()
+        start_time = time.time()
         returncode = ninja_runner.build(
             self.get_build_dir(),
             self.build_script(),
             self.build_jobs_num(),
             self.__options)
-        if returncode == 0 and not self.verify():
-            returncode = 1
+        self._write_build_stamp_fime(start_time, returncode)
         if returncode != 0:
             console.error('Build failure.')
         else:

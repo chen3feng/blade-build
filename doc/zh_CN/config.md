@@ -150,16 +150,21 @@ blade dump --config --to-file my.config
   表示对于 `common:rpc`, 在 `rpc_server.cc` 中，如果声明了头文件 `common/base64.h` 和 `common/list.h`
   的库没有出现在其 `deps` 中，这个错误也会被抑制。
 
-  对于生成的头文件，路径可以没有构建目录前缀（比如 `build64_release`），并且最好不带，这样可以适用于不同的构建类型。
+  对于生成的头文件，路径没有构建目录前缀（比如 `build64_release`），这样可以适用于不同的构建类型。
 
-  这个功能是为了帮助升级未正确声明和遵守头文件依赖的旧项目。为了让升级更容易，我们还将头文件缺失错误的检查结果按照
-  这个格式写入到了 `blade-bin/blade_hdr_verify.details` 文件中。
+  这个功能是为了帮助升级未正确声明和遵守头文件依赖的旧项目。为了让升级更容易，我们还提供了一个[工具](../../tool)，
+  可以在构建后方便地生成这样格式的文件。
+
+  ```python
+  blade build ...
+  path/to/collect-inclusion-errors.py --missing > hdr_dep_missing_suppress.conf
+  ```
 
   因此你可以在把这个文件复制到某处，然后在 `BLADE_ROOT` 中加载:
 
   ```python
   cc_config(
-      hdr_dep_missing_suppress = load_value('blade_hdr_verify.details'),
+      hdr_dep_missing_suppress = load_value('hdr_dep_missing_suppress.conf'),
   )
   ```
 
@@ -171,8 +176,15 @@ blade dump --config --to-file my.config
 
   由于 Blade 2 中头文件也被纳入了依赖管理，所有的头文件都必须显式地声明。但是对于历史遗留代码库，会有大量的未声明的头文件，
   短期内难以一下子补全。这个选项允许在检查时忽略这些头文件。
-  Blade 构建后会生成一个本次构建涉及的未声明头文件列表的 `blade-bin/blade_undeclared_hdrs.details` 文件，
-  可以复制出来加载使用。
+
+  可以在构建后，运行 `tool/collect-inclusion-errors.py` 来生成现存的未声明的头文件的列表文件：
+
+  ```python
+  blade build ...
+  path/to/collect-inclusion-errors.py --undeclared > allowed_undeclared_hdrs.conf
+  ```
+
+  然后加载使用：
 
   ```python
   cc_config(

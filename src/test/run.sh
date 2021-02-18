@@ -16,19 +16,22 @@ fi
 cd `dirname $0`
 
 ROOT="$(cd ../.. && pwd)"
+
+rm -f $ROOT/.coverage*
+
 cat > $ROOT/.coveragerc << EOF
 [run]
 data_file = $ROOT/.coverage
 omit = */src/blade/pathlib.py
+parallel = true
 EOF
 
-rm -f $ROOT/.coverage
-
-export BLADE_PYTHON_INTERPRETER="coverage run -a --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
+export BLADE_PYTHON_INTERPRETER="coverage run --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
 
 python -B $@
 exit_code=$?
 
+coverage combine --rcfile=$ROOT/.coveragerc
 coverage report --rcfile=$ROOT/.coveragerc
 
 exit $exit_code
