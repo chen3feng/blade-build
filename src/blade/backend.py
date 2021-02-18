@@ -636,7 +636,8 @@ class _NinjaFileHeaderGenerator(object):
 
     def _builtin_command(self, builder, args=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
-        cmd.append('%s -m blade.builtin_tools %s' % (sys.executable, builder))
+        python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
+        cmd.append('%s -m blade.builtin_tools %s' % (python, builder))
         if args:
             cmd.append(args)
         else:
