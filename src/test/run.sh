@@ -31,7 +31,7 @@ export BLADE_PYTHON_INTERPRETER="coverage run --source=$ROOT/src/blade --rcfile=
 python -B $@
 exit_code=$?
 
-coverage combine
+coverage combine --rcfile=$ROOT/.coveragerc
 coverage report --rcfile=$ROOT/.coveragerc
 
 exit $exit_code
