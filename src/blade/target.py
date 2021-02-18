@@ -523,6 +523,16 @@ class Target(object):
         """Return the full path of file name in the target dir"""
         return os.path.normpath(os.path.join(self.build_dir, self.path, file_name))
 
+    def _remove_build_dir_prefix(self, path):
+        """Remove the build dir prefix of path (e.g. build64_release/)
+        Args:
+            path:str, the full path starts from the workspace root
+        """
+        prefix = self.build_dir + os.sep
+        if path.startswith(prefix):
+            return path[len(prefix):]
+        return path
+
     def _add_target_file(self, label, path):
         """
         Parameters

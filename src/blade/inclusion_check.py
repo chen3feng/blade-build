@@ -247,7 +247,7 @@ class Checker(object):
         if libs is None:
             libs = self.global_declaration.find_libs_by_header(hdr)
         if not libs:
-            return hdr
+            return '"%s"' % hdr
         return '"%s", which belongs to %s' % (hdr, self._or_joined_libs(libs))
 
     def _or_joined_libs(self, libs):
@@ -270,7 +270,7 @@ class Checker(object):
             missing_dep_hdrs.add(generated_hdr)
             if generated_hdr in suppressd_hdrs:
                 continue
-            msg.append('  For "%s"' % self._hdr_declaration_message(generated_hdr))
+            msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
             if not stack:
                 msg.append('    In file included from "%s"' % full_src)
             else:

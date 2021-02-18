@@ -106,6 +106,29 @@ def inclusion_declaration():
     }
 
 
+def _transitive_declared_generated_includes(target):
+    """Collect header/include declarations."""
+    attr_key = 'transitive_generated_inludes'
+    if attr_key in target.data:
+        return target.data[attr_key]
+
+    declared_hdrs = set()
+    declared_incs = set()
+    build_targets = target.blade.get_build_targets()
+    for dkey in target.deps:
+        dep = build_targets[dkey]
+        for hdr in dep.attr.get('generated_hdrs', []):
+            declared_incs.add(target._remove_build_dir_prefix(hdr))
+        for inc in dep.attr.get('generated_incs', []):
+            declared_incs.add(target._remove_build_dir_prefix(inc))
+        dep_hdrs, dep_incs = _transitive_declared_generated_includes(dep)
+        declared_incs.update(dep_hdrs)
+        declared_incs.update(dep_incs)
+    result = declared_hdrs, declared_incs
+    target.data[attr_key] = result
+    return result
+
+
 class CcTarget(Target):
     """
     This class is derived from Target and it is the base class
@@ -575,7 +598,7 @@ class CcTarget(Target):
         """Write a files contains necessary formation for inclusion checking."""
         verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         declared_hdrs, declared_incs = self._collect_declared_headers()
-        declared_genhdrs, declared_genincs = self._collect_declared_generated_includes()
+        declared_genhdrs, declared_genincs = _transitive_declared_generated_includes(self)
         target_check_info = {
             'type': self.type,
             'name': self.name,
@@ -620,30 +643,6 @@ class CcTarget(Target):
             for inc in dep.attr.get('generated_incs', []):
                 declared_incs.add(self._remove_build_dir_prefix(inc))
         return declared_hdrs, declared_incs
-
-    def _collect_declared_generated_includes(self):
-        """Collect header/include declarations."""
-        declared_hdrs = set()
-        declared_incs = set()
-
-        build_targets = self.blade.get_build_targets()
-        for key in self.expanded_deps:
-            dep = build_targets[key]
-            for hdr in dep.attr.get('generated_hdrs', []):
-                declared_hdrs.add(self._remove_build_dir_prefix(hdr))
-            for inc in dep.attr.get('generated_incs', []):
-                declared_incs.add(self._remove_build_dir_prefix(inc))
-        return declared_hdrs, declared_incs
-
-    def _remove_build_dir_prefix(self, path):
-        """Remove the build dir prefix of path (e.g. build64_release/)
-        Args:
-            path:str, the full path starts from the workspace root
-        """
-        prefix = self.build_dir + os.sep
-        if path.startswith(prefix):
-            return path[len(prefix):]
-        return path
 
 
 class CcLibrary(CcTarget):
