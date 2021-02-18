@@ -599,8 +599,9 @@ class CcTarget(Target):
 
         # Only update file when content changes to avoid unnecessary recheck
         if os.path.exists(filename):
-            if open(filename, 'rb') == content:
-                return
+            with open(filename, 'rb') as f:
+                if f.read() == content:
+                    return
         else:
             mkdir_p(self._target_dir())
         with open(filename, 'wb') as f:

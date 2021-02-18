@@ -208,15 +208,15 @@ class Checker(object):
             libs = self.global_declaration.find_libs_by_header(hdr)
             if not libs:
                 libs = self.global_declaration.find_targets_by_private_hdr(hdr)
-                if libs:
-                    if self.key not in libs:
-                        msg.append('    "%s" is a private header file of %s' % (
+                if libs and self.key not in libs:
+                    msg.append('    "%s" is a private header file of %s' % (
                             hdr, self._or_joined_libs(libs)))
                     continue
                 console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
                 undeclared_hdrs.add(hdr)
+                # We need also check suppressd_hdrs because target maybe not loaded in partial build
                 allowed_undeclared_hdrs = self.global_declaration.allowed_undeclared_hdrs()
-                if hdr not in allowed_undeclared_hdrs:
+                if hdr not in allowed_undeclared_hdrs and hdr not in suppressd_hdrs:
                     msg.append('    %s' % self._header_undeclared_message(hdr))
                 continue
             deps = set(self.deps + [self.key])  # Don't forget target itself
