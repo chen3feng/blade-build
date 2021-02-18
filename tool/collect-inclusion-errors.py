@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Collect inclusion errors and report the summarized information."""
+
 import ast
 import argparse
 import json

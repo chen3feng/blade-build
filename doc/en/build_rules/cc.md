@@ -164,7 +164,7 @@ Blade can detect two kind of missing dependencies:
 
   The header files are included in `srcs` or `hdrs` through the `#include` directive, but the library
   to which they belong is not declared in `deps`, or these header files are not declared in any `hdrs`
-  of `cc_library` at all. Solution:
+  of `cc_library` at all. Problems and solution:
 
   * The library to which the header file belongs is not declared in the `deps` of this target, just follow the instruction to fix it
   * The header file is a private header file of the library to which it belongs, and direct use is prohibited

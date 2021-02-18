@@ -512,7 +512,7 @@ class Target(object):
         return [], []
 
     def _target_dir(self):
-        """Return the full path of target dir"""
+        """Return the full path of target dir."""
         return os.path.join(self.build_dir, self.path)
 
     def _source_file_path(self, name):

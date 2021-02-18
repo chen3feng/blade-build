@@ -30,8 +30,8 @@ import sys
 
 _IN_PY3 = sys.version_info[0] == 3
 
-# In python 2, cPickle is much faster than pickle, but in python, pickle is
-# reimplemented in C extension and then the standardalone cPickle is removed..
+# In python 2, cPickle is much faster than pickle, but in python 3, pickle is
+# reimplemented in C extension and then the standardalone cPickle is removed.
 if _IN_PY3:
     import pickle  # pylint: disable=unused-import
 else:

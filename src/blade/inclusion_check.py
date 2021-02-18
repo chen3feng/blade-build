@@ -337,11 +337,12 @@ class Checker(object):
         if missing_details:
             details['missing_dep'] = missing_details
         if undeclared_hdrs:
-            details['undeclared'] = undeclared_hdrs
+            details['undeclared'] = sorted(undeclared_hdrs)
         return ok, details
 
 
 def check(target_check_info_file):
+    # TODO: lazy load global declaration file until need it.
     target = pickle.load(open(target_check_info_file, 'rb'))
     inclusion_declaration_file = os.path.join(target['build_dir'], 'inclusion_declaration.data')
     inclusion_declaration = pickle.load(open(inclusion_declaration_file, 'rb'))
