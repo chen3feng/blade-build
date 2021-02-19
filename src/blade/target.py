@@ -476,7 +476,7 @@ class Target(object):
             if not self._match_visibility(dep):
                 self.error('Not allowed to depend on "//%s" because of its visibility,' % dep_id)
                 if dep._visibility_is_default:
-                    dep.info('No explicit "visibility" declaration')
+                    dep.info('No explicit "visibility" declaration, defaults to private, see document for details')
                 else:
                     dep.info('which is declared here')
 

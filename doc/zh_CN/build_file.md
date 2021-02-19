@@ -46,15 +46,16 @@ Blade用一组target函数来定义目标，这些target的通用属性有：
 * name: 字符串，和路径一起成为target的唯一标识，也决定了构建的输出命名
 * srcs: 列表或字符串，构建该对象需要的源文件，一般在当前目录，或相对于当前目录的子目录中
 * deps: 列表或字符串，该对象所依赖的其它targets
-* visibility: 目标模式的列表或字符串，控制该目标对哪些其他目标可见，特殊值 'PUBLIC' 表示对所有目标可见，同一目录下的目标之间总是相互可见。
+* visibility: 目标模式的列表或字符串，控制该目标对哪些其他目标可见，特殊值 `PUBLIC` 表示对所有目标可见，同一目录下的目标之间总是相互可见。
 
   例如：
 
   ```python
-  visibility = []  # 私有，仅对当前 BUILD 文件可见
+  visibility = []                                             # 私有，仅对当前 BUILD 文件可见
+  visibility = ['PUBLIC']                                     # 对所有目标可见
   visibility = ['//module1:program12', '//module1:program2']  # 仅对这两个目标可见
-  visibility = ['//module2:*']  # 对 module2 目录下的目标可见，但不对其子目录可见
-  visibility = ['//module3:...']  # 对 module3 及其所有子目录下的目标可见
+  visibility = ['//module2:*']                                # 仅对 module2 目录下的目标可见，但不对其子目录可见
+  visibility = ['//module3:...']                              # 仅对 module3 及其所有子目录下的目标可见
   ```
 
   在 Blade 1 中，目标默认都是 `PUBLIC` 的。在 Blade 2 中，为了适应更大规模的项目的依赖管理，调整为默认私有。
