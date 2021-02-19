@@ -116,8 +116,8 @@ def _main(blade_path, argv):
     setup_console(options)
 
     ws = workspace.initialize(options)
-    load_config(options, ws.root_dir())
     ws.switch_to_root_dir()
+    load_config(options, ws.root_dir())
 
     adjust_config_by_options(config, options)
     if _check_error_log('config'):
