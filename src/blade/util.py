@@ -276,8 +276,7 @@ def source_location(filename):
             lineno = frame.f_lineno
             break
         frame = frame.f_back
-    # NOTE: The ':0'(column) is required for VSCode problem matcher
-    return '%s:%s:0' % (filename, lineno)
+    return '%s:%s' % (filename, lineno)
 
 
 def parse_command_line(argv):

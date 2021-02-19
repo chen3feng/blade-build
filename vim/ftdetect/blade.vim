@@ -2,5 +2,5 @@
 " Author: Chen Feng <phongchen@tencent.com>
 
 augroup filetype
-    autocmd! BufRead,BufNewFile BUILD set filetype=blade
+    autocmd! BufRead,BufNewFile BUILD,*.bld set filetype=blade
 augroup end

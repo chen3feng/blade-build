@@ -53,16 +53,17 @@ Blade uses a set of target functions to define targets. The common properties of
   or in a subdirectory relative to the current directory
 * deps: list or string, other targets on which the object depends
 * visibility: list or string of build target pattern, control visibility to the listed targets,
-  there is a special value: 'PUBLIC', means visible to everyone, the targets in the same directory
+  there is a special value: `PUBLIC`, means visible to everyone, the targets in the same directory
   are always visible to each other.
 
   Examples:
 
   ```python
-  visibility = [] # Private, only visible to the current BUILD file
-  visibility = ['//module1:program12','//module1:program2'] # Only visible to these two targets
-  visibility = ['//module2:*'] # Visible to the target under the module2 directory, but not to its subdirectories
-  visibility = ['//module3:...'] # Visible to the targets in module3 and all its subdirectories
+  visibility = []                                            # Private, only visible to the current BUILD file
+  visibility = ['PUBLIC']                                    # Visible to every one
+  visibility = ['//module1:program12','//module1:program2']  # Only visible to these two targets
+  visibility = ['//module2:*']                               # Only visible to the targets under the module2 directory, but not to its subdirectories
+  visibility = ['//module3:...']                             # Only visible to the targets under the module3 directory and all its subdirectories
   ```
 
   In Blade 1, all targets are `PUBLIC` by default. In Blade 2, in order to adapt to the dependency
