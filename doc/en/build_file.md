@@ -77,10 +77,10 @@ We also provide a [glob](functions.md#glob) function to generate the source file
 
 The allowed format of deps:
 
-* `'//path/to/dir/:name'` target in other directories, path is the path from BLADE_ROOT, and name is
+* `'//path/to/dir:name'` Target in other directories, path is the path from BLADE_ROOT, and name is
   the target name to be relied upon. When you see it, you know where it is.
 * `':name'` The target, path in the current BUILD file can be omitted.
-* `'#name'` system library. Write # with the name directly, such as `#pthread`, `#z` respectively
+* `'#name'` System library. Write # with the name directly, such as `#pthread`, `#z` respectively
   equivalent to link `-lpthread` and `-lz` on the command line, but will be passed to other targets
    that depend on this library.
 
