@@ -121,18 +121,21 @@ class Target(object):
         """
         from blade import build_manager  # pylint: disable=import-outside-toplevel
         self.blade = build_manager.instance
-        self.build_dir = self.blade.get_build_dir()
-        current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
 
+        self.type = type
         self.name = name
+
+        current_source_path = self.blade.get_current_source_path()
         self.path = current_source_path
+        self.build_dir = self.blade.get_build_dir()
+        self.target_dir = os.path.normpath(os.path.join(self.build_dir, current_source_path))
+
         # The unique key of this target, for internal use mainly.
         self.key = '%s:%s' % (current_source_path, name)
         # The full qualified target id, to be displayed in diagnostic message
         self.fullname = '//' + self.key
         self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
-        self.type = type
         self.srcs = srcs
         self.deps = []
 
@@ -539,15 +542,21 @@ class Target(object):
 
     def _target_dir(self):
         """Return the full path of target dir."""
-        return os.path.join(self.build_dir, self.path)
+        return self.target_dir
 
     def _source_file_path(self, name):
         """Expand the the source file name to full path"""
-        return os.path.join(self.path, os.path.normpath(name))
+        # Call os.path.normpath() on the joined result is simpler but slower, however, join the
+        # last empty part may result incorrect result (ends with './').
+        if name:
+            return os.path.join(self.path, os.path.normpath(name))
+        return self.path
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        return os.path.join(self.build_dir, self.path, os.path.normpath(file_name))
+        if file_name:
+            return os.path.join(self.target_dir, os.path.normpath(file_name))
+        return self.target_dir
 
     def _remove_build_dir_prefix(self, path):
         """Remove the build dir prefix of path (e.g. build64_release/)
