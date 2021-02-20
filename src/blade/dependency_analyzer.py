@@ -61,7 +61,7 @@ def _expand_deps(targets):
 
 
 def _unique_deps(new_deps_list):
-    # Append new_deps_piece to new_deps_list, be aware of de-duplication
+    """Unique dependency list, for duplicate items only keep the later ones."""
     result = []
     deps = set()
     for dep in reversed(new_deps_list):

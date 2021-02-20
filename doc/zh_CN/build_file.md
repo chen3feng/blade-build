@@ -63,9 +63,9 @@ Blade用一组target函数来定义目标，这些target的通用属性有：
 
 我们也提供了一个 [glob](functions.md#glob) 函数通过通配符来获取源文件列表。
 
-deps的允许的格式：
+deps 的允许的格式：
 
-* "//path/to/dir/:name" 其他目录下的target，path为从BLADE_ROOT出发的路径，name为被依赖的目标名。看见就知道在哪里。
+* "//path/to/dir:name" 其他目录下的target，path为从BLADE_ROOT出发的路径，name为被依赖的目标名。看见就知道在哪里。
 * ":name" 当前BUILD文件内的target， path可以省略。
 * "#name" 系统库。直接写#跟名字即可，比如#pthread，#z分别相当于链接命令行上的-lpthread和-lz，但是会被传递给依赖这个库的其他目标。
 
