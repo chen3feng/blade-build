@@ -39,8 +39,63 @@ def _is_likely_concatenated_filenames(string, exts):
     return re.search(r'\w+\.{ext}.+\.{ext}$'.format(ext=ext_pattern), string)
 
 
+# Target regex
+_TARGET_RE = re.compile(r'(?P<path>((//)?[\w./+-]+)?:|#)(?P<name>[\w.+-]*)$')
+
 # Location reference macro regex
 LOCATION_RE = re.compile(r'\$\(location\s+(\S*:\S+)(\s+\w*)?\)')
+
+
+def _check_path(path):
+    msg = []
+    if path.startswith('//'):
+        path = path[2:]
+    if path.startswith('/'):
+        msg.append('absolute path is not allowed')
+        result = False
+    if '..' in path:
+        msg.append('parent path ".." is not allowed')
+    return msg
+
+
+def _parse_target(dep):
+    """Parse a dep target into (path, name).
+
+    Returns:
+        Return according result for different form of dep:
+        - ('', '', error_messages) for invalid,
+        - (//path, name, '') for '//path:name',
+        - (path, name, '') for 'path:name,',
+        - ('', name, '') for ':name',
+        - ('#', name, '') for '#name'.
+
+    For the sake of performance, there is a cache.
+    """
+    if dep in _parse_target.cache:
+        return _parse_target.cache[dep]
+    match = _TARGET_RE.match(dep)
+    if not match:
+        msg = 'format error'
+        if dep.count(':') > 1:
+            msg += ', missing "," between targets?'
+        msgs = [msg]
+    else:
+        path = match.group('path').rstrip(':')
+        name = match.group('name')
+        msgs = _check_path(path)
+        if not name:
+            msgs.append('empty name')
+    if msgs:
+        result = ('', '', msgs)
+    else:
+        if path:
+            path = os.path.normpath(path)
+        result = (path, name, None)
+    _parse_target.cache[dep] = result
+    return result
+
+
+_parse_target.cache = {}
 
 
 class Target(object):
@@ -66,18 +121,21 @@ class Target(object):
         """
         from blade import build_manager  # pylint: disable=import-outside-toplevel
         self.blade = build_manager.instance
-        self.build_dir = self.blade.get_build_dir()
-        current_source_path = self.blade.get_current_source_path()
         self.target_database = self.blade.get_target_database()
 
+        self.type = type
         self.name = name
+
+        current_source_path = self.blade.get_current_source_path()
         self.path = current_source_path
+        self.build_dir = self.blade.get_build_dir()
+        self.target_dir = os.path.normpath(os.path.join(self.build_dir, current_source_path))
+
         # The unique key of this target, for internal use mainly.
         self.key = '%s:%s' % (current_source_path, name)
         # The full qualified target id, to be displayed in diagnostic message
         self.fullname = '//' + self.key
         self.source_location = source_location(os.path.join(current_source_path, 'BUILD'))
-        self.type = type
         self.srcs = srcs
         self.deps = []
 
@@ -113,7 +171,6 @@ class Target(object):
         self._check_name()
         self._check_kwargs(kwargs)
         self._check_srcs(src_exts)
-        self._check_deps(deps)
         self._init_target_deps(deps)
         self._init_visibility(visibility)
         self.__build_code = None
@@ -276,8 +333,10 @@ class Target(object):
             if not dep.startswith('//') and not dep.startswith('#'):
                 dep = '//' + dep
             dkey = self._unify_dep(dep)
+            if not dkey:
+                return
             if dkey[0] == '#':
-                self._add_system_library(dkey, dep)
+                self._add_system_library(dkey, dkey[2:])
             if dkey not in self.deps:
                 self.deps.append(dkey)
             self._implicit_deps.add(dkey)
@@ -285,6 +344,7 @@ class Target(object):
     def _add_system_library(self, key, name):
         """Add system library entry to database."""
         if key not in self.target_database:
+            assert key[2:] == name
             lib = SystemLibrary(name)
             self.blade.register_target(lib)
 
@@ -332,36 +392,38 @@ class Target(object):
             type = ''
         type = type.strip()
         key = self._unify_dep(key)
-        if key not in self.deps:
+        if key and key not in self.deps:
             self.deps.append(key)
         return key, type
 
     def _unify_dep(self, dep):
-        """Unify dep to key"""
-        if dep[0] == ':':
-            # Depend on library in current directory
-            dkey = (os.path.normpath(self.path), dep[1:])
-        elif dep.startswith('//'):
-            # Depend on library in remote directory
-            if ':' not in dep:
-                raise Exception('Wrong dep format "%s" in %s' % (dep, self.fullname))
-            (path, lib) = dep[2:].rsplit(':', 1)
-            dkey = (os.path.normpath(path), lib)
-        elif dep.startswith('#'):
+        """Unify dep to key."""
+        (path, name, msgs) = _parse_target(dep)
+
+        if msgs:
+            for msg in msgs:
+                self.error('Invalid dependency "%s", ' % dep + msg)
+            return None
+
+        if path == '#':
             # System libaray, they don't have entry in BUILD so we need
             # to add deps manually.
-            dkey = ('#', dep[1:])
-            self._add_system_library(':'.join(dkey), dep)
-        else:
-            # Depend on library in relative subdirectory
-            if ':' not in dep:
-                raise Exception('Wrong format in %s' % self.fullname)
-            (path, lib) = dep.rsplit(':', 1)
-            if '..' in path:
-                raise Exception("Don't use '..' in path")
-            dkey = (os.path.normpath('%s/%s' % (self.path, path)), lib)
+            dkey = '#:' + name
+            self._add_system_library(dkey, name)
+            return dkey
 
-        return ':'.join(dkey)
+        if path.startswith('//'):
+            # Depend on library in remote directory
+            path = path[2:]
+        else:
+            if path:
+                # Depend on library in relative subdirectory
+                path = os.path.join(self.path, path)
+            else:
+                # Depend on library in current directory
+                path = self.path
+
+        return '%s:%s' % (path, name)
 
     def _init_target_deps(self, deps):
         """Init the target deps.
@@ -377,41 +439,8 @@ class Target(object):
         """
         for d in deps:
             dkey = self._unify_dep(d)
-            if dkey not in self.deps:
+            if dkey and dkey not in self.deps:
                 self.deps.append(dkey)
-
-    def _check_format(self, t):
-        """
-
-        Parameters
-        -----------
-        t: could be a dep or visibility specified in BUILD file
-
-        Description
-        -----------
-        Do some basic format check.
-
-        """
-        if not (t.startswith(':') or t.startswith('#') or
-                t.startswith('//') or t.startswith('./')):
-            self.error('Invalid format %s.' % t)
-        if t.count(':') > 1:
-            self.error("Invalid format %s, missing ',' between labels?" % t)
-
-    def _check_deps(self, deps):
-        """_check_deps
-
-        Parameters
-        -----------
-        deps: the deps list in BUILD file
-
-        Description
-        -----------
-        Check whether deps are in valid format.
-
-        """
-        for dep in deps:
-            self._check_format(dep)
 
     def _init_visibility(self, visibility):
         """Initialize the `visibility` attribute.
@@ -513,15 +542,21 @@ class Target(object):
 
     def _target_dir(self):
         """Return the full path of target dir."""
-        return os.path.join(self.build_dir, self.path)
+        return self.target_dir
 
     def _source_file_path(self, name):
         """Expand the the source file name to full path"""
-        return os.path.normpath(os.path.join(self.path, name))
+        # Call os.path.normpath() on the joined result is simpler but slower, however, join the
+        # last empty part may result incorrect result (ends with './').
+        if name:
+            return os.path.join(self.path, os.path.normpath(name))
+        return self.path
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        return os.path.normpath(os.path.join(self.build_dir, self.path, file_name))
+        if file_name:
+            return os.path.join(self.target_dir, os.path.normpath(file_name))
+        return self.target_dir
 
     def _remove_build_dir_prefix(self, path):
         """Remove the build dir prefix of path (e.g. build64_release/)
@@ -672,7 +707,6 @@ class Target(object):
 
 class SystemLibrary(Target):
     def __init__(self, name):
-        name = name[1:]
         super(SystemLibrary, self).__init__(
                 name=name,
                 type='system_library',
