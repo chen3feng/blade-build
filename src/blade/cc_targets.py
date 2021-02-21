@@ -406,17 +406,24 @@ class CcTarget(Target):
         """
         targets = self.blade.get_build_targets()
         sys_libs, usr_libs = [], []
+        implicit_deps = []
         for key in self.expanded_deps:
             dep = targets[key]
-            if dep.type == 'cc_library' and not dep.srcs:
-                continue
             if dep.path == '#':
                 sys_libs.append(dep.name)
-            else:
-                lib = dep._get_target_file('so')
-                if lib:
-                    usr_libs.append(lib)
-        return sys_libs, usr_libs
+                continue
+
+            lib = dep._get_target_file('so')
+            if lib:
+                usr_libs.append(lib)
+                continue
+
+            # '.so' file is not generated for header only libraries, use this file as implicit dep.
+            incchk_result = self.data.get('inclusion_check_result_file')
+            if incchk_result:
+                implicit_deps.append(incchk_result)
+
+        return sys_libs, usr_libs, implicit_deps
 
     def _static_dependencies(self):
         """
@@ -427,20 +434,28 @@ class CcTarget(Target):
         """
         targets = self.blade.get_build_targets()
         sys_libs, usr_libs, link_all_symbols_libs = [], [], []
+        implicit_deps = []
         for key in self.expanded_deps:
             dep = targets[key]
-            if dep.type == 'cc_library' and not dep.srcs:
-                continue
             if dep.path == '#':
                 sys_libs.append(dep.name)
-            else:
-                lib = dep._get_target_file('a')
-                if lib:
-                    if dep.attr.get('link_all_symbols'):
-                        link_all_symbols_libs.append(lib)
-                    else:
-                        usr_libs.append(lib)
-        return sys_libs, usr_libs, link_all_symbols_libs
+                continue
+
+            lib = dep._get_target_file('a')
+            if lib:
+                if dep.attr.get('link_all_symbols'):
+                    link_all_symbols_libs.append(lib)
+                    implicit_deps.append(lib)
+                else:
+                    usr_libs.append(lib)
+                continue
+
+            # '.a' file is not generated for header only libraries, use this file as implicit dep.
+            incchk_result = self.data.get('inclusion_check_result_file')
+            if incchk_result:
+                implicit_deps.append(incchk_result)
+
+        return sys_libs, usr_libs, link_all_symbols_libs, implicit_deps
 
     def _cc_compile_deps(self):
         """Return a stamp which depends on targets which generate header files."""
@@ -528,6 +543,7 @@ class CcTarget(Target):
 
         check_info_file = self.data['inclusion_check_info_file']
         check_result_file = check_info_file + '.result'
+        self.data['inclusion_check_result_file'] = check_result_file
         self.generate_build('ccincchk', outputs=check_result_file, inputs=check_info_file,
                             implicit_deps=implicit_deps)
 
@@ -540,9 +556,9 @@ class CcTarget(Target):
     def _dynamic_cc_library(self, objs):
         output = self._target_file_path('lib%s.so' % self.name)
         ldflags = self._generate_link_flags()
-        sys_libs, usr_libs = self._dynamic_dependencies()
+        sys_libs, usr_libs, implicit_deps = self._dynamic_dependencies()
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
-        self._cc_link(output, 'solink', objs=objs, deps=usr_libs,
+        self._cc_link(output, 'solink', objs=objs, deps=usr_libs, implicit_deps=implicit_deps,
                       ldflags=ldflags, extra_ldflags=extra_ldflags)
         self._add_target_file('so', output)
 
@@ -732,11 +748,13 @@ class CcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
-        if self.srcs:
-            if self.attr.get('secure'):
-                objs = self._securecc_objects(self.srcs)
-            else:
-                objs = self._cc_objects(self.attr['expanded_srcs'])
+
+        if self.attr.get('secure'):
+            objs = self._securecc_objects(self.srcs)
+        else:
+            objs = self._cc_objects(self.attr['expanded_srcs'])
+        # Don't generate library file for header only library.
+        if objs:
             self._cc_library(objs)
 
 
@@ -1190,14 +1208,12 @@ class CcBinary(CcTarget):
 
     def _cc_binary(self, objs, dynamic_link):
         ldflags = self._generate_cc_binary_link_flags(dynamic_link)
-        implicit_deps = []
         if dynamic_link:
-            sys_libs, usr_libs = self._dynamic_dependencies()
+            sys_libs, usr_libs, implicit_deps = self._dynamic_dependencies()
         else:
-            sys_libs, usr_libs, link_all_symbols_libs = self._static_dependencies()
+            sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
             if link_all_symbols_libs:
                 ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
-                implicit_deps = link_all_symbols_libs
 
         extra_ldflags, order_only_deps = [], []
         if self.attr['embed_version']:
@@ -1327,11 +1343,9 @@ class CcPlugin(CcTarget):
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
-        implicit_deps = []
-        sys_libs, usr_libs, link_all_symbols_libs = self._static_dependencies()
+        sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
         if link_all_symbols_libs:
             ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
-            implicit_deps = link_all_symbols_libs
 
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         if self.name.endswith('.so'):
