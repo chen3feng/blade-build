@@ -324,26 +324,37 @@ _SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
 _BUILD_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
 
 
-def _is_under_skipped_dir(dirname):
-    """Is the directory under a directory which contains a `.bladeskip` file."""
-    cache = _is_under_skipped_dir.cache
+def _check_under_skipped_dir(dirname):
+    """
+    Check whether the directory is under a directory which contains a `.bladeskip` file or
+    a nested workspace.
+
+    Return:
+        Full path of the skip file or empty if it is not under a skipped dir.
+    """
+    cache = _check_under_skipped_dir.cache
     if dirname in cache:
         return cache[dirname]
-    if os.path.exists(os.path.join(dirname, _BLADE_SKIP_FILE)):
-        cache[dirname] = True
-        return True
-    parent_dir = os.path.dirname(dirname)
-    result = parent_dir != '' and _is_under_skipped_dir(parent_dir)
+    if dirname == '.' or dirname == '':
+        return ''
+    for skipfile in _SKIP_FILES:
+        filepath = os.path.join(dirname, skipfile)
+        if os.path.exists(filepath):
+            cache[dirname] = filepath
+            return filepath
+    result = _check_under_skipped_dir(os.path.dirname(dirname))
     cache[dirname] = result
     return result
 
 
-_is_under_skipped_dir.cache = {}
+_check_under_skipped_dir.cache = {}
 
 
 def _has_load_excluded_file(root, files):
     """Whether exclude this root directory when loading BUILD."""
-    if root != '.' and 'BLADE_ROOT' in files:
+    if root == '.':
+        return
+    if 'BLADE_ROOT' in files:
         console.info('Skip nested workspace "%s"' % root)
         return True
     if _BLADE_SKIP_FILE in files:
@@ -403,8 +414,9 @@ def _expand_target_patterns(blade, target_ids):
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
-        if _is_under_skipped_dir(source_dir):
-            console.warning('"%s" is under skipped directory, ignored' % target_id)
+        skip_file = _check_under_skipped_dir(source_dir)
+        if skip_file:
+            console.warning('"%s" is under skipped directory due to "%s", ignored' % (target_id, skip_file))
             continue
         if target_name == '...':
             for root, dirs, files in os.walk(source_dir):
@@ -461,9 +473,10 @@ def _load_related_build_files(blade, command_targets, processed_dirs):
             related_targets[target_id] = target_database[target_id]
             continue
 
-        if _is_under_skipped_dir(source_dir):
+        skip_file = _check_under_skipped_dir(source_dir)
+        if skip_file:
             dependent = _find_dependent(target_id, blade)
-            dependent.error('"%s" is under skipped directory, ignored' % target_id)
+            dependent.error('"%s" is under skipped directory due to "%s"' % (target_id, skip_file))
             continue
 
         if not _load_build_file(source_dir, processed_dirs, blade):
