@@ -20,6 +20,7 @@ from __future__ import print_function
 from collections import deque
 
 from blade import console
+from blade.util import iteritems, itervalues
 
 
 def analyze_deps(related_targets):
@@ -44,7 +45,10 @@ def analyze_deps(related_targets):
             [all the targets keys] - sorted
     """
     _expand_deps(related_targets)
-    return _topological_sort(related_targets)
+    _expand_dependents(related_targets)
+    for target in itervalues(related_targets):
+        target.check_visibility()
+    return list(related_targets.keys())
 
 
 def _expand_deps(targets):
@@ -98,8 +102,6 @@ def _expand_target_deps(target_id, targets, root_targets=None):
         new_deps_list.append(d)
         new_deps_list += _expand_target_deps(d, targets, root_targets)
 
-    target.check_visibility()
-
     new_deps_list = _unique_deps(new_deps_list)
     target.expanded_deps = new_deps_list
     root_targets.remove(target_id)
@@ -107,42 +109,50 @@ def _expand_target_deps(target_id, targets, root_targets=None):
     return new_deps_list
 
 
-def _topological_sort(related_targets):
-    """Sort the targets.
+def _expand_dependents(related_targets):
+    """Build and expand dependents for every targets.
     Args:
         related_targets: dict{target_key, target} to be built
-    Returns:
-        sorted_target_key, keys sorted according to dependency relationship
     """
-    numpreds = {}  # elt -> # of predecessors
-    for target_key, target in related_targets.items():
-        if target_key not in numpreds:
-            numpreds[target_key] = 0
+    for target_key, target in iteritems(related_targets):
         for depkey in target.deps:
             related_targets[depkey].dependents.add(target_key)
         for depkey in target.expanded_deps:
-            # make sure every elt is a key in numpreds
-            if depkey not in numpreds:
-                numpreds[depkey] = 0
-
-            # since depkey < target_key, target_key gains a pred ...
-            numpreds[target_key] = numpreds[target_key] + 1
-
-            # ... and depkey gains a succ
             related_targets[depkey].expanded_dependents.add(target_key)
 
-    # suck up everything without a predecessor
-    q = deque([key for key, num in numpreds.items() if num == 0])
+
+def _topological_sort(related_targets):
+    """Sort the target keys according to their dependency relationship.
+
+    Every dependents before their dependencies, because the dependents should be built earlier.
+
+    NOTE:
+        This function is no longer needed because the ninja backend does not require the build
+        targets to be ordered. It is still kept in case we support backends that require this in
+        the future.
+
+    Args:
+        related_targets: dict{target_key, target} to be built
+    Returns:
+        sorted_target_key, sorted target keys.
+    """
+    numpreds = {}  # elt -> # of predecessors
+    q = []
+    for target_key, target in iteritems(related_targets):
+        dep_len = len(target.deps)
+        numpreds[target_key] = dep_len
+        if dep_len == 0:
+            q.append(target_key)
 
     # for everything in queue, knock down the pred count on its dependents
     sorted_target_keys = []
     while q:
-        key = q.popleft()
-        del numpreds[key]
+        key = q.pop()
         sorted_target_keys.append(key)
-        for depkey in related_targets[key].expanded_dependents:
+        for depkey in related_targets[key].dependents:
             numpreds[depkey] -= 1
             if numpreds[depkey] == 0:
                 q.append(depkey)
 
+    assert len(sorted_target_keys) == len(related_targets)
     return sorted_target_keys

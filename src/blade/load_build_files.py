@@ -235,12 +235,21 @@ def load(name, *symbols, **aliases):
     def error(symbol):
         console.diagnose(src_loc, 'error', '"%s" is not defined in "%s"' % (symbol, name))
 
-    # Only import declared symbols into current file
-    for symbol in symbols:
-        if symbol not in extension_globals:
-            error(symbol)
-            continue
-        __current_globals[symbol] = extension_globals[symbol]
+    if '*' in symbols:
+        # Wildcard import import all symbols except aliases.
+        if len(symbols) != 1:
+            console.diagnose(src_loc, 'error', "wildcard import can't coexist with named imports")
+            return
+        for symbol in extension_globals:
+            if symbol not in aliases:
+                __current_globals[symbol] = extension_globals[symbol]
+    else:
+        # Only import declared symbols into current file
+        for symbol in symbols:
+            if symbol not in extension_globals:
+                error(symbol)
+                continue
+            __current_globals[symbol] = extension_globals[symbol]
 
     for alias, real_name in aliases.items():
         if real_name not in extension_globals:
@@ -312,7 +321,7 @@ _BLADE_SKIP_FILE = '.bladeskip'
 _SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
 
 # TODO: Eliminate hardcoded
-_EXCLUDED_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
+_BUILD_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
 
 
 def _is_under_skipped_dir(dirname):
@@ -332,22 +341,26 @@ def _is_under_skipped_dir(dirname):
 _is_under_skipped_dir.cache = {}
 
 
-def _is_load_excluded(root, d):
+def _has_load_excluded_file(root, files):
+    """Whether exclude this root directory when loading BUILD."""
+    if root != '.' and 'BLADE_ROOT' in files:
+        console.info('Skip nested workspace "%s"' % root)
+        return True
+    if _BLADE_SKIP_FILE in files:
+        console.info('Skip "%s" due to the "%s" file' % (root, _BLADE_SKIP_FILE))
+        return True
+    return False
+
+
+def _is_load_excluded_dir(root, dir):
     """Whether exclude the directory when loading BUILD."""
     # Exclude directories starting with '.', e.g. '.svn', '.git', '.vscode'.
-    if d.startswith('.'):
+    if dir.startswith('.'):
         return True
 
     # Exclude build dirs
-    if d in _EXCLUDED_DIRS:
+    if root == '.' and dir in _BUILD_DIRS:
         return True
-
-    # Exclude directories containing special files
-    full_dir = os.path.join(root, d)
-    for skip_file in _SKIP_FILES:
-        if os.path.exists(os.path.join(full_dir, skip_file)):
-            console.info('Skip "%s" due to "%s" file' % (full_dir, skip_file))
-            return True
 
     return False
 
@@ -398,7 +411,10 @@ def _expand_target_patterns(blade, target_ids):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                dirs[:] = [d for d in dirs if not _is_load_excluded(root, d)]
+                if _has_load_excluded_file(root, files):
+                    dirs[:] = []
+                    continue
+                dirs[:] = [d for d in dirs if not _is_load_excluded_dir(root, d)]
                 if 'BUILD' in files:
                     starting_dirs.add(root)
         elif target_name == '*':

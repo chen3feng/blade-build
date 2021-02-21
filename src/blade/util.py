@@ -30,6 +30,7 @@ import sys
 
 _IN_PY3 = sys.version_info[0] == 3
 
+
 # In python 2, cPickle is much faster than pickle, but in python 3, pickle is
 # reimplemented in C extension and then the standardalone cPickle is removed.
 if _IN_PY3:
@@ -233,13 +234,17 @@ def regular_variable_name(name):
     """convert some name to a valid identifier name"""
     return name.translate(_TRANS_TABLE)
 
-
+# Some python 2/3 compatibility helpers.
 if _IN_PY3:
-    def iteritems(d, **kw):
-        return iter(d.items(**kw))
+    def iteritems(d):
+        return d.items()
+    def itervalues(d):
+        return d.values()
 else:
-    def iteritems(d, **kw):
-        return d.iteritems(**kw)
+    def iteritems(d):
+        return d.iteritems()
+    def itervalues(d):
+        return d.itervalues()
 
 
 def exec_file_content(filename, content, globals, locals):
