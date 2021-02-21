@@ -36,6 +36,7 @@ _IN_PY3 = sys.version_info[0] == 3
 if _IN_PY3:
     import pickle  # pylint: disable=unused-import
 else:
+    # pyright: reportMissingImports=false
     import cPickle as pickle  # pylint: disable=import-error, unused-import
 
 
