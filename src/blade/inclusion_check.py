@@ -331,7 +331,7 @@ class Checker(object):
             console.diagnose(self.source_location, severity,
                 '%s: Missing indirect dependency declaration:\n%s' % (self.name, '\n'.join(generated_check_msg)))
 
-        ok = not direct_check_msg and not generated_check_msg or severity != 'error'
+        ok = (severity != 'error' or not direct_check_msg and not generated_check_msg)
 
         details = {}
         if missing_details:

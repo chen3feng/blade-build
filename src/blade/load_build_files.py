@@ -335,7 +335,7 @@ def _check_under_skipped_dir(dirname):
     cache = _check_under_skipped_dir.cache
     if dirname in cache:
         return cache[dirname]
-    if dirname == '.' or dirname == '':
+    if dirname in ('.', ''):
         return ''
     for skipfile in _SKIP_FILES:
         filepath = os.path.join(dirname, skipfile)
@@ -353,7 +353,8 @@ _check_under_skipped_dir.cache = {}
 def _has_load_excluded_file(root, files):
     """Whether exclude this root directory when loading BUILD."""
     if root == '.':
-        return
+        return False
+    # 'BLADE_ROOT' file under a subdirectory means it is a nested other workspace.
     if 'BLADE_ROOT' in files:
         console.info('Skip nested workspace "%s"' % root)
         return True
