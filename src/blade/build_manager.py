@@ -488,7 +488,7 @@ class Blade(object):
     def _read_fingerprint(self, ninja_file):
         """Read fingerprint from per-target ninja file"""
         try:
-            with open(ninja_file) as f:
+            with open(ninja_file, buffering=64) as f:
                 first_line = f.readline()
                 if first_line.startswith(_NINJA_FILE_FINGERPRINT_START):
                     return first_line[len(_NINJA_FILE_FINGERPRINT_START):].strip()

@@ -235,12 +235,21 @@ def load(name, *symbols, **aliases):
     def error(symbol):
         console.diagnose(src_loc, 'error', '"%s" is not defined in "%s"' % (symbol, name))
 
-    # Only import declared symbols into current file
-    for symbol in symbols:
-        if symbol not in extension_globals:
-            error(symbol)
-            continue
-        __current_globals[symbol] = extension_globals[symbol]
+    if '*' in symbols:
+        # Wildcard import import all symbols except aliases.
+        if len(symbols) != 1:
+            console.diagnose(src_loc, 'error', "wildcard import can't coexist with named imports")
+            return
+        for symbol in extension_globals:
+            if symbol not in aliases:
+                __current_globals[symbol] = extension_globals[symbol]
+    else:
+        # Only import declared symbols into current file
+        for symbol in symbols:
+            if symbol not in extension_globals:
+                error(symbol)
+                continue
+            __current_globals[symbol] = extension_globals[symbol]
 
     for alias, real_name in aliases.items():
         if real_name not in extension_globals:
@@ -312,42 +321,57 @@ _BLADE_SKIP_FILE = '.bladeskip'
 _SKIP_FILES = ['BLADE_ROOT', _BLADE_SKIP_FILE]
 
 # TODO: Eliminate hardcoded
-_EXCLUDED_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
+_BUILD_DIRS = {'build32_debug', 'build32_release', 'build64_debug', 'build64_release'}
 
 
-def _is_under_skipped_dir(dirname):
-    """Is the directory under a directory which contains a `.bladeskip` file."""
-    cache = _is_under_skipped_dir.cache
+def _check_under_skipped_dir(dirname):
+    """
+    Check whether the directory is under a directory which contains a `.bladeskip` file or
+    a nested workspace.
+
+    Return:
+        Full path of the skip file or empty if it is not under a skipped dir.
+    """
+    cache = _check_under_skipped_dir.cache
     if dirname in cache:
         return cache[dirname]
-    if os.path.exists(os.path.join(dirname, _BLADE_SKIP_FILE)):
-        cache[dirname] = True
-        return True
-    parent_dir = os.path.dirname(dirname)
-    result = parent_dir != '' and _is_under_skipped_dir(parent_dir)
+    if dirname == '.' or dirname == '':
+        return ''
+    for skipfile in _SKIP_FILES:
+        filepath = os.path.join(dirname, skipfile)
+        if os.path.exists(filepath):
+            cache[dirname] = filepath
+            return filepath
+    result = _check_under_skipped_dir(os.path.dirname(dirname))
     cache[dirname] = result
     return result
 
 
-_is_under_skipped_dir.cache = {}
+_check_under_skipped_dir.cache = {}
 
 
-def _is_load_excluded(root, d):
+def _has_load_excluded_file(root, files):
+    """Whether exclude this root directory when loading BUILD."""
+    if root == '.':
+        return
+    if 'BLADE_ROOT' in files:
+        console.info('Skip nested workspace "%s"' % root)
+        return True
+    if _BLADE_SKIP_FILE in files:
+        console.info('Skip "%s" due to the "%s" file' % (root, _BLADE_SKIP_FILE))
+        return True
+    return False
+
+
+def _is_load_excluded_dir(root, dir):
     """Whether exclude the directory when loading BUILD."""
     # Exclude directories starting with '.', e.g. '.svn', '.git', '.vscode'.
-    if d.startswith('.'):
+    if dir.startswith('.'):
         return True
 
     # Exclude build dirs
-    if d in _EXCLUDED_DIRS:
+    if root == '.' and dir in _BUILD_DIRS:
         return True
-
-    # Exclude directories containing special files
-    full_dir = os.path.join(root, d)
-    for skip_file in _SKIP_FILES:
-        if os.path.exists(os.path.join(full_dir, skip_file)):
-            console.info('Skip "%s" due to "%s" file' % (full_dir, skip_file))
-            return True
 
     return False
 
@@ -390,15 +414,19 @@ def _expand_target_patterns(blade, target_ids):
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
-        if _is_under_skipped_dir(source_dir):
-            console.warning('"%s" is under skipped directory, ignored' % target_id)
+        skip_file = _check_under_skipped_dir(source_dir)
+        if skip_file:
+            console.warning('"%s" is under skipped directory due to "%s", ignored' % (target_id, skip_file))
             continue
         if target_name == '...':
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                dirs[:] = [d for d in dirs if not _is_load_excluded(root, d)]
+                if _has_load_excluded_file(root, files):
+                    dirs[:] = []
+                    continue
+                dirs[:] = [d for d in dirs if not _is_load_excluded_dir(root, d)]
                 if 'BUILD' in files:
                     starting_dirs.add(root)
         elif target_name == '*':
@@ -445,9 +473,10 @@ def _load_related_build_files(blade, command_targets, processed_dirs):
             related_targets[target_id] = target_database[target_id]
             continue
 
-        if _is_under_skipped_dir(source_dir):
+        skip_file = _check_under_skipped_dir(source_dir)
+        if skip_file:
             dependent = _find_dependent(target_id, blade)
-            dependent.error('"%s" is under skipped directory, ignored' % target_id)
+            dependent.error('"%s" is under skipped directory due to "%s"' % (target_id, skip_file))
             continue
 
         if not _load_build_file(source_dir, processed_dirs, blade):

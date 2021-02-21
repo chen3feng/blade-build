@@ -145,15 +145,16 @@ def format_timedelta(seconds):
     #   Blade(info): cost time 00:05:30s
     # cause vim to create a new file named "Blade(info): cost time 00"
     # in vim QuickFix mode. So we use the new format now.
-    mins = seconds // 60
+    mins = int(seconds // 60)
     seconds %= 60
     hours = mins // 60
     mins %= 60
-    if hours == 0 and mins == 0:
-        return '%ss' % seconds
-    if hours == 0:
-        return '%sm%ss' % (mins, seconds)
-    return '%sh%sm%ss' % (hours, mins, seconds)
+    result = '%.3gs' % seconds
+    if hours > 0 or mins > 0:
+        result = '%sm' % mins + result
+    if hours > 0:
+        result = '%sh' % hours + result
+    return result
 
 
 def main(blade_path, argv):
@@ -161,9 +162,8 @@ def main(blade_path, argv):
     try:
         start_time = time.time()
         exit_code = _main(blade_path, argv)
-        cost_time = int(time.time() - start_time)
-        if cost_time > 1:
-            console.info('Cost time %s' % format_timedelta(cost_time))
+        cost_time = time.time() - start_time
+        console.info('Cost time %s' % format_timedelta(cost_time))
     except SystemExit as e:
         # pylint misreport e.code as classobj
         exit_code = e.code
