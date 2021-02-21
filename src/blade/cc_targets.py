@@ -445,6 +445,7 @@ class CcTarget(Target):
             if lib:
                 if dep.attr.get('link_all_symbols'):
                     link_all_symbols_libs.append(lib)
+                    implicit_deps.append(lib)
                 else:
                     usr_libs.append(lib)
                 continue
@@ -1213,7 +1214,6 @@ class CcBinary(CcTarget):
             sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
             if link_all_symbols_libs:
                 ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
-                implicit_deps += link_all_symbols_libs
 
         extra_ldflags, order_only_deps = [], []
         if self.attr['embed_version']:
@@ -1343,11 +1343,9 @@ class CcPlugin(CcTarget):
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
-        implicit_deps = []
-        sys_libs, usr_libs, link_all_symbols_libs = self._static_dependencies()
+        sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
         if link_all_symbols_libs:
             ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
-            implicit_deps = link_all_symbols_libs
 
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         if self.name.endswith('.so'):
