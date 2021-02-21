@@ -17,8 +17,6 @@ add extra options according to different target types.
 from __future__ import absolute_import
 from __future__ import print_function
 
-from collections import deque
-
 from blade import console
 from blade.util import iteritems, itervalues
 
@@ -121,40 +119,38 @@ def _expand_dependents(related_targets):
             related_targets[depkey].expanded_dependents.add(target_key)
 
 
-'''
-NOTE:
-    This function is no longer needed because the ninja backend does not require the build
-    targets to be ordered. It is still kept in case we support backends that require this in
-    the future.
-
-def _topological_sort(related_targets):
-    """Sort the target keys according to their dependency relationship.
-
-    Every dependents before their dependencies, because the dependents should be built earlier.
-
-    Args:
-        related_targets: dict{target_key, target} to be built
-    Returns:
-        sorted_target_key, sorted target keys.
-    """
-    numpreds = {}  # elt -> # of predecessors
-    q = []
-    for target_key, target in iteritems(related_targets):
-        dep_len = len(target.deps)
-        numpreds[target_key] = dep_len
-        if dep_len == 0:
-            q.append(target_key)
-
-    # for everything in queue, knock down the pred count on its dependents
-    sorted_target_keys = []
-    while q:
-        key = q.pop()
-        sorted_target_keys.append(key)
-        for depkey in related_targets[key].dependents:
-            numpreds[depkey] -= 1
-            if numpreds[depkey] == 0:
-                q.append(depkey)
-
-    assert len(sorted_target_keys) == len(related_targets)
-    return sorted_target_keys
-'''
+# NOTE:
+#     This function is no longer needed because the ninja backend does not require the build
+#     targets to be ordered. It is still kept in case we support backends that require this in
+#     the future.
+#
+# def _topological_sort(related_targets):
+#     """Sort the target keys according to their dependency relationship.
+#
+#     Every dependents before their dependencies, because the dependents should be built earlier.
+#
+#     Args:
+#         related_targets: dict{target_key, target} to be built
+#     Returns:
+#         sorted_target_key, sorted target keys.
+#     """
+#     numpreds = {}  # elt -> # of predecessors
+#     q = []
+#     for target_key, target in iteritems(related_targets):
+#         dep_len = len(target.deps)
+#         numpreds[target_key] = dep_len
+#         if dep_len == 0:
+#             q.append(target_key)
+#
+#     # for everything in queue, knock down the pred count on its dependents
+#     sorted_target_keys = []
+#     while q:
+#         key = q.pop()
+#         sorted_target_keys.append(key)
+#         for depkey in related_targets[key].dependents:
+#             numpreds[depkey] -= 1
+#             if numpreds[depkey] == 0:
+#                 q.append(depkey)
+#
+#     assert len(sorted_target_keys) == len(related_targets)
+#     return sorted_target_keys
