@@ -121,15 +121,16 @@ def _expand_dependents(related_targets):
             related_targets[depkey].expanded_dependents.add(target_key)
 
 
+'''
+NOTE:
+    This function is no longer needed because the ninja backend does not require the build
+    targets to be ordered. It is still kept in case we support backends that require this in
+    the future.
+
 def _topological_sort(related_targets):
     """Sort the target keys according to their dependency relationship.
 
     Every dependents before their dependencies, because the dependents should be built earlier.
-
-    NOTE:
-        This function is no longer needed because the ninja backend does not require the build
-        targets to be ordered. It is still kept in case we support backends that require this in
-        the future.
 
     Args:
         related_targets: dict{target_key, target} to be built
@@ -156,3 +157,4 @@ def _topological_sort(related_targets):
 
     assert len(sorted_target_keys) == len(related_targets)
     return sorted_target_keys
+'''
