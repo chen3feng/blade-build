@@ -186,18 +186,6 @@ def generate_package(args):
         generate_tar_package(path, sources, destinations, mode)
 
 
-def generate_securecc_object(args):
-    obj, phony_obj = args
-    _declare_outputs(obj)
-    if not os.path.exists(obj):
-        shutil.copy(phony_obj, obj)
-    else:
-        digest = util.md5sum_file(obj)
-        phony_digest = util.md5sum_file(phony_obj)
-        if digest != phony_digest:
-            shutil.copy(phony_obj, obj)
-
-
 def _generate_resource_index(targets, sources, name, path):
     """Generate resource index description file for a cc resource library"""
     header, source = targets
@@ -589,7 +577,6 @@ _BUILTIN_TOOLS = {
     'scm': generate_scm,
     'package': generate_package,
     'cc_inclusion_check': generate_cc_inclusion_check,
-    'securecc_object': generate_securecc_object,
     'resource_index': generate_resource_index,
     'java_jar': generate_java_jar,
     'java_resource': generate_java_resource,

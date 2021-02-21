@@ -696,7 +696,7 @@ class CcLibrary(CcTarget):
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
-        self._set_secure(secure)
+        self.attr['secure'] = secure
         self._set_hdrs(hdrs)
 
     def before_generate(self):  # override
@@ -704,32 +704,16 @@ class CcLibrary(CcTarget):
         self._write_inclusion_check_info()
         self._check_binary_link_only()
 
-
-    def _set_secure(self, secure):
-        if secure:
-            self.attr['secure'] = secure
-            for src in self.srcs:
-                path = self._source_file_path(src)
-                if not os.path.exists(path):
-                    # Touch a place holder file for securecc, will be deleted by securecc
-                    path = self._target_file_path(src)
-                    dirname = os.path.dirname(path)
-                    if not os.path.exists(dirname):
-                        os.makedirs(dirname)
-                    open(path, 'w').close()
-                    self._remove_on_clean(path)
-
     def _securecc_object(self, obj, src, implicit_deps, vars):
         assert obj.endswith('.o')
         pos = obj.rfind('.', 0, -2)
         assert pos != -1
-        secure_obj = '%s__securecc__.cc.o' % obj[:pos]
-        path = self._source_file_path(src)
-        if not os.path.exists(path):
-            path = self._target_file_path(src)
-        self.generate_build('securecccompile', secure_obj, inputs=path,
+        full_src = self._source_file_path(src)
+        if not os.path.exists(full_src):
+            full_src = self._target_file_path(src)
+            self.generate_build('phony', full_src, inputs=[], clean=[])
+        self.generate_build('securecc', obj, inputs=full_src,
                             implicit_deps=implicit_deps, variables=vars, clean=[])
-        self.generate_build('securecc', obj, inputs=secure_obj, clean=[])
 
     def _securecc_objects(self, sources):
         """Generate securecc compile rules in ninja."""
