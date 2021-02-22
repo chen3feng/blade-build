@@ -1246,7 +1246,7 @@ class CcBinary(CcTarget):
         return ldflags
 
     def _cc_binary(self, objs, dynamic_link):
-        implicit_deps = []
+        implicit_deps = None
         ldflags = self._generate_cc_binary_link_flags(dynamic_link)
         if dynamic_link:
             sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
@@ -1254,7 +1254,7 @@ class CcBinary(CcTarget):
             sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
             if link_all_symbols_libs:
                 ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
-                implicit_deps += link_all_symbols_libs
+                implicit_deps = link_all_symbols_libs
 
         # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
         order_only_deps = incchk_deps
