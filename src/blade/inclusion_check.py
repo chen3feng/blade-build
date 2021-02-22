@@ -87,10 +87,10 @@ def _parse_inclusion_stacks(path, build_dir):
             skip_level = level
         elif hdr.startswith(build_dir):
             skip_level = level
-            stacks.append(hdrs_stack + [_remove_build_dir_prefix(hdr, build_dir)])
+            stacks.append(hdrs_stack + [_remove_build_dir_prefix(os.path.normpath(hdr), build_dir)])
         else:
             current_level = level
-            hdrs_stack.append(_remove_build_dir_prefix(hdr, build_dir))
+            hdrs_stack.append(_remove_build_dir_prefix(os.path.normpath(hdr), build_dir))
             skip_level = -1
         return current_level, skip_level
 
@@ -107,7 +107,7 @@ def _parse_inclusion_stacks(path, build_dir):
                 console.log('%s: Unrecognized line %s' % (path, line))
                 break
             if level == 1 and not hdr.startswith('/'):
-                direct_hdrs.append(_remove_build_dir_prefix(hdr, build_dir))
+                direct_hdrs.append(_remove_build_dir_prefix(os.path.normpath(hdr), build_dir))
             if level > current_level:
                 if skip_level != -1 and level > skip_level:
                     continue
@@ -252,7 +252,13 @@ class Checker(object):
 
     def _or_joined_libs(self, libs):
         """Return " or " joind libs descriptive string."""
-        return ' or '.join(['"//%s"' % lib for lib in libs])
+        def beautify(lib):
+            # Convert full path to ':' started form if it is in same directory as this target.
+            if lib.startswith(self.path + ':'):
+                return lib[len(self.path):]
+            else:
+                return '//' + lib
+        return ' or '.join(['"%s"' % beautify(lib) for lib in libs])
 
     def _check_generated_headers(self, full_src, stacks, direct_hdrs, suppressd_hdrs,
                                  missing_dep_hdrs, check_msg):
