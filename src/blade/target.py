@@ -546,17 +546,11 @@ class Target(object):
 
     def _source_file_path(self, name):
         """Expand the the source file name to full path"""
-        # Call os.path.normpath() on the joined result is simpler but slower, however, join the
-        # last empty part may result incorrect result (ends with './').
-        if name:
-            return os.path.join(self.path, os.path.normpath(name))
-        return self.path
+        return os.path.normpath(os.path.join(self.path, name))
 
     def _target_file_path(self, file_name):
         """Return the full path of file name in the target dir"""
-        if file_name:
-            return os.path.join(self.target_dir, os.path.normpath(file_name))
-        return self.target_dir
+        return os.path.normpath(os.path.join(self.target_dir, file_name))
 
     def _remove_build_dir_prefix(self, path):
         """Remove the build dir prefix of path (e.g. build64_release/)
