@@ -116,7 +116,7 @@ def generate_cc_inclusion_check(args):
     console.enable_color(True)
     ok, details = inclusion_check.check(info_file)
     with open(info_file + '.details', 'w') as f:
-        f.write(str(details))
+        util.pickle.dump(details, f)
     if not ok:
         return 1
     with open(result_file, 'w') as f:

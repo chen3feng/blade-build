@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-Dump the content of a `incchk` file.
+Dump the content of a pickle file.
+such as the `incchk`, `blade-bin/blade_inclusion.data`, etc.
 """
 
 

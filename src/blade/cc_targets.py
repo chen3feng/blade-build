@@ -19,9 +19,10 @@ import subprocess
 from string import Template
 
 from blade import build_manager
-from blade import config
-from blade import console
 from blade import build_rules
+from blade import console
+from blade import config
+from blade import inclusion_check
 from blade.constants import HEAP_CHECK_VALUES
 from blade.target import Target
 from blade.util import (
@@ -118,11 +119,11 @@ def _transitive_declared_generated_includes(target):
     for dkey in target.deps:
         dep = build_targets[dkey]
         for hdr in dep.attr.get('generated_hdrs', []):
-            declared_incs.add(target._remove_build_dir_prefix(hdr))
+            declared_hdrs.add(target._remove_build_dir_prefix(hdr))
         for inc in dep.attr.get('generated_incs', []):
             declared_incs.add(target._remove_build_dir_prefix(inc))
         dep_hdrs, dep_incs = _transitive_declared_generated_includes(dep)
-        declared_incs.update(dep_hdrs)
+        declared_hdrs.update(dep_hdrs)
         declared_incs.update(dep_incs)
     result = declared_hdrs, declared_incs
     target.data[attr_key] = result
@@ -406,7 +407,7 @@ class CcTarget(Target):
         """
         targets = self.blade.get_build_targets()
         sys_libs, usr_libs = [], []
-        implicit_deps = []
+        incchk_deps = []
         for key in self.expanded_deps:
             dep = targets[key]
             if dep.path == '#':
@@ -419,11 +420,11 @@ class CcTarget(Target):
                 continue
 
             # '.so' file is not generated for header only libraries, use this file as implicit dep.
-            incchk_result = self.data.get('inclusion_check_result_file')
+            incchk_result = dep.data.get('inclusion_check_result_file')
             if incchk_result:
-                implicit_deps.append(incchk_result)
+                incchk_deps.append(incchk_result)
 
-        return sys_libs, usr_libs, implicit_deps
+        return sys_libs, usr_libs, incchk_deps
 
     def _static_dependencies(self):
         """
@@ -434,7 +435,7 @@ class CcTarget(Target):
         """
         targets = self.blade.get_build_targets()
         sys_libs, usr_libs, link_all_symbols_libs = [], [], []
-        implicit_deps = []
+        incchk_deps = []
         for key in self.expanded_deps:
             dep = targets[key]
             if dep.path == '#':
@@ -445,17 +446,16 @@ class CcTarget(Target):
             if lib:
                 if dep.attr.get('link_all_symbols'):
                     link_all_symbols_libs.append(lib)
-                    implicit_deps.append(lib)
                 else:
                     usr_libs.append(lib)
                 continue
 
             # '.a' file is not generated for header only libraries, use this file as implicit dep.
-            incchk_result = self.data.get('inclusion_check_result_file')
+            incchk_result = dep.data.get('inclusion_check_result_file')
             if incchk_result:
-                implicit_deps.append(incchk_result)
+                incchk_deps.append(incchk_result)
 
-        return sys_libs, usr_libs, link_all_symbols_libs, implicit_deps
+        return sys_libs, usr_libs, link_all_symbols_libs, incchk_deps
 
     def _cc_compile_deps(self):
         """Return a stamp which depends on targets which generate header files."""
@@ -550,15 +550,15 @@ class CcTarget(Target):
     def _static_cc_library(self, objs):
         output = self._target_file_path('lib%s.a' % self.name)
         self.generate_build('ar', output, inputs=objs,
-                            implicit_deps=self.data.get('inclusion_check_result_file'))
+                            order_only_deps=self.data.get('inclusion_check_result_file'))
         self._add_default_target_file('a', output)
 
     def _dynamic_cc_library(self, objs):
         output = self._target_file_path('lib%s.so' % self.name)
         ldflags = self._generate_link_flags()
-        sys_libs, usr_libs, implicit_deps = self._dynamic_dependencies()
+        sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
-        self._cc_link(output, 'solink', objs=objs, deps=usr_libs, implicit_deps=implicit_deps,
+        self._cc_link(output, 'solink', objs=objs, deps=usr_libs, order_only_deps=incchk_deps,
                       ldflags=ldflags, extra_ldflags=extra_ldflags)
         self._add_target_file('so', output)
 
@@ -591,10 +591,10 @@ class CcTarget(Target):
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
         incchk = self.data.get('inclusion_check_result_file')
         if incchk:
-            if implicit_deps is None:
-                implicit_deps = [incchk]
+            if order_only_deps is None:
+                order_only_deps = [incchk]
             else:
-                implicit_deps.append(incchk)
+                order_only_deps.append(incchk)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -612,9 +612,13 @@ class CcTarget(Target):
 
     def _write_inclusion_check_info(self):
         """Write a files contains necessary formation for inclusion checking."""
+        filename = self._target_file_path(self.name + '.incchk')
+        self.data['inclusion_check_info_file'] = filename
         verify_suppress = config.get_item('cc_config', 'hdr_dep_missing_suppress')
         declared_hdrs, declared_incs = self._collect_declared_headers()
         declared_genhdrs, declared_genincs = _transitive_declared_generated_includes(self)
+        direct_hdrs, generated_hdrs = self._collect_compiler_reported_hdrs(filename + '.details')
+
         target_check_info = {
             'type': self.type,
             'name': self.name,
@@ -629,20 +633,23 @@ class CcTarget(Target):
             'declared_incs': declared_incs,
             'declared_genhdrs': declared_genhdrs,
             'declared_genincs': declared_genincs,
+            'hdrs_deps': self._collect_hdrs_deps(direct_hdrs | generated_hdrs),
+            'private_hdrs_deps': self._collect_private_hdrs_deps(direct_hdrs),
+            'allowed_undeclared_hdrs': self._collect_allowed_undeclared_hdrs(direct_hdrs),
             'severity': config.get_item('cc_config', 'hdr_dep_missing_severity'),
             'suppress': verify_suppress.get(self.key, {}),
         }
         content = pickle.dumps(target_check_info)
-        filename = self._target_file_path(self.name + '.incchk')
-        self.data['inclusion_check_info_file'] = filename
 
         # Only update file when content changes to avoid unnecessary recheck
         if os.path.exists(filename):
             with open(filename, 'rb') as f:
                 if f.read() == content:
+                    self.debug('Inclusion information no change')
                     return
         else:
             mkdir_p(self._target_dir())
+        self.debug('Inclusion information updated')
         with open(filename, 'wb') as f:
             f.write(content)
 
@@ -659,6 +666,38 @@ class CcTarget(Target):
             for inc in dep.attr.get('generated_incs', []):
                 declared_incs.add(self._remove_build_dir_prefix(inc))
         return declared_hdrs, declared_incs
+
+    def _collect_compiler_reported_hdrs(self, filename):
+        """Collect deps for all direct and generated hdrs.
+
+        The information has the following purposes:
+        - Trigger recheck when header is newly declared in some targets.
+        - When header is checked, search this firstly rather than the larger global
+          declaration file (blade_inclusion.data), which is slower.
+        """
+        if not os.path.exists(filename):
+            return set(), set()
+        with open(filename) as f:
+            try:
+                details = pickle.load(f)
+            except (pickle.UnpicklingError, EOFError):
+                # Old repr format
+                return set(), set()
+            return details.get('direct_hdrs', set()), details.get('generated_hdrs', set())
+
+    def _collect_hdrs_deps(self, hdrs):
+        result = {}
+        for hdr in hdrs:
+            result[hdr] = inclusion_check.find_libs_by_header(
+                hdr, _hdr_targets_map, _hdr_dir_targets_map)
+        return result
+
+    def _collect_private_hdrs_deps(self, hdrs):
+        return {hdr: hdr in _private_hdrs_target_map.get(hdr, set()) for hdr in hdrs}
+
+    def _collect_allowed_undeclared_hdrs(self, hdrs):
+        allowed = config.get_item('cc_config', 'allowed_undeclared_hdrs')
+        return {hdr : hdr in allowed for hdr in hdrs}
 
 
 class CcLibrary(CcTarget):
@@ -1207,15 +1246,19 @@ class CcBinary(CcTarget):
         return ldflags
 
     def _cc_binary(self, objs, dynamic_link):
+        implicit_deps = []
         ldflags = self._generate_cc_binary_link_flags(dynamic_link)
         if dynamic_link:
-            sys_libs, usr_libs, implicit_deps = self._dynamic_dependencies()
+            sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         else:
-            sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
+            sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
             if link_all_symbols_libs:
                 ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+                implicit_deps += link_all_symbols_libs
 
-        extra_ldflags, order_only_deps = [], []
+        # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
+        order_only_deps = incchk_deps
+        extra_ldflags = []
         if self.attr['embed_version']:
             scm = os.path.join(self.build_dir, 'scm.cc.o')
             extra_ldflags.append(scm)
@@ -1343,7 +1386,7 @@ class CcPlugin(CcTarget):
         self._check_deprecated_deps()
         objs = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
-        sys_libs, usr_libs, link_all_symbols_libs, implicit_deps = self._static_dependencies()
+        sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
         if link_all_symbols_libs:
             ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
 
@@ -1359,7 +1402,7 @@ class CcPlugin(CcTarget):
                 link_output = output
             self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs,
                           ldflags=ldflags, extra_ldflags=extra_ldflags,
-                          implicit_deps=implicit_deps)
+                          implicit_deps=link_all_symbols_libs, order_only_deps=incchk_deps)
             if self.attr['strip']:
                 self.generate_build('strip', output, inputs=link_output)
             self._add_default_target_file('so', output)
