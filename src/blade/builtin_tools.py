@@ -27,7 +27,6 @@ import time
 import zipfile
 
 from blade import console
-from blade import fatjar
 from blade import util
 
 
@@ -108,6 +107,7 @@ def generate_scm(scm, revision, url, profile, compiler, args):
 
 
 def generate_cc_inclusion_check(args):
+    # Import from function to avoid affecting the performance of other tools.
     from blade import inclusion_check  # pylint: disable=import-outside-toplevel
     result_file = args[0]
     info_file = args[1]
@@ -115,8 +115,8 @@ def generate_cc_inclusion_check(args):
     console.set_log_file('%s.log' % info_file)
     console.enable_color(True)
     ok, details = inclusion_check.check(info_file)
-    with open(info_file + '.details', 'w') as f:
-        f.write(str(details))
+    with open(info_file + '.details', 'wb') as f:
+        util.pickle.dump(details, f)
     if not ok:
         return 1
     with open(result_file, 'w') as f:
@@ -339,6 +339,8 @@ def generate_java_test(script, main_class, jacocoagent, packages_under_test, arg
 
 
 def generate_fat_jar(output, **kwargs):
+    # Import from function to avoid affecting the performance of other tools.
+    from blade import fatjar  # pylint: disable=import-outside-toplevel
     _declare_outputs(output)
     console.set_log_file('%s.log' % output.replace('.fat.jar', '__fatjar__'))
     console.enable_color(True)

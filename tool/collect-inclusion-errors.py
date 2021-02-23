@@ -2,11 +2,15 @@
 
 """Collect inclusion errors and report the summarized information."""
 
-import ast
 import argparse
 import json
 import os
 import pprint
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 def parse_args():
@@ -28,7 +32,7 @@ def process_targets(build_targets, options):
         details_file = os.path.join('blade-bin', dir, name + '.incchk.details')
         if not os.path.exists(details_file):
             continue
-        details = ast.literal_eval(open(details_file).read())
+        details = pickle.load(open(details_file))
         if details:
             if 'missing_dep' in details:
                 full_missing[str(target)] = details['missing_dep']

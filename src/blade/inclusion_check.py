@@ -13,34 +13,52 @@ from blade import util
 from blade.util import pickle
 
 
+def find_libs_by_header(hdr, hdr_targets_map, hdr_dir_targets_map):
+    """Find the libraries to which the header file belongs."""
+    libs = hdr_targets_map.get(hdr)
+    if libs:
+        return libs
+    hdr_dir = os.path.dirname(hdr)
+    while True:
+        libs = hdr_dir_targets_map.get(hdr_dir)
+        if libs:
+            return libs
+        old_hdr_dir = hdr_dir
+        hdr_dir = os.path.dirname(hdr_dir)
+        if hdr_dir == old_hdr_dir:
+            return set()
+
+
 class GlobalDeclaration(object):
-    """Global inclusion dependenct relationship declaration"""
-    def __init__(self, declaration):
+    """Global inclusion dependenct relationship declaration."""
+    def __init__(self, declaration_file):
+        self._declaration_file = declaration_file
+        self._initialized = False
+
+    def lazy_init(self, reason):
+        if self._initialized:
+            return
+        console.debug("Load global declaration file, " + reason)
+        declaration = pickle.load(open(self._declaration_file, 'rb'))
+        # pylint: disable=attribute-defined-outside-init
         self._hdr_targets_map = declaration['public_hdrs']
         self._hdr_dir_targets_map = declaration['public_incs']
         self._private_hdrs_target_map = declaration['private_hdrs']
         self._allowed_undeclared_hdrs = declaration['allowed_undeclared_hdrs']
+        self._initialized = True
 
     def find_libs_by_header(self, hdr):
-        libs = self._hdr_targets_map.get(hdr)
-        if libs:
-            return libs
-        hdr_dir = os.path.dirname(hdr)
-        while True:
-            libs = self._hdr_dir_targets_map.get(hdr_dir)
-            if libs:
-                return libs
-            old_hdr_dir = hdr_dir
-            hdr_dir = os.path.dirname(hdr_dir)
-            if hdr_dir == old_hdr_dir:
-                return set()
+        self.lazy_init('find_libs_by_header ' + hdr)
+        return find_libs_by_header(hdr, self._hdr_targets_map, self._hdr_dir_targets_map)
 
     def find_targets_by_private_hdr(self, hdr):
         """Find targets by private header file."""
+        self.lazy_init('find_targets_by_private_hdr ' + hdr)
         return self._private_hdrs_target_map.get(hdr, set())
 
-    def allowed_undeclared_hdrs(self):
-        return self._allowed_undeclared_hdrs
+    def is_allowed_undeclared_hdr(self, hdr):
+        self.lazy_init('is_allowed_undeclared_hdr ' + hdr)
+        return hdr in self._allowed_undeclared_hdrs
 
 
 def _parse_inclusion_stacks(path, build_dir):
@@ -131,7 +149,8 @@ def _parse_hdr_level_line(line):
     pos = line.find(' ')
     if pos == -1:
         return -1, ''
-    level, hdr = line[:pos].count('.'), line[pos + 1:]
+    level = pos
+    hdr = line[pos + 1:]
     if hdr.startswith('./'):
         hdr = hdr[2:]
     return level, hdr
@@ -151,8 +170,7 @@ def _remove_build_dir_prefix(path, build_dir):
 class Checker(object):
     """C/C++ Header file inclusion dependency checker"""
 
-    def __init__(self, target, inclusion_declaration):
-        self.global_declaration = GlobalDeclaration(inclusion_declaration)
+    def __init__(self, target):
         self.type = target['type']
         self.name = target['name']
         self.path = target['path']
@@ -166,8 +184,15 @@ class Checker(object):
         self.declared_incs = target['declared_incs']
         self.declared_genhdrs = target['declared_genhdrs']
         self.declared_genincs = target['declared_genincs']
+        self.hdrs_deps = target['hdrs_deps']
+        self.private_hdrs_deps = target['private_hdrs_deps']
+        self.allowed_undeclared_hdrs = target['allowed_undeclared_hdrs']
         self.suppress = target['suppress']
         self.severity = target['severity']
+
+        inclusion_declaration_file = os.path.join(self.build_dir, 'inclusion_declaration.data')
+        self.global_declaration = GlobalDeclaration(inclusion_declaration_file)
+
 
     def _find_inclusion_file(self, src, is_header):
         """Find the '.H' file for the given src.
@@ -205,9 +230,9 @@ class Checker(object):
             if hdr in self.declared_hdrs:
                 console.diagnose(self.source_location, 'debug', '"%s" is a declared header' % (hdr))
                 continue
-            libs = self.global_declaration.find_libs_by_header(hdr)
+            libs = self.find_libs_by_header(hdr)
             if not libs:
-                libs = self.global_declaration.find_targets_by_private_hdr(hdr)
+                libs = self.find_targets_by_private_hdr(hdr)
                 if libs and self.key not in libs:
                     msg.append('    "%s" is a private header file of %s' % (
                             hdr, self._or_joined_libs(libs)))
@@ -215,8 +240,7 @@ class Checker(object):
                 console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
                 undeclared_hdrs.add(hdr)
                 # We need also check suppressd_hdrs because target maybe not loaded in partial build
-                allowed_undeclared_hdrs = self.global_declaration.allowed_undeclared_hdrs()
-                if hdr not in allowed_undeclared_hdrs and hdr not in suppressd_hdrs:
+                if hdr not in suppressd_hdrs and not self.is_allowed_undeclared_hdr(hdr):
                     msg.append('    %s' % self._header_undeclared_message(hdr))
                 continue
             deps = set(self.deps + [self.key])  # Don't forget target itself
@@ -233,6 +257,23 @@ class Checker(object):
             check_msg.append('  In file included from "%s",' % full_src)
             check_msg += msg
 
+    def find_libs_by_header(self, hdr):
+        # Find from the local incchk file firstly to avoid loading the large global declaration.
+        # The same below.
+        if hdr in self.hdrs_deps:
+            return self.hdrs_deps[hdr]
+        return self.global_declaration.find_libs_by_header(hdr)
+
+    def find_targets_by_private_hdr(self, hdr):
+        if hdr in self.private_hdrs_deps:
+            return self.private_hdrs_deps[hdr]
+        return self.global_declaration.find_targets_by_private_hdr(hdr)
+
+    def is_allowed_undeclared_hdr(self, hdr):
+        if hdr in self.allowed_undeclared_hdrs:
+            return self.allowed_undeclared_hdrs[hdr]
+        return self.global_declaration.is_allowed_undeclared_hdr(hdr)
+
     def _header_undeclared_message(self, hdr):
         msg = '"%s" is not declared in any cc target. ' % hdr
         if util.path_under_dir(hdr, self.path):
@@ -245,7 +286,7 @@ class Checker(object):
 
     def _hdr_declaration_message(self, hdr, libs=None):
         if libs is None:
-            libs = self.global_declaration.find_libs_by_header(hdr)
+            libs = self.find_libs_by_header(hdr)
         if not libs:
             return '"%s"' % hdr
         return '"%s", which belongs to %s' % (hdr, self._or_joined_libs(libs))
@@ -256,8 +297,7 @@ class Checker(object):
             # Convert full path to ':' started form if it is in same directory as this target.
             if lib.startswith(self.path + ':'):
                 return lib[len(self.path):]
-            else:
-                return '//' + lib
+            return '//' + lib
         return ' or '.join(['"%s"' % beautify(lib) for lib in libs])
 
     def _check_generated_headers(self, full_src, stacks, direct_hdrs, suppressd_hdrs,
@@ -289,14 +329,15 @@ class Checker(object):
 
     def check(self):
         """
-        Verify whether included header files is declared in "deps" correctly.
+        Check whether included header files is declared in "deps" correctly.
 
         Returns:
             Whether nothing is wrong.
         """
-        # Verify
         missing_details = {}  # {src: list(hdrs)}
         undeclared_hdrs = set()
+        all_direct_hdrs = set()
+        all_generated_hdrs = set()
 
         direct_check_msg = []
         generated_check_msg = []
@@ -309,11 +350,14 @@ class Checker(object):
                 console.warning('No inclusion file found for %s' % full_src)
                 return
             direct_hdrs, stacks = _parse_inclusion_stacks(path, self.build_dir)
+            all_direct_hdrs.update(direct_hdrs)
             missing_dep_hdrs = set()
             self._check_direct_headers(
                     full_src, direct_hdrs, self.suppress.get(src, []),
                     missing_dep_hdrs, undeclared_hdrs, direct_check_msg)
 
+            for stack in stacks:
+                all_generated_hdrs.add(stack[-1])
             # But direct headers can not cover all, so it is still useful
             self._check_generated_headers(
                     full_src, stacks, direct_hdrs,
@@ -344,13 +388,12 @@ class Checker(object):
             details['missing_dep'] = missing_details
         if undeclared_hdrs:
             details['undeclared'] = sorted(undeclared_hdrs)
+        details['direct_hdrs'] = all_direct_hdrs
+        details['generated_hdrs'] = all_generated_hdrs
         return ok, details
 
 
 def check(target_check_info_file):
-    # TODO: lazy load global declaration file until need it.
     target = pickle.load(open(target_check_info_file, 'rb'))
-    inclusion_declaration_file = os.path.join(target['build_dir'], 'inclusion_declaration.data')
-    inclusion_declaration = pickle.load(open(inclusion_declaration_file, 'rb'))
-    checker = Checker(target, inclusion_declaration)
+    checker = Checker(target)
     return checker.check()
