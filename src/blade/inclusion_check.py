@@ -297,8 +297,7 @@ class Checker(object):
             # Convert full path to ':' started form if it is in same directory as this target.
             if lib.startswith(self.path + ':'):
                 return lib[len(self.path):]
-            else:
-                return '//' + lib
+            return '//' + lib
         return ' or '.join(['"%s"' % beautify(lib) for lib in libs])
 
     def _check_generated_headers(self, full_src, stacks, direct_hdrs, suppressd_hdrs,

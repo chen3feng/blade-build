@@ -690,10 +690,10 @@ class CcTarget(Target):
         """
         if not os.path.exists(filename):
             return set(), set()
-        with open(filename) as f:
+        with open(filename, 'rb') as f:
             try:
                 details = pickle.load(f)
-            except (pickle.UnpicklingError, EOFError):
+            except Exception:  # pylint: disable=broad-except
                 # Old repr format
                 return set(), set()
             return details.get('direct_hdrs', set()), details.get('generated_hdrs', set())
