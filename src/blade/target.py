@@ -515,6 +515,11 @@ class Target(object):
         """
 
     def before_generate(self):  # abstract
+        """Will be called before generating build code"""
+        assert self.__build_code is None
+        self._before_generate()
+
+    def _before_generate(self):  # abstract
         """Will be called before generating build code, overridable"""
 
     def _expand_deps_generation(self):
@@ -608,7 +613,7 @@ class Target(object):
         Return the target file path corresponding to the specified label,
         return empty if label doesn't exist in the dictionary
         """
-        self.get_build_code()  # Ensure build code was generated
+        assert self.__build_code is not None
         if label:
             return self.__targets.get(label, '')
         return self.__default_target
@@ -619,7 +624,7 @@ class Target(object):
         -----------
         All the target files built by the target itself
         """
-        self.get_build_code()  # Ensure build code was generated
+        assert self.__build_code is not None
         results = set()
         for _, v in iteritems(self.__targets):
             if isinstance(v, list):

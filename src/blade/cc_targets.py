@@ -530,7 +530,6 @@ class CcTarget(Target):
                                 order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
-
         if 'inclusion_check_info_file' in self.data:
             self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
         self._remove_on_clean(objs_dir)
@@ -614,15 +613,6 @@ class CcTarget(Target):
                             order_only_deps=order_only_deps,
                             variables=vars)
 
-    def _cleanup_target_files(self):
-        """Clean up built result files"""
-        for f in self._get_target_files():
-            try:
-                os.remove(f)
-                console.debug('Remove "%s" due to hdr dep missing' % f)
-            except OSError:
-                pass
-
     def _write_inclusion_check_info(self):
         """Write a files contains necessary formation for inclusion checking."""
         filename = self._target_file_path(self.name + '.incchk')
@@ -705,7 +695,7 @@ class CcTarget(Target):
         return result
 
     def _collect_private_hdrs_deps(self, hdrs):
-        return {hdr: hdr in _private_hdrs_target_map.get(hdr, set()) for hdr in hdrs}
+        return {hdr: _private_hdrs_target_map.get(hdr, set()) for hdr in hdrs}
 
     def _collect_allowed_undeclared_hdrs(self, hdrs):
         allowed = config.get_item('cc_config', 'allowed_undeclared_hdrs')
@@ -766,7 +756,7 @@ class CcLibrary(CcTarget):
         self.attr['secure'] = secure
         self._set_hdrs(hdrs)
 
-    def before_generate(self):  # override
+    def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
         self._check_binary_link_only()
@@ -799,7 +789,6 @@ class CcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
-
         if self.attr.get('secure'):
             objs = self._securecc_objects(self.srcs)
         else:
@@ -931,7 +920,7 @@ class PrebuiltCcLibrary(CcTarget):
         # So we need to make a symbolic link let the program find the library.
         return self.data.get('soname_and_full_path')
 
-    def before_generate(self):  # override
+    def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
         self._check_binary_link_only()
@@ -1109,7 +1098,7 @@ class ForeignCcLibrary(CcTarget):
                     self.data['soname_and_full_path'] = (soname, so_path)
         return self.data['soname_and_full_path']
 
-    def before_generate(self):  # override
+    def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
         self._check_binary_link_only()
@@ -1284,7 +1273,7 @@ class CcBinary(CcTarget):
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
-    def before_generate(self):  # override
+    def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
 
@@ -1389,7 +1378,7 @@ class CcPlugin(CcTarget):
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
 
-    def before_generate(self):  # override
+    def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
 

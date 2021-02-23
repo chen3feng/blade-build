@@ -474,17 +474,6 @@ class Blade(object):
             console.fatal('Target %s is duplicate in //%s/BUILD' % (target.name, target.path))
         self.__target_database[key] = target
 
-    def _is_real_target_type(self, target_type):
-        """The types that shouldn't be registered into blade manager.
-
-        Sholdn't invoke ninja_rule method when it is not a real target which
-        could not be registered into blade manager, like system library.
-
-        1. system_library
-
-        """
-        return target_type != 'system_library'
-
     def _read_fingerprint(self, ninja_file):
         """Read fingerprint from per-target ninja file"""
         try:
@@ -535,12 +524,7 @@ class Blade(object):
         skip_package = not getattr(self.__options, 'generate_package', False)
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            if not self._is_real_target_type(target.type):
-                continue
             target = self.__target_database.get(k, None)
-            if not target:
-                console.warning('"%s" is not a registered blade object' % str(k))
-                continue
             if skip_test and target.type.endswith('_test') and k not in self.__direct_targets:
                 continue
             if skip_package and target.type == 'package' and k not in self.__direct_targets:
