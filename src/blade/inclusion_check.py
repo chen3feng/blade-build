@@ -14,6 +14,7 @@ from blade.util import pickle
 
 
 def find_libs_by_header(hdr, hdr_targets_map, hdr_dir_targets_map):
+    """Find the libraries to which the header file belongs."""
     libs = hdr_targets_map.get(hdr)
     if libs:
         return libs
@@ -29,7 +30,7 @@ def find_libs_by_header(hdr, hdr_targets_map, hdr_dir_targets_map):
 
 
 class GlobalDeclaration(object):
-    """Global inclusion dependenct relationship declaration"""
+    """Global inclusion dependenct relationship declaration."""
     def __init__(self, declaration_file):
         self._declaration_file = declaration_file
         self._initialized = False
@@ -37,6 +38,7 @@ class GlobalDeclaration(object):
     def lazy_init(self, reason):
         if self._initialized:
             return
+        console.debug("Load global declaration file, " + reason)
         declaration = pickle.load(open(self._declaration_file, 'rb'))
         # pylint: disable=attribute-defined-outside-init
         self._hdr_targets_map = declaration['public_hdrs']
@@ -147,7 +149,8 @@ def _parse_hdr_level_line(line):
     pos = line.find(' ')
     if pos == -1:
         return -1, ''
-    level, hdr = line[:pos].count('.'), line[pos + 1:]
+    level = pos
+    hdr = line[pos + 1:]
     if hdr.startswith('./'):
         hdr = hdr[2:]
     return level, hdr
@@ -255,6 +258,8 @@ class Checker(object):
             check_msg += msg
 
     def find_libs_by_header(self, hdr):
+        # Find from the local incchk file firstly to avoid loading the large global declaration.
+        # The same below.
         if hdr in self.hdrs_deps:
             return self.hdrs_deps[hdr]
         return self.global_declaration.find_libs_by_header(hdr)
@@ -390,7 +395,6 @@ class Checker(object):
 
 
 def check(target_check_info_file):
-    # TODO: lazy load global declaration file until need it.
     target = pickle.load(open(target_check_info_file, 'rb'))
     checker = Checker(target)
     return checker.check()

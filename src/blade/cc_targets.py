@@ -85,6 +85,19 @@ def declare_hdr_dir(target, inc):
     _hdr_dir_targets_map[inc].add(target.key)
 
 
+def find_libs_by_header(hdr):
+    cache = find_libs_by_header.cache
+    result = cache.get(hdr)
+    if result is not None:
+        return result
+    result = inclusion_check.find_libs_by_header(
+                hdr, _hdr_targets_map, _hdr_dir_targets_map)
+    cache[hdr] = result
+    return result
+
+find_libs_by_header.cache = {}
+
+
 # dict(hdr, set(targets))
 _private_hdrs_target_map = {}
 
@@ -688,8 +701,7 @@ class CcTarget(Target):
     def _collect_hdrs_deps(self, hdrs):
         result = {}
         for hdr in hdrs:
-            result[hdr] = inclusion_check.find_libs_by_header(
-                hdr, _hdr_targets_map, _hdr_dir_targets_map)
+            result[hdr] = find_libs_by_header(hdr)
         return result
 
     def _collect_private_hdrs_deps(self, hdrs):
