@@ -995,7 +995,7 @@ def cc_library(
         extra_linkflags=[],
         allow_undefined=False,
         secret=False,
-        secret_revision_file='',
+        secret_revision_file=None,
         secure=False,
         **kwargs):
     """cc_library target.
