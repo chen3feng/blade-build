@@ -24,6 +24,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                  name,
                  srcs,
                  deps,
+                 visibility,
                  optimize,
                  extra_cppflags,
                  kwargs):
@@ -38,7 +39,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 srcs=srcs,
                 src_exts=None,
                 deps=deps,
-                visibility=None,
+                visibility=visibility,
                 warning='',
                 defs=[],
                 incs=[],
@@ -77,6 +78,7 @@ class ResourceLibrary(cc_targets.CcTarget):
 def resource_library(name=None,
                      srcs=[],
                      deps=[],
+                     visibility=None,
                      optimize=None,
                      extra_cppflags=[],
                      **kwargs):
@@ -85,6 +87,7 @@ def resource_library(name=None,
             name,
             srcs=srcs,
             deps=deps,
+            visibility=visibility,
             optimize=optimize,
             extra_cppflags=extra_cppflags,
             kwargs=kwargs)
