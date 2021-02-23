@@ -726,7 +726,8 @@ class CcLibrary(CcTarget):
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
-                 secure,
+                 secret,
+                 secret_revision_file,
                  kwargs):
         """Init method.
 
@@ -753,15 +754,20 @@ class CcLibrary(CcTarget):
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
-        self.attr['secure'] = secure
+        self._set_secret(secret, secret_revision_file)
         self._set_hdrs(hdrs)
+
+    def _set_secret(self, secret, secret_revision_file):
+        self.attr['secret'] = secret
+        if secret and self._check_path(secret_revision_file, 'secret_revision_file'):
+            self.attr['secret_revision_file'] = os.path.normpath(secret_revision_file)
 
     def _before_generate(self):  # override
         """Override"""
         self._write_inclusion_check_info()
         self._check_binary_link_only()
 
-    def _securecc_object(self, obj, src, implicit_deps, vars):
+    def _secretcc_object(self, obj, src, implicit_deps, vars):
         assert obj.endswith('.o')
         pos = obj.rfind('.', 0, -2)
         assert pos != -1
@@ -769,19 +775,20 @@ class CcLibrary(CcTarget):
         if not os.path.exists(full_src):
             full_src = self._target_file_path(src)
             self.generate_build('phony', full_src, inputs=[], clean=[])
-        self.generate_build('securecc', obj, inputs=full_src,
+        self.generate_build('secretcc', obj, inputs=full_src,
                             implicit_deps=implicit_deps, variables=vars, clean=[])
 
-    def _securecc_objects(self, sources):
-        """Generate securecc compile rules in ninja."""
+    def _secretcc_objects(self, sources):
+        """Generate secretcc compile rules in ninja."""
         vars = self._get_cc_vars()
         implicit_deps = self._cc_compile_deps()
+        implicit_deps.append(self._source_file_path(self.attr['secret_revision_file']))
 
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
         for src in sources:
             obj = '%s.o' % os.path.join(objs_dir, src)
-            self._securecc_object(obj, src, implicit_deps, vars)
+            self._secretcc_object(obj, src, implicit_deps, vars)
             objs.append(obj)
         self._remove_on_clean(objs_dir)
         return objs
@@ -789,8 +796,8 @@ class CcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
-        if self.attr.get('secure'):
-            objs = self._securecc_objects(self.srcs)
+        if self.attr.get('secret'):
+            objs = self._secretcc_objects(self.srcs)
         else:
             objs = self._cc_objects(self.attr['expanded_srcs'])
         # Don't generate library file for header only library.
@@ -987,9 +994,22 @@ def cc_library(
         extra_cppflags=[],
         extra_linkflags=[],
         allow_undefined=False,
+        secret=False,
+        secret_revision_file=None,
         secure=False,
         **kwargs):
-    """cc_library target."""
+    """cc_library target.
+
+    Args:
+        secret: bool, Whether this library is a recret library.
+            For confidential libraries, the source code may not exist locally, and remote
+            compilation needs to be initiated through a confidential compiler.
+            Authorized developers can checkout the source code to a certain subdirectory.
+        secret_revision_file: str, revision file for secret compiling.
+            Blade does not understand its content, only uses it to represent a certain version of
+            the remote source code. When the version changes, the file should be updated to
+            trigger recompilation.
+    """
     # pylint: disable=too-many-locals
     if pre_build or prebuilt:
         target = prebuilt_cc_library(
@@ -1024,7 +1044,8 @@ def cc_library(
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
-            secure=secure,
+            secret=secret or secure,
+            secret_revision_file=secret_revision_file,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
 

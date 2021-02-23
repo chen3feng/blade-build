@@ -88,7 +88,7 @@ class BladeConfig(object):
                 'optimize': [],
                 'benchmark_libs': [],
                 'benchmark_main_libs': [],
-                'securecc': '',
+                'secretcc': '',
                 'debug_info_levels': {
                     'no': ['-g0'],
                     'low': ['-g1'],
