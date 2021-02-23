@@ -613,7 +613,9 @@ class Target(object):
         Return the target file path corresponding to the specified label,
         return empty if label doesn't exist in the dictionary
         """
-        assert self.__build_code is not None
+        # Ensure rules were generated when cached ninja file is used.
+        # TODO: _declare_output in __init__
+        self.get_build_code()
         if label:
             return self.__targets.get(label, '')
         return self.__default_target
@@ -624,7 +626,7 @@ class Target(object):
         -----------
         All the target files built by the target itself
         """
-        assert self.__build_code is not None
+        self.get_build_code()  # Ensure rules were generated
         results = set()
         for _, v in iteritems(self.__targets):
             if isinstance(v, list):
