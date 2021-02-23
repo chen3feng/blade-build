@@ -2,7 +2,6 @@
 
 """Collect inclusion errors and report the summarized information."""
 
-import ast
 import argparse
 import json
 import os
