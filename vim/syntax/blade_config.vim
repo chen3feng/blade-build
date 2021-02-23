@@ -51,7 +51,7 @@ syn keyword bladeArg hdr_dep_missing_suppress
 syn keyword bladeArg linkflags
 syn keyword bladeArg optimize
 syn keyword bladeArg ranlibflags
-syn keyword bladeArg securecc
+syn keyword bladeArg secretcc
 syn keyword bladeArg warnings
 
 syn keyword bladeTarget cc_library_config

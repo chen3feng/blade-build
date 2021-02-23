@@ -37,7 +37,7 @@ syn keyword bladeArg always_run exclusive testdata
 syn keyword bladeArg always_optimize defs incs extra_cppflags optimize warning
 
 syn keyword bladeTarget cc_library prebuilt_cc_library
-syn keyword bladeArg allow_undefined binary_link_only export_incs hdrs link_all_symbols prebuilt secure
+syn keyword bladeArg allow_undefined binary_link_only export_incs hdrs link_all_symbols prebuilt secret
 
 syn keyword bladeTarget foreign_cc_library
 syn keyword bladeArg libpath_pattern has_dynamic

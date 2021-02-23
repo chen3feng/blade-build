@@ -269,6 +269,21 @@ class Target(object):
         """Whether the target allows duplicate source file with other targets"""
         return False
 
+    def _check_path(self, path, attr_name, must_exist=True):
+        if not path:
+            self.error('"%s" can not be empty' % (attr_name))
+            return False
+        if must_exist and not os.path.exists(os.path.join(self.path, path)):
+            self.error('Invalid path "%s" for "%s", does not exist' % (path, attr_name))
+            return False
+        if '..' in path:
+            self.error('Invalid path "%s" for "%s". can not contains ".."' % (path, attr_name))
+            return False
+        if path.startswith('/'):
+            self.error('Invalid path "%s" for "%s". can not be absolute path' % (path, attr_name))
+            return False
+        return True
+
     def _check_sources(self, file_kind, files, exts):
         """Check source files."""
         dups = []
