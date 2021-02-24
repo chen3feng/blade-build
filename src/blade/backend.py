@@ -223,12 +223,10 @@ class _NinjaFileHeaderGenerator(object):
                            depfile='${out}.d',
                            deps='gcc')
 
-        secretcc = '%s %s' % (cc_config['secretcc'], cxx)
         self.generate_rule(name='secretcc',
-                           command='%s -o ${out} -c -fPIC '
-                                   '%s %s ${optimize} ${cxx_warnings} ${cppflags} %s ${includes} ${in}' % (
-                                       secretcc, ' '.join(cxxflags), ' '.join(cppflags), includes),
-                           description='SECRET CC ${in}')
+                           command=template % (cc_config['secretcc'] + ' ' + cxx_command),
+                           description='SECRET CC ${in}',
+                           depfile='${out}.d')
 
         self._generate_cc_hdrs_rule(cc, cxx, cppflags, cflags, cxxflags, includes)
 

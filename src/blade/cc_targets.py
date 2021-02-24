@@ -364,11 +364,13 @@ class CcTarget(Target):
         incs = stable_unique(incs)
         return incs
 
-    def _get_rule_from_suffix(self, src):
+    def _get_rule_from_suffix(self, src, secret):
         """
         Return cxx for C++ source files with suffix as .cc/.cpp/.cxx,
         return cc otherwise for C, Assembler, etc.
         """
+        if secret:
+            return 'secretcc'
         for suffix in ('.cc', '.cpp', '.cxx'):
             if src.endswith(suffix):
                 return 'cxx'
@@ -520,12 +522,24 @@ class CcTarget(Target):
         order_only_deps += self._cc_compile_deps()
         if generated_headers and len(generated_headers) > 1:
             order_only_deps += generated_headers
+
+        secret = self.attr.get('secret')
+
+        implicit_deps = []
+        if secret:
+            implicit_deps.append(self._source_file_path(self.attr['secret_revision_file']))
+
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
         for src, full_src in expanded_srcs:
+            # secret source is not really exist and is not target of any build, declare it as phony
+            # to avoid file missing error
+            if secret and path_under_dir(full_src, self.build_dir):
+                self.generate_build('phony', full_src, inputs=[], clean=[])
             obj = os.path.join(objs_dir, src + '.o')
-            rule = self._get_rule_from_suffix(src)
+            rule = self._get_rule_from_suffix(src, secret)
             self.generate_build(rule, obj, inputs=full_src,
+                                implicit_deps=implicit_deps,
                                 order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
@@ -766,39 +780,11 @@ class CcLibrary(CcTarget):
         self._write_inclusion_check_info()
         self._check_binary_link_only()
 
-    def _secretcc_object(self, obj, src, implicit_deps, vars):
-        assert obj.endswith('.o')
-        pos = obj.rfind('.', 0, -2)
-        assert pos != -1
-        full_src = self._source_file_path(src)
-        if not os.path.exists(full_src):
-            full_src = self._target_file_path(src)
-            self.generate_build('phony', full_src, inputs=[], clean=[])
-        self.generate_build('secretcc', obj, inputs=full_src,
-                            implicit_deps=implicit_deps, variables=vars, clean=[])
-
-    def _secretcc_objects(self, sources):
-        """Generate secretcc compile rules in ninja."""
-        vars = self._get_cc_vars()
-        implicit_deps = self._cc_compile_deps()
-        implicit_deps.append(self._source_file_path(self.attr['secret_revision_file']))
-
-        objs_dir = self._target_file_path(self.name + '.objs')
-        objs = []
-        for src in sources:
-            obj = '%s.o' % os.path.join(objs_dir, src)
-            self._secretcc_object(obj, src, implicit_deps, vars)
-            objs.append(obj)
-        self._remove_on_clean(objs_dir)
-        return objs
 
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
-        if self.attr.get('secret'):
-            objs = self._secretcc_objects(self.srcs)
-        else:
-            objs = self._cc_objects(self.attr['expanded_srcs'])
+        objs = self._cc_objects(self.attr['expanded_srcs'])
         # Don't generate library file for header only library.
         if objs:
             self._cc_library(objs)
