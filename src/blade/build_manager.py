@@ -114,11 +114,11 @@ class Blade(object):
     def load_targets(self):
         """Load the targets."""
         console.info('Loading BUILD files...')
+        excluded_targets = target_pattern.normalize_list(self.__options.exclude_targets.split(','),
+                                                         self.__working_dir)
         (self.__direct_targets,
          self.__expanded_command_targets,
-         self.__build_targets) = load_targets(self.__load_targets,
-                                              self.__root_dir,
-                                              self)
+         self.__build_targets) = load_targets(self.__load_targets, excluded_targets, self)
         if self.__command_targets != self.__load_targets:
             # In query dependents mode, we must use command targets to execute query
             self.__expanded_command_targets = self._expand_command_targets()

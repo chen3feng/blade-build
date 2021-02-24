@@ -26,7 +26,7 @@ from blade import build_rules
 from blade import config
 from blade import console
 from blade.pathlib import Path
-from blade.util import var_to_list, exec_file, source_location
+from blade.util import path_under_dir, var_to_list, exec_file, source_location
 
 
 # import these modules make build functions registered into build_rules
@@ -377,7 +377,7 @@ def _is_load_excluded_dir(root, dir):
     return False
 
 
-def load_targets(target_ids, blade_root_dir, blade):
+def load_targets(target_ids, excluded_targets, blade):
     """load_targets.
 
     Parse and load targets, including those specified in command line
@@ -387,15 +387,18 @@ def load_targets(target_ids, blade_root_dir, blade):
 
     _load_build_rules()
 
+    excluded_targets, excluded_dirs, excluded_trees = _parse_excluded_targets(excluded_targets)
     # targets specified in command line
     # starting dirs mentioned in command line
-    direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids)
+    direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids, excluded_trees)
+    starting_dirs -= excluded_dirs
 
     # to prevent duplicated loading of BUILD files
     processed_dirs = {}
 
     command_targets = _load_starting_build_files(blade, starting_dirs, processed_dirs)
     command_targets |= direct_targets
+    command_targets -= excluded_targets
 
     # load all their dependencies
     related_targets = _load_related_build_files(blade, command_targets, processed_dirs)
@@ -403,14 +406,43 @@ def load_targets(target_ids, blade_root_dir, blade):
     return direct_targets, command_targets, related_targets
 
 
-def _expand_target_patterns(blade, target_ids):
+def _parse_excluded_targets(excluded_targets):
+    """Parse the excluded target patterns into different kinds."""
+    # path:name, path:* and path:...
+    direct_targets, excluded_dirs, excluded_trees = set(), set(), set()
+    for target in excluded_targets:
+        path, name = target.split(':')
+        if not os.path.isdir(path):
+            console.warning('--exclude-targets: directory "%s" doesn\'t exist' % path)
+            continue
+        if name == '*':
+            excluded_dirs.add(path)
+            continue
+        if name == '...':
+            excluded_trees.add(path)
+            continue
+        direct_targets.add(target)
+    return direct_targets, excluded_dirs, excluded_trees
+
+
+def _expand_target_patterns(blade, target_ids, excluded_trees):
     """Expand target patterns from command line."""
 
     # Parse command line target_ids. For those in the form of <path>:<target>,
     # record (<path>,<target>) in direct_targets; for the rest (with <path>
     # but without <target>), record <path> into starting_dirs.
+
+    def under_excluded_trees(source_dir):
+        if source_dir in excluded_trees:
+            return True
+        for dir in excluded_trees:
+            if path_under_dir(source_dir, dir):
+                return True
+        return False
+
     direct_targets = set()
     starting_dirs = set()
+
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
         if not os.path.exists(source_dir):
@@ -424,7 +456,7 @@ def _expand_target_patterns(blade, target_ids):
                 # Note the dirs[:] = slice assignment; we are replacing the
                 # elements in dirs (and not the list referred to by dirs) so
                 # that os.walk() will not process deleted directories.
-                if _has_load_excluded_file(root, files):
+                if under_excluded_trees(root) or _has_load_excluded_file(root, files):
                     dirs[:] = []
                     continue
                 dirs[:] = [d for d in dirs if not _is_load_excluded_dir(root, d)]
