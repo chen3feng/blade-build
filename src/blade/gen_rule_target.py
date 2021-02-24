@@ -67,7 +67,9 @@ class GenRuleTarget(Target):
             self.error('"outs" can not be empty')
         if not cmd:
             self.error('"cmd" can not be empty')
-        outs = [os.path.normpath(o) for o in var_to_list(outs)]
+        outs = var_to_list(outs)
+        # self._check_path_list(outs, "outs", must_exist=False)
+        outs = [os.path.normpath(o) for o in outs]
 
         self.attr['outs'] = outs
         self.attr['locations'] = []
