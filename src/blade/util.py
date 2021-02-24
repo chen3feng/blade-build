@@ -155,8 +155,11 @@ def find_file_bottom_up(name, from_dir=None):
 
 
 def path_under_dir(path, dir):
-    """Check whether path is under dir."""
-    return path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
+    """Check whether a path is under the dir.
+
+    Both path and dir must be normalized, and they must be both relative or relative path.
+    """
+    return dir == '.' or path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
 
 
 def mkdir_p(path):

@@ -348,6 +348,9 @@ class ParsedCommandLine(object):
             parser.add_argument(
                 '--quiet', dest='verbosity', action='store_const', const='quiet',
                 help='Only show warnings and errors')
+            parser.add_argument(
+                '--exclude-targets', dest='exclude_targets', type=str, default='',
+                help='Comma separated target patterns to be excluded from loading')
 
     def _add_dump_arguments(self, parser):
         """Add dump arguments for parser."""
