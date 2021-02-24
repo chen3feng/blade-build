@@ -284,6 +284,10 @@ class Target(object):
             return False
         return True
 
+    def _check_path_list(self, path_list, attr_name, must_exist=True):
+        for path in path_list:
+            self._check_path(path, attr_name, must_exist)
+
     def _check_sources(self, file_kind, files, exts):
         """Check source files."""
         dups = []

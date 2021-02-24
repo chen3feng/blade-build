@@ -322,9 +322,9 @@ class Checker(object):
             else:
                 stack.reverse()
                 msg.append('    In file included from %s' % self._hdr_declaration_message(stack[0]))
-                prefix = '                     from "%s"'
+                prefix = '                     from %s'
                 msg += [prefix % self._hdr_declaration_message(h) for h in stack[1:]]
-                msg.append(prefix % full_src)
+                msg.append(prefix % ('"%s"' % full_src))
         check_msg += msg
 
     def check(self):

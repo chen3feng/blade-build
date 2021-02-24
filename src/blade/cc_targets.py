@@ -20,7 +20,6 @@ from string import Template
 
 from blade import build_manager
 from blade import build_rules
-from blade import console
 from blade import config
 from blade import inclusion_check
 from blade.constants import HEAP_CHECK_VALUES
