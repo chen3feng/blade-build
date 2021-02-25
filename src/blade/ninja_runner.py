@@ -72,7 +72,6 @@ def _run_ninja_build(cmd, options):
 def _run_ninja_command(cmdstr):
     """Run "ninja" command without interactive."""
     console.debug('Run build command: ' + cmdstr)
-    print(cmdstr)
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()
