@@ -114,8 +114,8 @@ class Blade(object):
     def load_targets(self):
         """Load the targets."""
         console.info('Loading BUILD files...')
-        excluded_targets = target_pattern.normalize_list(self.__options.exclude_targets.split(','),
-                                                         self.__working_dir)
+        excluded_targets = target_pattern.normalize_str_list(self.__options.exclude_targets,
+                                                             self.__working_dir, ',')
         (self.__direct_targets,
          self.__expanded_command_targets,
          self.__build_targets) = load_targets(self.__load_targets, excluded_targets, self)
@@ -237,8 +237,8 @@ class Blade(object):
         """Run tests."""
         exclude_tests = []
         if self.__options.exclude_tests:
-            exclude_tests = target_pattern.normalize_list(self.__options.exclude_tests.split(','),
-                                                          self.__working_dir)
+            exclude_tests = target_pattern.normalize_str_list(self.__options.exclude_tests,
+                                                              self.__working_dir, ',')
         test_runner = TestRunner(
                 self.__options,
                 self.__target_database,

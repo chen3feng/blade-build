@@ -15,6 +15,7 @@ from __future__ import print_function
 import os
 
 from blade import console
+from blade import util
 
 
 def _split(target):
@@ -58,13 +59,18 @@ def normalize_list(targets, working_dir):
     return [normalize(target, working_dir) for target in targets]
 
 
+def normalize_str_list(targets, working_dir, sep):
+    """Parse and normalize a target pattern list string. Any empty part is removed."""
+    return normalize_list(filter(bool, map(str.strip, targets.split(sep))), working_dir)
+
+
 def match(target_id, pattern):
     """Check whether a atrget id match a target pattern"""
     t_path, t_name = target_id.split(':')
     p_path, p_name = pattern.split(':')
 
     if p_name == '...':
-        return t_path == p_path or t_path.startswith(p_path) and t_path[len(p_path)] == os.sep
+        return util.path_under_dir(t_path, p_path)
     if p_name == '*':
         return t_path == p_path
     return target_id == pattern
