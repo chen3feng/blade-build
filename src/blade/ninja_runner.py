@@ -57,7 +57,7 @@ def _build_options(options):
 
 def _run_ninja_build(cmd, options):
     """Run the "ninja" program with interactive."""
-    cmdstr = subprocess.list2cmdline(cmd)
+    cmdstr = ' '.join(cmd)
     if console.verbosity_compare(options.verbosity, 'quiet') > 0:
         return _run_ninja_command(cmdstr)
     # In quiet mode, redirect ninja output to the file
@@ -72,6 +72,7 @@ def _run_ninja_build(cmd, options):
 def _run_ninja_command(cmdstr):
     """Run "ninja" command without interactive."""
     console.debug('Run build command: ' + cmdstr)
+    print(cmdstr)
     p = subprocess.Popen(cmdstr, shell=True)
     try:
         p.wait()

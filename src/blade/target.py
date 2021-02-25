@@ -186,7 +186,7 @@ class Target(object):
             'deps': self.deps,
             'visibility': list(self._visibility),
         }
-        target.update(self.attr)
+        target.update({k: v for k, v in self.attr.items() if not k.startswith('_')})
         return target
 
     def _fingerprint_entropy(self):
