@@ -132,7 +132,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.attr['exported_deps'] = self._unify_deps(var_to_list(deps))
         self.attr['exported_deps'] += self._unify_deps(protobuf_java_libs)
 
-        self._handle_protoc_plugins(var_to_list(plugins))
+        self._set_protoc_plugins(plugins)
 
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True
@@ -141,7 +141,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.attr['generate_descriptors'] = generate_descriptors
 
         # TODO(chen3feng): Change the values to a `set` rather than separated attributes
-        target_languages = set(var_to_list(target_languages))
+        target_languages = var_to_list(target_languages)
+        self.attr['target_languages'] = target_languages
         options = self.blade.get_options()
         self.attr['generate_java'] = 'java' in target_languages or getattr(options, 'generate_java', False)
         self.attr['generate_python'] = 'python' in target_languages or getattr(options, 'generate_python', False)
@@ -179,8 +180,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 self.error('Invalid dep %s. proto_library can only depend on proto_library '
                            'or gen_rule.' % dep.fullname)
 
-    def _handle_protoc_plugins(self, plugins):
+    def _set_protoc_plugins(self, plugins):
         """Handle protoc plugins and corresponding dependencies."""
+        plugins = var_to_list(plugins)
+        self.attr['protoc_plugins'] = plugins
         protoc_plugin_config = config.get_section('protoc_plugin_config')
         protoc_plugins = []
         protoc_plugin_deps, protoc_plugin_java_deps = set(), set()
@@ -199,7 +202,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                         protoc_plugin_java_deps.add(key)
         self.attr['protoc_plugin_deps'] = list(protoc_plugin_deps)
         self.attr['exported_deps'] += list(protoc_plugin_java_deps)
-        self.attr['protoc_plugins'] = protoc_plugins
+        self.data['protoc_plugin_objects'] = protoc_plugins
 
     def _prepare_to_generate_rule(self):
         CcTarget._prepare_to_generate_rule(self)
@@ -305,7 +308,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _protoc_plugin_parameters(self, language):
         """Return a tuple of (plugin path, vars) used as parameters for ninja build."""
         path, vars = '', {}
-        for p in self.attr['protoc_plugins']:
+        for p in self.data['protoc_plugin_objects']:
             if language in p.code_generation:
                 path = p.path
                 flag = p.protoc_plugin_flag(self.build_dir)

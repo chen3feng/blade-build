@@ -346,8 +346,8 @@ class JavaTargetMixIn(object):
         """
         Recursively scan direct dependencies and exclude provided dependencies.
         """
-        if 'java_pack_deps' in self.attr:  # Cache result
-            return self.attr['java_pack_deps']
+        if 'java_pack_deps' in self.data:  # Cache result
+            return self.data['java_pack_deps']
 
         deps = set(self.deps) - set(self.attr.get('provided_deps', []))
         dep_jars, maven_jars = self.__get_dep_jars(deps)
@@ -360,7 +360,7 @@ class JavaTargetMixIn(object):
 
         dep_jars = sorted(set(dep_jars))
         maven_jars = sorted(self._process_pack_exclusions(set(maven_jars)))
-        self.attr['java_pack_deps'] = (dep_jars, maven_jars)
+        self.data['java_pack_deps'] = (dep_jars, maven_jars)
         return dep_jars, maven_jars
 
     def get_java_package_source_mapping(self):
