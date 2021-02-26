@@ -16,6 +16,7 @@ from __future__ import print_function
 import argparse
 
 from blade import console
+from blade import constants
 from blade.toolchain import BuildArchitecture
 from blade.toolchain import ToolChain
 
@@ -209,7 +210,7 @@ class ParsedCommandLine(object):
 
         parser.add_argument(
             '-j', '--jobs', dest='build_jobs', type=int,
-            help=('Specifies the number of build jobs (commands) to run simultaneously'))
+            help=(constants.HELP.build_jobs))
 
         parser.add_argument(
             '-k', '--keep-going', dest='keep_going',
@@ -286,7 +287,7 @@ class ParsedCommandLine(object):
 
         parser.add_argument(
             '-t', '--test-jobs', dest='test_jobs', type=int,
-            help=('Specifies the number of tests to run simultaneously'))
+            help=(constants.HELP.test_jobs))
 
         parser.add_argument(
             '--show-details', action='store_true',
@@ -309,7 +310,7 @@ class ParsedCommandLine(object):
 
         parser.add_argument(
             '--run-unrepaired-tests', dest='run_unrepaired_tests', action='store_true',
-            help='Whether run unrepaired(no changw after previous failure) tests during incremental test')
+            help=constants.HELP.run_unrepaired_tests)
 
     def _add_run_arguments(self, parser):
         """Add run command arguments."""
@@ -351,6 +352,13 @@ class ParsedCommandLine(object):
             parser.add_argument(
                 '--exclude-targets', dest='exclude_targets', type=str, default='',
                 help='Comma separated target patterns to be excluded from loading')
+            parser.add_argument(
+                '--jar-compression-level', dest='jar_compression_level', type=str, choices=['', '0'],
+                help=constants.HELP.jar_compression_level)
+            parser.add_argument(
+                '--fat-jar-compression-level', dest='fat_jar_compression_level', type=str,
+                choices=([''] + [str(i) for i in range(9)]),
+                help=constants.HELP.fat_jar_compression_level)
 
     def _add_dump_arguments(self, parser):
         """Add dump arguments for parser."""
@@ -374,9 +382,7 @@ class ParsedCommandLine(object):
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = argparse.ArgumentParser(prog='blade', description=blade_cmd_help)
         arg_parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
-        sub_parser = arg_parser.add_subparsers(
-            dest='command',
-            help='Available subcommands')
+        sub_parser = arg_parser.add_subparsers(dest='command', help='Available subcommands')
 
         sub_parser.required = True
 

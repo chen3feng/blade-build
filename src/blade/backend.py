@@ -420,11 +420,12 @@ class _NinjaFileHeaderGenerator(object):
                 classpath = .
                 javacflags =
                 '''))
+        jarflags = 'cf' + config.get_item('java_config', 'jar_compression_level')
         self.generate_rule(name='javac',
                            command='rm -fr ${classes_dir} && mkdir -p ${classes_dir} && '
                                    '%s && sleep 0.01 && '
-                                   '%s cf ${out} -C ${classes_dir} .' % (
-                                       ' '.join(cmd), jar),
+                                   '%s %s ${out} -C ${classes_dir} .' % (
+                                       ' '.join(cmd), jar, jarflags),
                            description='JAVAC ${out}')
 
     def generate_java_resource_rules(self):
@@ -434,7 +435,8 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_java_jar_rules(self, java_config):
         jar = self.get_java_command(java_config, 'jar')
-        args = '%s ${out} ${in}' % jar
+        level = config.get_item('java_config', 'jar_compression_level')
+        args = '%s --compression_level=%s ${out} ${in}' % (jar, level)
         self.generate_rule(name='javajar',
                            command=self._builtin_command('java_jar', args),
                            description='JAVA JAR ${out}')
@@ -449,7 +451,9 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_fatjar_rules(self, java_config):
         conflict_severity = java_config.get('fat_jar_conflict_severity', 'warning')
-        args = '--output=${out} --conflict_severity=%s ${in}' % conflict_severity
+        compression_level = java_config.get('fat_jar_compression_level')
+        args = '--output=${out} --compression_level=%s --conflict_severity=%s ${in}' % (
+            compression_level, conflict_severity)
         self.generate_rule(name='fatjar',
                            command=self._builtin_command('java_fatjar', args),
                            description='FAT JAR ${out}')

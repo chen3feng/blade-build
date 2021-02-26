@@ -21,7 +21,7 @@ import sys
 
 from blade import build_attributes
 from blade import console
-from blade.constants import HEAP_CHECK_VALUES
+from blade import constants
 from blade.util import var_to_list, iteritems, eval_file, exec_file_content, source_location
 
 
@@ -43,40 +43,39 @@ class BladeConfig(object):
         self.current_file_name = ''  # For error reporting
         self.__md5 = hashlib.md5()
 
-        # Support generate comments when dump the config by the special '__doc__' convention.
-        # __doc__ field is for section
-        # __doc__ suffix of items are for items.
+        # Support generate comments when dump the config by the special '__help__' convention.
+        # __help__ field is for section
+        # __help__ suffix of items are for items.
         self.configs = {
             'global_config': {
-                '__doc__': 'Global Configuration',
+                '__help__': 'Global Configuration',
                 'build_path_template': 'build${bits}_${profile}',
                 'duplicated_source_action': 'warning',
-                'duplicated_source_action__doc__': "Can be 'warning', 'error', 'none'",
+                'duplicated_source_action__help__': "Can be 'warning', 'error', 'none'",
                 'test_timeout': 0,
-                'test_timeout__doc__': 'In seconds',
-                'test_related_envs__doc__':
+                'test_timeout__help__': 'In seconds',
+                'test_related_envs__help__':
                     'Environment variables which need to see whether changed before incremental '
                     'testing. regex is allowed',
                 'test_related_envs': [],
                 'backend_builder': 'ninja',
                 'debug_info_level': 'mid',
                 'build_jobs': 0,
-                'build_jobs__doc__': 'The number of build jobs (commands) to run simultaneously',
+                'build_jobs__help__': constants.HELP.build_jobs,
                 'test_jobs': 0,
-                'test_jobs__doc__': 'The number of test jobs to run simultaneously',
+                'test_jobs__help__': 'The number of test jobs to run simultaneously',
                 'run_unrepaired_tests': False,
-                'run_unrepaired_tests__doc__':
-                    'Whether run unrepaired(no changw after previous failure) tests during incremental test',
+                'run_unrepaired_tests__help__': constants.HELP.run_unrepaired_tests,
                 'glob_error_severity': 'error',
-                'glob_error_severity__doc__': 'The severity of glob error, can be debug, info, warning, error',
+                'glob_error_severity__help__': 'The severity of glob error, can be debug, info, warning, error',
                 'default_visibility': set(),
-                'default_visibility__doc__': 'Default visibility for targets that do not declare this attribute',
+                'default_visibility__help__': 'Default visibility for targets that do not declare this attribute',
                 'legacy_public_targets': set(),
-                'legacy_public_targets__doc__': 'List of targets with legacy public visibility',
+                'legacy_public_targets__help__': 'List of targets with legacy public visibility',
             },
 
             'cc_config': {
-                '__doc__': 'C/C++ Configuration',
+                '__help__': 'C/C++ Configuration',
                 'extra_incs': [],
                 'cppflags': [],
                 'cflags': [],
@@ -96,16 +95,16 @@ class BladeConfig(object):
                     'high': ['-g3'],
                 },
                 'hdr_dep_missing_severity': 'error',
-                'hdr_dep_missing_severity__doc__': 'The severity of the missing dependency on the '
+                'hdr_dep_missing_severity__help__': 'The severity of the missing dependency on the '
                     'library to which the header file belongs, can be "info", "warning", "error"',
                 'hdr_dep_missing_suppress': {},
-                'hdr_dep_missing_suppress__doc__': 'Header deps missing suppress control, see docs for details',
+                'hdr_dep_missing_suppress__help__': 'Header deps missing suppress control, see docs for details',
                 'allowed_undeclared_hdrs': set(),
-                'allowed_undeclared_hdrs__doc__': 'Allowed undeclared header files',
+                'allowed_undeclared_hdrs__help__': 'Allowed undeclared header files',
             },
 
             'cc_library_config': {
-                '__doc__': 'C/C++ Library Configuration',
+                '__help__': 'C/C++ Library Configuration',
                 'prebuilt_libpath_pattern': 'lib${bits}',
                 'generate_dynamic': False,
                 # Options passed to ar/ranlib to control how
@@ -118,13 +117,13 @@ class BladeConfig(object):
             },
 
             'cc_binary_config': {
-                '__doc__': 'C/C++ Executable Configuration',
+                '__help__': 'C/C++ Executable Configuration',
                 'extra_libs': [],
                 'run_lib_paths': [],
             },
 
             'cc_test_config': {
-                '__doc__': 'C/C++ Test Configuration',
+                '__help__': 'C/C++ Test Configuration',
                 'dynamic_link': False,
                 'heap_check': '',
                 'gperftools_libs': [],
@@ -139,38 +138,41 @@ class BladeConfig(object):
             },
 
             'link_config': {
-                '__doc__': 'Linking Configuration',
+                '__help__': 'Linking Configuration',
                 'link_on_tmp': False,
                 'link_jobs': 0,
             },
 
             'java_config': {
-                '__doc__': 'Java Configuration',
+                '__help__': 'Java Configuration',
                 'version': '1.8',
                 'source_version': '',
                 'target_version': '',
                 'fat_jar_conflict_severity': 'warning',
-                'fat_jar_conflict_severity__doc__':
+                'fat_jar_conflict_severity__help__':
                     'The severity of java fat jar packing conflict, can be "debug", "warning", "error"',
                 'maven': 'mvn',
                 'maven_central': '',
                 'maven_snapshot_update_policy': 'daily',
-                'maven_snapshot_update_policy__doc__':
+                'maven_snapshot_update_policy__help__':
                     'Can be %s' % _MAVEN_SNAPSHOT_UPDATE_POLICY_VALUES,
                 'maven_snapshot_update_interval': 0,
-                'maven_snapshot_update_interval__doc__': 'When policy is interval, in minutes',
+                'maven_snapshot_update_interval__help__': 'When policy is interval, in minutes',
                 'maven_download_concurrency': 0,
-                'maven_download_concurrency__doc__':
-                    'Number of processes to pre-download maven_jar, 0 to disable pre-downloading',
+                'maven_download_concurrency__help__': constants.HELP.maven_download_concurrency,
                 'maven_jar_allowed_dirs': set(),
-                'maven_jar_allowed_dirs__doc__':
+                'maven_jar_allowed_dirs__help__':
                     'List of directories and their subdirectories where maven_jar is allowed',
                 'maven_jar_allowed_dirs_exempts': set(),
-                'maven_jar_allowed_dirs_exempts__doc__':
+                'maven_jar_allowed_dirs_exempts__help__':
                     'List of targets which are exempted from maven_jar_disallowed_dirs check',
                 'warnings': ['-Werror', '-Xlint:all'],
                 'source_encoding': '',
                 'java_home': '',
+                'jar_compression_level': '',
+                'jar_compression_level__help__': constants.HELP.jar_compression_level,
+                'fat_jar_compression_level': "6",
+                'fat_jar_compression_level__help__': constants.HELP.fat_jar_compression_level,
                 'debug_info_levels': {
                     'no': ['-g:none'],
                     'low': ['-g:source'],
@@ -180,18 +182,18 @@ class BladeConfig(object):
             },
 
             'java_binary_config': {
-                '__doc__': 'Java Executable Configuration',
+                '__help__': 'Java Executable Configuration',
                 'one_jar_boot_jar': '',
             },
 
             'java_test_config': {
-                '__doc__': 'Java Test Configuration',
+                '__help__': 'Java Test Configuration',
                 'junit_libs': [],
                 'jacoco_home': '',
             },
 
             'scala_config': {
-                '__doc__': 'Scala Configuration',
+                '__help__': 'Scala Configuration',
                 'scala_home': '',
                 'target_platform': '',
                 'warnings': '',
@@ -199,12 +201,12 @@ class BladeConfig(object):
             },
 
             'scala_test_config': {
-                '__doc__': 'Scala Test Configuration',
+                '__help__': 'Scala Test Configuration',
                 'scalatest_libs': [],
             },
 
             'go_config': {
-                '__doc__': 'Golang Configuration',
+                '__help__': 'Golang Configuration',
                 'go': '',
                 'go_home': os.path.expandvars('$HOME/go'),  # GOPATH
                 # enable go module for explicit use
@@ -214,7 +216,7 @@ class BladeConfig(object):
             },
 
             'proto_library_config': {
-                '__doc__': 'Protobuf Configuration',
+                '__help__': 'Protobuf Configuration',
                 'protoc': 'thirdparty/protobuf/bin/protoc',
                 'protoc_java': '',
                 'protobuf_libs': [],
@@ -235,11 +237,11 @@ class BladeConfig(object):
             },
 
             'protoc_plugin_config': {
-                '__doc__': 'Protobuf Plugin Configuration',
+                '__help__': 'Protobuf Plugin Configuration',
             },
 
             'thrift_config': {
-                '__doc__': 'Thrift Configuration',
+                '__help__': 'Thrift Configuration',
                 'thrift': 'thrift',
                 'thrift_libs': [],
                 'thrift_incs': [],
@@ -247,7 +249,7 @@ class BladeConfig(object):
             },
 
             'fbthrift_config': {
-                '__doc__': 'Facebook Thrift Configuration',
+                '__help__': 'Facebook Thrift Configuration',
                 'fbthrift1': 'thrift1',
                 'fbthrift2': 'thrift2',
                 'fbthrift_libs': [],
@@ -396,16 +398,16 @@ class BladeConfig(object):
                 self._dump_section(name, value, f)
 
     def _dump_section(self, name, values, f):
-        doc = '__doc__'
-        if doc in values:
-            print('# %s' % values[doc], file=f)
+        help = '__help__'
+        if help in values:
+            print('# %s' % values[help], file=f)
         print('%s(' % name, file=f)
         for k, v in values.items():
-            if k.endswith('__doc__'):
+            if k.endswith('__help__'):
                 continue
-            doc = k + '__doc__'
-            if doc in values:
-                print('    # %s' % values[doc], file=f)
+            help = k + '__help__'
+            if help in values:
+                print('    # %s' % values[help], file=f)
             print('    %s = %s,' % (k, pprint.pformat(v, indent=8)), file=f)
         print(')\n', file=f)
 
@@ -499,7 +501,7 @@ def global_config(append=None, **kwargs):
 @config_rule
 def cc_test_config(append=None, **kwargs):
     """cc_test_config section."""
-    _check_kwarg_enum_value(kwargs, 'heap_check', HEAP_CHECK_VALUES)
+    _check_kwarg_enum_value(kwargs, 'heap_check', constants.HEAP_CHECK_VALUES)
     _blade_config.update_config('cc_test_config', append, kwargs)
 
 

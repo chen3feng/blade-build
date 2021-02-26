@@ -26,6 +26,7 @@ import signal
 import string
 import subprocess
 import sys
+import zipfile
 
 
 _IN_PY3 = sys.version_info[0] == 3
@@ -311,3 +312,12 @@ def parse_command_line(argv):
         else:
             args.append(arg)
     return options, args
+
+
+def open_zip_file_for_write(filename, compression_level):
+    """Open a zip file for writing with specified compression level."""
+    compression = zipfile.ZIP_STORED if compression_level == "0" else zipfile.ZIP_DEFLATED
+    if sys.version_info.major == 3 and sys.version_info.minor >= 7:
+        # pylint :disable=unexpected-keyword-arg
+        return zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED, compresslevel=int(compression_level))
+    return zipfile.ZipFile(filename, 'w', )

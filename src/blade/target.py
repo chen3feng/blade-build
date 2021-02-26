@@ -716,12 +716,19 @@ class Target(object):
                     self._write_rule('  %s =' % name)
         self._write_rule('')  # An empty line to improve readability
 
+    def get_outputs_goal(self):
+        """A phony build goal to represent all output files."""
+        return os.path.join(self.path, self.name + '.__outputs__')
+
     def get_build_code(self):
         """Return generated build code."""
         # Add a cache to make it idempotent
         if self.__build_code is None:
             self.__build_code = []
             self.generate()
+            # Generate a phony goal to identify all it's outputs.
+            if self.__build_code:
+                self.generate_build('phony', self.get_outputs_goal(), self._get_target_files())
         return self.__build_code
 
 
