@@ -31,10 +31,7 @@ from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
 from blade.backend import NinjaFileGenerator
 from blade.test_runner import TestRunner
-from blade.util import (
-    cpu_count,
-    md5sum_file,
-    pickle)
+from blade.util import (cpu_count, md5sum_file, pickle)
 
 # Global build manager instance
 instance = None
@@ -43,6 +40,7 @@ instance = None
 # Start of fingerprint line in each per-target ninja file
 _NINJA_FILE_FINGERPRINT_START = '#Fingerprint='
 
+_ALL_COMMAND_TARGETS = '__ALL_COMMAND_TARGETS__'
 
 class Blade(object):
     """Blade. A blade manager class."""
@@ -205,6 +203,7 @@ class Blade(object):
             self.get_build_dir(),
             self.build_script(),
             self.build_jobs_num(),
+            _ALL_COMMAND_TARGETS,
             self.__options)
         self._write_build_stamp_fime(start_time, returncode)
         if returncode != 0:
@@ -522,9 +521,9 @@ class Blade(object):
         code = []
         skip_test = getattr(self.__options, 'no_test', False)
         skip_package = not getattr(self.__options, 'generate_package', False)
+        command_target_outputs = []
         for k in self.__sorted_targets_keys:
             target = self.__build_targets[k]
-            target = self.__target_database.get(k, None)
             if skip_test and target.type.endswith('_test') and k not in self.__direct_targets:
                 continue
             if skip_package and target.type == 'package' and k not in self.__direct_targets:
@@ -534,7 +533,9 @@ class Blade(object):
             if target_ninja:
                 target._remove_on_clean(target_ninja)
                 code += 'include %s\n' % target_ninja
-
+                if k in self.__expanded_command_targets:
+                    command_target_outputs.append(target.get_outputs_goal())
+        code.append('build %s: phony %s\n' % (_ALL_COMMAND_TARGETS, ' '.join(command_target_outputs)))
         return code
 
     def get_build_toolchain(self):

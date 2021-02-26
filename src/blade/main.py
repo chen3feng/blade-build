@@ -42,13 +42,16 @@ def setup_console(options):
 
 
 def adjust_config_by_options(config, options):
-    # Common options between config and command line
-    common_options = ('debug_info_level', 'backend_builder',
-                      'build_jobs', 'test_jobs', 'run_unrepaired_tests')
-    for name in common_options:
-        value = getattr(options, name, None)
-        if value:
-            config.global_config(**{name: value})
+    # Shared options between config and command line
+    shared_options = {
+        'global_config': ['debug_info_level', 'backend_builder', 'build_jobs', 'test_jobs', 'run_unrepaired_tests'],
+        'java_config': ['jar_compression_level', 'fat_jar_compression_level'],
+    }
+    for section, names in shared_options.items():
+        for name in names:
+            value = getattr(options, name, None)
+            if value is not None:
+                getattr(config, section)(**{name: value})
 
 
 def _check_error_log(stage):

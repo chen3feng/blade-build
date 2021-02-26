@@ -249,7 +249,7 @@ def generate_resource_index(args):
     return _generate_resource_index(targets, sources, name, path)
 
 
-def generate_java_jar(args):
+def generate_java_jar(compression_level, args):
     jar, target = args[0], args[1]
     _declare_outputs(target)
     resources_dir = target.replace('.jar', '.resources')
@@ -262,11 +262,8 @@ def generate_java_jar(args):
         resources = args[2:]
 
     def archive_resources(resources_dir, resources, new=True):
-        if new:
-            option = 'cf'
-        else:
-            option = 'uf'
-        cmd = ['%s %s %s' % (jar, option, target)]
+        options = ('c' if new else 'u') + 'f' + compression_level
+        cmd = ['%s %s %s' % (jar, options, target)]
         for resource in resources:
             cmd.append("-C '%s' '%s'" % (resources_dir,
                                          os.path.relpath(resource, resources_dir)))

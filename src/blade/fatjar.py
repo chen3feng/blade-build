@@ -63,7 +63,7 @@ def generate_fat_jar_metadata(jar, dependencies, conflicts):
     jar.writestr('%s/MERGE-INFO' % metadata_path, '\n'.join(content))
 
 
-def generate_fat_jar(output, conflict_severity, args):
+def generate_fat_jar(output, conflict_severity, compression_level, args):
     """Generate a fat jar containing the contents of all the jar dependencies."""
     target = output
     jars = args
@@ -72,7 +72,7 @@ def generate_fat_jar(output, conflict_severity, args):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
-    target_fat_jar = zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED)
+    target_fat_jar = util.open_zip_file_for_write(target, compression_level)
     # Record paths written in the fat jar to avoid duplicate writing
     path_jar_dict = {}
     conflicts = []
