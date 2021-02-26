@@ -2,7 +2,7 @@
 # All rights reserved.
 #
 # Author: chen3feng <chen3feng@gmail.com>
-# Date:   Feb 14, 2013
+# Date:   Feb 14, 2021
 
 """C/C++ header file inclusion dependency declaration check."""
 
