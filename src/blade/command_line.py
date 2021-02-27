@@ -34,36 +34,48 @@ except ImportError:
     VERSION = '(developing, unversioned)'
 
 
-class ParsedCommandLine(object):
-    """Parsed Command Line
+class CommandLineParser(object):
+    """Command Line Parser.
 
     Parses user's input and provides hint.
     blade {command} [options] targets
 
     """
 
-    def __init__(self, argv):
+    def __init__(self):
         """Init the class."""
-        self.options, others = self._cmd_parse(argv)
+        self._arg_parser = self._init_arg_parser()
+        if argcomplete:
+            argcomplete.autocomplete(self._arg_parser)
+
+    def parse(self, argv):
+        """Parse command line."""
+
+        options, others = self._arg_parser.parse_known_args(argv)
 
         # If '--' in arguments, use all other arguments after it as run
         # arguments
         if '--' in others:
             pos = others.index('--')
-            self.targets = others[:pos]
-            self.options.args = others[pos + 1:]
+            targets = others[:pos]
+            options.args = others[pos + 1:]
         else:
-            self.targets = others
-            self.options.args = []
+            targets = others
+            options.args = []
 
-        for t in self.targets:
+        for t in targets:
             if t.startswith('-'):
                 console.fatal('Unrecognized option %s, use blade [action] '
                               '--help to get all the options' % t)
 
-        command = self.options.command
-
+        command = options.command
         # Check the options with different sub command
+        self._check_subcommand(command, options, targets)
+
+        return command, options, targets
+
+    def _check_subcommand(self, command, options, targets):
+        """Check correctness of subcommand."""
         actions = {
             'build': self._check_build_command,
             'clean': self._check_clean_command,
@@ -72,75 +84,75 @@ class ParsedCommandLine(object):
             'run': self._check_run_command,
             'test': self._check_test_command,
         }
-        actions[command]()
+        actions[command](options, targets)
 
-    def _check_run_targets(self):
+    def _check_run_targets(self, options, targets):
         """check that run command should have only one target."""
-        if len(self.targets) != 1 or ':' not in self.targets[0] or self.targets[0].endswith('...'):
+        if len(targets) != 1 or ':' not in targets[0] or targets[0].endswith('...'):
             console.fatal('Please specify a single target to run: '
                           'blade run //target_path:target_name (or '
                           'a_path:target_name)')
 
-    def _check_test_options(self):
+    def _check_test_options(self, options, targets):
         """check that test command options."""
 
-    def _check_plat_and_profile_options(self):
+    def _check_plat_and_profile_options(self, options, targets):
         """check platform and profile options."""
         compiler_arch = self._compiler_target_arch()
         arch = BuildArchitecture.get_canonical_architecture(compiler_arch)
         if arch is None:
             console.fatal('Unknown architecture: %s' % compiler_arch)
 
-        m = self.options.m
+        m = options.m
         if not m:
-            self.options.arch = arch
-            self.options.bits = BuildArchitecture.get_architecture_bits(arch)
-            assert self.options.bits
+            options.arch = arch
+            options.bits = BuildArchitecture.get_architecture_bits(arch)
+            assert options.bits
         else:
-            self.options.bits = m
-            self.options.arch = BuildArchitecture.get_model_architecture(arch, m)
-            if self.options.arch is None:
+            options.bits = m
+            options.arch = BuildArchitecture.get_model_architecture(arch, m)
+            if options.arch is None:
                 console.fatal('"-m%s" is not supported by the architecture %s' % (m, compiler_arch))
 
-    def _check_clean_options(self):
+    def _check_clean_options(self, options, targets):
         """check the clean options."""
-        self._check_plat_and_profile_options()
+        self._check_plat_and_profile_options(options, targets)
 
-    def _check_query_options(self):
+    def _check_query_options(self, options, targets):
         """check query action options."""
-        if not self.options.deps and not self.options.dependents:
+        if not options.deps and not options.dependents:
             console.fatal('Please specify --deps, --dependents or both to query target')
 
-    def _check_build_options(self):
+    def _check_build_options(self, options, targets):
         """check the building options."""
-        self._check_plat_and_profile_options()
+        self._check_plat_and_profile_options(options, targets)
 
-    def _check_build_command(self):
+    def _check_build_command(self, options, targets):
         """check build options."""
-        self._check_build_options()
+        self._check_build_options(options, targets)
 
-    def _check_dump_command(self):
+    def _check_dump_command(self, options, targets):
         """check build options."""
-        self._check_build_options()
+        self._check_build_options(options, targets)
 
-    def _check_run_command(self):
+    def _check_run_command(self, options, targets):
         """check run options and the run targets."""
-        self._check_build_options()
-        self._check_run_targets()
+        self._check_build_options(options, targets)
+        self._check_run_targets(options, targets)
 
-    def _check_test_command(self):
+    def _check_test_command(self, options, targets):
         """check test optios."""
-        self._check_build_options()
-        self._check_test_options()
+        self._check_build_options(options, targets)
+        self._check_test_options(options, targets)
 
-    def _check_clean_command(self):
+    def _check_clean_command(self, options, targets):
         """check clean options."""
-        self._check_clean_options()
+        self._check_clean_options(options, targets)
 
-    def _check_query_command(self):
+    def _check_query_command(self, options, targets):
         """check query options."""
-        self._check_plat_and_profile_options()
-        self._check_query_options()
+        self._check_plat_and_profile_options(options, targets)
+        self._check_query_options(options, targets)
 
     def __add_plat_profile_arguments(self, parser):
         """Add plat and profile arguments."""
@@ -384,7 +396,7 @@ class ParsedCommandLine(object):
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
 
-    def _cmd_parse(self, argv):
+    def _init_arg_parser(self):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = argparse.ArgumentParser(prog='blade', description=blade_cmd_help)
@@ -428,9 +440,7 @@ class ParsedCommandLine(object):
         self._add_query_arguments(query_parser)
         self._add_dump_arguments(dump_parser)
 
-        if argcomplete:
-            argcomplete.autocomplete(arg_parser)
-        return arg_parser.parse_known_args(argv)
+        return arg_parser
 
     def _compiler_target_arch(self):
         """Compiler(gcc) target architecture."""
@@ -440,20 +450,8 @@ class ParsedCommandLine(object):
             console.fatal('Unknown target architecture %s from gcc.' % arch)
         return arch[:pos]
 
-    def get_command(self):
-        """Return blade command."""
-        return self.options.command
-
-    def get_options(self):
-        """Returns the command options, which should be used by blade manager."""
-        return self.options
-
-    def get_targets(self):
-        """Returns the targets from command line."""
-        return self.targets
-
 
 def parse(argv):
     """Parse argv into command, options and targets"""
-    cmdline = ParsedCommandLine(argv)
-    return cmdline.get_command(), cmdline.get_options(), cmdline.get_targets()
+    parser = CommandLineParser()
+    return parser.parse(argv)
