@@ -81,3 +81,24 @@ blade test base/...
 # 构建和测试base子目录下名为`string_test`的目标
 blade test base:string_test
 ```
+
+## 命令行补全
+
+执行[安装](misc.md)命令后有简单的命令行补全。
+安装 [autocomplete](https://pypi.org/project/argcomplete/) 后会得到完整的命令行补全。
+
+### 安装 argcomplete
+
+```console
+pip install argcomplete
+```
+
+非 root 安装用加上 `--user` 参数
+
+### 启用
+
+修改 `~/.bashrc`:
+
+```bash
+eval "$(register-python-argcomplete blade)"
+```

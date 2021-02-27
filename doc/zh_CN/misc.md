@@ -1,24 +1,24 @@
-# 辅助功能 #
+# 辅助功能
 
-## 辅助命令 ##
+## 辅助命令
 
-### install ###
+### install
 
 blade命令的符号链接会被安装下面的命令到~/bin 下。
 
-### lsrc ###
+### lsrc
 
 列出当前目录下指定的源文件，以blade的srcs列表格式输出。
 
-### genlibbuild ###
+### genlibbuild
 
 自动生成以目录名为库名的cc_library，以测试文件的名为名的cc_test，proto的BUILD文件，并假设这些测试都依赖这个库
 
-### alt ###
+### alt
 
 在源代码目录和相应的构建结果目录之间来回跳转
 
-## vim集成 ##
+## vim集成
 
 我们编写了vim的blade语法文件，高亮显示blade关键字，install后就会自动生效。
 
