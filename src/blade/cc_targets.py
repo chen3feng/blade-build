@@ -434,7 +434,7 @@ class CcTarget(Target):
                 continue
 
             # '.so' file is not generated for header only libraries, use this file as implicit dep.
-            incchk_result = dep.data.get('inclusion_check_result_file')
+            incchk_result = dep._get_target_file('incchk.result')
             if incchk_result:
                 incchk_deps.append(incchk_result)
 
@@ -465,7 +465,7 @@ class CcTarget(Target):
                 continue
 
             # '.a' file is not generated for header only libraries, use this file as implicit dep.
-            incchk_result = dep.data.get('inclusion_check_result_file')
+            incchk_result = dep._get_target_file('incchk.result')
             if incchk_result:
                 incchk_deps.append(incchk_result)
 
@@ -543,15 +543,17 @@ class CcTarget(Target):
                                 order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
-        if 'inclusion_check_info_file' in self.data:
-            self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
         self._remove_on_clean(objs_dir)
-        return objs
+
+        if 'inclusion_check_info_file' in self.data:
+            return objs, self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
+
+        return objs, None
 
     def _generated_cc_objects(self, sources, generated_headers=None):
         """Compile generated cc sources"""
         expanded_sources = [(src, self._target_file_path(src)) for src in sources]
-        return self._cc_objects(expanded_sources, generated_headers)
+        return self._cc_objects(expanded_sources, generated_headers)[0]
 
     def _generate_inclusion_check(self, objs_dir, objs, vars, order_only_deps):
         implicit_deps = objs[:]
@@ -568,20 +570,23 @@ class CcTarget(Target):
 
         check_info_file = self.data['inclusion_check_info_file']
         check_result_file = check_info_file + '.result'
-        self.data['inclusion_check_result_file'] = check_result_file
         self.generate_build('ccincchk', outputs=check_result_file, inputs=check_info_file,
                             implicit_deps=implicit_deps)
+        self._add_target_file('incchk.result', check_result_file)
+        return check_result_file
 
-    def _static_cc_library(self, objs):
+    def _static_cc_library(self, objs, inclusion_check_result):
         output = self._target_file_path('lib%s.a' % self.name)
         self.generate_build('ar', output, inputs=objs,
-                            order_only_deps=self.data.get('inclusion_check_result_file'))
+                            order_only_deps=inclusion_check_result)
         self._add_default_target_file('a', output)
 
-    def _dynamic_cc_library(self, objs):
+    def _dynamic_cc_library(self, objs, inclusion_check_result):
         output = self._target_file_path('lib%s.so' % self.name)
         ldflags = self._generate_link_flags()
         sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
+        if inclusion_check_result:
+            incchk_deps.append(inclusion_check_result)
         extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         self._cc_link(output, 'solink', objs=objs, deps=usr_libs, order_only_deps=incchk_deps,
                       ldflags=ldflags, extra_ldflags=extra_ldflags)
@@ -601,10 +606,10 @@ class CcTarget(Target):
             pass
         return soname
 
-    def _cc_library(self, objs):
-        self._static_cc_library(objs)
+    def _cc_library(self, objs, inclusion_check_result=None):
+        self._static_cc_library(objs, inclusion_check_result)
         if self.attr.get('generate_dynamic'):
-            self._dynamic_cc_library(objs)
+            self._dynamic_cc_library(objs, inclusion_check_result)
 
     def _cc_link(self, output, rule, objs, deps,
                  ldflags=None, extra_ldflags=None,
@@ -614,12 +619,6 @@ class CcTarget(Target):
             vars['ldflags'] = ' '.join(ldflags)
         if extra_ldflags:
             vars['extra_ldflags'] = ' '.join(extra_ldflags)
-        incchk = self.data.get('inclusion_check_result_file')
-        if incchk:
-            if order_only_deps is None:
-                order_only_deps = [incchk]
-            else:
-                order_only_deps.append(incchk)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -784,10 +783,10 @@ class CcLibrary(CcTarget):
     def generate(self):
         """Generate build code for cc object/library."""
         self._check_deprecated_deps()
-        objs = self._cc_objects(self.attr['expanded_srcs'])
+        objs, inclusion_check_result = self._cc_objects(self.attr['expanded_srcs'])
         # Don't generate library file for header only library.
         if objs:
-            self._cc_library(objs)
+            self._cc_library(objs, inclusion_check_result)
 
 
 class PrebuiltCcLibrary(CcTarget):
@@ -925,10 +924,12 @@ class PrebuiltCcLibrary(CcTarget):
         # rule to avoid runtime error and also avoid unnecessary runtime cost.
         if not self._is_depended():
             return
+        objs, inclusion_check_result = self._cc_objects([])
         dynamic_source = self.attr.get('dynamic_source')
         dynamic_target = self.attr.get('dynamic_target')
         if dynamic_source and dynamic_target:
-            self.generate_build('copy', dynamic_target, inputs=dynamic_source)
+            self.generate_build('copy', dynamic_target, inputs=dynamic_source,
+                                order_only_deps=inclusion_check_result)
 
 
 def prebuilt_cc_library(
@@ -1252,7 +1253,7 @@ class CcBinary(CcTarget):
             ldflags.append('-Wl,--rpath-link=%s' % rpath_link)
         return ldflags
 
-    def _cc_binary(self, objs, dynamic_link):
+    def _cc_binary(self, objs, inclusion_check_result, dynamic_link):
         implicit_deps = None
         ldflags = self._generate_cc_binary_link_flags(dynamic_link)
         if dynamic_link:
@@ -1265,6 +1266,8 @@ class CcBinary(CcTarget):
 
         # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
         order_only_deps = incchk_deps
+        if inclusion_check_result:
+            order_only_deps.append(inclusion_check_result)
         extra_ldflags = []
         if self.attr['embed_version']:
             scm = os.path.join(self.build_dir, 'scm.cc.o')
@@ -1286,8 +1289,8 @@ class CcBinary(CcTarget):
     def generate(self):
         """Generate build code for cc binary/test."""
         self._check_deprecated_deps()
-        objs = self._cc_objects(self.attr['expanded_srcs'])
-        self._cc_binary(objs, self.attr['dynamic_link'])
+        objs, inclusion_check_result = self._cc_objects(self.attr['expanded_srcs'])
+        self._cc_binary(objs, inclusion_check_result, self.attr['dynamic_link'])
 
 
 def cc_binary(name=None,
@@ -1391,7 +1394,7 @@ class CcPlugin(CcTarget):
     def generate(self):
         """Generate build code for cc plugin."""
         self._check_deprecated_deps()
-        objs = self._cc_objects(self.attr['expanded_srcs'])
+        objs, inclusion_check_result = self._cc_objects(self.attr['expanded_srcs'])
         ldflags = self._generate_link_flags()
         sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
         if link_all_symbols_libs:
@@ -1403,6 +1406,8 @@ class CcPlugin(CcTarget):
         else:
             output = self._target_file_path('lib%s.so' % self.name)
         if self.srcs or self.expanded_deps:
+            if inclusion_check_result:
+                incchk_deps.append(inclusion_check_result)
             if self.attr['strip']:
                 link_output = '%s.unstripped' % output
             else:
