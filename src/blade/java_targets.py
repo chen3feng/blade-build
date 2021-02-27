@@ -419,8 +419,7 @@ class JavaTargetMixIn(object):
             full_path = self._source_file_path(res_path)
             if not jar_path:
                 # Mapping rules from maven standard layout
-                jar_path = self._java_resource_path(res_path)
-
+                jar_path = self._java_resource_jar_path(res_path)
         return full_path, jar_path
 
     def _process_regular_resources(self, resources):
@@ -461,8 +460,9 @@ class JavaTargetMixIn(object):
 
         return list(path)
 
-    def _java_resource_path(self, resource):
-        """
+    def _java_resource_jar_path(self, resource):
+        """ Calculate in jar path for a resource path.
+
         Resource path mapping rules from local directory to jar entry. See
         https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html
         for maven rules.
@@ -474,8 +474,16 @@ class JavaTargetMixIn(object):
         ]
         for seg in segs:
             pos = resource.find(seg)
-            if pos != -1:
-                return resource[pos + len(seg) + 1:]  # skip the separator '/'
+            if pos == -1:
+                continue
+            if pos > 0 and resource[pos - 1] != '/':
+                continue
+            end = pos + len(seg)
+            if end < len(resource) and resource[end] != '/':
+                continue
+            # skip the separator '/', if resource ends with '/', "+ 1" is still ok in python
+            jar_path = resource[end + 1:]
+            return jar_path
         return resource
 
     def _packages_under_test(self):
