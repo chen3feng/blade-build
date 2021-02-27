@@ -35,6 +35,7 @@ class ThriftLibrary(CcTarget):
             srcs,
             deps,
             visibility,
+            tags,
             optimize,
             deprecated,
             kwargs):
@@ -46,6 +47,7 @@ class ThriftLibrary(CcTarget):
                 src_exts=['thrift'],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning='',
                 defs=[],
                 incs=[],
@@ -62,6 +64,7 @@ class ThriftLibrary(CcTarget):
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True
         self.attr['deprecated'] = deprecated
+        self._add_tags('lang:thrift', 'type:library')
 
         # For each thrift file initialize a ThriftHelper, which will be used
         # to get the source files generated from thrift file.
@@ -113,6 +116,7 @@ def thrift_library(
         srcs=[],
         deps=[],
         visibility=None,
+        tags=[],
         optimize=None,
         deprecated=False,
         **kwargs):
@@ -122,6 +126,7 @@ def thrift_library(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             optimize=optimize,
             deprecated=deprecated,
             kwargs=kwargs)

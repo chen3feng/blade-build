@@ -11,7 +11,7 @@
 """
 
 
-import blade_test
+import blade_test  # pyright: reportMissingImports=false
 
 
 class TestPrebuildCcLibrary(blade_test.TargetTest):

@@ -33,6 +33,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  resources,
                  source_encoding,
                  warnings,
@@ -53,12 +54,14 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 src_exts=['scala', 'java'],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
         self._process_resources(resources)
         if source_encoding:
             self.attr['source_encoding'] = source_encoding
         if warnings:
             self.attr['warnings'] = warnings
+        self._add_tags('lang:scala')
 
     def _expand_deps_generation(self):
         self._expand_deps_java_generation()
@@ -111,6 +114,7 @@ class ScalaLibrary(ScalaTarget):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -127,6 +131,7 @@ class ScalaLibrary(ScalaTarget):
                 srcs=srcs,
                 deps=all_deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -134,6 +139,7 @@ class ScalaLibrary(ScalaTarget):
         self.attr['exported_deps'] = self._unify_deps(exported_deps)
         self.attr['provided_deps'] = self._unify_deps(provided_deps)
         self.attr['jacoco_coverage'] = coverage and bool(srcs)
+        self._add_tags('type:library')
 
     def generate(self):
         jar = self._generate_jar()
@@ -150,6 +156,7 @@ class ScalaFatLibrary(ScalaTarget):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -161,12 +168,14 @@ class ScalaFatLibrary(ScalaTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
         if exclusions:
             self._set_pack_exclusions(exclusions)
+        self._add_tags('type:library', 'type:fatjar')
 
     def generate(self):
         jar = self._generate_fat_jar()
@@ -182,6 +191,7 @@ class ScalaTest(ScalaFatLibrary):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -194,12 +204,14 @@ class ScalaTest(ScalaFatLibrary):
                 deps=deps,
                 resources=resources,
                 visibility=visibility,
+                tags=tags,
                 source_encoding=source_encoding,
                 warnings=warnings,
                 exclusions=exclusions,
                 kwargs=kwargs)
         self.type = 'scala_test'
         self.attr['testdata'] = var_to_list(testdata)
+        self._add_tags('type:test')
 
         if not self.srcs:
             self.warning('Empty scala test sources.')
@@ -227,6 +239,7 @@ def scala_library(name=None,
                   deps=[],
                   resources=[],
                   visibility=None,
+                  tags=[],
                   source_encoding=None,
                   warnings=None,
                   exported_deps=[],
@@ -239,6 +252,7 @@ def scala_library(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -254,6 +268,7 @@ def scala_fat_library(name=None,
                       deps=[],
                       resources=[],
                       visibility=None,
+                      tags=[],
                       source_encoding=None,
                       warnings=None,
                       exclusions=[],
@@ -265,6 +280,7 @@ def scala_fat_library(name=None,
             deps=deps,
             resources=resources,
             visibility=visibility,
+            tags=tags,
             source_encoding=source_encoding,
             warnings=warnings,
             exclusions=exclusions,
@@ -277,6 +293,7 @@ def scala_test(name=None,
                deps=[],
                resources=[],
                visibility=None,
+               tags=[],
                source_encoding=None,
                warnings=None,
                exclusions=[],
@@ -291,6 +308,7 @@ def scala_test(name=None,
                        deps=deps,
                        resources=resources,
                        visibility=visibility,
+                       tags=tags,
                        source_encoding=source_encoding,
                        warnings=warnings,
                        exclusions=exclusions,

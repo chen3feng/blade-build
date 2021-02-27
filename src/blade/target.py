@@ -113,6 +113,7 @@ class Target(object):
                  src_exts,
                  deps,
                  visibility,
+                 tags,
                  kwargs):
         """Init method.
 
@@ -165,6 +166,8 @@ class Target(object):
         # For temporary, mutable fields only, their values should not relate to fingerprint
         self.data = {}
 
+        self.tags = set()
+
         # TODO: Remove it, make a `TestTargetMixin`
         self.attr['test_timeout'] = config.get_item('global_config', 'test_timeout')
 
@@ -173,6 +176,7 @@ class Target(object):
         self._check_srcs(src_exts)
         self._init_target_deps(deps)
         self._init_visibility(visibility)
+        self._add_tags(*tags)
         self.__build_code = None
         self.__fingerprint = None  # Cached fingerprint
 
@@ -256,6 +260,10 @@ class Target(object):
     def _prepare_to_generate_rule(self):
         """Should be overridden."""
         self.error('_prepare_to_generate_rule should be overridden in subclasses')
+
+    def _add_tags(self, *tags):
+        for tag in tags:
+            self.tags.add(tag)
 
     def _check_name(self):
         if '/' in self.name:
@@ -741,6 +749,7 @@ class SystemLibrary(Target):
                 src_exts=[],
                 deps=[],
                 visibility=['PUBLIC'],
+                tags=['lang:cc', 'type:library', 'type:system'],
                 kwargs={})
         self.path = '#'
         self.key = '#:' + name

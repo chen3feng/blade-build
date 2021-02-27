@@ -80,6 +80,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  optimize,
                  deprecated,
                  generate_descriptors,
@@ -101,6 +102,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 src_exts=['proto'],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning='',
                 defs=[],
                 incs=[],
@@ -113,6 +115,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._check_proto_srcs_name(srcs)
         if srcs:
             self.attr['public_protos'] = [self._source_file_path(s) for s in srcs]
+        self._add_tags('lang:proto', 'type:library')
 
         proto_config = config.get_section('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
@@ -429,6 +432,7 @@ def proto_library(
         srcs=[],
         deps=[],
         visibility=None,
+        tags=[],
         optimize=None,
         deprecated=False,
         generate_descriptors=False,
@@ -448,6 +452,7 @@ def proto_library(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             optimize=optimize,
             deprecated=deprecated,
             generate_descriptors=generate_descriptors,

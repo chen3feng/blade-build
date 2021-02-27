@@ -40,6 +40,7 @@ class PackageTarget(Target):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  type,
                  out,
                  shell,
@@ -54,6 +55,7 @@ class PackageTarget(Target):
                 src_exts=None,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
 
         if type not in _package_types:
@@ -62,6 +64,7 @@ class PackageTarget(Target):
         self.attr['type'] = type
         self.attr['sources'] = []
         self.attr['locations'] = []
+        self._add_tags('type:archive')
         self._process_srcs(srcs)
 
         if not out:
@@ -189,6 +192,7 @@ def package(name=None,
             srcs=[],
             deps=[],
             visibility=None,
+            tags=[],
             type='tar',
             out=None,
             shell=False,
@@ -198,6 +202,7 @@ def package(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             type=type,
             out=out,
             shell=shell,
