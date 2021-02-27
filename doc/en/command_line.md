@@ -95,7 +95,7 @@ After installing [argcomplete](https://pypi.org/project/argcomplete/), you will 
 pip install argcomplete
 ```
 
-For non-root installations, add the `--user` parameter
+For non-root installations, add the `--user` parameter.
 
 ### Enable
 

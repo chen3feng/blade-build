@@ -93,7 +93,7 @@ blade test base:string_test
 pip install argcomplete
 ```
 
-非 root 安装用加上 `--user` 参数
+非 root 安装，加上 `--user` 参数即可。
 
 ### 启用
 
