@@ -281,12 +281,12 @@ class _NinjaFileHeaderGenerator(object):
         self.generate_rule(name='link',
                            command='%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (
                                ld, ' '.join(ldflags)),
-                           description='LINK ${out}',
+                           description='LINK BINARY ${out}',
                            pool=pool)
         self.generate_rule(name='solink',
                            command='%s -o ${out} -shared %s ${ldflags} ${in} ${extra_ldflags}' % (
                                ld, ' '.join(ldflags)),
-                           description='SHAREDLINK ${out}',
+                           description='LINK SHARED ${out}',
                            pool=pool)
 
     def _cc_compile_command_wrapper_template(self):
@@ -335,17 +335,17 @@ class _NinjaFileHeaderGenerator(object):
                            command='%s --proto_path=. %s -I=`dirname ${in}` '
                                    '--cpp_out=%s ${protocflags} ${protoccpppluginflags} ${in}' % (
                                        protoc, protobuf_incs, self.build_dir),
-                           description='PROTOC ${in}')
+                           description='PROTOC CPP ${in}')
         self.generate_rule(name='protojava',
                            command='%s --proto_path=. %s --java_out=%s/`dirname ${in}` '
                                    '${protocjavapluginflags} ${in}' % (
                                        protoc_java, protobuf_java_incs, self.build_dir),
-                           description='PROTOCJAVA ${in}')
+                           description='PROTOC JAVA ${in}')
         self.generate_rule(name='protopython',
                            command='%s --proto_path=. %s -I=`dirname ${in}` '
                                    '--python_out=%s ${protocpythonpluginflags} ${in}' % (
                                        protoc, protobuf_incs, self.build_dir),
-                           description='PROTOCPYTHON ${in}')
+                           description='PROTOC PYTHON ${in}')
         self.generate_rule(name='protodescriptors',
                            command='%s --proto_path=. %s -I=`dirname ${first}` '
                                    '--descriptor_set_out=${out} --include_imports '
@@ -431,7 +431,7 @@ class _NinjaFileHeaderGenerator(object):
     def generate_java_resource_rules(self):
         self.generate_rule(name='javaresource',
                            command=self._builtin_command('java_resource'),
-                           description='JAVA RESOURCE ${in}')
+                           description='JAVA RESOURCE ${resources_dir}')
 
     def generate_java_jar_rules(self, java_config):
         jar = self.get_java_command(java_config, 'jar')
@@ -466,7 +466,7 @@ class _NinjaFileHeaderGenerator(object):
                            description='ONE JAR ${out}')
         self.generate_rule(name='javabinary',
                            command=self._builtin_command('java_binary'),
-                           description='JAVA BIN ${out}')
+                           description='JAVA BINARY ${out}')
 
     def generate_scalac_rule(self, java_config):
         scalac = 'scalac'
