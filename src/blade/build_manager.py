@@ -536,6 +536,7 @@ class Blade(object):
                 if k in self.__expanded_command_targets:
                     command_target_outputs.append(target.get_outputs_goal())
         code.append('build %s: phony %s\n' % (_ALL_COMMAND_TARGETS, ' '.join(command_target_outputs)))
+        # code.append('default %s\n' % (_ALL_COMMAND_TARGETS))
         return code
 
     def get_build_toolchain(self):

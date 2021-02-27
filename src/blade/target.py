@@ -718,7 +718,7 @@ class Target(object):
 
     def get_outputs_goal(self):
         """A phony build goal to represent all output files."""
-        return os.path.join(self.path, self.name + '.__outputs__')
+        return os.path.join(self.build_dir, self.path, self.name + '.__outputs__')
 
     def get_build_code(self):
         """Return generated build code."""
