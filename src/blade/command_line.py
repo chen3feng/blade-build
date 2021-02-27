@@ -44,7 +44,7 @@ class CommandLineParser(object):
 
     def __init__(self):
         """Init the class."""
-        self._arg_parser = self._init_arg_parser()
+        self._arg_parser = self._build_arg_parser()
         if argcomplete:
             argcomplete.autocomplete(self._arg_parser)
 
@@ -396,7 +396,7 @@ class CommandLineParser(object):
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
 
-    def _init_arg_parser(self):
+    def _build_arg_parser(self):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'
         arg_parser = argparse.ArgumentParser(prog='blade', description=blade_cmd_help)
