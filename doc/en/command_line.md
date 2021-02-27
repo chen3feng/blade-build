@@ -83,3 +83,24 @@ blade test base/...
 # Build and test the target named `string_test` in the base subdirectory
 blade test base:string_test
 ```
+
+## Command Line Completion
+
+There is a simple command line completion after executing the [install](misc.md#inshall) command.
+After installing [argcomplete](https://pypi.org/project/argcomplete/), you will get a complete command line completion.
+
+### Install
+
+```console
+pip install argcomplete
+```
+
+For non-root installation, add the `--user` parameter.
+
+### Enable
+
+Modify `~/.bashrc`:
+
+```bash
+eval "$(register-python-argcomplete blade)"
+```

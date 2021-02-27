@@ -15,6 +15,13 @@ from __future__ import print_function
 
 import argparse
 
+# https://pypi.org/project/argcomplete/
+try:
+    # pyright: reportMissingImports=false
+    import argcomplete
+except ImportError:
+    argcomplete = None
+
 from blade import console
 from blade import constants
 from blade.toolchain import BuildArchitecture
@@ -421,6 +428,8 @@ class ParsedCommandLine(object):
         self._add_query_arguments(query_parser)
         self._add_dump_arguments(dump_parser)
 
+        if argcomplete:
+            argcomplete.autocomplete(arg_parser)
         return arg_parser.parse_known_args(argv)
 
     def _compiler_target_arch(self):
