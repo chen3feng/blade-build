@@ -540,7 +540,8 @@ class JavaTargetMixIn(object):
             inputs.append(path)
             outputs.append(os.path.join(resources_dir, dst))
         if inputs:
-            self.generate_build('javaresource', outputs, inputs=inputs)
+            self.generate_build('javaresource', outputs, inputs=inputs,
+                                variables={'resources_dir': resources_dir})
             self._remove_on_clean(resources_dir)
         return outputs
 
