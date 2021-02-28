@@ -40,6 +40,7 @@ class GenRuleTarget(Target):
                  src_exts,
                  deps,
                  visibility,
+                 tags,
                  outs,
                  cmd,
                  cmd_name,
@@ -61,8 +62,9 @@ class GenRuleTarget(Target):
                 src_exts=src_exts,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
-
+        self._add_tags('type:gen_rule')
         if not outs:
             self.error('"outs" can not be empty')
         if not cmd:
@@ -186,6 +188,7 @@ def gen_rule(
         src_exts=[],
         deps=[],
         visibility=None,
+        tags=[],
         outs=[],
         cmd='',
         cmd_name='COMMAND',
@@ -220,6 +223,7 @@ def gen_rule(
             src_exts=src_exts,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             outs=outs,
             cmd=cmd,
             cmd_name=cmd_name,

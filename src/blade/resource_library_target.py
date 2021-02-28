@@ -25,6 +25,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  optimize,
                  extra_cppflags,
                  kwargs):
@@ -40,6 +41,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 src_exts=None,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning='',
                 defs=[],
                 incs=[],
@@ -50,6 +52,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 kwargs=kwargs)
         hdr = '%s.h' % self.name
         self.attr['generated_hdrs'] = [self._target_file_path(hdr)]
+        self._add_tags('lang:lexyacc', 'type:library')
         self._set_hdrs([hdr])
 
     def generate(self):
@@ -79,6 +82,7 @@ def resource_library(name=None,
                      srcs=[],
                      deps=[],
                      visibility=None,
+                     tags=[],
                      optimize=None,
                      extra_cppflags=[],
                      **kwargs):
@@ -88,6 +92,7 @@ def resource_library(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             optimize=optimize,
             extra_cppflags=extra_cppflags,
             kwargs=kwargs)

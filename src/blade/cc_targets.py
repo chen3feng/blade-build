@@ -154,6 +154,7 @@ class CcTarget(Target):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -181,6 +182,7 @@ class CcTarget(Target):
                 src_exts=src_exts,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
 
         self._check_defs(defs)
@@ -726,6 +728,7 @@ class CcLibrary(CcTarget):
                  hdrs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -753,6 +756,7 @@ class CcLibrary(CcTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -766,6 +770,7 @@ class CcLibrary(CcTarget):
         self.attr['always_optimize'] = always_optimize
         self.attr['deprecated'] = deprecated
         self.attr['allow_undefined'] = allow_undefined
+        self._add_tags('lang:cc', 'type:library')
         self._set_secret(secret, secret_revision_file)
         self._set_hdrs(hdrs)
 
@@ -799,6 +804,7 @@ class PrebuiltCcLibrary(CcTarget):
                  deps,
                  hdrs,
                  visibility,
+                 tags,
                  export_incs,
                  libpath_pattern,
                  link_all_symbols,
@@ -813,6 +819,7 @@ class PrebuiltCcLibrary(CcTarget):
                 srcs=[],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning='no',
                 defs=[],
                 incs=[],
@@ -825,6 +832,7 @@ class PrebuiltCcLibrary(CcTarget):
         self.attr['link_all_symbols'] = link_all_symbols
         self.attr['binary_link_only'] = binary_link_only
         self.attr['deprecated'] = deprecated
+        self._add_tags('lang:cc', 'type:library', 'type:prebuilt')
         self._set_hdrs(hdrs)
         self._setup()
 
@@ -936,6 +944,7 @@ def prebuilt_cc_library(
         name,
         deps=[],
         visibility=None,
+        tags=[],
         export_incs=[],
         hdrs=None,
         libpath_pattern=None,
@@ -948,6 +957,7 @@ def prebuilt_cc_library(
             name=name,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             export_incs=export_incs,
             hdrs=hdrs,
             libpath_pattern=libpath_pattern,
@@ -965,6 +975,7 @@ def cc_library(
         hdrs=None,
         deps=[],
         visibility=None,
+        tags=[],
         warning='yes',
         defs=[],
         incs=[],
@@ -1003,6 +1014,7 @@ def cc_library(
                 hdrs=hdrs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 export_incs=export_incs,
                 libpath_pattern=prebuilt_libpath_pattern,
                 link_all_symbols=link_all_symbols,
@@ -1018,6 +1030,7 @@ def cc_library(
             hdrs=hdrs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
@@ -1048,6 +1061,7 @@ class ForeignCcLibrary(CcTarget):
                  hdrs,
                  hdr_dir,
                  visibility,
+                 tags,
                  export_incs,
                  lib_dir,
                  has_dynamic,
@@ -1063,6 +1077,7 @@ class ForeignCcLibrary(CcTarget):
                 srcs=[],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning='no',
                 defs=[],
                 incs=[],
@@ -1076,6 +1091,7 @@ class ForeignCcLibrary(CcTarget):
         self.attr['deprecated'] = deprecated
         self.attr['lib_dir'] = lib_dir
         self.attr['has_dynamic'] = has_dynamic
+        self._add_tags('lang:cc', 'type:library', 'type:foreign')
 
         if hdrs:
             hdrs = [os.path.join(install_dir, h) for h in var_to_list(hdrs)]
@@ -1135,6 +1151,7 @@ def foreign_cc_library(
         link_all_symbols=False,
         binary_link_only=False,
         visibility=None,
+        tags=[],
         deprecated=False,
         **kwargs):
     """Similar to a prebuilt cc_library, but it is built by a foreign build system,
@@ -1152,6 +1169,7 @@ def foreign_cc_library(
             name=name,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             export_incs=export_incs,
             install_dir=install_dir,
             hdrs=hdrs,
@@ -1181,6 +1199,7 @@ class CcBinary(CcTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -1203,6 +1222,7 @@ class CcBinary(CcTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -1214,6 +1234,7 @@ class CcBinary(CcTarget):
         self.attr['embed_version'] = embed_version
         self.attr['dynamic_link'] = dynamic_link
         self.attr['export_dynamic'] = export_dynamic
+        self._add_tags('lang:cc', 'type:binary')
 
         # add extra link library
         link_libs = var_to_list(config.get_item('cc_binary_config', 'extra_libs'))
@@ -1297,6 +1318,7 @@ def cc_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,
+              tags=[],
               warning='yes',
               defs=[],
               incs=[],
@@ -1313,6 +1335,7 @@ def cc_binary(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
@@ -1352,6 +1375,7 @@ class CcPlugin(CcTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -1374,6 +1398,7 @@ class CcPlugin(CcTarget):
                   srcs=srcs,
                   deps=deps,
                   visibility=visibility,
+                  tags=tags,
                   warning=warning,
                   defs=defs,
                   incs=incs,
@@ -1386,6 +1411,7 @@ class CcPlugin(CcTarget):
         self.suffix = suffix
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
+        self._add_tags('lang:cc', 'type:plugin')
 
     def _before_generate(self):  # override
         """Override"""
@@ -1425,6 +1451,7 @@ def cc_plugin(
         srcs=[],
         deps=[],
         visibility=None,
+        tags=[],
         warning='yes',
         defs=[],
         incs=[],
@@ -1442,6 +1469,7 @@ def cc_plugin(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
@@ -1471,6 +1499,7 @@ class CcTest(CcBinary):
             srcs,
             deps,
             visibility,
+            tags,
             warning,
             defs,
             incs,
@@ -1497,6 +1526,7 @@ class CcTest(CcBinary):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -1511,6 +1541,7 @@ class CcTest(CcBinary):
         self.attr['testdata'] = var_to_list(testdata)
         self.attr['always_run'] = always_run
         self.attr['exclusive'] = exclusive
+        self._add_tags('lang:cc', 'type:test')
 
         gtest_lib = var_to_list(cc_test_config['gtest_libs'])
         gtest_main_lib = var_to_list(cc_test_config['gtest_main_libs'])
@@ -1543,6 +1574,7 @@ def cc_test(name=None,
             srcs=[],
             deps=[],
             visibility=None,
+            tags=[],
             warning='yes',
             defs=[],
             incs=[],
@@ -1565,6 +1597,7 @@ def cc_test(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,

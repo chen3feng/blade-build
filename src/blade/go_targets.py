@@ -41,6 +41,7 @@ class GoTarget(Target):
                  deps,
                  extra_goflags,
                  visibility,
+                 tags,
                  kwargs):
         """Init the go target."""
         srcs = var_to_list(srcs)
@@ -54,11 +55,13 @@ class GoTarget(Target):
                 src_exts=['go'],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
 
         self._set_go_package()
         self._init_go_environment()
         self.attr['extra_goflags'] = extra_goflags
+        self._add_tags('lang:go')
 
     def _set_go_package(self):
         """
@@ -143,17 +146,19 @@ class GoTarget(Target):
 class GoLibrary(GoTarget):
     """GoLibrary generates build rules for a go package."""
 
-    def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, tags, extra_goflags, kwargs):
         super(GoLibrary, self).__init__(
                 name=name,
                 type='go_library',
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.attr['go_rule'] = 'gopackage'
         self.attr['go_label'] = 'gopkg'
+        self._add_tags('type:library')
 
     def _go_target_path(self):  # Override
         """Return package object path according to the standard go directory layout."""
@@ -166,33 +171,37 @@ class GoLibrary(GoTarget):
 class GoBinary(GoTarget):
     """GoBinary generates build rules for a go command executable."""
 
-    def __init__(self, name, srcs, deps, visibility, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, tags, extra_goflags, kwargs):
         super(GoBinary, self).__init__(
                 name=name,
                 type='go_binary',
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.attr['go_rule'] = 'gocommand'
         self.attr['go_label'] = 'bin'
+        self._add_tags('type:binary')
 
 
 class GoTest(GoTarget):
     """GoTest generates build rules for a go test binary."""
 
-    def __init__(self, name, srcs, deps, visibility, testdata, extra_goflags, kwargs):
+    def __init__(self, name, srcs, deps, visibility, tags, testdata, extra_goflags, kwargs):
         super(GoTest, self).__init__(
                 name=name,
                 type='go_test',
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 extra_goflags=extra_goflags,
                 kwargs=kwargs)
         self.attr['go_rule'] = 'gotest'
         self.attr['testdata'] = var_to_list(testdata)
+        self._add_tags('type:test')
 
 
 def go_library(
@@ -201,12 +210,14 @@ def go_library(
         deps=[],
         extra_goflags=None,
         visibility=None,
+        tags=[],
         **kwargs):
     build_manager.instance.register_target(GoLibrary(
         name=name,
         srcs=srcs,
         deps=deps,
         visibility=visibility,
+        tags=tags,
         extra_goflags=extra_goflags,
         kwargs=kwargs))
 
@@ -216,6 +227,7 @@ def go_binary(
         srcs,
         deps=[],
         visibility=None,
+        tags=[],
         extra_goflags=None,
         **kwargs):
     build_manager.instance.register_target(GoBinary(
@@ -224,6 +236,7 @@ def go_binary(
             deps=deps,
             extra_goflags=extra_goflags,
             visibility=visibility,
+            tags=tags,
             kwargs=kwargs))
 
 
@@ -232,6 +245,7 @@ def go_test(
         srcs,
         deps=[],
         visibility=None,
+        tags=[],
         testdata=[],
         extra_goflags=None,
         **kwargs):
@@ -240,6 +254,7 @@ def go_test(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             testdata=testdata,
             extra_goflags=extra_goflags,
             kwargs=kwargs))

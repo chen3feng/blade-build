@@ -26,6 +26,7 @@ class SwigLibrary(CcTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  java_package,
                  java_lib_packed,
@@ -38,6 +39,7 @@ class SwigLibrary(CcTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=[],
                 incs=[],
@@ -50,6 +52,7 @@ class SwigLibrary(CcTarget):
         self.attr['java_package'] = java_package
         self.attr['java_lib_packed'] = java_lib_packed
         self.attr['extra_swigflags'] = extra_swigflags
+        self._add_tags('lang:swig', 'type:library')
 
     def _expand_deps_generation(self):
         build_targets = self.blade.get_build_targets()
@@ -96,6 +99,7 @@ def swig_library(
         srcs=[],
         deps=[],
         visibility=None,
+        tags=[],
         warning='',
         java_package='',
         java_lib_packed=False,
@@ -108,6 +112,7 @@ def swig_library(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             java_package=java_package,
             java_lib_packed=java_lib_packed,

@@ -30,7 +30,7 @@ from blade.util import iteritems
 class MavenJar(Target):
     """Describe a maven jar"""
 
-    def __init__(self, name, id, classifier, transitive, visibility):
+    def __init__(self, name, id, classifier, transitive, visibility, tags):
         super(MavenJar, self).__init__(
                 name=name,
                 type='maven_jar',
@@ -38,12 +38,14 @@ class MavenJar(Target):
                 src_exts=None,
                 deps=[],
                 visibility=visibility,
+                tags=tags,
                 kwargs={})
         self._check_id(id)
         self._check_allowed_dirs()
         self.attr['id'] = id
         self.attr['classifier'] = classifier
         self.attr['transitive'] = transitive
+        self._add_tags('lang:java', 'type:maven')
         self._setup()
 
     def _check_id(self, id):
@@ -610,6 +612,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  resources,
                  source_encoding,
                  warnings,
@@ -630,9 +633,12 @@ class JavaTarget(Target, JavaTargetMixIn):
                 src_exts=['java'],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
         self._process_resources(resources)
         self.attr['source_encoding'] = source_encoding
+        self._add_tags('lang:java')
+
         if warnings is not None:
             self.attr['warnings'] = var_to_list(warnings)
 
@@ -688,6 +694,7 @@ class JavaLibrary(JavaTarget):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -709,16 +716,19 @@ class JavaLibrary(JavaTarget):
                 srcs=srcs,
                 deps=all_deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
         self.attr['exported_deps'] = self._unify_deps(exported_deps)
         self.attr['provided_deps'] = self._unify_deps(provided_deps)
+        self._add_tags('type:library')
         if prebuilt:
             if not binary_jar:
                 binary_jar = name + '.jar'
             self.attr['binary_jar'] = self._source_file_path(binary_jar)
+            self._add_tags('type:prebuilt')
         self.attr['jacoco_coverage'] = coverage and bool(srcs)
 
     def generate(self):
@@ -740,6 +750,7 @@ class JavaBinary(JavaTarget):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -752,12 +763,14 @@ class JavaBinary(JavaTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
         self.attr['main_class'] = main_class
         self.attr['run_in_shell'] = True
+        self._add_tags('type:binary')
         if not main_class:
             self.warning('Missing "main_class", program may not run')
         if exclusions:
@@ -795,6 +808,7 @@ class JavaFatLibrary(JavaTarget):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -806,10 +820,12 @@ class JavaFatLibrary(JavaTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
                 kwargs=kwargs)
+        self._add_tags('type:library', 'type:fatjar')
         if exclusions:
             self._set_pack_exclusions(exclusions)
 
@@ -827,6 +843,7 @@ class JavaTest(JavaBinary):
             srcs,
             deps,
             visibility,
+            tags,
             resources,
             source_encoding,
             warnings,
@@ -840,6 +857,7 @@ class JavaTest(JavaBinary):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 resources=resources,
                 source_encoding=source_encoding,
                 warnings=warnings,
@@ -850,6 +868,7 @@ class JavaTest(JavaBinary):
             self.warning('"target_under_test" is deprecated, you can remove it safely')
         self.type = 'java_test'
         self.attr['testdata'] = var_to_list(testdata)
+        self._add_tags('type:test')
 
     def _java_test_vars(self):
         vars = {
@@ -869,8 +888,8 @@ class JavaTest(JavaBinary):
         self.generate_build('javatest', output, inputs=[jar] + dep_jars + maven_jars, variables=vars)
 
 
-def maven_jar(name=None, id=None, classifier='', transitive=True, visibility=None):
-    target = MavenJar(name, id, classifier, transitive, visibility)
+def maven_jar(name=None, id=None, classifier='', transitive=True, visibility=None, tags=[]):
+    target = MavenJar(name, id, classifier, transitive, visibility, tags)
     build_manager.instance.register_target(target)
 
 
@@ -878,6 +897,7 @@ def java_library(name=None,
                  srcs=[],
                  deps=[],
                  visibility=None,
+                 tags=[],
                  resources=[],
                  source_encoding=None,
                  warnings=None,
@@ -898,6 +918,7 @@ def java_library(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -915,6 +936,7 @@ def java_binary(name=None,
                 srcs=[],
                 deps=[],
                 visibility=None,
+                tags=[],
                 resources=[],
                 source_encoding=None,
                 warnings=None,
@@ -926,6 +948,7 @@ def java_binary(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -939,6 +962,7 @@ def java_test(name=None,
               srcs=None,
               deps=[],
               visibility=None,
+              tags=[],
               resources=[],
               source_encoding=None,
               warnings=None,
@@ -953,6 +977,7 @@ def java_test(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,
@@ -968,6 +993,7 @@ def java_fat_library(name=None,
                      srcs=[],
                      deps=[],
                      visibility=None,
+                     tags=[],
                      resources=[],
                      source_encoding=None,
                      warnings=None,
@@ -979,6 +1005,7 @@ def java_fat_library(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             resources=resources,
             source_encoding=source_encoding,
             warnings=warnings,

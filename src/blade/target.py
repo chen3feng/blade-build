@@ -18,6 +18,7 @@ import re
 from blade import config
 from blade import console
 from blade import target_pattern
+from blade import target_tags
 from blade.util import var_to_list, iteritems, source_location, md5sum
 
 
@@ -113,6 +114,7 @@ class Target(object):
                  src_exts,
                  deps,
                  visibility,
+                 tags,
                  kwargs):
         """Init method.
 
@@ -165,6 +167,8 @@ class Target(object):
         # For temporary, mutable fields only, their values should not relate to fingerprint
         self.data = {}
 
+        self.tags = set()
+
         # TODO: Remove it, make a `TestTargetMixin`
         self.attr['test_timeout'] = config.get_item('global_config', 'test_timeout')
 
@@ -173,6 +177,7 @@ class Target(object):
         self._check_srcs(src_exts)
         self._init_target_deps(deps)
         self._init_visibility(visibility)
+        self._add_tags(*tags)
         self.__build_code = None
         self.__fingerprint = None  # Cached fingerprint
 
@@ -185,6 +190,7 @@ class Target(object):
             'srcs': self.srcs,
             'deps': self.deps,
             'visibility': list(self._visibility),
+            'tags': sorted(self.tags)
         }
         target.update({k: v for k, v in self.attr.items() if not k.startswith('_')})
         return target
@@ -256,6 +262,19 @@ class Target(object):
     def _prepare_to_generate_rule(self):
         """Should be overridden."""
         self.error('_prepare_to_generate_rule should be overridden in subclasses')
+
+    def _add_tags(self, *tags):
+        for tag in tags:
+            if not target_tags.is_valid(tag):
+                self.warning('Invalid tag "%s"' % tag)
+                continue
+            self.tags.add(tag)
+
+    def match_tags(self, *tags):
+        for tag in tags:
+            if tag in self.tags:
+                return True
+        return False
 
     def _check_name(self):
         if '/' in self.name:
@@ -741,6 +760,7 @@ class SystemLibrary(Target):
                 src_exts=[],
                 deps=[],
                 visibility=['PUBLIC'],
+                tags=['lang:cc', 'type:library', 'type:system'],
                 kwargs={})
         self.path = '#'
         self.key = '#:' + name

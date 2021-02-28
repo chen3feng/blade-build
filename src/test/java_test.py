@@ -6,8 +6,7 @@
 
 
 """
- This is the test module for java_jar target.
-
+This is the test module for java_jar target.
 """
 
 

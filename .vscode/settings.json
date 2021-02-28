@@ -1,0 +1,7 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.analysis.extraPaths": [
+        "src",
+        "src/test"
+    ]
+}

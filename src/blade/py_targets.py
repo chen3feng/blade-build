@@ -33,6 +33,7 @@ class PythonTarget(Target):
                  deps,
                  base,
                  visibility,
+                 tags,
                  kwargs):
         """Init method."""
         srcs = var_to_list(srcs)
@@ -45,6 +46,7 @@ class PythonTarget(Target):
             src_exts=['py', 'py2', 'py3', 'egg', 'whl'],
             deps=deps,
             visibility=visibility,
+            tags=tags,
             kwargs=kwargs)
 
         if base:
@@ -79,6 +81,7 @@ class PythonLibrary(PythonTarget):
                  deps,
                  base,
                  visibility,
+                 tags,
                  kwargs):
         """Init method."""
         super(PythonLibrary, self).__init__(
@@ -88,7 +91,9 @@ class PythonLibrary(PythonTarget):
                 deps=deps,
                 base=base,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
+        self._add_tags('lang:py', 'type:library')
 
     def _pylib(self):
         if not self.srcs:
@@ -110,6 +115,7 @@ class PrebuiltPythonLibrary(PythonTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  base,
                  kwargs):
         """Init method."""
@@ -119,8 +125,10 @@ class PrebuiltPythonLibrary(PythonTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 base=base,
                 kwargs=kwargs)
+        self._add_tags('lang:py', 'type:library', 'type:prebuilt')
         if base:
             self.error("Prebuilt py_library doesn't support base")
         if len(self.srcs) != 1:
@@ -138,6 +146,7 @@ def py_library(name=None,
                srcs=[],
                deps=[],
                visibility=None,
+               tags=[],
                base=None,
                prebuilt=None,
                **kwargs):
@@ -148,6 +157,7 @@ def py_library(name=None,
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 base=base,
                 kwargs=kwargs)
     else:
@@ -156,6 +166,7 @@ def py_library(name=None,
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 base=base,
                 kwargs=kwargs)
 
@@ -175,6 +186,7 @@ class PythonBinary(PythonLibrary):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  main,
                  base,
                  exclusions,
@@ -188,6 +200,7 @@ class PythonBinary(PythonLibrary):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 base=base,
                 kwargs=kwargs)
 
@@ -203,6 +216,7 @@ class PythonBinary(PythonLibrary):
                     'The entry file must be specified by the "main" '
                     'argument if there are more than one srcs')
         self.attr['exclusions'] = exclusions
+        self._add_tags('type:binary')
 
     def _get_entry(self):
         main = self.attr['main']
@@ -233,6 +247,7 @@ def py_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,
+              tags=[],
               main=None,
               base=None,
               exclusions=[],
@@ -243,6 +258,7 @@ def py_binary(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             main=main,
             base=base,
             exclusions=exclusions,
@@ -263,6 +279,7 @@ class PythonTest(PythonBinary):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  main,
                  base,
                  testdata,
@@ -273,18 +290,21 @@ class PythonTest(PythonBinary):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 main=main,
                 base=base,
                 exclusions=[],
                 kwargs=kwargs)
         self.type = 'py_test'
         self.attr['testdata'] = testdata
+        self._add_tags('type:test')
 
 
 def py_test(name=None,
             srcs=[],
             deps=[],
             visibility=None,
+            tags=[],
             main=None,
             base=None,
             testdata=[],
@@ -295,6 +315,7 @@ def py_test(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=[],
             main=main,
             base=base,
             testdata=testdata,

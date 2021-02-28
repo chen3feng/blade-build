@@ -14,9 +14,6 @@
 import sys
 import unittest
 
-sys.path.append('..')
-
-# pylint: disable=wrong-import-position
 from cc_binary_test import TestCcBinary
 from cc_library_test import TestCcLibrary
 from cc_plugin_test import TestCcPlugin

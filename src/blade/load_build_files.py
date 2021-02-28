@@ -25,6 +25,7 @@ from blade import build_attributes
 from blade import build_rules
 from blade import config
 from blade import console
+from blade import target_tags
 from blade.pathlib import Path
 from blade.util import path_under_dir, var_to_list, exec_file, source_location
 
@@ -387,6 +388,8 @@ def load_targets(target_ids, excluded_targets, blade):
 
     _load_build_rules()
 
+    filter_function = _compile_filter(blade)
+
     excluded_targets, excluded_dirs, excluded_trees = _parse_excluded_targets(excluded_targets)
     # targets specified in command line
     # starting dirs mentioned in command line
@@ -396,7 +399,7 @@ def load_targets(target_ids, excluded_targets, blade):
     # to prevent duplicated loading of BUILD files
     processed_dirs = {}
 
-    command_targets = _load_starting_build_files(blade, starting_dirs, processed_dirs)
+    command_targets = _load_starting_build_files(blade, starting_dirs, processed_dirs, filter_function)
     command_targets |= direct_targets
     command_targets -= excluded_targets
 
@@ -404,6 +407,17 @@ def load_targets(target_ids, excluded_targets, blade):
     related_targets = _load_related_build_files(blade, command_targets, processed_dirs)
 
     return direct_targets, command_targets, related_targets
+
+
+def _compile_filter(blade):
+    expr = blade.get_options().tags_filter
+    if not expr:
+        return None
+
+    filter_function, error = target_tags.compile_filter(expr)
+    if error:
+        console.error('Invalid "--tags-filter" expression: ' + error)
+    return filter_function
 
 
 def _parse_excluded_targets(excluded_targets):
@@ -470,7 +484,7 @@ def _expand_target_patterns(blade, target_ids, excluded_trees):
     return direct_targets, starting_dirs
 
 
-def _load_starting_build_files(blade, starting_dirs, processed_dirs):
+def _load_starting_build_files(blade, starting_dirs, processed_dirs, filter_function):
     """Load all build files in starting_dirs."""
 
     # Load BUILD files in paths, and return all loaded targets.
@@ -480,7 +494,9 @@ def _load_starting_build_files(blade, starting_dirs, processed_dirs):
     for source_dir in starting_dirs:
         _load_build_file(source_dir, processed_dirs, blade)
     target_database = blade.get_target_database()
-    return set(target_database.keys())
+    if not filter_function:
+        return set(target_database.keys())
+    return {key for key, target in target_database.items() if filter_function(target)}
 
 
 def _load_related_build_files(blade, command_targets, processed_dirs):

@@ -378,6 +378,9 @@ class CommandLineParser(object):
                 '--fat-jar-compression-level', dest='fat_jar_compression_level', type=str,
                 choices=([''] + [str(i) for i in range(9)]),
                 help=constants.HELP.fat_jar_compression_level)
+            parser.add_argument(
+                '--tags-filter', dest='tags_filter', type=str,
+                help='Tags filter expression, see documents for details')
 
     def _add_dump_arguments(self, parser):
         """Add dump arguments for parser."""
@@ -395,7 +398,9 @@ class CommandLineParser(object):
         group.add_argument(
             '--targets', dest='dump_targets', default=False, action='store_true',
             help='Dump attributes of targets in json format')
-
+        group.add_argument(
+            '--all-tags', dest='dump_all_tags', default=False, action='store_true',
+            help='Dump all tags of targets in json format')
     def _build_arg_parser(self):
         """Add command options, add options whthin this method."""
         blade_cmd_help = 'blade <subcommand> [options...] [targets...]'

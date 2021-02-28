@@ -37,6 +37,7 @@ class ShellTest(Target):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  testdata,
                  kwargs):
         srcs = var_to_list(srcs)
@@ -50,8 +51,10 @@ class ShellTest(Target):
                 src_exts=['sh', 'bash', ''],
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 kwargs=kwargs)
 
+        self._add_tags('lang:sh', 'type:test')
         self._process_test_data(testdata)
 
     def _process_test_data(self, testdata):
@@ -102,6 +105,7 @@ def sh_test(name=None,
             srcs=None,
             deps=[],
             visibility=None,
+            tags=[],
             testdata=[],
             **kwargs):
     build_manager.instance.register_target(ShellTest(
@@ -109,6 +113,7 @@ def sh_test(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=[],
             testdata=testdata,
             kwargs=kwargs))
 
