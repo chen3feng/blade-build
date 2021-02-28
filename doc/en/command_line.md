@@ -10,12 +10,12 @@ Blade <subcommand> [options]... [target patterns]...
 
 Subcommand is a subcommand that currently has:
 
-* `build` Build specified targets
-* `test`  Build and run tests
-* `clean` Cleanup specified targets
-* `dump`  Dump some useful information
-* `query` Query target dependencies
-* `run`   Build and run a single executable target
+- `build` Build specified targets
+- `test`  Build and run tests
+- `clean` Cleanup specified targets
+- `dump`  Dump some useful information
+- `query` Query target dependencies
+- `run`   Build and run a single executable target
 
 ## Target Pattern
 
@@ -25,11 +25,11 @@ Target pattern is allowed in command line, some configuration items and target a
 
 Target pattern supported formats:
 
-* `path:name` represents a target in the path
-* `path:*` indicates all targets in the path
-* `path` same as above
-* `path/...` represents all targets in the path, and recursively includes all subdirectories
-* `:name` indicates a target in the current directory
+- `path:name` represents a target in the path
+- `path:*` indicates all targets in the path
+- `path` same as above
+- `path/...` represents all targets in the path, and recursively includes all subdirectories
+- `:name` indicates a target in the current directory
 
 If path starts with `//`, it means it is a full path starts from the root of the [workspace](workspace.md).
 
@@ -39,26 +39,49 @@ When you specify ... as the end target, if its path exists, it will not fail eve
 Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
 excluded from searching, you can put an empty `.bladeskip` under it.
 
+## Filter by Target Tags
+
+In Blade, each target also supports [tags attribute](build_file.md#tags).
+
+You can filter the build targets with the tag filter expression through the `--tags-filter` option.
+
+The filter expression consists of the full name of the tag, operators and parentheses.
+
+-The full name of the tag: such as `lang:cc`, `type:test`
+-Operator: support `not`, `and`, `or`
+-Parentheses control priority
+
+To select multiple tags in the same group at the same time, you can use the syntax of `group:name1,name2`, which is equivalent to `(group:name1 or group:name2)`.
+
+Complicated expressions often avoid spaces that cannot be used, and quotation marks are needed in this case.
+
+Example:
+
+- `--tags-filter='lang:cc'` to filter `cc_*` targets
+- `--tags-filter='lang:cc,java'` to filters `cc_*` and `java_*` targets
+- `--tags-filter='lang:cc && type:test'` to filter the `cc_test` target
+- `--tags-filter='lang:cc && not type:test'` to filters `cc_*` targets other than `cc_test`
+
 ## Subcommand Options
 
 The options supported by different subcommands are different. Please run blade \<subcommand\> --help to view
 
 Here are some common command line options
 
-* `-m32,-m64` specifies the number of build target digits, the default is automatic detection
-* `-p PROFILE` specifies `debug`/`release`, default is `release`
-* `-k`, `--keep-going` encountered an error during the build process to continue execution (if it is a fatal error can not continue)
-* `-j N`, `--jobs=N` N way parallel build (Blade defaults to parallel build, calculate the appropriate value by yourself)
-* `-t N`, `--test-jobs=N` N-way parallel test, applicable on multi-CPU machines
-* `--verbose` complete command output for each command line
-* `–h`, `--help` show help
-* `--color=yes/no/auto` Whether to turn on color
-* `--exclude-targets` Comma separated target patterns, to be excluded from loading.
-* `--generate-dynamic` Forces the generation of dynamic libraries
-* `--generate-java` generates java files for proto_library and swig_library
-* `--generate-php` generates php files for proto_library and swig_library
-* `--gprof` supports GNU gprof
-* `--coverage` supports generation of coverage and currently supports GNU gcov and Java jacoco
+- `-m32,-m64` specifies the number of build target digits, the default is automatic detection
+- `-p PROFILE` specifies `debug`/`release`, default is `release`
+- `-k`, `--keep-going` encountered an error during the build process to continue execution (if it is a fatal error can not continue)
+- `-j N`, `--jobs=N` N way parallel build (Blade defaults to parallel build, calculate the appropriate value by yourself)
+- `-t N`, `--test-jobs=N` N-way parallel test, applicable on multi-CPU machines
+- `--verbose` complete command output for each command line
+- `–h`, `--help` show help
+- `--color=yes/no/auto` Whether to turn on color
+- `--exclude-targets` Comma separated target patterns, to be excluded from loading.
+- `--generate-dynamic` Forces the generation of dynamic libraries
+- `--generate-java` generates java files for proto_library and swig_library
+- `--generate-php` generates php files for proto_library and swig_library
+- `--gprof` supports GNU gprof
+- `--coverage` supports generation of coverage and currently supports GNU gcov and Java jacoco
 
 ## Example
 

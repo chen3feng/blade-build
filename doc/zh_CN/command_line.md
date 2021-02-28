@@ -10,12 +10,12 @@ blade <子命令> [选项]... [目标模式]...
 
 subcommand是一个子命令，目前有：
 
-* `build` 构建指定的目标
-* `test`  构建并且运行指定的测试
-* `clean` 清除指定目标的构建结果
-* `dump`  输出一些内部信息
-* `query` 查询目标的依赖项与被依赖项
-* `run`   构建并运行单个可执行的目标
+- `build` 构建指定的目标
+- `test`  构建并且运行指定的测试
+- `clean` 清除指定目标的构建结果
+- `dump`  输出一些内部信息
+- `query` 查询目标的依赖项与被依赖项
+- `run`   构建并运行单个可执行的目标
 
 ## 目标模式
 
@@ -23,11 +23,11 @@ subcommand是一个子命令，目前有：
 
 目标模式是一个空格分开的列表，支持的格式：
 
-* `path:name` 表示 path 中的某个 target
-* `path:*` 表示 path 中所有目标，但不包含其子目录
-* `path` 是 `path:*` 的简写形式
-* `path/...` 表示path中所有目标，并递归包括所有子目录
-* `:name` 表示当前目录下的某个目标
+- `path:name` 表示 path 中的某个 target
+- `path:*` 表示 path 中所有目标，但不包含其子目录
+- `path` 是 `path:*` 的简写形式
+- `path/...` 表示path中所有目标，并递归包括所有子目录
+- `:name` 表示当前目录下的某个目标
 
 如果 `path` 以 `//` 开始，则表示从[工作空间](workspace.md)的根目录开始。
 
@@ -36,26 +36,49 @@ subcommand是一个子命令，目前有：
 
 对于 `...` 目标模式，Blade 会递归搜索 `BUILD` 文件，如果需要排除某些目录，在其中放一个空的 `.bladeskip` 文件即可。
 
+## 按目标标签过滤
+
+在 Blade 中，每个目标还支持[标签（tag）](build_file.md#tags)属性。
+
+还可以通过 `--tags-filter` 选项用标签过滤表达式对构建目标进行过滤。
+
+过滤表达式由标签全名，运算符和括号组成。
+
+- 标签全名：比如 `lang:cc`, `type:test`
+- 运算符：支持 `not`，`and`，`or`
+- 圆括号控制优先级
+
+同时选择同一个组内的多个标签，可以用 `group:name1,name2` 的语法，等效于 `(group:name1 or group:name2)`。
+
+复杂的表达式往往避免不可空格，此时需要用引号。
+
+示例：
+
+- `--tags-filter='lang:cc'` 过滤出 `cc_*` 目标
+- `--tags-filter='lang:cc,java'` 过滤出 `cc_*` 和 `java_*` 目标
+- `--tags-filter='lang:cc && type:test'` 过滤出 `cc_test` 目标
+- `--tags-filter='lang:cc && not type:test'` 过滤出 `cc_test` 外的 `cc_*` 目标
+
 ## 子命令选项
 
 不同子命令支持的选项不一样，具体请执行 `blade <subcommand> --help` 查看
 
 下面是一些常用的命令行选项：
 
-* -m32,-m64            指定构建目标位数，默认为自动检测
-* -p PROFILE           指定debug/release，默认release
-* -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
-* -j N,--jobs=N        N路并行构建（Blade默认开启并行构建，自己计算合适的值）
-* -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
-* --verbose            完整输出所运行的每条命令行
-* –h, --help           显示帮助
-* --color=yes/no/auto  是否开启彩色
-* --exclude-targets    以逗号分割的加载时要排除的目标模式
-* --generate-dynamic   强制生成动态库
-* --generate-java      为proto_library 和 swig_library 生成java文件
-* --generate-php       为proto_library 和 swig_library 生成php文件
-* --gprof              支持 GNU gprof
-* --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
+- -m32,-m64            指定构建目标位数，默认为自动检测
+- -p PROFILE           指定debug/release，默认release
+- -k, --keep-going     构建过程中遇到错误继续执行（如果是致命错误不能继续）
+- -j N,--jobs=N        N路并行构建（Blade默认开启并行构建，自己计算合适的值）
+- -t N,--test-jobs=N   N路并行测试，多CPU机器上适用
+- --verbose            完整输出所运行的每条命令行
+- –h, --help           显示帮助
+- --color=yes/no/auto  是否开启彩色
+- --exclude-targets    以逗号分割的加载时要排除的目标模式
+- --generate-dynamic   强制生成动态库
+- --generate-java      为proto_library 和 swig_library 生成java文件
+- --generate-php       为proto_library 和 swig_library 生成php文件
+- --gprof              支持 GNU gprof
+- --coverage           支持生成覆盖率，目前支持 GNU gcov 和Java jacoco
 
 ## 示例
 
