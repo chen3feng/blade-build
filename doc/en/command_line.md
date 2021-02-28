@@ -26,12 +26,13 @@ Target pattern is allowed in command line, some configuration items and target a
 Target pattern supported formats:
 
 - `path:name` represents a target in the path
-- `path:*` indicates all targets in the path
+- `path:*` represents all targets in the path
 - `path` same as above
 - `path/...` represents all targets in the path, and recursively includes all subdirectories
-- `:name` indicates a target in the current directory
+- `:name` represents a target in the current directory
 
 If path starts with `//`, it means it is a full path starts from the root of the [workspace](workspace.md).
+Those whose name part is not a wildcard are called "direct targets".
 
 If no target is specified, it defaults to all targets in the current directory (excluding subdirectories). If there is no BUILD file in the current directory, it will fail.
 When you specify ... as the end target, if its path exists, it will not fail even if the expansion is empty.
@@ -61,6 +62,11 @@ Example:
 - `--tags-filter='lang:cc,java'` to filters `cc_*` and `java_*` targets
 - `--tags-filter='lang:cc && type:test'` to filter the `cc_test` target
 - `--tags-filter='lang:cc && not type:test'` to filters `cc_*` targets other than `cc_test`
+
+Filtering only apply to the target list expanded through the wildcatd target pattern on the command
+line, and does not apply to direct targets and other targets that are dependent on it.
+Any target that is dependent on the a unfiltered target will not be filtered out, regardless of
+whether it matches the filtered condition or not.
 
 To query which tags are available for the target to be filtered, you can use the `blade dump --all-tags` command:
 
