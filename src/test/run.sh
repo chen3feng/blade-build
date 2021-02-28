@@ -26,6 +26,7 @@ omit = */src/blade/pathlib.py
 parallel = true
 EOF
 
+export PYTHONPATH=$PYTHONPATH:$ROOT/src
 export BLADE_PYTHON_INTERPRETER="coverage run --source=$ROOT/src/blade --rcfile=$ROOT/.coveragerc"
 
 python -B $@

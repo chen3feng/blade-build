@@ -190,6 +190,7 @@ class Target(object):
             'srcs': self.srcs,
             'deps': self.deps,
             'visibility': list(self._visibility),
+            'tags': sorted(self.tags)
         }
         target.update({k: v for k, v in self.attr.items() if not k.startswith('_')})
         return target

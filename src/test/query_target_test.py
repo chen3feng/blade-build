@@ -6,8 +6,7 @@
 
 
 """
- This is the test module to test query function of blade.
-
+This is the test module to test query function of blade.
 """
 
 import unittest
