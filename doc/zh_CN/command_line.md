@@ -59,6 +59,28 @@ subcommand是一个子命令，目前有：
 - `--tags-filter='lang:cc && type:test'` 过滤出 `cc_test` 目标
 - `--tags-filter='lang:cc && not type:test'` 过滤出 `cc_test` 外的 `cc_*` 目标
 
+要查询待筛选目标有那些标签可以用，可以用 `blade dump --all-tags` 命令：
+
+```console
+$ blade dump --all-tags ...
+[
+  "lang:cc",
+  "lang:java",
+  "lang:lexyacc",
+  "lang:proto",
+  "lang:py",
+  "type:binary",
+  "type:foreign",
+  "type:gen_rule",
+  "type:library",
+  "type:maven",
+  "type:prebuilt",
+  "type:system",
+  "type:test",
+  "xxx:xxx"
+]
+```
+
 ## 子命令选项
 
 不同子命令支持的选项不一样，具体请执行 `blade <subcommand> --help` 查看

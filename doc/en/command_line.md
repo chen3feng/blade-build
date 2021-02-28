@@ -62,6 +62,28 @@ Example:
 - `--tags-filter='lang:cc && type:test'` to filter the `cc_test` target
 - `--tags-filter='lang:cc && not type:test'` to filters `cc_*` targets other than `cc_test`
 
+To query which tags are available for the target to be filtered, you can use the `blade dump --all-tags` command:
+
+```console
+$ blade dump --all-tags ...
+[
+   "lang:cc",
+   "lang:java",
+   "lang:lexyacc",
+   "lang:proto",
+   "lang:py",
+   "type:binary",
+   "type:foreign",
+   "type:gen_rule",
+   "type:library",
+   "type:maven",
+   "type:prebuilt",
+   "type:system",
+   "type:test",
+   "xxx:xxx"
+]
+```
+
 ## Subcommand Options
 
 The options supported by different subcommands are different. Please run blade \<subcommand\> --help to view
