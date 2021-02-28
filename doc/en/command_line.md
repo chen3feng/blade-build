@@ -53,7 +53,7 @@ The filter expression consists of the full name of the tag, operators and parent
 
 To select multiple tags in the same group at the same time, you can use the syntax of `group:name1,name2`, which is equivalent to `(group:name1 or group:name2)`.
 
-Complicated expressions often avoid spaces that cannot be used, and quotation marks are needed in this case.
+Complicated expressions often cannot avoid spaces, and quotation marks are needed in this case.
 
 Example:
 
