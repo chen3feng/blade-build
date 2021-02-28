@@ -26,7 +26,7 @@ syn keyword bladeTarget glob
 syn keyword bladeArg allow_empty exclude
 
 " General args
-syn keyword bladeArg name srcs deps visibility deprecated
+syn keyword bladeArg name srcs deps tags visibility deprecated
 
 " Test args
 syn keyword bladeArg always_run exclusive testdata

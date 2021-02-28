@@ -398,6 +398,8 @@ class Blade(object):
             return self._dump_compdb(output_file_name)
         if self.__options.dump_targets:
             return self._dump_targets(output_file_name)
+        if self.__options.dump_all_tags:
+            return self._dump_all_tags(output_file_name)
         # The "--config" is already handled before this
         raise AssertionError("Invalid dump option")
 
@@ -416,6 +418,16 @@ class Blade(object):
                 target = self.__target_database[target_key]
                 result.append(target.dump())
             json.dump(result, fp=f, indent=2, sort_keys=True)
+            print(file=f)
+        return 0
+
+    def _dump_all_tags(self, output_file_name):
+        """Implement the "dump --targets" subcommand."""
+        with open(output_file_name, 'w') as f:
+            all_tags = set()
+            for key, target in self.__build_targets.items():
+                all_tags.update(target.tags)
+            json.dump(sorted(list(all_tags)), fp=f, indent=2)
             print(file=f)
         return 0
 

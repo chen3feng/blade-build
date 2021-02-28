@@ -18,6 +18,7 @@ import re
 from blade import config
 from blade import console
 from blade import target_pattern
+from blade import target_tags
 from blade.util import var_to_list, iteritems, source_location, md5sum
 
 
@@ -263,7 +264,16 @@ class Target(object):
 
     def _add_tags(self, *tags):
         for tag in tags:
+            if not target_tags.is_valid(tag):
+                self.warning('Invalid tag "%s"' % tag)
+                continue
             self.tags.add(tag)
+
+    def match_tags(self, *tags):
+        for tag in tags:
+            if tag in self.tags:
+                return True
+        return False
 
     def _check_name(self):
         if '/' in self.name:
