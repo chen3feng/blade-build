@@ -32,6 +32,7 @@ class CuTarget(CcTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -49,6 +50,7 @@ class CuTarget(CcTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
@@ -57,6 +59,7 @@ class CuTarget(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
+        self._add_tags('lang:cu')
 
     def _get_cu_flags(self):
         """Return the nvcc flags according to the BUILD file and other configs."""
@@ -92,6 +95,7 @@ class CuLibrary(CuTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -104,12 +108,14 @@ class CuLibrary(CuTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
+        self._add_tags('type:library')
 
     def generate(self):
         self.error('To be implemented')
@@ -119,6 +125,7 @@ def cu_library(name=None,
                srcs=[],
                deps=[],
                visibility=None,
+               tags=[],
                warning='yes',
                defs=[],
                incs=[],
@@ -130,6 +137,7 @@ def cu_library(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
@@ -153,6 +161,7 @@ class CuBinary(CuTarget):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -165,12 +174,14 @@ class CuBinary(CuTarget):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
+        self._add_tags('type:binary')
 
     def generate(self):
         self.error('To be implemented')
@@ -180,6 +191,7 @@ def cu_binary(name=None,
               srcs=[],
               deps=[],
               visibility=None,
+              tags=[],
               warning='yes',
               defs=[],
               incs=[],
@@ -191,6 +203,7 @@ def cu_binary(name=None,
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
@@ -214,6 +227,7 @@ class CuTest(CuBinary):
                  srcs,
                  deps,
                  visibility,
+                 tags,
                  warning,
                  defs,
                  incs,
@@ -229,12 +243,14 @@ class CuTest(CuBinary):
                 srcs=srcs,
                 deps=deps,
                 visibility=visibility,
+                tags=tags,
                 warning=warning,
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
+        self._add_tags('lang:cu')
         self.type = 'cu_test'
         self.attr['testdata'] = var_to_list(testdata)
         self.attr['always_run'] = always_run
@@ -254,6 +270,7 @@ def cu_test(
         srcs=[],
         deps=[],
         visibility=None,
+        tags=[],
         warning='yes',
         defs=[],
         incs=[],
@@ -268,6 +285,7 @@ def cu_test(
             srcs=srcs,
             deps=deps,
             visibility=visibility,
+            tags=tags,
             warning=warning,
             defs=defs,
             incs=incs,
