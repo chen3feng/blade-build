@@ -60,8 +60,8 @@ Example:
 
 - `--tags-filter='lang:cc'` to filter `cc_*` targets
 - `--tags-filter='lang:cc,java'` to filters `cc_*` and `java_*` targets
-- `--tags-filter='lang:cc && type:test'` to filter the `cc_test` target
-- `--tags-filter='lang:cc && not type:test'` to filters `cc_*` targets other than `cc_test`
+- `--tags-filter='lang:cc and type:test'` to filter the `cc_test` target
+- `--tags-filter='lang:cc and not type:test'` to filters `cc_*` targets other than `cc_test`
 
 Filtering only apply to the target list expanded through the wildcatd target pattern on the command
 line, and does not apply to direct targets and other targets that are dependent on it.

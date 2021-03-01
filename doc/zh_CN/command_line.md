@@ -56,8 +56,8 @@ subcommand是一个子命令，目前有：
 
 - `--tags-filter='lang:cc'` 过滤出 `cc_*` 目标
 - `--tags-filter='lang:cc,java'` 过滤出 `cc_*` 和 `java_*` 目标
-- `--tags-filter='lang:cc && type:test'` 过滤出 `cc_test` 目标
-- `--tags-filter='lang:cc && not type:test'` 过滤出 `cc_test` 外的 `cc_*` 目标
+- `--tags-filter='lang:cc and type:test'` 过滤出 `cc_test` 目标
+- `--tags-filter='lang:cc and not type:test'` 过滤出 `cc_test` 外的 `cc_*` 目标
 
 过滤只作用于在命令行中通过目标模式展开的目标列表，对直接目标和被依赖的其他目标都不起作用。
 任何被未被过滤掉的目标所依赖的目标，无论是否匹配被滤掉的条件，也都不会被过滤掉。
