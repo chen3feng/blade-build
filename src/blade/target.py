@@ -266,7 +266,7 @@ class Target(object):
     def _add_tags(self, *tags):
         for tag in tags:
             if not target_tags.is_valid(tag):
-                self.warning('Invalid tag "%s"' % tag)
+                self.error('Invalid tag "%s"' % tag)
                 continue
             self.tags.add(tag)
 
