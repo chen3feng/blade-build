@@ -792,6 +792,8 @@ class CcLibrary(CcTarget):
         # Don't generate library file for header only library.
         if objs:
             self._cc_library(objs, inclusion_check_result)
+        else:
+            self._add_default_target_file('incchk.result', inclusion_check_result)
 
 
 class PrebuiltCcLibrary(CcTarget):
@@ -938,6 +940,9 @@ class PrebuiltCcLibrary(CcTarget):
         if dynamic_source and dynamic_target:
             self.generate_build('copy', dynamic_target, inputs=dynamic_source,
                                 order_only_deps=inclusion_check_result)
+            self._add_default_target_file('so', dynamic_target)
+        else:
+            self._add_default_target_file('incchk.result', inclusion_check_result)
 
 
 def prebuilt_cc_library(

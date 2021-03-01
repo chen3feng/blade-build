@@ -618,8 +618,6 @@ class Target(object):
         Set the default target if needed.
         """
         self.__targets[label] = path
-        if not self.__default_target:
-            self.__default_target = path
 
     def _add_default_target_file(self, label, path):
         """
@@ -633,6 +631,7 @@ class Target(object):
         Keep track of the default target file which could be referenced
         later without specifying label
         """
+        assert not self.__default_target, self.__default_target
         self.__default_target = path
         self._add_target_file(label, path)
 
@@ -747,6 +746,7 @@ class Target(object):
             self.generate()
             # Generate a phony goal to identify all it's outputs.
             if self.__build_code:
+                assert self.__default_target, self.__build_code
                 self.generate_build('phony', self.get_outputs_goal(), self._get_target_files())
         return self.__build_code
 

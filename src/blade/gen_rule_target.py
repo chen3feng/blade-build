@@ -141,8 +141,10 @@ class GenRuleTarget(Target):
     def implicit_dependencies(self):
         targets = self.blade.get_build_targets()
         implicit_deps = []
-        for dep in self.expanded_deps:  # pylint: disable=not-an-iterable
-            implicit_deps += targets[dep]._get_target_files()
+        for dep in self.deps:
+            target_file = targets[dep]._get_target_file()
+            if target_file:
+                implicit_deps.append(targets[dep]._get_target_file())
         return implicit_deps
 
     def _expand_srcs(self):
@@ -179,7 +181,11 @@ class GenRuleTarget(Target):
                             variables=vars)
 
         for i, out in enumerate(outputs):
-            self._add_target_file(str(i), out)
+            if i == 0:
+                self._add_default_target_file('0', outputs[0])
+            else:
+                self._add_target_file(str(i), out)
+          # Assueme
 
 
 def gen_rule(

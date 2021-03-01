@@ -102,7 +102,7 @@ class PythonLibrary(PythonTarget):
         inputs = [self._source_file_path(s) for s in self.srcs]
         vars = self._vars()
         self.generate_build('pythonlibrary', output, inputs=inputs, variables=vars)
-        self._add_target_file('pylib', output)
+        self._add_default_target_file('pylib', output)
         return output
 
     def generate(self):

@@ -321,4 +321,4 @@ def open_zip_file_for_write(filename, compression_level):
         # pylint: disable=unexpected-keyword-arg
         return zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED,
                                compresslevel=int(compression_level))
-    return zipfile.ZipFile(filename, 'w', )
+    return zipfile.ZipFile(filename, 'w', compression)
