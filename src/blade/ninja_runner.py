@@ -28,7 +28,8 @@ def build(build_dir, build_script, jobs_num, targets, options):
         cmd.append('-k0')
     if console.verbosity_compare(options.verbosity, 'verbose') >= 0:
         cmd.append('-v')
-    cmd.append(targets)
+    if targets:
+        cmd.append(targets)
     build_start_time = time.time()
     ret = _run_ninja_build(cmd, options)
     if options.show_builds_slower_than is not None:
