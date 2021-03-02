@@ -268,8 +268,9 @@ class _NinjaFileHeaderGenerator(object):
                 '2> ${out}.err' % (' '.join(flags), ' '.join(cppflags), includes))
 
         # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
-        # but errors may occur under certain boundary conditions (for example, check `__COUNTER__`
-        # in the preprocessing directives), try the command again without it on error.
+        # but errors may occur under certain boundary conditions (for example,
+        # `#if __COUNTER__ == __COUNTER__ + 1`),
+        # try the command again without it on error.
         cmd1 = cc + ' -fdirectives-only' + args
         cmd2 = cc + args
 
