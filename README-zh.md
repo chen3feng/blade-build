@@ -32,7 +32,9 @@ Click here to read [English README](README.md).
 
 [![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
-## 通知
+## 发布
+
+master 分支上的代码是开发版，应当视为 beta 版。正式环境请优先考虑使用 tag 上的版本。我们会不定期地把内部大规模代码库上验证过的版本发布到 tag 上。
 
 * Blade 发布2.0，包含以下特性：
   * python 最低版本要求2.7，并支持 python 3
