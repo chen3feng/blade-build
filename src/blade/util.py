@@ -316,9 +316,10 @@ def parse_command_line(argv):
 
 def open_zip_file_for_write(filename, compression_level):
     """Open a zip file for writing with specified compression level."""
-    compression = zipfile.ZIP_STORED if compression_level == "0" else zipfile.ZIP_DEFLATED
-    if sys.version_info.major == 3 and sys.version_info.minor >= 7:
-        # pylint: disable=unexpected-keyword-arg
-        return zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED,
-                               compresslevel=int(compression_level))
-    return zipfile.ZipFile(filename, 'w', )
+    compression = zipfile.ZIP_DEFLATED
+    if sys.version_info.major < 3 or sys.version_info.major == 3 and sys.version_info.minor < 7:
+        if compression_level == "0":
+            compression = zipfile.ZIP_STORED
+        return zipfile.ZipFile(filename, 'w', compression)
+    # pylint: disable=unexpected-keyword-arg
+    return zipfile.ZipFile(filename, 'w', compression, compresslevel=int(compression_level))
