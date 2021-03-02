@@ -25,6 +25,24 @@ from blade import config
 from blade import console
 from blade import util
 
+
+# To verify whether a header file is included without depends on the library it belongs to,
+# we use the gcc's `-H` option to generate the inclusion stack information, see
+# https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
+# But this information is output to stderr mixed with diagnostic messages.
+# So we use this awk script to split them.
+#
+# The inclusion information is writes to stdout, other normal diagnostic message is write to stderr.
+#
+# NOTE the `$$` is required by ninja. and the `Multiple...` is the last and useless part of
+# the messages.
+_INCLUSION_STACK_SPLITTER = (r"awk '"
+    r"""/Multiple include guards may be useful for:/ {exit} """
+    r"""/^\.+ [^/]/ { print $$0} """  # Non absolute path
+    r"""!/^\.+ / {print $$0 > "/dev/stderr"}"""  # Maybe error messages
+    r"'"
+)
+
 def _incs_list_to_string(incs):
     """Convert incs list to string.
 
@@ -203,7 +221,7 @@ class _NinjaFileHeaderGenerator(object):
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
-        template = self._cc_compile_command_wrapper_template()
+        template = self._cc_compile_command_wrapper_template('${out}.H')
 
         cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
                       '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
@@ -246,14 +264,20 @@ class _NinjaFileHeaderGenerator(object):
 
     def _hdrs_command(self, cc, flags, cppflags, includes):
         """Command to generate cc inclusion information file"""
-        args = '-o /dev/null -E -H -MMD -MF ${out}.d %s %s -w ${cppflags} %s ${includes} ${in} 2> ${out}' % (
-                ' '.join(flags), ' '.join(cppflags), includes)
+        args = (' -o /dev/null -E -MMD -MF ${out}.d %s %s -w ${cppflags} %s ${includes} ${in} '
+                '2> ${out}.err' % (' '.join(flags), ' '.join(cppflags), includes))
+
         # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
-        # but errors may occur under certain boundary conditions (for example, check `__COUNTER__`
-        # in the preprocessing directives), rerun the command without it on error.
-        preprocess1 = '%s -fdirectives-only %s' % (cc, args)
-        preprocess2 = '%s %s' % (cc, args)
-        return preprocess1 + ' || ' + preprocess2 + r' || (cat ${out} | grep -Ev "^\.+ " && false)'
+        # but errors may occur under certain boundary conditions (for example,
+        # `#if __COUNTER__ == __COUNTER__ + 1`),
+        # try the command again without it on error.
+        cmd1 = cc + ' -fdirectives-only' + args
+        cmd2 = cc + args
+
+        # If the first cpp command fails, the second cpp command will be executed.
+        # The error message of the first command should be completely ignored.
+        return ('export LC_ALL=C; %s || %s; ec=$$?; %s ${out}.err > ${out}; '
+                'rm -f ${out}.err; exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
 
     def _generate_cc_inclusion_check_rule(self):
         self.generate_rule(name='ccincchk',
@@ -289,30 +313,23 @@ class _NinjaFileHeaderGenerator(object):
                            description='LINK SHARED ${out}',
                            pool=pool)
 
-    def _cc_compile_command_wrapper_template(self):
+    def _cc_compile_command_wrapper_template(self, inclusion_stack_file):
         """Calculate the cc compile command wrapper template."""
         # When dumping compdb, a raw compile command without wrapper should be generated,
         # otherwise some tools can't handle it.
         if self.command == 'dump' and self.options.dump_compdb:
             return '%s'
-        # To verify whether a header file is included without depends on the library it belongs to,
-        # we use the gcc's `-H` option to generate the inclusion stack information, see
-        # https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        # But this information is output to stderr mixed with diagnostic messages.
-        # So we use this awk script to split them.
-        #
-        # NOTE the `$$` is required by ninja. and the useless `Multiple ...` is the last part of
-        # the messages.
-        awk_script = (r"""'BEGIN {stop=0} /^Multiple include guards may be useful for:/ {stop=1}"""
-                      r""" !stop {if ($$1 ~/^\.+$$/) print $$0; else print $$0 > "/dev/stderr"}'""")
 
         if _shell_support_pipefail():
             # Use `pipefail` to ensure that the exit code is correct.
-            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | awk %s > ${out}.H' % awk_script
+            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | %s > %s' % (
+                _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
         else:
             # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; awk %s < ${out}.err > ${out}.H ; '
-                        'rm -f ${out}.err; exit $$ec') % awk_script
+            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; %s < ${out}.err > %s ; '
+                        'rm -f ${out}.err; exit $$ec') % (
+                            _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
+
         return template
 
     def generate_proto_rules(self):
