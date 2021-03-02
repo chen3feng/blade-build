@@ -153,6 +153,7 @@ class PackageTarget(Target):
                                 variables={'entries': ' '.join(entries)})
         else:
             self._package_in_shell(output, inputs, entries)
+        self._add_default_target_file(output)
 
     @staticmethod
     def _rule_from_package_type(t):

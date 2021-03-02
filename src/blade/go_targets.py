@@ -140,7 +140,7 @@ class GoTarget(Target):
                             variables=variables)
         label = self.attr.get('go_label')
         if label:
-            self._add_target_file(label, output)
+            self._add_default_target_file(label, output)
 
 
 class GoLibrary(GoTarget):
