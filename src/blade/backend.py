@@ -273,6 +273,8 @@ class _NinjaFileHeaderGenerator(object):
         cmd1 = cc + ' -fdirectives-only' + args
         cmd2 = cc + args
 
+        # If the first cpp command fails, the second cpp command will be executed.
+        # The error message of the first command should be completely ignored.
         return ('export LC_ALL=C; %s || %s; ec=$$?; %s ${out}.err > ${out}; '
                 'rm -f ${out}.err; exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
 
