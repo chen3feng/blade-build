@@ -30,9 +30,13 @@ First, let's see a cool demo:
 
 [![asciicast](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1.svg)](https://asciinema.org/a/o9uQ2uia4OVqghXUid7XSNjv1)
 
-## News
+## Releases
 
-* Version 2.0 is released! It includes the following notable changes:
+The code on the master branch is development version and should be considered as alpha version. 
+Please prefer using the version on the tags in your formal environment.
+We will release the verified version on the large-scale internal code base to the tag from time to time.
+
+* Version 2.0 is in release candidate! It includes the following notable changes:
 
   * minimal python version 2.7, support python 3
   * Support Java, scala building
