@@ -275,6 +275,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
     def _proto_java_gen_file(self, src):
         """Generate the java files name of the proto library."""
+        # FIXME: Handle utf-8 file decode error in python3
         with open(self._source_file_path(src)) as f:
             content = f.read()
         package_dir = self._get_java_package_name(content).replace('.', '/')
