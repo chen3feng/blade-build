@@ -32,7 +32,7 @@ First, let's see a cool demo:
 
 ## Releases
 
-The code on the master branch is development version and should be considered as beta version. 
+The code on the master branch is development version and should be considered as alpha version. 
 Please prefer using the version on the tags in your formal environment.
 We will release the verified version on the large-scale internal code base to the tag from time to time.
 
