@@ -2,15 +2,16 @@
 
 ## DSL 语言
 
-为了让构建更稳定，Blade 的 DSL 是受限制的 Python 语言，禁止了以下的函数和关键字：
+为了让构建更稳定，Blade 的 DSL 是受限制的 Python 语言，禁止了一些内置函数和关键字，包括但不限于：
 
-- `exec`
-- `execfile`
-- `eval`
-- `import`
+- `exec`，`execfile`，`eval` 提高构建文件的一致性。
+- `import` 请用 `blade` 的子模块。
+- `print` 请用 `blade.console` 里的函数代替。
 - `open`
 
-要用到一次常用的额外功能，比如 `os.path.join` 之类的，需要使用 `blade` 模块中类似的子模块。
+即使用 python 2 来运行 Blade，你也应当尽量采用反向移植的 python 3 的语法。
+
+对于一些常用的额外功能，比如 `os.path.join` 之类的，需要使用 `blade` 模块中类似的子模块。如果有更多合理的扩充建议，欢迎给我们提 Issue。
 
 要对现存的 `BUILD` 文件允许不受限制的 DSL 语言，设置 `global_config.unrestricted_dsl_dirs = [...]` 配置项，
 要全局禁止 DSL 限制，设置 `global_config.restricted_dsl = False`。
