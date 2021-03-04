@@ -2,7 +2,7 @@
 
 ## DSL Language
 
-Blade's DSL is a restricted Python language that prohibits some functions and keywords, include but not limited to:
+For more stable build processs, blade's DSL is designed to be a restricted Python language that prohibits some functions and keywords, include but not limited to:
 
 - `exec`
 - `execfile`
@@ -52,7 +52,7 @@ Some auxiliary functions, including:
 
 - `var_to_list()` function: If type of the argument is `str`, turn it into `list` contains a single element
 
-### blade.workspace module
+### `blade.workspace` module
 
 Get some information about the current [workspace](workspace.md), including:
 

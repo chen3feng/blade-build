@@ -126,19 +126,20 @@ else:
     ])
 
 
+# Replace some functions to better help users know how to deal with.
 _FORBIDDEN_FUNCTIONS = [
     ('__import__', 'import'),
-    'open',
     'exec',
     'execfile',
     'eval',
+    'open',
 ]
 
 
 def _make_forbidden_wrapper(name):
     def wrapper(*args, **kwargs):
         src_loc = util.source_location('BUILD')
-        error = '"%s" is forbidden in blade' % name
+        error = '"%s" is forbidden in blade, please use the builtin `blade` module' % name
         console.diagnose(src_loc, 'error', error)
         #raise ImportError(src_loc + ': ' + error)
         return None
