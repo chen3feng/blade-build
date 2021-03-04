@@ -400,15 +400,15 @@ class CcTarget(Target):
 
     def _generate_link_flags(self):
         """Generate linker flags for cc link."""
-        ldflags = []
+        linkflags = []
         extra_linkflags = self.attr.get('extra_linkflags')
         if extra_linkflags:
-            ldflags = extra_linkflags
+            linkflags = extra_linkflags
         if 'allow_undefined' in self.attr:
             allow_undefined = self.attr['allow_undefined']
             if not allow_undefined:
-                ldflags.append('-Xlinker --no-undefined')
-        return ldflags
+                linkflags.append('-Xlinker --no-undefined')
+        return linkflags
 
     def _generate_link_all_symbols_link_flags(self, libs):
         """Generate link flags for libraries which should be linked with all symbols."""
@@ -585,13 +585,13 @@ class CcTarget(Target):
 
     def _dynamic_cc_library(self, objs, inclusion_check_result):
         output = self._target_file_path('lib%s.so' % self.name)
-        ldflags = self._generate_link_flags()
+        linkflags = self._generate_link_flags()
         sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         if inclusion_check_result:
             incchk_deps.append(inclusion_check_result)
-        extra_ldflags = ['-l%s' % lib for lib in sys_libs]
+        extra_linkflags = ['-l%s' % lib for lib in sys_libs]
         self._cc_link(output, 'solink', objs=objs, deps=usr_libs, order_only_deps=incchk_deps,
-                      ldflags=ldflags, extra_ldflags=extra_ldflags)
+                      linkflags=linkflags, extra_linkflags=extra_linkflags)
         self._add_target_file('so', output)
 
     def _soname_of(self, so_path):
@@ -614,13 +614,13 @@ class CcTarget(Target):
             self._dynamic_cc_library(objs, inclusion_check_result)
 
     def _cc_link(self, output, rule, objs, deps,
-                 ldflags=None, extra_ldflags=None,
+                 linkflags=None, extra_linkflags=None,
                  implicit_deps=None, order_only_deps=None):
         vars = {}
-        if ldflags:
-            vars['ldflags'] = ' '.join(ldflags)
-        if extra_ldflags:
-            vars['extra_ldflags'] = ' '.join(extra_ldflags)
+        if linkflags:
+            vars['linkflags'] = ' '.join(linkflags)
+        if extra_linkflags:
+            vars['extra_linkflags'] = ' '.join(extra_linkflags)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -1263,41 +1263,41 @@ class CcBinary(CcTarget):
         return rpath_links
 
     def _generate_cc_binary_link_flags(self, dynamic_link):
-        ldflags = []
+        linkflags = []
         toolchain = self.blade.get_build_toolchain()
         if not dynamic_link and toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5':
-            ldflags += ['-static-libgcc', '-static-libstdc++']
+            linkflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
-            ldflags.append('-rdynamic')
-        ldflags += self._generate_link_flags()
+            linkflags.append('-rdynamic')
+        linkflags += self._generate_link_flags()
         for rpath_link in self._get_rpath_links():
-            ldflags.append('-Wl,--rpath-link=%s' % rpath_link)
-        return ldflags
+            linkflags.append('-Wl,--rpath-link=%s' % rpath_link)
+        return linkflags
 
     def _cc_binary(self, objs, inclusion_check_result, dynamic_link):
         implicit_deps = None
-        ldflags = self._generate_cc_binary_link_flags(dynamic_link)
+        linkflags = self._generate_cc_binary_link_flags(dynamic_link)
         if dynamic_link:
             sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         else:
             sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
             if link_all_symbols_libs:
-                ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+                linkflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
                 implicit_deps = link_all_symbols_libs
 
         # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
         order_only_deps = incchk_deps
         if inclusion_check_result:
             order_only_deps.append(inclusion_check_result)
-        extra_ldflags = []
+        extra_linkflags = []
         if self.attr['embed_version']:
             scm = os.path.join(self.build_dir, 'scm.cc.o')
-            extra_ldflags.append(scm)
+            extra_linkflags.append(scm)
             order_only_deps.append(scm)
-        extra_ldflags += ['-l%s' % lib for lib in sys_libs]
+        extra_linkflags += ['-l%s' % lib for lib in sys_libs]
         output = self._target_file_path(self.name)
         self._cc_link(output, 'link', objs=objs, deps=usr_libs,
-                      ldflags=ldflags, extra_ldflags=extra_ldflags,
+                      linkflags=linkflags, extra_linkflags=extra_linkflags,
                       implicit_deps=implicit_deps,
                       order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
@@ -1421,12 +1421,12 @@ class CcPlugin(CcTarget):
         """Generate build code for cc plugin."""
         self._check_deprecated_deps()
         objs, inclusion_check_result = self._cc_objects(self.attr['expanded_srcs'])
-        ldflags = self._generate_link_flags()
+        linkflags = self._generate_link_flags()
         sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
         if link_all_symbols_libs:
-            ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+            linkflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
 
-        extra_ldflags = ['-l%s' % lib for lib in sys_libs]
+        extra_linkflags = ['-l%s' % lib for lib in sys_libs]
         if self.name.endswith('.so'):
             output = self._target_file_path(self.name)
         else:
@@ -1439,7 +1439,7 @@ class CcPlugin(CcTarget):
             else:
                 link_output = output
             self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs,
-                          ldflags=ldflags, extra_ldflags=extra_ldflags,
+                          linkflags=linkflags, extra_linkflags=extra_linkflags,
                           implicit_deps=link_all_symbols_libs, order_only_deps=incchk_deps)
             if self.attr['strip']:
                 self.generate_build('strip', output, inputs=link_output)

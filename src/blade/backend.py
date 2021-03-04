@@ -187,11 +187,11 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_cc_rules(self):
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
-        cppflags, ldflags = self._get_cc_flags()
+        cppflags, linkflags = self._get_cc_flags()
         self._generate_cc_compile_rules(cc, cxx, cppflags)
         self._generate_cc_inclusion_check_rule()
         self._generate_cc_ar_rules()
-        self._generate_cc_link_rules(ld, ldflags)
+        self._generate_cc_link_rules(ld, linkflags)
         self.generate_rule(name='strip',
                            command='strip --strip-unneeded -o ${out} ${in}',
                            description='STRIP ${out}')
@@ -290,8 +290,8 @@ class _NinjaFileHeaderGenerator(object):
                            command='rm -f $out; ar %s $out $in' % arflags,
                            description='AR ${out}')
 
-    def _generate_cc_link_rules(self, ld, ldflags):
-        ldflags = config.get_item('cc_config', 'linkflags') + ldflags
+    def _generate_cc_link_rules(self, ld, linkflags):
+        linkflags = config.get_item('cc_config', 'linkflags') + linkflags
         link_jobs = config.get_item('link_config', 'link_jobs')
         if link_jobs:
             link_jobs = min(link_jobs, self.blade.build_jobs_num())
@@ -303,13 +303,13 @@ class _NinjaFileHeaderGenerator(object):
         else:
             pool = None
         self.generate_rule(name='link',
-                           command='%s -o ${out} %s ${ldflags} ${in} ${extra_ldflags}' % (
-                               ld, ' '.join(ldflags)),
+                           command='%s -o ${out} %s ${linkflags} ${in} ${extra_linkflags}' % (
+                               ld, ' '.join(linkflags)),
                            description='LINK BINARY ${out}',
                            pool=pool)
         self.generate_rule(name='solink',
-                           command='%s -o ${out} -shared %s ${ldflags} ${in} ${extra_ldflags}' % (
-                               ld, ' '.join(ldflags)),
+                           command='%s -o ${out} -shared %s ${linkflags} ${in} ${extra_linkflags}' % (
+                               ld, ' '.join(linkflags)),
                            description='LINK SHARED ${out}',
                            pool=pool)
 
