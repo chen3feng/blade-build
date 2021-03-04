@@ -72,6 +72,12 @@ class BladeConfig(object):
                 'default_visibility__help__': 'Default visibility for targets that do not declare this attribute',
                 'legacy_public_targets': set(),
                 'legacy_public_targets__help__': 'List of targets with legacy public visibility',
+
+                'restricted_dsl': True,
+                'restricted_dsl__help__': 'Whether use the restricted SDL in BUILD languages',
+                'unrestricted_dsl_dirs': set(),
+                'unrestricted_dsl_dirs__help__': 'Dirs in which allow unrestrict python DSL',
+
             },
 
             'cc_config': {

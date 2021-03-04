@@ -277,16 +277,31 @@ def eval_file(filepath):
 
 def source_location(filename):
     """Return source location of current call stack from filename"""
+    full_filename = filename
     lineno = 1
 
     # See https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
     frame = inspect.currentframe()
     while frame:
         if frame.f_code.co_filename.endswith(filename):
+            full_filename = frame.f_code.co_filename
             lineno = frame.f_lineno
             break
         frame = frame.f_back
-    return '%s:%s' % (filename, lineno)
+    return '%s:%s' % (full_filename, lineno)
+
+
+def calling_source_location(skip=0):
+    """Return source location of current call stack, skip specified levels (not include itself)."""
+    skip += 1  # This function itself is excluded.
+    skipped = 0
+    frame = inspect.currentframe()
+    while frame:
+        if skipped == skip:
+            return '%s:%s' % (frame.f_code.co_filename, frame.f_lineno)
+        frame = frame.f_back
+        skipped += 1
+    raise ValueError('Invalid value "%d" for "skip"' % skip)
 
 
 def parse_command_line(argv):

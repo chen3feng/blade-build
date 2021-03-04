@@ -16,13 +16,14 @@ class Native(object):
     """
 
 
-__build_rules = {'native': Native()}
+__build_rules = {}
 
+__native = Native()
 
 def register_variable(name, value):
     """Register a variable that accessiable in BUILD file."""
     __build_rules[name] = value
-    setattr(__build_rules['native'], name, value)
+    setattr(__native, name, value)
 
 
 def register_function(f):
@@ -32,4 +33,12 @@ def register_function(f):
 
 def get_all():
     """Get the globals dict"""
-    return __build_rules.copy()
+    result = __build_rules.copy()
+    return result
+
+
+def get_all_for_extension():
+    """Get the globals dict, 'native' is only visible to extensions."""
+    result = get_all()
+    result['native'] = __native
+    return result

@@ -25,7 +25,10 @@ from blade import build_attributes
 from blade import build_rules
 from blade import config
 from blade import console
+from blade import dsl_api
+from blade import restricted
 from blade import target_tags
+
 from blade.pathlib import Path
 from blade.util import path_under_dir, var_to_list, exec_file, source_location
 
@@ -164,6 +167,27 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
     return result
 
 
+def _get_globals_for_build_file(source_dir):
+    """Get global variables for BUILD files."""
+    result = build_rules.get_all()
+    global_config = config.get_section('global_config')
+    if global_config.get('restricted_dsl') and source_dir not in global_config.get('unrestricted_dsl_dirs'):
+        result['__builtins__'] = restricted.safe_builtins
+    result['blade'] = dsl_api.get_blade_module()
+    return result
+
+
+
+def _get_globals_for_extension():
+    """Get global variables for loadable extensions."""
+    result = build_rules.get_all_for_extension()
+    global_config = config.get_section('global_config')
+    if global_config.get('restricted_dsl'):
+        result['__builtins__'] = restricted.safe_builtins
+    result['blade'] = dsl_api.get_blade_module()
+    return result
+
+
 # Each include in a BUILD file can only affect itself
 __current_globals = None
 
@@ -203,7 +227,7 @@ def _load_extension(name):
 
     # The symbols in the current context should be invisible to the extension,
     # make an isolated symbol set to implement this approach.
-    origin_globals = build_rules.get_all()
+    origin_globals = _get_globals_for_extension()
     extension_globals = origin_globals.copy()
     exec_file(full_path, extension_globals, None)
     # Extract new symbols
@@ -286,7 +310,7 @@ def __load_build_file(source_dir, blade):
                 # The magic here is that a BUILD file is a Python script,
                 # which can be loaded and executed by execfile().
                 global __current_globals
-                __current_globals = build_rules.get_all()
+                __current_globals = _get_globals_for_build_file(source_dir)
                 exec_file(build_file, __current_globals, None)
                 return True
             except SystemExit:

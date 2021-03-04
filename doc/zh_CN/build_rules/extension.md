@@ -16,6 +16,7 @@ def awesome_library(name, srcs=[], deps=[]):
 请记住，当你创建自定义规则时，`gen_rule` 是个很有用的内置规则。
 
 由于通过扩展的方式可以覆盖内置规则，你可以用 `native.` 前缀来确保不受影响地使用内置规则。
+`native.` 前缀只能用在扩展中而不能用于 `BUILD` 文件中。
 
 ```python
 def awesome_library(name, srcs=[], deps=[]):

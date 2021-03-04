@@ -19,6 +19,7 @@ Remember the `gen_rule` is a useful native rule when you create your own rules.
 
 Since the built-in rules can be overridden in the extension, you can enforce using the built-in rules
 by adding the `native.` prefix before the rule name.
+The `native.` prefix can only be used in extensions but not in `BUILD` files.
 
 ```python
 def awesome_library(name, srcs=[], deps=[]):

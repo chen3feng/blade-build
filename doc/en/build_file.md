@@ -30,6 +30,10 @@ cc_library(
 It is declarative, just need to list the target name, source file name and dependency name
 (if any), no compiling and linking command is required to specified.
 
+## BUILD Language
+
+See [BUILD Language](dsl.md).
+
 ## Style Suggestion
 
 * Indented 4 spaces, do not use tab characters
