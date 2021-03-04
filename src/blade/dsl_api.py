@@ -107,6 +107,7 @@ __blade = None
 
 
 def get_blade_module():
+    """Get or create the `blade` API module."""
     global __blade
     if not __blade:
         __blade = _safe_blade_module()
