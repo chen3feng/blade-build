@@ -55,7 +55,6 @@ _SAFE_NAMES = [
     'sorted',
     'str',
     'tuple',
-    'xrange',
     'zip'
 ]
 
