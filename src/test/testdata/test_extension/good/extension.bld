@@ -1,3 +1,11 @@
 VAR1=1
 VAR2=2
 VAR3=3
+
+# `native` is only visible in extension
+try:
+    native.cc_library
+    HAS_NATIVE = True
+except NameError:
+    HAS_NATIVE = False
+

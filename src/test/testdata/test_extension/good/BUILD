@@ -16,7 +16,15 @@ assert VAR2 == 2
 assert VAR2_ALIAS == VAR2
 assert VAR3 == 3
 
-native.cc_library
-native.cc_binary
-native.gen_rule
+load('extension.bld', 'HAS_NATIVE')
+assert HAS_NATIVE
 
+include('extension.bld')
+assert not HAS_NATIVE
+
+
+try:
+    native.cc_library
+    assert True
+except NameError:
+    pass
