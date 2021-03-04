@@ -277,16 +277,18 @@ def eval_file(filepath):
 
 def source_location(filename):
     """Return source location of current call stack from filename"""
+    full_filename = filename
     lineno = 1
 
     # See https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
     frame = inspect.currentframe()
     while frame:
         if frame.f_code.co_filename.endswith(filename):
+            full_filename = frame.f_code.co_filename
             lineno = frame.f_lineno
             break
         frame = frame.f_back
-    return '%s:%s' % (filename, lineno)
+    return '%s:%s' % (full_filename, lineno)
 
 
 def parse_command_line(argv):

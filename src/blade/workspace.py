@@ -171,3 +171,8 @@ def initialize(options):
     assert __instance is None
     __instance = Workspace(options)
     return __instance
+
+
+def current():
+    """Get the current workspace instance."""
+    return __instance

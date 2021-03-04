@@ -30,9 +30,11 @@ syn keyword bladeArg default_visibility
 syn keyword bladeArg duplicated_source_action
 syn keyword bladeArg glob_error_severity
 syn keyword bladeArg legacy_public_targets
+syn keyword bladeArg restricted_dsl
 syn keyword bladeArg run_unrepaired_tests
 syn keyword bladeArg test_jobs
 syn keyword bladeArg test_timeout
+syn keyword bladeArg unrestricted_dsl_dirs
 
 " C/C++
 syn keyword bladeTarget cc_config
