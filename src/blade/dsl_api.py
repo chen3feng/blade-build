@@ -44,13 +44,12 @@ def _safe_config_module():
 def _safe_console_module():
     """Make the safe blade.console module."""
     module = _new_module('console')
-    _copy_module_members(module, console, [
-        'debug',
-        'info',
-        'notice',
-        'warning',
-        'error',
-    ])
+    def make_wrapper(severity):
+        def wrapper(message):
+            console.diagnose(util.calling_source_location(1), severity, message)
+        return wrapper
+    for severity in ['debug', 'info', 'notice', 'warning', 'error']:
+        setattr(module, severity, make_wrapper(severity))
     return module
 
 

@@ -138,11 +138,10 @@ _FORBIDDEN_FUNCTIONS = [
 
 def _make_forbidden_wrapper(name):
     def wrapper(*args, **kwargs):
-        src_loc = util.source_location('BUILD')
+        src_loc = util.calling_source_location(1)  # Skip the `wrapper` function
         error = '"%s" is forbidden in blade, please use the builtin `blade` module' % name
         console.diagnose(src_loc, 'error', error)
-        #raise ImportError(src_loc + ': ' + error)
-        return None
+        # return None  # pylint: disable=useless-return
     return wrapper
 
 

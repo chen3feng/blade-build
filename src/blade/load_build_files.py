@@ -25,6 +25,7 @@ from blade import build_attributes
 from blade import build_rules
 from blade import config
 from blade import console
+from blade import dsl_api
 from blade import restricted
 from blade import target_tags
 
@@ -168,7 +169,6 @@ def glob(include, exclude=None, excludes=None, allow_empty=False):
 
 def _get_globals_for_build_file(source_dir):
     """Get global variables for BUILD files."""
-    from blade import dsl_api
     result = build_rules.get_all()
     global_config = config.get_section('global_config')
     if global_config.get('restricted_dsl') and source_dir not in global_config.get('unrestricted_dsl_dirs'):
@@ -180,7 +180,6 @@ def _get_globals_for_build_file(source_dir):
 
 def _get_globals_for_extension():
     """Get global variables for loadable extensions."""
-    from blade import dsl_api
     result = build_rules.get_all_for_extension()
     global_config = config.get_section('global_config')
     if global_config.get('restricted_dsl'):
