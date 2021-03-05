@@ -54,6 +54,7 @@ class FBThriftLibrary(CcTarget):
                 incs=[],
                 export_incs=[],
                 optimize=optimize,
+                linkflags=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)

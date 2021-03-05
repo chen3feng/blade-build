@@ -1,29 +1,45 @@
-# C/C++规则 #
+# C/C++ 规则
 
-cc_`*` 目标
+C/C++ 程序的构建分为预处理，编译（把预处理后的源文件转化为 `.o` 文件）和链接（把 `.o`, `.a` 链接成可执行文件或者动态库）三个阶段，不同阶段用不同的编译参数。
+
 CC 目标均支持的属性为：
 
-| 属性 | 解释 | 举例 | 备注 |
-|------|-----|-----|------|
-| warning | 是否屏蔽warning  | warning='no' | 默认不屏蔽 warning='yes' , 默认不用写，已开启 |
-| defs | 用户定义的宏加入编译中 | defs=['_MT'] | A=1 |
-| incs | 增加编译源文件时的头文件查找路径 | incs=['poppy/myinc'] | 一般用于第三方库，用户代码建议使用全路径include，不要使用该属性 |
-| optimize | 用户定义的optimize flags | optimize=['-O3'] | 适用于 cc_library cc_binary cc_test proto_library swig_library  cc_plugin resource_library, 在Debug构建模式下被忽略 |
-| extra_cppflags | 用户定义的额外的C/C++编译flags | extra_cppflags=['-Wno-format-literal'] | 常用flags比如`-g`，`-fPIC`等都已经内置，一般无需指定 |
-| extra_linkflags | 用户定义的额外的链接flags | extra_linkflags=['-fopenmp'] | 常用flags比如`-g`等都已经内置，一般无需指定 |
+- `warning` 是否屏蔽warning
 
-* optimize之所以需要单独提出来，是因为debug模式下需要忽略，optimize影响代码的可调试性。如果某些目标，例如性能相关又一般无需调试的库，比如hash，压缩，加解密之类的，可以加上`always_optimize = True`让他们总是开启优化。
-* C/C++程序的构建分为预处理，编译（把预处理后的源文件转化为.o文件）和链接（把.o, .a链接成可执行文件或者动态库）三个阶段，不同阶段用不同的编译参数。
+  `warning='no'`，默认不屏蔽 `warning = 'yes'`, 默认不用写，已开启。
 
-## cc_library ##
+- `defs` 用户定义的宏
 
-用于描述C++库目标。
-cc_library同时用于构建静态和动态库，默认只构建静态库，只有被dynamic_link=1的cc_binary依赖时或者命令行指定
---generate-dynamic 才生成动态链接库。
+  `defs = ['_MT']`，如果要带值，用等号：`A=1`。只对当前目标生效，不会透传给依赖它目标。
 
-cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环
-境。如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用`cc_plugin`构建规则，这样生成的动态库已经静态链接的方式包含了其
-依赖。
+- `incs` 增加编译源文件时的头文件查找路径
+
+  `incs = ['poppy/myinc']`。一般用于第三方库，用户代码建议使用全路径 include，不要使用该属性。
+
+- `optimize` 目标的优化选项
+
+  默认为 `optimize = ['-O2']`，之所以需要单独提出来，是因为 debug 模式下需要忽略，optimize影响代码的可调试性。
+  如果某些目标，例如性能相关又一般无需调试的库，比如 hash，压缩，加解密之类的，可以加上`always_optimize = True`让他们总是开启优化。
+
+- `extra_cppflags` 额外的 C/C++ 编译 flags
+
+  例如：`extra_cppflags = ['-Wno-format-literal']`。常用 flags 比如 `-g`，`-fPIC` 等都已经内置，一般无需指定。
+
+- `extra_linkflags` 额外的链接 flags
+  例如：`extra_linkflags = ['-fopenmp']`。常用 flags 比如 `-g` 等都已经内置，一般无需指定。
+
+- `linkflags`: list = None，覆盖全局配置里的 [linkflags](../config.md#cc_config)
+
+  例如：`linkflags = ['-fopenmp']`。常用 flags 比如 `-g` 等都已经内置，一般无需指定。由于会覆盖全局选项，除非你非常理解 `gcc` 和 `ld` 的各种链接选项，不要轻易用这个参数。
+
+## cc_library
+
+用于描述 C++ 库目标。
+
+`cc_library` 同时用于构建静态和动态库，默认只构建静态库，只有被设置了 `dynamic_link = True` 的 `cc_binary` 依赖时或者命令行指定 `--generate-dynamic` 才生成动态链接库。
+
+cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环境。
+如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用 `cc_plugin` 构建规则，这样生成的动态库已经静态链接的方式包含了其依赖。
 
 示例：
 
@@ -39,9 +55,7 @@ cc_library(
 
 属性：
 
-* hdrs : list(string)
-
-  声明库的公开接口头文件。
+- `hdrs`: list(string) = []，声明库的公开接口头文件。
 
   对于通常的库，`hdrs` 都是应该存在的，否则这个库可能就无法被调用。因此这个属性是必选的，否则会报告出一个诊断问题，
   问题的严重性可以通过 [`cc_library_config.hdrs_missing_severity`](../config.md#cc_library_config) 来控制。
@@ -63,13 +77,13 @@ cc_library(
   常用来在产品代码中为测试提供支持，但是它本身只包含一些声明，并不依赖 gtest 库的实现部分。这种情况就适合再单独声明成一个
   独立的 `gtest_prod` 库，而不是和 `gtest` 库放在一起，否则可能导致 gtest 库被链接进产品代码。
 
-* link_all_symbols : bool
+- `link_all_symbols`: bool = False，整个库的内容不管是否用到，全部链接到可执行文件中。
 
   如果你通过全局对象的构造函数执行一些动作（比如注册一些可以按运行期间字符串形式的名字动态创建的类），而这个全局变量本身没有被任何地方引用到。
   这在 cc_binary 中是没有问题的，但是如果是在库中，就有可能被整个丢弃从而达不到期望的效果。这是因为如果一个库中的符号（函数，全局变量）没有被可执行文件直接
   或者间接地显式使用到，通常不会被链接进去。
 
-  如果为True，任何直接或间接依赖于此库的可执行文件将会把这个库完整地链接进去，即使库中某些符号完全没有被可执行文件引用到，从而解决上述问题。
+  如果为 `True` ，任何直接或间接依赖于此库的可执行文件将会把这个库完整地链接进去，即使库中某些符号完全没有被可执行文件引用到，从而解决上述问题。
 
   需要全部链接的部分最好单独拆分出来做成单独小库，而不是整个库全都全部链接，否则会无端增大可执行文件的大小。
 
@@ -77,9 +91,9 @@ cc_library(
 
   如还有疑问，可以进一步阅读[更多解答](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option)。
 
-* binary_link_only : bool
+- `binary_link_only`: bool = False，本库只能作为可执行文件目标（比如 `cc_binary` 或者 `cc_test`）的依赖，而不是其他 `cc_library` 的依赖。
 
-  本库只能作为可执行文件目标（比如 `cc_binary` 或者 `cc_test`）的依赖，而不是其他 `cc_library` 的依赖。本属性适用于排他性的库，比如 malloc 库。
+  本属性适用于排他性的库，比如 malloc 库。
 
   例如 `tcmalloc` 和 `jemalloc` 库都包含了一些相同的符号（`malloc`、`free`等）。如果某个 `cc_library` 依赖了 `tcmalloc`，那么依赖他的 `cc_binary` 将不
   能再选择 `jemalloc` 库，否则会造成链接冲突。通过把 `tcmalloc` 和 `jemalloc` 都设置这个属性，使得其只能作为可执行文件的目标的依赖，从而避免这类问题。
@@ -102,47 +116,48 @@ cc_library(
   )
   ```
 
-* always_optimize : bool
+- `always_optimize` : bool，是否不管 debug 还是 release 都开启优化。
 
   True: 不论debug版本还是release版本总是被优化。
   False: debug版本不作优化。
   默认为False。目前只对cc_library有效。
 
-* prebuilt : bool
+- `prebuilt` : bool = False。
+
   废弃，请使用 prebuilt_cc_library 构建规则。
 
-* export_incs : list(str)
+- `export_incs` : list(str) = []，导出的头文件搜索路径。
 
-  类似incs，但是不仅作用于本目标，还会传递给依赖这个库的目标，和incs一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含.
+  类似于 `incs`，但是不仅作用于本目标，还会传递给依赖这个库的目标，和 `incs` 一样，建议仅用于不方便改代码的第三方库，自己的项目代码还是建议使用全路径头文件包含。
 
-### 修复 `hdrs` 引发的依赖缺失的检查问题 ###
+### 修复 `hdrs` 引发的依赖缺失的检查问题
 
 在大规模 C++ 项目中，依赖管理很重要，而长期以来头文件并未被纳入其中。从 Blade 2.0 开始，头文件也被纳入了依赖管理中。
 当一个 cc 目标要包含一个头文件时，也需要把其所属的 `cc_library` 放在自己的 `deps` 里，否则 Blade 就会检查并报告问题。
 
 在 `deps` 中缺少对代码中用到的头文件所属的库的依赖的声明会带来如下问题：
 
-* 导致库之间的依赖无法正确传递。如果某个未声明的头文件所属的库将来增加了新的依赖，可能造成链接错误。
-* 对于构建期间生成的头文件，缺少对其所属的库的依赖声明会导致编译时这些头文件可能还未生成，从而造成编译错误。
-* 更糟糕的是，如果这些头文件已经存在，但是尚未更新，编译时用到的就可能是过时的头文件，会导致更加难以排查的运行期错误。
+- 导致库之间的依赖无法正确传递。如果某个未声明的头文件所属的库将来增加了新的依赖，可能造成链接错误。
+- 对于构建期间生成的头文件，缺少对其所属的库的依赖声明会导致编译时这些头文件可能还未生成，从而造成编译错误。
+- 更糟糕的是，如果这些头文件已经存在，但是尚未更新，编译时用到的就可能是过时的头文件，会导致更加难以排查的运行期错误。
 
 问题的严重性可以通过 [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) 配置项来控制。对于在支持 hdrs 前已经存在的问题，
 可以通过 [`cc_config.hdr_dep_missing_suppress`](../config.md#cc_config) 来抑制。
 
 Blade 能检查到两种缺失情况：
 
-* `Missing dependency` 直接依赖缺失
+- `Missing dependency` 直接依赖缺失
 
   在 `srcs` 或者 `hdrs` 里的文件通过 `#include` 指令包含了头文件，但是其所属的库没有在 `deps` 里声明，
   或者这些头文件根本没有在任何 `cc_library` 的 `hdrs` 里声明。具体原因及解决方法：
 
-  * 该头文件所属的库没有在本目标的 `deps` 里声明，按提升修复即可
-  * 该头文件是所属的库的私有头文件，禁止直接使用
-  * 该头文件应当是本目标的公有头文件，在其 `hdr` 里声明即可
-  * 该头文件应当是本目标的私有头文件，在其 `src` 里声明即可
-  * 该头文件应当是其他库的公有头文件，但是没有声明，在相应库 `hdr` 里声明即可
+  - 该头文件所属的库没有在本目标的 `deps` 里声明，按提升修复即可
+  - 该头文件是所属的库的私有头文件，禁止直接使用
+  - 该头文件应当是本目标的公有头文件，在其 `hdr` 里声明即可
+  - 该头文件应当是本目标的私有头文件，在其 `src` 里声明即可
+  - 该头文件应当是其他库的公有头文件，但是没有声明，在相应库 `hdr` 里声明即可
 
-* `Missing indirect dependency` 间接依赖缺失
+- `Missing indirect dependency` 间接依赖缺失
 
   `#include` 指令包含头文件中包含的其他头文件中的所属的库，没有出现在本目标及其传递依赖的 `deps` 里。
 
@@ -161,7 +176,7 @@ Blade 能检查到两种缺失情况：
 根据其是公开或者私有的，分别将其加入到 `hdrs` 或者 `srcs` 中，如果属于其他库，则应当其他库的 `hdrs` 中加入，不能包含其他库的未声明的私有头文件。
 对于升级前代码库中已经存在的未声明的头文件，可以用 [cc_config.allowed_undeclared_hdrs](../config.md#cc_config) 配置项屏蔽检查。
 
-## prebuilt_cc_library ##
+## prebuilt_cc_library
 
 主要用于描述一些没有源代码或者或者是通过别的构建系统已经构建好的第三方库。
 除了编译和链接库本身代码的属性外，其余 `cc_library` 的属性都适用于本目标。
@@ -169,7 +184,7 @@ Blade 能检查到两种缺失情况：
 
 属性：
 
-* libpath_pattern : str
+- `libpath_pattern` : str
   库文件所在的子目录名。默认使用 `cc_library_config.prebuilt_libpath_pattern` 配置。
   本属性是一个可替换的字符串模式，因此可以同时描述多个目标平台的库，比如不同 CPU 位数，等等。具体
   参见 [cc_library_config.prebuilt_libpath_pattern](../config.md#cc_library_config)，如果只构建一个平台的目标，可以只有一个目录。
@@ -184,7 +199,7 @@ prebuilt_cc_library(
 )
 ```
 
-## foreign_cc_library ##
+## foreign_cc_library
 
 注意：本特性目前还处于实验状态。
 
@@ -200,12 +215,12 @@ foreign_cc_library 和 prebuilt_cc_library 的主要区别是其描述的库是 
 
 属性：
 
-* name 库的名字
-* install_dir 包构建完成后的安装目录
-* lib_dir 库在安装目录下的子目录名
-* has_dynamic 是否生成了动态库
+- `name` 库的名字
+- `install_dir` 包构建完成后的安装目录
+- `lib_dir` 库在安装目录下的子目录名
+- `has_dynamic` 是否生成了动态库
 
-### 示例1，zlib ###
+### 示例1，zlib
 
 zlib 是最简单的 autotools 包，假设 zlib-1.2.11.tar.gz 在 thirparty/zlib 目录下，其 BUILD 文件则是 thirdparty/zlib/BUILD：
 
@@ -240,7 +255,7 @@ cc_binary(
 )
 ```
 
-use_zlib.cc
+use_zlib.cc：
 
 ```cpp
 #include "thirdparty/zlib/include/zlib.h"
@@ -249,7 +264,7 @@ use_zlib.cc
 // 因为 thirdparty/zlib/include/ 已经被导出
 ```
 
-### 示例2，openssl ###
+### 示例2，openssl
 
 严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
 不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
@@ -280,7 +295,7 @@ foreign_cc_library(
 )
 ```
 
-使用上述库
+使用上述库：
 
 ```python
 cc_binary(
@@ -290,15 +305,15 @@ cc_binary(
 )
 ```
 
-use_openssl.cc
+use_openssl.cc：
 
 ```cpp
 #include "openssl/ssl.h"  // 路径带包名
 ```
 
-## cc_binary ##
+## cc_binary
 
-定义C++可执行文件目标
+定义C++可执行文件目标：
 
 ```python
 cc_binary(
@@ -308,9 +323,9 @@ cc_binary(
 )
 ```
 
-* dynamic_link=True
+- `dynamic_link`: bool= True
 
-  cc_binary默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些
+  cc_binary 默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些
   [技术限制](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，glibc并不包含在内，虽然
   也可以强行静态链接glibc，但是有可能导致运行时出错。
 
@@ -319,7 +334,7 @@ cc_binary(
 
   需要注意的是，dynamic_link只适用于可执行文件，不适用于库。
 
-* export_dynamic=True
+- `export_dynamic`: bool = True
 
   常规情况下，so中只引用所依赖的so中的符号，但是对于应用特殊的场合，需要在so中引用宿主可执行文件中的符号，就需要这个选项。
 
@@ -328,22 +343,27 @@ cc_binary(
 
   详情请参考 man ld(1) 中查找 --export-dynamic 的说明。
 
-## cc_test ##
+## cc_test
 
 相当于cc_binary，再加上自动链接gtest和gtest_main。
 
-还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录name.runfiles子目录下，比如：testdata/a.txt =>name.runfiles/testdata/a.txt
+还支持testdata参数， 列表或字符串，文件会被链接到输出所在目录 name.runfiles 子目录下，比如：testdata/a.txt => name.runfiles/testdata/a.txt
 
-用blade test子命令，会在成功构建后到name.runfiles目录下自动运行，并输出总结信息。
+用 `blade test` 子命令，会在成功构建后到 name.runfiles 目录下自动运行，并输出总结信息。
 
-* testdata=[]
+- `testdata`: list = []
 
-  在name.runfiles里建立symbolic link指向工程目录的文件，目前支持以下几种形式：
-  * 'file'
+  在 name.runfiles 里建立 symbolic link 指向工程目录的文件，目前支持以下几种形式：
+  - `'file'`
+
     在测试程序中使用这个名字本身的形式来访问
-  * '//your_proj/path/file'
+
+  - `'//your_proj/path/file'`
+
     在测试程序中用"your_proj/path/file"来访问。
-  * ('//your_proj/path/file', "new_name")
+
+  - `('//your_proj/path/file', "new_name")`
+
     在测试程序中用"new_name"来访问
 
 可以根据需要自行选择，这些路径都也可以是目录。
@@ -361,7 +381,7 @@ cc_test(
 )
 ```
 
-## lex_yacc_library ##
+## lex_yacc_library
 
 srcs 必须为二元列表，后缀分别为ll和yy
 构建时自动调用flex和bison, 并且编译成对应的cc_library
@@ -380,11 +400,11 @@ lex_yacc_library(
 )
 ```
 
-* recursive=True
+- `recursive`: bool =True
 
   生成可重入的C scanner.
 
-## cc_plugin ##
+## cc_plugin
 
 把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
 
@@ -401,17 +421,17 @@ cc_plugin(
 
 属性：
 
-* prefix:str, 生成的动态库的文件名前缀，默认为 `lib`
-* suffix:str，生成的动态库的文件名前缀，默认为 `.so`
-* allow_undefined: bool, 链接时是否允许未定义的符号。因为很多插件库运行时依赖宿主进程提供的符号名，链接阶段并不存在这些符号的定义。
-* strip:bool, 是否去除调试符号信息，开启后可以减少生成的库的大小，但是无法进行符号化调试。
+- `prefix`: str, 生成的动态库的文件名前缀，默认为 `lib`
+- `suffix`: str，生成的动态库的文件名前缀，默认为 `.so`
+- `allow_undefined`: bool, 链接时是否允许未定义的符号。因为很多插件库运行时依赖宿主进程提供的符号名，链接阶段并不存在这些符号的定义。
+- `strip`: bool, 是否去除调试符号信息，开启后可以减少生成的库的大小，但是无法进行符号化调试。
 
 `prefix` 和 `suffix` 控制生成的动态库的文件名，假设 `name='file'`，默认生成的库为 `libfile.so`，设置`prefix=''`，则变为 `file.so`。
 
-cc_plugin 主要是为 JNI，python 扩展等需要运行期间通过调用某些函数动态加载的场合而设计的，不应该用于其他目的。
+`cc_plugin` 主要是为 `JNI`，python 扩展等需要运行期间通过调用某些函数动态加载的场合而设计的，不应该用于其他目的。
 即使它出现在其他 cc 目标的 `deps` 里，链接时也会被忽略。
 
-## resource_library ##
+## resource_library
 
 把数据文件编译成静态资源，可以在程序中中读取。
 

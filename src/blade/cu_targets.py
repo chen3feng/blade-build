@@ -56,6 +56,7 @@ class CuTarget(CcTarget):
                 incs=incs,
                 export_incs=[],
                 optimize=None,
+                linkflags=None,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)

@@ -130,7 +130,7 @@ class _NinjaFileHeaderGenerator(object):
                            command='cp -f ${in} ${out}',
                            description='COPY ${in} ${out}')
 
-    def _get_cc_flags(self):
+    def _get_intrinsic_cc_flags(self):
         """Get the common c/c++ flags."""
         global_config = config.get_section('global_config')
         cc_config = config.get_section('cc_config')
@@ -187,7 +187,7 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_cc_rules(self):
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
-        cppflags, linkflags = self._get_cc_flags()
+        cppflags, linkflags = self._get_intrinsic_cc_flags()
         self._generate_cc_compile_rules(cc, cxx, cppflags)
         self._generate_cc_inclusion_check_rule()
         self._generate_cc_ar_rules()
@@ -253,10 +253,6 @@ class _NinjaFileHeaderGenerator(object):
         Generate inclusion stack file for header file to check dependency missing.
         See the '-H' in https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
         """
-        self.generate_rule(name='cchdrs',
-                           command=self._hdrs_command(cc, cflags, cppflags, includes),
-                           depfile='${out}.d', deps='gcc',
-                           description='CC HDRS ${in}')
         self.generate_rule(name='cxxhdrs',
                            command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
                            depfile='${out}.d', deps='gcc',
@@ -291,7 +287,8 @@ class _NinjaFileHeaderGenerator(object):
                            description='AR ${out}')
 
     def _generate_cc_link_rules(self, ld, linkflags):
-        linkflags = config.get_item('cc_config', 'linkflags') + linkflags
+        self._add_line('linkflags = ' + ' '.join(config.get_item('cc_config', 'linkflags')))
+        self._add_line('intrinsic_linkflags = ' + ' '.join(linkflags))
         link_jobs = config.get_item('link_config', 'link_jobs')
         if link_jobs:
             link_jobs = min(link_jobs, self.blade.build_jobs_num())
@@ -302,14 +299,13 @@ class _NinjaFileHeaderGenerator(object):
                       depth = %s''') % (pool, link_jobs))
         else:
             pool = None
+        link_args = '-o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} ${in} ${extra_linkflags}'
         self.generate_rule(name='link',
-                           command='%s -o ${out} %s ${linkflags} ${in} ${extra_linkflags}' % (
-                               ld, ' '.join(linkflags)),
+                           command=ld + ' ' + link_args,
                            description='LINK BINARY ${out}',
                            pool=pool)
         self.generate_rule(name='solink',
-                           command='%s -o ${out} -shared %s ${linkflags} ${in} ${extra_linkflags}' % (
-                               ld, ' '.join(linkflags)),
+                           command=ld + ' -shared ' + link_args,
                            description='LINK SHARED ${out}',
                            pool=pool)
 
