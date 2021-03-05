@@ -27,10 +27,15 @@ The common CC attributes are：
   mature enough and performance related, we rarely debug trace into them, such as hash, compress,
   crypto, you can specify `always_optimize = True`.
 
-- `extra_cppflags` | extra C/C++ compile flags | extra_cppflags=['-Wno-format-literal'] | many useful flags, such as `-g`，`-fPIC` are builtin |
-- `extra_linkflags` | extra link flags | extra_linkflags=['-fopenmp'] | many useful flags such `-g` are already built in |
+- `extra_cppflags`:list(str) = [], Extra C/C++ compile flags.
 
-- `linkflags`: list = None，overrides the global [linkflags](../config.md#cc_config) in the configuration.
+  Example: `extra_cppflags = ['-Wno-format-literal']`. many useful flags, such as `-g`，`-fPIC` are builtin. so it should be rarely used.
+
+- `extra_linkflags`:list(str) = [], Extra link flags
+
+  Example: `extra_linkflags = ['-fopenmp']`. many useful flags such `-g` are already built in, so it should be rarely used.
+
+- `linkflags`: list = None, Overrides the global [linkflags](../config.md#cc_config) in the configuration.
 
   For example: `linkflags = ['-fopenmp']`.
 
