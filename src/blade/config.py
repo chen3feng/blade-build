@@ -141,7 +141,6 @@ class BladeConfig(object):
 
             'link_config': {
                 '__help__': 'Linking Configuration',
-                'link_on_tmp': False,
                 'link_jobs': 0,
             },
 
