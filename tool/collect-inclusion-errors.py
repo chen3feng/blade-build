@@ -32,7 +32,7 @@ def process_targets(build_targets, options):
         details_file = os.path.join('blade-bin', dir, name + '.incchk.details')
         if not os.path.exists(details_file):
             continue
-        details = pickle.load(open(details_file))
+        details = pickle.load(open(details_file, 'rb'))
         if details:
             if 'missing_dep' in details:
                 full_missing[str(target)] = details['missing_dep']
