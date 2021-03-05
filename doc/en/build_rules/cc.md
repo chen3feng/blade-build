@@ -1,25 +1,49 @@
-# C/C++ Rules #
+# C/C++ Rules
 
-cc_`*` targets
+There are 3 phrases in the C/C++ building: preprocessing, compiling, linking. with different flags.
+
 The common CC attributes are：
 
-| Attribute | Description | Example | Comments |
-|------|-----|-----|------|
-| warning | whether suppress all warnings  | warning='no' | the default values is 'yes', so can be omitted |
-| defs | user define macros | defs=['_MT'] | Can also has value, eg. 'A=1' |
-| incs | header search paths | incs=['poppy/myinc'] | Usually used for thirdparty library, use full include path in our code is more recommended |
-| optimize | optimize flags | optimize=['-O3'] | ignored in the debug mode |
-| extra_cppflags | extra C/C++ compile flags | extra_cppflags=['-Wno-format-literal'] | many useful flags, such as `-g`，`-fPIC` are builtin |
-| extra_linkflags | extra link flags | extra_linkflags=['-fopenmp'] | many useful flags such `-g` are already built in |
+- `warning`: str = ['yes', 'no'], Whether suppress all warnings
 
-* There is a separated `optimize` attribute from the `extra_cppflags`, because it should be ignored
+  Example: `warning='no'`. The default values is 'yes', so can be omitted.
+
+- `defs`:str = [], User define macros
+
+  Example: `defs=['_MT']`, can also has value, eg. `'A=1'`.
+
+- `incs`: list(str) = [] header search paths
+
+  Example: `incs=['poppy/myinc']`.
+
+  Usually used for thirdparty library, use full include path in our code is more recommended.
+
+- `optimize` optimize flags
+
+  Example: `optimize=['-O3']`
+
+  There is a separated `optimize` attribute from the `extra_cppflags`, because it should be ignored
   in the debug mode, otherwise it will hinder debugging. but for some kind of libraries, which are
   mature enough and performance related, we rarely debug trace into them, such as hash, compress,
   crypto, you can specify `always_optimize = True`.
 
-* There are 3 phrases in the C/C++ building: preprocessing, compiling, linking. with different flags.
+- `extra_cppflags`:list(str) = [], Extra C/C++ compile flags.
 
-## cc_library ##
+  Example: `extra_cppflags = ['-Wno-format-literal']`. many useful flags, such as `-g`，`-fPIC` are builtin. so it should be rarely used.
+
+- `extra_linkflags`:list(str) = [], Extra link flags
+
+  Example: `extra_linkflags = ['-fopenmp']`. many useful flags such `-g` are already built in, so it should be rarely used.
+
+- `linkflags`: list = None, Overrides the global [linkflags](../config.md#cc_config) in the configuration.
+
+  For example: `linkflags = ['-fopenmp']`.
+
+  Commonly used flags such as `-g` are already built-in, and generally do not need to be specified.
+  Because global options will be overridden, unless you really understand the link related options of `gcc` and `ld`,
+  do not use this parameter lightly.
+
+## cc_library
 
 Build a C/C++ library
 
@@ -40,7 +64,8 @@ cc_library(
 
 Attributes:
 
-* hdrs : list
+- `hdrs`: list
+
   Declares the public interface header files of the library.
 
   For normal CC libraries, `hdrs` should exist, otherwise the library may not be used. Therefore, this attribute is required,
@@ -77,7 +102,8 @@ Attributes:
   depend on the implementation part of the gtest library. It is suitable to declare it in a separate `gtest_prod`
   library instead of putting it into `gtest` library, Otherwise, the gtest library may be linked into the product code.
 
-* link_all_symbols : bool
+- `link_all_symbols`: bool = False
+
   If you depends on the global initialization to register something, but didn't access these
   global object directly. it works for code in `srcs` of executable. but if the global is in a library, it will be
   discarded at the link time because linker find it is unsed.
@@ -91,7 +117,7 @@ Attributes:
   Youi also need to know, the `link_all_symbols` is the attribute of the library, not the user of it.
   Click [here](https://stackoverflow.com/questions/805555/ld-linker-question-the-whole-archive-option) to learn more details if you have interesting.
 
-* binary_link_only : bool
+- `binary_link_only`: bool = False
 
   This library can only be a depenedency of the executable targets (Such as `cc_binary` or `cc_test`), but not normal `cc_library`s. This attribute is
   useful for some exclusive libraries such as malloc library.
@@ -116,17 +142,17 @@ Attributes:
   )
   ```
 
-* always_optimize : bool
+- `always_optimize`: bool = False
 
   True: Always optimize.
   False: Don't optimize in debug mode。
   The default value is False。It only apply to cc_library.
 
-* prebuilt : bool
+- `prebuilt`: bool = False
 
   Use prebuilt in cc_library is deprecated. you should use `prebuilt_cc_library`.
 
-* export_incs : list
+- `export_incs`: list = []
 
   Similar to `incs`, but it is transitive for all targets depends on it, even if indirect depends on it.
 
@@ -139,7 +165,7 @@ Attributes:
   If you want to build a shared library can be use in the environment, you should use `cc_plugin`,
   which will include the code from it dependencies.
 
-### Fix missing dependencies errors caused by `hdrs` ###
+### Fix missing dependencies errors caused by `hdrs`
 
 In large-scale C++ projects, dependency management is very important, and header files have not been included in it for a long time.
 Starting with Blade 2.0, header files have also been included in dependency management.
@@ -148,11 +174,11 @@ the problem.
 
 The lack of a declaration on the library to which the header files belong will cause the following problems:
 
-* The dependencies between libraries cannot be transferred correctly. If the library to which an undeclared header file belongs adds new dependencies
+- The dependencies between libraries cannot be transferred correctly. If the library to which an undeclared header file belongs adds new dependencies
   in the future, it may cause link errors.
-* For the header files generated during the build, the lack of a dependency declaration for the library to which they belong will cause these header
+- For the header files generated during the build, the lack of a dependency declaration for the library to which they belong will cause these header
   files to have not yet been generated at compile time, resulting in compilation errors.
-* To make matters worse, if these header files already exist but have not been updated, outdated header files may be used during compilation, which
+- To make matters worse, if these header files already exist but have not been updated, outdated header files may be used during compilation, which
   will cause runtime errors that are more difficult to troubleshoot.
 
 The severity of the problem can be controlled by the [`cc_config.hdr_dep_missing_severity`](../config.md#cc_config) configuration item.
@@ -160,19 +186,19 @@ For problems that existed before hdrs were supported, It can be suppressed by [`
 
 Blade can detect two kind of missing dependencies:
 
-* `Missing dependenvy`
+- `Missing dependenvy`
 
   The header files are included in `srcs` or `hdrs` through the `#include` directive, but the library
   to which they belong is not declared in `deps`, or these header files are not declared in any `hdrs`
   of `cc_library` at all. Problems and solution:
 
-  * The library to which the header file belongs is not declared in the `deps` of this target, just follow the instruction to fix it
-  * The header file is a private header file of the library to which it belongs, and direct use is prohibited
-  * The header file should be the public header file of this target, it should be declared in its `hdr`
-  * The header file should be the target's private header file, it should be declared in its `src`
-  * The header file should be a public header file of other libraries, but there is no declaration, just declare it in the corresponding library `hdr`
+  - The library to which the header file belongs is not declared in the `deps` of this target, just follow the instruction to fix it
+  - The header file is a private header file of the library to which it belongs, and direct use is prohibited
+  - The header file should be the public header file of this target, it should be declared in its `hdr`
+  - The header file should be the target's private header file, it should be declared in its `src`
+  - The header file should be a public header file of other libraries, but there is no declaration, just declare it in the corresponding library `hdr`
 
-* `Missing indirect dependency`
+- `Missing indirect dependency`
 
   One of the indirect included header file(included in the header file) does not appear in the `deps` of this target and its transitive dependencies.
 
@@ -197,7 +223,7 @@ If it belongs to other libraries, it should be added to `hdrs` of other librarie
 For undeclared header files that already existed in the code base before the upgrade, you can use the
 [cc_config.allowed_undeclared_hdrs](../config.md#cc_config) configuration item to mask the check.
 
-## prebuilt_cc_library ##
+## prebuilt_cc_library
 
 For libraries without source code, library should be put under the lib{32,64} sub dir accordingly.
 The attributes `deps`, `export_incs`, `link_all_symbols` is still avialiable, but other attributes,
@@ -205,7 +231,7 @@ include compile and link related options, are not not present in prebuilt_cc_lib
 
 Attributes:
 
-* libpath_pattern The subdirectory which contains the library files. It default to `cc_library_config.prebuilt_libpath_pattern` config.
+- `libpath_pattern`: str, The subdirectory which contains the library files. It default to `cc_library_config.prebuilt_libpath_pattern` config.
   See [cc_library_config.prebuilt_libpath_pattern](../config.md#cc_library_config) for more details.
 
 Example:
@@ -217,7 +243,7 @@ prebuilt_cc_library(
 )
 ```
 
-## foreign_cc_library ##
+## foreign_cc_library
 
 NOTE: This feature is still experimental.
 
@@ -238,12 +264,12 @@ The library file is installed in the `lib` subdirectory.
 
 Attributes:
 
-* name : The name of the library
-* install_dir : The installation directory after the package is built
-* lib_dir : The subdirectory name of the library in the installation directory
-* has_dynamic : Whether this library has a dynamic linked edition.
+- `name`: str, The name of the library
+- `install_dir`: str, The installation directory after the package is built
+- `lib_dir`: list, The subdirectory name of the library in the installation directory
+- `has_dynamic`: bool = False, Whether this library has a dynamic linked edition.
 
-### Example1, zlib ###
+### Example1, zlib
 
 zlib can be the simplest example of autotools package. Assuming that `zlib-1.2.11.tar.gz` is in the `thirparty/zlib` directory, its BUILD file is
 `thirdparty/zlib/BUILD`:
@@ -270,7 +296,7 @@ foreign_cc_library(
 )
 ```
 
-Use the above library
+Use the above library:
 
 ```python
 cc_binary(
@@ -280,7 +306,7 @@ cc_binary(
 )
 ```
 
-use_openssl.cc
+use_openssl.cc:
 
 ```cpp
 #include "thirdparty/zlib/include/zlib.h"
@@ -289,7 +315,7 @@ use_openssl.cc
 // because `thirdparty/zlib/include` has been exported in the `foreign_cc_library` defaultly
 ```
 
-### 示例2，openssl ###
+### 示例 2，openssl
 
 Strictly speaking, openssl is not built with autotools, but it is generally compatible with autotools.
 Its autotools-like configure file is `Config`, and the directory layout after installation is compatible.
@@ -323,7 +349,7 @@ foreign_cc_library(
 )
 ```
 
-Use the above library
+Use the above library:
 
 ```python
 cc_binary(
@@ -333,13 +359,13 @@ cc_binary(
 )
 ```
 
-use_openssl.cc
+use_openssl.cc:
 
 ```cpp
 #include "openssl/ssl.h"  // Contains package name
 ```
 
-## cc_binary ##
+## cc_binary
 
 Build executable from source.
 
@@ -353,7 +379,8 @@ cc_binary(
 )
 ```
 
-* dynamic_link=False
+- `dynamic_link`:bool = False
+
   cc_binary is static linked defaultly for easy deploying, include libstdc++.
   For some [technology limitation](https://stackoverflow.com/questions/8140439/why-would-it-be-impossible-to-fully-statically-link-an-application)，
   glibc is not static linked. we can link it statically, but there are still some problems.
@@ -363,28 +390,34 @@ cc_binary(
   This may reduce disk usage, but program will startup slower. Usually it can be use for local
   testing, but it didn't fit for deploy.
 
-* export_dynamic=True
+- `export_dynamic`: = True
+
   Usually, dynamic library will only access symbols from its dependencies. but for some special
   case, shared library need to access symbols defined in the host executable, so come the attribute.
 
   This attribute tells linker to put all symbols into its dynamic symbol table. make them visible
    for loaded shared libraries. for more details, see `--export-dynamic` in man ld(1).
 
-## cc_test ##
+## cc_test
 
 cc_binary, with gtest gtest_main be linked automatically,
 
 Test will be ran in a test sandbox, it can't access source code directly.
 If you want to pass some data files into it, you must need `testdata` attribute.
 
-* testdata=[]
+- `testdata`: list = []
+
   Copy test data files into the test sandbox, make them visible to the test code.
   This attribute supports the following forms:
-  * 'file'
+
+  - `'file'`
+
     Use the original filename in test code.
-  * '//your_proj/path/file'
+  - `'//your_proj/path/file'`
+
     Use "your_proj/path/file" form to access in test code.
-  * ('//your_proj/path/file', "new_name")
+  - `('//your_proj/path/file', "new_name")`
+
     Use the "new_name" in test code.
 
 Example:
@@ -402,7 +435,7 @@ cc_test(
 )
 ```
 
-## cc_plugin ##
+## cc_plugin
 
 Link all denendencies into the generated `so` file, make it can be easily loaded in other languages.
 
@@ -419,11 +452,11 @@ cc_plugin(
 
 Attributes:
 
-* prefix:str, the file name prefix of the generated dynamic library, the default is `lib`
-* suffix:str, the file name prefix of the generated dynamic library, the default is `.so`
-* allow_undefined:bool, whether undefined symbols are allowed when linking. Because many plug-in libraries depend on the symbol names provided by the
+- `prefix`: str = 'lib', the file name prefix of the generated dynamic library, the default is `lib`
+- `suffix`: str = '.so', the file name prefix of the generated dynamic library, the default is `.so`
+- `allow_undefined`: bool = False, whether undefined symbols are allowed when linking. Because many plug-in libraries depend on the symbol names provided by the
   host process at runtime, the definition of these symbols does not exist in the link phase.
-* strip:bool, whether to remove the debugging symbol information. If enabled, the size of the generated library can be reduced, but symbolic debugging
+- `strip`: bool = False, whether to remove the debugging symbol information. If enabled, the size of the generated library can be reduced, but symbolic debugging
   cannot be performed.
 
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
@@ -433,7 +466,7 @@ set `prefix=''`, then it becomes `file. so`.
 that are dynamically loaded by calling certain functions during runtime.
 It will be ignored when linking even if it appears in the `deps` of other cc targets.
 
-## resource_library ##
+## resource_library
 
 Compile static data file to be resource, which can be accessed in the program directly.
 

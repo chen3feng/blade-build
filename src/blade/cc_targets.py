@@ -160,6 +160,7 @@ class CcTarget(Target):
                  incs,
                  export_incs,
                  optimize,
+                 linkflags,
                  extra_cppflags,
                  extra_linkflags,
                  kwargs,
@@ -194,6 +195,7 @@ class CcTarget(Target):
         self.attr['incs'] = self._incs_to_fullpath(incs)
         self.attr['export_incs'] = self._incs_to_fullpath(export_incs)
         self.attr['optimize'] = var_to_list_or_none(optimize)
+        self.attr['linkflags'] = var_to_list_or_none(linkflags)
         self.attr['extra_cppflags'] = var_to_list(extra_cppflags)
         self.attr['extra_linkflags'] = var_to_list(extra_linkflags)
         # TODO(chen3feng): Move to CcLibrary
@@ -400,15 +402,12 @@ class CcTarget(Target):
 
     def _generate_link_flags(self):
         """Generate linker flags for cc link."""
-        ldflags = []
-        extra_linkflags = self.attr.get('extra_linkflags')
-        if extra_linkflags:
-            ldflags = extra_linkflags
+        linkflags = []
         if 'allow_undefined' in self.attr:
             allow_undefined = self.attr['allow_undefined']
             if not allow_undefined:
-                ldflags.append('-Xlinker --no-undefined')
-        return ldflags
+                linkflags.append('-Xlinker --no-undefined')
+        return linkflags
 
     def _generate_link_all_symbols_link_flags(self, libs):
         """Generate link flags for libraries which should be linked with all symbols."""
@@ -585,13 +584,12 @@ class CcTarget(Target):
 
     def _dynamic_cc_library(self, objs, inclusion_check_result):
         output = self._target_file_path('lib%s.so' % self.name)
-        ldflags = self._generate_link_flags()
+        target_linkflags = self._generate_link_flags()
         sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         if inclusion_check_result:
             incchk_deps.append(inclusion_check_result)
-        extra_ldflags = ['-l%s' % lib for lib in sys_libs]
-        self._cc_link(output, 'solink', objs=objs, deps=usr_libs, order_only_deps=incchk_deps,
-                      ldflags=ldflags, extra_ldflags=extra_ldflags)
+        self._cc_link(output, 'solink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                      order_only_deps=incchk_deps, target_linkflags=target_linkflags)
         self._add_target_file('so', output)
 
     def _soname_of(self, so_path):
@@ -613,14 +611,18 @@ class CcTarget(Target):
         if self.attr.get('generate_dynamic'):
             self._dynamic_cc_library(objs, inclusion_check_result)
 
-    def _cc_link(self, output, rule, objs, deps,
-                 ldflags=None, extra_ldflags=None,
+    def _cc_link(self, output, rule, objs, deps, sys_libs, target_linkflags=None,
                  implicit_deps=None, order_only_deps=None):
         vars = {}
-        if ldflags:
-            vars['ldflags'] = ' '.join(ldflags)
-        if extra_ldflags:
-            vars['extra_ldflags'] = ' '.join(extra_ldflags)
+        linkflags = self.attr.get('linkflags')
+        if linkflags is not None:
+            vars['linkflags'] = ' '.join(linkflags)
+        if target_linkflags:
+            vars['target_linkflags'] = ' '.join(target_linkflags)
+        extra_linkflags = ['-l%s' % lib for lib in sys_libs]
+        extra_linkflags += self.attr.get('extra_linkflags')
+        if extra_linkflags:
+            vars['extra_linkflags'] = ' '.join(extra_linkflags)
         self.generate_build(rule, output,
                             inputs=objs + deps,
                             implicit_deps=implicit_deps,
@@ -738,6 +740,7 @@ class CcLibrary(CcTarget):
                  link_all_symbols,
                  binary_link_only,
                  deprecated,
+                 linkflags,
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
@@ -762,6 +765,7 @@ class CcLibrary(CcTarget):
                 incs=incs,
                 export_incs=export_incs,
                 optimize=optimize,
+                linkflags=linkflags,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
@@ -825,6 +829,7 @@ class PrebuiltCcLibrary(CcTarget):
                 incs=[],
                 export_incs=export_incs,
                 optimize=None,
+                linkflags=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
@@ -988,6 +993,7 @@ def cc_library(
         link_all_symbols=False,
         binary_link_only=False,
         deprecated=False,
+        linkflags=None,
         extra_cppflags=[],
         extra_linkflags=[],
         allow_undefined=False,
@@ -1040,6 +1046,7 @@ def cc_library(
             link_all_symbols=link_all_symbols,
             binary_link_only=binary_link_only,
             deprecated=deprecated,
+            linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
@@ -1083,6 +1090,7 @@ class ForeignCcLibrary(CcTarget):
                 incs=[],
                 export_incs=export_incs,
                 optimize=None,
+                linkflags=None,
                 extra_cppflags=[],
                 extra_linkflags=[],
                 kwargs=kwargs)
@@ -1206,6 +1214,7 @@ class CcBinary(CcTarget):
                  embed_version,
                  optimize,
                  dynamic_link,
+                 linkflags,
                  extra_cppflags,
                  extra_linkflags,
                  export_dynamic,
@@ -1228,6 +1237,7 @@ class CcBinary(CcTarget):
                 incs=incs,
                 export_incs=[],
                 optimize=optimize,
+                linkflags=linkflags,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
@@ -1263,41 +1273,40 @@ class CcBinary(CcTarget):
         return rpath_links
 
     def _generate_cc_binary_link_flags(self, dynamic_link):
-        ldflags = []
+        linkflags = []
         toolchain = self.blade.get_build_toolchain()
         if not dynamic_link and toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5':
-            ldflags += ['-static-libgcc', '-static-libstdc++']
+            linkflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
-            ldflags.append('-rdynamic')
-        ldflags += self._generate_link_flags()
+            linkflags.append('-rdynamic')
+        linkflags += self._generate_link_flags()
         for rpath_link in self._get_rpath_links():
-            ldflags.append('-Wl,--rpath-link=%s' % rpath_link)
-        return ldflags
+            linkflags.append('-Wl,--rpath-link=%s' % rpath_link)
+        return linkflags
 
     def _cc_binary(self, objs, inclusion_check_result, dynamic_link):
         implicit_deps = None
-        ldflags = self._generate_cc_binary_link_flags(dynamic_link)
+        target_linkflags = self._generate_cc_binary_link_flags(dynamic_link)
         if dynamic_link:
             sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
         else:
             sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
             if link_all_symbols_libs:
-                ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+                target_linkflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
                 implicit_deps = link_all_symbols_libs
 
         # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
         order_only_deps = incchk_deps
         if inclusion_check_result:
             order_only_deps.append(inclusion_check_result)
-        extra_ldflags = []
+
         if self.attr['embed_version']:
             scm = os.path.join(self.build_dir, 'scm.cc.o')
-            extra_ldflags.append(scm)
+            objs.append(scm)
             order_only_deps.append(scm)
-        extra_ldflags += ['-l%s' % lib for lib in sys_libs]
         output = self._target_file_path(self.name)
-        self._cc_link(output, 'link', objs=objs, deps=usr_libs,
-                      ldflags=ldflags, extra_ldflags=extra_ldflags,
+        self._cc_link(output, 'link', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                      target_linkflags=target_linkflags,
                       implicit_deps=implicit_deps,
                       order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
@@ -1325,6 +1334,7 @@ def cc_binary(name=None,
               embed_version=True,
               optimize=None,
               dynamic_link=False,
+              linkflags=None,
               extra_cppflags=[],
               extra_linkflags=[],
               export_dynamic=False,
@@ -1342,6 +1352,7 @@ def cc_binary(name=None,
             embed_version=embed_version,
             optimize=optimize,
             dynamic_link=dynamic_link,
+            linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             export_dynamic=export_dynamic,
@@ -1382,6 +1393,7 @@ class CcPlugin(CcTarget):
                  optimize,
                  prefix,
                  suffix,
+                 linkflags,
                  extra_cppflags,
                  extra_linkflags,
                  allow_undefined,
@@ -1404,6 +1416,7 @@ class CcPlugin(CcTarget):
                   incs=incs,
                   export_incs=[],
                   optimize=optimize,
+                  linkflags=linkflags,
                   extra_cppflags=extra_cppflags,
                   extra_linkflags=extra_linkflags,
                   kwargs=kwargs)
@@ -1421,12 +1434,11 @@ class CcPlugin(CcTarget):
         """Generate build code for cc plugin."""
         self._check_deprecated_deps()
         objs, inclusion_check_result = self._cc_objects(self.attr['expanded_srcs'])
-        ldflags = self._generate_link_flags()
+        target_linkflags = self._generate_link_flags()
         sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
         if link_all_symbols_libs:
-            ldflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+            target_linkflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
 
-        extra_ldflags = ['-l%s' % lib for lib in sys_libs]
         if self.name.endswith('.so'):
             output = self._target_file_path(self.name)
         else:
@@ -1438,8 +1450,8 @@ class CcPlugin(CcTarget):
                 link_output = '%s.unstripped' % output
             else:
                 link_output = output
-            self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs,
-                          ldflags=ldflags, extra_ldflags=extra_ldflags,
+            self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                          target_linkflags=target_linkflags,
                           implicit_deps=link_all_symbols_libs, order_only_deps=incchk_deps)
             if self.attr['strip']:
                 self.generate_build('strip', output, inputs=link_output)
@@ -1458,6 +1470,7 @@ def cc_plugin(
         optimize=None,
         prefix=None,
         suffix=None,
+        linkflags=None,
         extra_cppflags=[],
         extra_linkflags=[],
         allow_undefined=True,
@@ -1476,6 +1489,7 @@ def cc_plugin(
             optimize=optimize,
             prefix=prefix,
             suffix=suffix,
+            linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             allow_undefined=allow_undefined,
@@ -1507,6 +1521,7 @@ class CcTest(CcBinary):
             optimize,
             dynamic_link,
             testdata,
+            linkflags,
             extra_cppflags,
             extra_linkflags,
             export_dynamic,
@@ -1532,6 +1547,7 @@ class CcTest(CcBinary):
                 incs=incs,
                 embed_version=embed_version,
                 optimize=optimize,
+                linkflags=linkflags,
                 dynamic_link=dynamic_link,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
@@ -1582,6 +1598,7 @@ def cc_test(name=None,
             optimize=None,
             dynamic_link=None,
             testdata=[],
+            linkflags=None,
             extra_cppflags=[],
             extra_linkflags=[],
             export_dynamic=False,
@@ -1605,6 +1622,7 @@ def cc_test(name=None,
             optimize=optimize,
             dynamic_link=dynamic_link,
             testdata=testdata,
+            linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             export_dynamic=export_dynamic,

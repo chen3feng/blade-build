@@ -47,6 +47,7 @@ class ResourceLibrary(cc_targets.CcTarget):
                 incs=[],
                 export_incs=[],
                 optimize=optimize,
+                linkflags=None,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=[],
                 kwargs=kwargs)
