@@ -11,13 +11,6 @@ Build accelerator (ccache, distcc, etc.) manage module.
 from __future__ import absolute_import
 from __future__ import print_function
 
-import os
-import subprocess
-
-from blade import config
-from blade import console
-
-
 class BuildAccelerator(object):
     """Describe a build accelerator."""
 
