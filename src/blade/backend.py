@@ -287,8 +287,9 @@ class _NinjaFileHeaderGenerator(object):
                            description='AR ${out}')
 
     def _generate_cc_link_rules(self, ld, linkflags):
-        self._add_line('linkflags = ' + ' '.join(config.get_item('cc_config', 'linkflags')))
-        self._add_line('intrinsic_linkflags = ' + ' '.join(linkflags))
+        self._add_line('linkflags = %s' % ' '.join(config.get_item('cc_config', 'linkflags')))
+        self._add_line('intrinsic_linkflags = %s\n' % ' '.join(linkflags))
+
         link_jobs = config.get_item('link_config', 'link_jobs')
         if link_jobs:
             link_jobs = min(link_jobs, self.blade.build_jobs_num())
@@ -299,6 +300,7 @@ class _NinjaFileHeaderGenerator(object):
                       depth = %s''') % (pool, link_jobs))
         else:
             pool = None
+
         link_args = '-o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} ${in} ${extra_linkflags}'
         self.generate_rule(name='link',
                            command=ld + ' ' + link_args,
