@@ -531,11 +531,6 @@ def cc_config(append=None, **kwargs):
 
 
 @config_rule
-def distcc_config(append=None, **kwargs):
-    """distcc_config."""
-    console.warning('"distcc_config" is removed, please use "build_booster"')
-
-@config_rule
 def link_config(append=None, **kwargs):
     """link_config."""
     _blade_config.update_config('link_config', append, kwargs)
