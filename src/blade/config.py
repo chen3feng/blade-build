@@ -67,7 +67,7 @@ class BladeConfig(object):
                 'run_unrepaired_tests': False,
                 'run_unrepaired_tests__help__': constants.HELP.run_unrepaired_tests,
                 'glob_error_severity': 'error',
-                'glob_error_severity__help__': 'The severity of glob error, can be debug, info, warning, error',
+                'glob_error_severity__help__': 'The severity of glob error, can be %s' % constants.SEVERITIES,
                 'default_visibility': set(),
                 'default_visibility__help__': 'Default visibility for targets that do not declare this attribute',
                 'legacy_public_targets': set(),
@@ -102,7 +102,7 @@ class BladeConfig(object):
                 },
                 'hdr_dep_missing_severity': 'error',
                 'hdr_dep_missing_severity__help__': 'The severity of the missing dependency on the '
-                    'library to which the header file belongs, can be "info", "warning", "error"',
+                    'library to which the header file belongs, can be %s' % constants.SEVERITIES,
                 'hdr_dep_missing_suppress': {},
                 'hdr_dep_missing_suppress__help__': 'Header deps missing suppress control, see docs for details',
                 'allowed_undeclared_hdrs': set(),
@@ -521,7 +521,7 @@ def cc_library_config(append=None, **kwargs):
 @config_rule
 def cc_config(append=None, **kwargs):
     """extra cc config, like extra cpp include path splited by space."""
-    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', ['debug', 'info', 'warning', 'error'])
+    _check_kwarg_enum_value(kwargs, 'hdr_dep_missing_severity', constants.SEVERITIES)
     if 'extra_incs' in kwargs:
         extra_incs = kwargs['extra_incs']
         if isinstance(extra_incs, str) and ' ' in extra_incs:
