@@ -32,7 +32,8 @@ from blade import util
 # But this information is output to stderr mixed with diagnostic messages.
 # So we use this awk script to split them.
 #
-# The inclusion information is writes to stdout, other normal diagnostic message is write to stderr.
+# This splitter read the stderr message of the compiler from stdin, writes the inclusion
+# information to stdout, and writes other normal diagnostic message to stderr.
 #
 # NOTE the `$$` is required by ninja. and the `Multiple...` is the last and useless part of
 # the messages.
@@ -261,7 +262,7 @@ class _NinjaFileHeaderGenerator(object):
     def _hdrs_command(self, cc, flags, cppflags, includes):
         """Command to generate cc inclusion information file"""
         args = (' -o /dev/null -E -MMD -MF ${out}.d %s %s -w ${cppflags} %s ${includes} ${in} '
-                '2> ${out}.err' % (' '.join(flags), ' '.join(cppflags), includes))
+                '2>&1' % (' '.join(flags), ' '.join(cppflags), includes))
 
         # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
         # but errors may occur under certain boundary conditions (for example,
@@ -272,8 +273,8 @@ class _NinjaFileHeaderGenerator(object):
 
         # If the first cpp command fails, the second cpp command will be executed.
         # The error message of the first command should be completely ignored.
-        return ('export LC_ALL=C; %s || %s; ec=$$?; %s ${out}.err > ${out}; '
-                'rm -f ${out}.err; exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
+        return ('export LC_ALL=C; msg=$$(%s) || msg=$$(%s); ec=$$?; echo -n "$$msg" | %s > ${out}; '
+                'exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
 
     def _generate_cc_inclusion_check_rule(self):
         self.generate_rule(name='ccincchk',
@@ -324,8 +325,8 @@ class _NinjaFileHeaderGenerator(object):
                 _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
         else:
             # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; %s < ${out}.err > %s ; '
-                        'rm -f ${out}.err; exit $$ec') % (
+            template = ('export LC_ALL=C; msg=$$(%%s -H 2>&1); ec=$$?; echo -n "$$msg" | %s > %s ; '
+                        'exit $$ec') % (
                             _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
 
         return template
