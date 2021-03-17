@@ -158,7 +158,7 @@ def _open(name, mode=None, buffering=None):
 
 # Replace some functions to better help users know how to deal with.
 _REPLACED_FUNCTIONS = {
-    'eval': _open,
+    'open': _open,
 }
 
 
