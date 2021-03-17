@@ -9,6 +9,7 @@ API for BUILD files and extensions.
 """
 
 import os
+import re
 import types
 
 import blade
@@ -97,6 +98,7 @@ def _safe_blade_module():
     module.current_target_dir = blade.current_target_dir
     module.environ = os.environ
     module.path = _safe_path_module()
+    module.re = re
     module.util = _safe_util_module()
     module.workspace = _safe_workspace_module()
     return module

@@ -7,7 +7,10 @@
 - `exec`，`execfile`，`eval` 提高构建文件的一致性。
 - `import` 请用 `blade` 的子模块。
 - `print` 请用 `blade.console` 里的函数代替。
-- `open`
+
+某些函数功能则有限制：
+
+- `open` 只允许读模式访问
 
 即使用 python 2 来运行 Blade，你也应当尽量采用反向移植的 python 3 的语法。
 
@@ -24,6 +27,7 @@
 - `current_target_dir()` 函数：当前 BUILD 文件所在的目录对应于（相对于 workspace 的根目录）
 - `config` 子模块：读取 blade 的配置信息
 - `console` 子模块：输出诊断信息
+- `re` 子模块：正则表达式
 - `path` 子模块：`os.path` 的一个受限制的子集
 
 ### `blade.config` 模块

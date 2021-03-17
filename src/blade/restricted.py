@@ -132,7 +132,6 @@ _FORBIDDEN_FUNCTIONS = [
     'exec',
     'execfile',
     'eval',
-    'open',
 ]
 
 
@@ -143,6 +142,24 @@ def _make_forbidden_wrapper(name):
         console.diagnose(src_loc, 'error', error)
         # return None  # pylint: disable=useless-return
     return wrapper
+
+
+def _open(name, mode=None, buffering=None):
+    """A Readonly open function"""
+    if mode is None and buffering is None:
+        return open(name)
+    if mode:
+        if 'w' in mode or 'a' in mode:
+            raise ValueError('"open" only allow readonly mode')
+    if buffering is None:
+        return open(name, mode)
+    return open(name, mode, buffering)
+
+
+# Replace some functions to better help users know how to deal with.
+_REPLACED_FUNCTIONS = {
+    'open': _open,
+}
 
 
 def _make_safe_buildins():
@@ -160,6 +177,9 @@ def _make_safe_buildins():
         else:
             user_friend_name = name
         safe_builtins[name] = _make_forbidden_wrapper(user_friend_name)
+
+    for name, func in _REPLACED_FUNCTIONS.items():
+        safe_builtins[name] = func
 
     return safe_builtins
 

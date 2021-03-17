@@ -8,7 +8,9 @@ functions and keywords, include but not limited to:
 - `exec`, `execfile` and `eval` To improve the consistency of BUILD files.
 - `import` Use the built-in `blade` module instead
 - `print` Use the functions in `blade.console` module instead
-- `open`
+
+Some builtin functions are restricted.
+- `open` only read mode is allowed
 
 To use some common additional functions, such as `os.path.join`, you need to use similar sub-modules in the `blade` module.
 If you want to add more appropriate modules, please make an Issue.
@@ -26,6 +28,7 @@ The global Blade API module, accessed through `blade.`, includes:
 - `current_target_dir()` function: The output directory where the current BUILD file is located corresponds to (relative to the root directory of the workspace)
 - `config` submodule: Read blade configuration information
 - `console` submodule: Output diagnostic information
+- `re` submodule: The python regex library
 - `path` submodule: a Restricted subset of `os.path`
 
 ### `blade.config` Submodule
