@@ -102,7 +102,7 @@ class Blade(object):
         self.__targets_expanded = False
 
         self.__build_toolchain = ToolChain()
-        self.build_accelerator = BuildAccelerator(self.__root_dir, self.__build_toolchain)
+        self.build_accelerator = BuildAccelerator(self.__build_toolchain)
         self.__build_jobs_num = 0
 
         self.__build_script = os.path.join(self.__build_dir, 'build.ninja')

@@ -15,14 +15,6 @@ cc_binary_config(
 )
 """
 
-distcc_config(
-    enabled=False
-)
-
-link_config(
-    link_on_tmp=False,
-)
-
 cc_library_config(
     generate_dynamic=True
 )

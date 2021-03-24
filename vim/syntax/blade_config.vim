@@ -75,11 +75,8 @@ syn keyword bladeArg gtest_main_libs
 syn keyword bladeArg heap_check
 syn keyword bladeArg pprof_path
 
-syn keyword bladeTarget distcc_config
-syn keyword bladeArg enabled
-
 syn keyword bladeTarget link_config
-syn keyword bladeArg link_on_tmp
+syn keyword bladeArg link_jobs
 
 " Java
 syn keyword bladeTarget java_config

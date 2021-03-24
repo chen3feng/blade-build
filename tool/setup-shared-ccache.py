@@ -3,6 +3,7 @@
 """
 Setup shared ccache for multiple users in same develop box.
 """
+
 from __future__ import print_function
 import argparse
 import os
@@ -16,10 +17,9 @@ _CONFIG_FILE_NAME = 'ccache.conf'
 def check():
     # Check root
     if subprocess.call('ccache --version > /dev/null', shell=True) != 0:
-        print('Warning: ccache not found. please install it(apt, yum, dnf or from source, ...)')
-        if raw_input('Continue(yes/NO)? ').lower() != 'yes':
-            print('Exiting.')
-            sys.exit(1)
+        print('Error: ccache not found. please install it(apt, yum, dnf or from source, ...)')
+        print('Exiting.')
+        sys.exit(1)
 
     # Check ccache installation
     if os.geteuid() != 0:
