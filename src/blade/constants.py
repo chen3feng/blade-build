@@ -13,6 +13,8 @@ HEAP_CHECK_VALUES = {
     'local',
 }
 
+SEVERITIES = {'debug', 'info', 'notice', 'warning', 'error'}
+
 ALL_COMMAND_TARGETS = '__all_command_targets__'
 
 

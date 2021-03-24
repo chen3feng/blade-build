@@ -69,19 +69,6 @@ Global configuration:
 
   Whether run unrepaired(no changw after previous failure) tests during incremental test.
 
-Example:
-
-```python
-global_config(
-    # backend build system, only supports ninja now.
-    backend_builder = 'ninja',
-    # When the same source file is found to belong to multiple targets, the default is warning
-    duplicated_source_action = 'error',
-    # 600s # test timeout, in seconds, the timeout value is still not over, it is considered a test failure
-    test_timeout = 600
-)
-```
-
 - `legacy_public_targets` : list = []
 
   For targets whose `visibility` is not explicitly set, its visibility is set to `PUBLIC` if it is in this list.

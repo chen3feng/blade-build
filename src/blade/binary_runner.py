@@ -9,7 +9,7 @@
 
 
 """
-This is the TestRunner module which executes the test programs.
+This module executes a binary programs.
 """
 
 from __future__ import absolute_import
