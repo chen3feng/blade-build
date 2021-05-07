@@ -266,7 +266,7 @@ use_zlib.cc：
 
 ### 示例2，openssl
 
-严格说来，openssl 并非用 autotools 构建的，不过它它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
+严格说来，openssl 并非用 autotools 构建的，不过它大致兼容 autotools，他的对应 autotools configure 的文件是 Config，安装后的目录布局则兼容。
 不过其头文件带包名，也就是不是直接在 `include` 下 而是在 `include/openssl` 子目录下。
 假设 openssl-1.1.0.tar.gz 在 thirparty/openssl 目录下，其 BUILD 文件则是 thirdparty/openssl/BUILD：
 
@@ -275,7 +275,7 @@ use_zlib.cc：
 gen_rule(
     name = 'openssl_build',
     srcs = ['openssl-1.1.0.tar.gz'],
-    outs = ['lib/libcrypto.a', 'lib/libss.a'],
+    outs = ['lib/libcrypto.a', 'lib/libssl.a'],
     cmd = '...',  # tar xf，Config, make, make install...
     export_incs = 'include', # 让编译器能找到 include 下的 openssl 子目录
 )
@@ -291,7 +291,7 @@ foreign_cc_library(
 foreign_cc_library(
     name = 'ssl',  # 库的名字为 libssl.a，在 `lib` 子目录下
     install_dir = '', # 包的安装目录是 `build64_release/thirdparty/openssl`
-    deps  = [':openssl_build', ':crypto'],
+    deps = [':openssl_build', ':crypto'],
 )
 ```
 
