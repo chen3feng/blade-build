@@ -45,6 +45,10 @@ master 分支上的代码是开发版，应当视为 alpha 版。正式环境请
 
 具体请查看[升级说明](doc/zh_CN/upgrade-to-v2.md)。
 
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/chen3feng/blade-build.svg)](https://starchart.cc/chen3feng/blade-build)
+      
 ## 源起
 
 Blade 是一个现代构建系统，期望的目标是强大而好用，把程序员从构建的繁琐中解放出来。

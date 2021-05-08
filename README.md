@@ -46,6 +46,10 @@ We will release the verified version on the large-scale internal code base to th
 
 Please follow the [Upgrade Notes](doc/en/upgrade-to-v2.md) to upgrade.
 
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/chen3feng/blade-build.svg)](https://starchart.cc/chen3feng/blade-build)
+      
 ## Brief
 
 Blade is designed to be a modern build system. It is powerful and easy to use. It supports building
