@@ -30,8 +30,7 @@ class TestGenRule(blade_test.TargetTest):
         self.assertCxxFlags(com_use_line)
 
         gen_rule_index = self.findCommandAndLine('echo')
-        use_so_index = self.findCommandAndLine(
-                ['-shared', 'libuse_media.so', 'use_media.cpp.o'])
+        use_so_index = self.findCommandAndLine('-shared')
 
         #self.assertGreater(gen_rule_index, lower_so_index)
         #self.assertGreater(upper_so_index, gen_rule_index)

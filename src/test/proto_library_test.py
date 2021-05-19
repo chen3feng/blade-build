@@ -44,8 +44,6 @@ class TestProtoLibrary(blade_test.TargetTest):
 
         self.assertTrue(meta_depends_libs)
         self.assertIn('libuse_protos.so', uses_depends_libs)
-        self.assertIn('librpc_meta_info_proto.so', uses_depends_libs)
-        self.assertIn('librpc_option_proto.so', uses_depends_libs)
 
 
 if __name__ == '__main__':

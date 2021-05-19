@@ -38,8 +38,6 @@ class TestLexYacc(blade_test.TargetTest):
         self.assertCxxFlags(com_ll_static_line)
         self.assertCxxFlags(com_yy_static_line)
 
-        self.assertIn('line_parser.ll.cc.o', lex_yacc_depends_libs)
-        self.assertIn('line_parser.yy.cc.o', lex_yacc_depends_libs)
         self.assertDynamicLinkFlags(lex_yacc_depends_libs)
 
 

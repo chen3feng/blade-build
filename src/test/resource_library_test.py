@@ -39,7 +39,6 @@ class TestResourceLibrary(blade_test.TargetTest):
         self.assertNoWarningCxxFlags(com_poppy_line)
 
         self.assertDynamicLinkFlags(lower_depends_libs)
-        self.assertIn('libstatic_resource.so', lower_depends_libs)
 
 
 if __name__ == '__main__':
