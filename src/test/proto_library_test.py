@@ -43,7 +43,6 @@ class TestProtoLibrary(blade_test.TargetTest):
         self.assertNoWarningCxxFlags(com_proto_meta_cc)
 
         self.assertTrue(meta_depends_libs)
-        self.assertIn('librpc_option_proto.so', meta_depends_libs)
         self.assertIn('libuse_protos.so', uses_depends_libs)
         self.assertIn('librpc_meta_info_proto.so', uses_depends_libs)
         self.assertIn('librpc_option_proto.so', uses_depends_libs)

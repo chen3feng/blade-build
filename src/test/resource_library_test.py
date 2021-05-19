@@ -38,9 +38,6 @@ class TestResourceLibrary(blade_test.TargetTest):
         self.assertNoWarningCxxFlags(com_forms_line)
         self.assertNoWarningCxxFlags(com_poppy_line)
 
-        self.assertIn('forms.js.c.o', static_so_line)
-        self.assertIn('poppy.html.c.o', static_so_line)
-
         self.assertDynamicLinkFlags(lower_depends_libs)
         self.assertIn('libstatic_resource.so', lower_depends_libs)
 

@@ -29,8 +29,6 @@ class TestGenRule(blade_test.TargetTest):
         self.assertCxxFlags(com_lower_line)
         self.assertCxxFlags(com_use_line)
 
-        lower_so_index = self.findCommandAndLine(
-                ['-shared', 'liblowercase.so', 'plowercase.cpp.o'])
         gen_rule_index = self.findCommandAndLine('echo')
         use_so_index = self.findCommandAndLine(
                 ['-shared', 'libuse_media.so', 'use_media.cpp.o'])
