@@ -39,9 +39,6 @@ class TestCcLibrary(blade_test.TargetTest):
 
         self.assertDynamicLinkFlags(string_depends_libs)
 
-        self.assertIn('liblowercase.so', string_depends_libs)
-        self.assertIn('libuppercase.so', string_depends_libs)
-
 
 if __name__ == '__main__':
     blade_test.run(TestCcLibrary)
