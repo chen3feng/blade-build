@@ -301,19 +301,19 @@ class _NinjaFileHeaderGenerator(object):
         else:
             pool = None
 
-        # link might have a lot of object files exceeding maximal length of a bash command line.
-        # using response file can avoid this situation.
-        # refer to: https://ninja-build.org/manual.html
-        link_args = '-o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rspfile ${extra_linkflags}'
+        # Linking might have a lot of object files exceeding maximal length of a bash command line.
+        # Using response file can resolve this problem.
+        # Refer to: https://ninja-build.org/manual.html
+        link_args = '-o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rsp ${extra_linkflags}'
         self.generate_rule(name='link',
-                           command= 'touch ${out}.rspfile &&' + ' ' + ld + ' ' + link_args,
-                           rspfile = '${out}.rspfile',
+                           command=ld + ' ' + link_args,
+                           rspfile='${out}.rsp',
                            rspfile_content='${in}',
                            description='LINK BINARY ${out}',
                            pool=pool)
         self.generate_rule(name='solink',
-                           command='touch ${out}.rspfile &&' + ' ' + ld + ' -shared ' + link_args,
-                           rspfile = '${out}.rspfile',
+                           command=ld + ' -shared ' + link_args,
+                           rspfile='${out}.rsp',
                            rspfile_content='${in}',
                            description='LINK SHARED ${out}',
                            pool=pool)
