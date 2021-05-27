@@ -160,7 +160,10 @@ class ToolChain(object):
 
     @staticmethod
     def _get_nvcc_version():
-        """Get the nvcc version."""
+        """Get the nvcc version.
+
+        :return: 11.0.194
+        """
         nvcc = os.environ.get('NVCC', 'nvcc')
         returncode, stdout, _ = ToolChain._execute(nvcc + ' --version')
         if returncode == 0:
@@ -177,12 +180,10 @@ class ToolChain(object):
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
             return include_list
-        returncode, stdout, stderr = ToolChain._execute('nvcc --version')
-        if returncode == 0:
-            version_line = stdout.splitlines(True)[-1]
-            version = version_line.split()[4]
-            version = version.replace(',', '')
-            if os.path.isdir('/usr/local/cuda-%s' % version):
+        # nvcc_version: 11.0.194  --> version: 11.0
+        nvcc_version = ToolChain._get_nvcc_version()
+        version = '.'.join(nvcc_version.split('.')[:2])
+        if version and os.path.isdir('/usr/local/cuda-%s' % version):
                 include_list.append('/usr/local/cuda-%s/include' % version)
                 include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
                 return include_list
