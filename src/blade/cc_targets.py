@@ -662,15 +662,34 @@ class CcTarget(Target):
 
         # Only update file when content changes to avoid unnecessary recheck
         if os.path.exists(filename):
-            with open(filename, 'rb') as f:
-                if f.read() == content:
-                    self.debug('Inclusion information no change')
-                    return
+            if self._incchk_is_valid(filename, content, target_check_info):
+                self.debug('Inclusion information no change')
+                return
         else:
             mkdir_p(self._target_dir())
         self.debug('Inclusion information updated')
         with open(filename, 'wb') as f:
             f.write(content)
+
+    def _incchk_is_valid(self, filename, content, info):
+        """Check whether the existing incchk file is still valid."""
+        with open(filename, 'rb') as f:
+            old_content = f.read()
+            # NOTE:
+            # Equivalent info may have different pickled length, so we can't depend on
+            # the length to optimize the test.
+            # if len(old_content) != len(content):  # NO
+            #     return False
+            if old_content == content:
+                return True
+            try:
+                # The result of pickle is not reproducible for something such as dict
+                old_info = pickle.loads(old_content)
+                if old_info == info:
+                    return True
+            except pickle.PickleError:
+                pass
+        return False
 
     def _collect_declared_headers(self):
         """Collect direct headers declarations."""
