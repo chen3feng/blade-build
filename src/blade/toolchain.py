@@ -241,6 +241,7 @@ class ToolChain(object):
                    self.cc, obj, language, ' '.join(flag_list)))
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         unused_out, err = p.communicate()
+        err = to_string(err)
 
         try:
             # In case of error, the `.o` file will be deleted by the compiler
