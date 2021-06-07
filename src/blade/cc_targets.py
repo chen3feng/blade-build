@@ -687,7 +687,7 @@ class CcTarget(Target):
                 old_info = pickle.loads(old_content)
                 if old_info == info:
                     return True
-            except pickle.PickleError:
+            except Exception:
                 pass
         return False
 
