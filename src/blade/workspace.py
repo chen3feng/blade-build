@@ -14,7 +14,6 @@ import json
 import os
 import re
 import string
-import subprocess
 
 from blade import config
 from blade import console
