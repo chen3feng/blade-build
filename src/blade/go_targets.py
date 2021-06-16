@@ -15,7 +15,6 @@ from __future__ import print_function
 
 import os
 import re
-import subprocess
 
 from blade import build_manager
 from blade import build_rules
