@@ -26,6 +26,7 @@ except ImportError:
 
 from blade import config
 from blade import console
+from blade.util import run_command
 
 TestRunResult = namedtuple('TestRunResult', ['exit_code', 'start_time', 'cost_time'])
 
@@ -171,25 +172,22 @@ class TestScheduler(object):
             cmd = subprocess.list2cmdline(cmd)
         timeout = target.attr.get('test_timeout')
         self._show_progress(cmd)
-        p = subprocess.Popen(cmd,
-                             env=test_env,
-                             cwd=run_dir,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             close_fds=True,
-                             shell=shell)
+        returncode, stdout, unused_stderr = run_command(cmd,
+                                                        env=test_env,
+                                                        cwd=run_dir,
+                                                        close_fds=True,
+                                                        shell=shell)
         job_thread.set_job_data(p, test_name, timeout)
-        stdout = p.communicate()[0]
-        result = self._get_result(p.returncode)
+        result = self._get_result(returncode)
         msg = 'Output of //%s:\n%s%s Test //%s finished: %s\n' % (
             test_name, stdout, self._progress(done=1), test_name, result)
-        if console.verbosity_le('quiet') and p.returncode != 0:
+        if console.verbosity_le('quiet') and returncode != 0:
             console.error(msg, prefix=False)
         else:
             console.info(msg)
             console.flush()
 
-        return p.returncode
+        return returncode
 
     def _run_job(self, job, job_thread):
         """run job, do not redirect the output."""

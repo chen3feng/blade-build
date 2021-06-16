@@ -23,11 +23,8 @@ from blade import util
 
 def _generate_scm_svn():
     url = revision = 'unknown'
-    p = subprocess.Popen('svn info', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    stdout = util.to_string(stdout)
-    stderr = util.to_string(stderr)
-    if p.returncode != 0:
+    returncode, stdout, stderr = util.run_command('svn info', shell=True)
+    if returncode != 0:
         console.debug('Failed to generate svn scm: %s' % stderr)
     else:
         for line in stdout.splitlines():
@@ -44,11 +41,8 @@ def _generate_scm_git():
     url = revision = 'unknown'
 
     def git(cmd):
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        stdout = util.to_string(stdout)
-        stderr = util.to_string(stderr)
-        if p.returncode != 0:
+        returncode, stdout, stderr = util.run_command(cmd, shell=True)
+        if returncode != 0:
             console.debug('Failed to generate git scm: %s' % stderr)
             return ''
         return stdout
