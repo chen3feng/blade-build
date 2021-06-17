@@ -205,6 +205,21 @@ def shell(cmd, env=None):
     return p.returncode
 
 
+def run_command(args, **kwargs):
+    """Run a command without echo, return returncode, stdout and stderr (always as string)."""
+
+    kwargs.setdefault('stdout', subprocess.PIPE)
+    kwargs.setdefault('stderr', subprocess.PIPE)
+
+    if _IN_PY3:
+        r = subprocess.run(args, universal_newlines=True, **kwargs)
+        return r.returncode, r.stdout, r.stderr
+    else:
+        p = subprocess.Popen(args, universal_newlines=True, **kwargs)
+        stdout, stderr = p.communicate()
+        return p.returncode, stdout, stderr
+
+
 def load_scm(build_dir):
     revision = url = 'unknown'
     path = os.path.join(build_dir, 'scm.json')

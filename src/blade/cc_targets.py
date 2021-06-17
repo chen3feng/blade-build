@@ -15,7 +15,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-import subprocess
 from string import Template
 
 from blade import build_manager
@@ -28,6 +27,7 @@ from blade.util import (
     mkdir_p,
     path_under_dir,
     pickle,
+    run_command,
     stable_unique,
     var_to_list,
     var_to_list_or_none)
@@ -594,17 +594,14 @@ class CcTarget(Target):
 
     def _soname_of(self, so_path):
         """Get the `soname` of a shared library."""
-        soname = None
-        try:
-            output = subprocess.check_output('objdump -p %s' % so_path, shell=True)
-            for line in output.splitlines():
-                parts = line.split()
-                if len(parts) == 2 and parts[0] == 'SONAME':
-                    soname = parts[1]
-                    break
-        except subprocess.CalledProcessError:
-            pass
-        return soname
+        returncode, output, unused_stderr = run_command('objdump -p %s' % so_path, shell=True)
+        if returncode != 0:
+            return None
+        for line in output.splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == 'SONAME':
+                return parts[1]
+        return None
 
     def _cc_library(self, objs, inclusion_check_result=None):
         self._static_cc_library(objs, inclusion_check_result)
