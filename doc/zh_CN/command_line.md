@@ -36,6 +36,8 @@ subcommand是一个子命令，目前有：
 
 对于 `...` 目标模式，Blade 会递归搜索 `BUILD` 文件，如果需要排除某些目录，在其中放一个空的 `.bladeskip` 文件即可。
 
+如果你安装了 [ohmyzsh](https://ohmyz.sh/)，裸的 `...` 会被其[自动展开为 `..\..`](https://github.com/ohmyzsh/ohmyzsh/wiki/Cheatsheet#directory)，需要写成 `./...`。
+
 ## 按目标标签过滤
 
 在 Blade 中，每个目标还支持[标签（tag）](build_file.md#tags)属性。

@@ -40,6 +40,9 @@ When you specify ... as the end target, if its path exists, it will not fail eve
 Blade will search `BUILD` files recursively for the `...` target pattern, if some dirs should be
 excluded from searching, you can put an empty `.bladeskip` under it.
 
+If you have [ohmyzsh](https://ohmyz.sh/) installed, the bare `...` will be automatically
+[expanded to `... \...`](https://github.com/ohmyzsh/ohmyzsh/wiki/Cheatsheet#directory), which needs to be written as `. /...`.
+
 ## Filter by Target Tags
 
 In Blade, each target also supports [tags attribute](build_file.md#tags).
