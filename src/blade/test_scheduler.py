@@ -177,7 +177,8 @@ class TestScheduler(object):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              close_fds=True,
-                             shell=shell)
+                             shell=shell,
+                             universal_newlines=True)
         job_thread.set_job_data(p, test_name, timeout)
         stdout = p.communicate()[0]
         result = self._get_result(p.returncode)

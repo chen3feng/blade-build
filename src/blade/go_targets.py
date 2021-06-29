@@ -15,14 +15,13 @@ from __future__ import print_function
 
 import os
 import re
-import subprocess
 
 from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
 from blade.target import Target
-from blade.util import var_to_list
+from blade.util import run_command, var_to_list
 
 
 _package_re = re.compile(r'^\s*package\s+(\w+)\s*$')
@@ -86,13 +85,8 @@ class GoTarget(Target):
     def _init_go_environment(self):
         if GoTarget._go_os is None and GoTarget._go_arch is None:
             go = config.get_item('go_config', 'go')
-            p = subprocess.Popen('%s env' % go,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 shell=True,
-                                 universal_newlines=True)
-            stdout, stderr = p.communicate()
-            if p.returncode != 0:
+            returncode, stdout, stderr = run_command('%s env' % go, shell=True)
+            if returncode != 0:
                 self.error('Failed to initialize go environment: %s' % stderr)
                 return
             for line in stdout.splitlines():

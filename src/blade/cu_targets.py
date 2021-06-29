@@ -79,6 +79,8 @@ class CuTarget(CcTarget):
                 self.attr.get('always_optimize')):
             nvcc_flags += self._get_optimize_flags()
 
+        nvcc_flags += self.attr.get('extra_cppflags', [])
+
         # Incs
         incs = self._get_incs_list()
 
@@ -100,6 +102,7 @@ class CuLibrary(CuTarget):
                  warning,
                  defs,
                  incs,
+                 link_all_symbols,
                  extra_cppflags,
                  extra_linkflags,
                  kwargs):
@@ -116,6 +119,7 @@ class CuLibrary(CuTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
+        self.attr['link_all_symbols'] = link_all_symbols
         self._add_tags('type:library')
 
     def generate(self):
@@ -130,6 +134,7 @@ def cu_library(name=None,
                warning='yes',
                defs=[],
                incs=[],
+               link_all_symbols=False,
                extra_cppflags=[],
                extra_linkflags=[],
                **kwargs):
@@ -142,6 +147,7 @@ def cu_library(name=None,
             warning=warning,
             defs=defs,
             incs=incs,
+            link_all_symbols=link_all_symbols,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
             kwargs=kwargs)

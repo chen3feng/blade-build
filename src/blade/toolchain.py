@@ -14,11 +14,10 @@ from __future__ import print_function
 
 import os
 import re
-import subprocess
 import tempfile
 
 from blade import console
-from blade.util import var_to_list, iteritems, to_string
+from blade.util import var_to_list, iteritems, run_command
 
 # example: Cuda compilation tools, release 11.0, V11.0.194
 _nvcc_version_re = re.compile(r'V(\d+\.\d+\.\d+)')
@@ -125,11 +124,11 @@ class ToolChain(object):
     def _get_cc_version(self):
         version = ''
         if 'gcc' in self.cc:
-            returncode, stdout, stderr = ToolChain._execute(self.cc + ' -dumpversion')
+            returncode, stdout, stderr = run_command(self.cc + ' -dumpversion', shell=True)
             if returncode == 0:
                 version = stdout.strip()
         elif 'clang' in self.cc:
-            returncode, stdout, stderr = ToolChain._execute(self.cc + ' --version')
+            returncode, stdout, stderr = run_command(self.cc + ' --version', shell=True)
             if returncode == 0:
                 line = stdout.splitlines()[0]
                 pos = line.find('version')
@@ -146,12 +145,12 @@ class ToolChain(object):
         """Get the cc target architecture."""
         cc = ToolChain._get_cc_command('CC', 'gcc')
         if 'gcc' in cc:
-            returncode, stdout, stderr = ToolChain._execute(cc + ' -dumpmachine')
+            returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
             if returncode == 0:
                 return stdout.strip()
         elif 'clang' in cc:
             llc = cc[:-len('clang')] + 'llc'
-            returncode, stdout, stderr = ToolChain._execute('%s --version' % llc)
+            returncode, stdout, stderr = run_command('%s --version' % llc, shell=True)
             if returncode == 0:
                 for line in stdout.splitlines():
                     if 'Default target' in line:
@@ -165,7 +164,7 @@ class ToolChain(object):
         :return: 11.0.194
         """
         nvcc = os.environ.get('NVCC', 'nvcc')
-        returncode, stdout, _ = ToolChain._execute(nvcc + ' --version')
+        returncode, stdout, _ = run_command(nvcc + ' --version', shell=True)
         if returncode == 0:
             res = re.search(_nvcc_version_re, stdout)
             if res:
@@ -188,22 +187,6 @@ class ToolChain(object):
                 include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
                 return include_list
         return []
-
-    @staticmethod
-    def _execute(cmd, redirect_stderr_to_stdout=False):
-        redirect_stderr = subprocess.PIPE
-        if redirect_stderr_to_stdout:
-            redirect_stderr = subprocess.STDOUT
-        p = subprocess.Popen(cmd,
-                             env=os.environ,
-                             stderr=redirect_stderr,
-                             stdout=subprocess.PIPE,
-                             shell=True,
-                             universal_newlines=True)
-        stdout, stderr = p.communicate()
-        stdout = to_string(stdout)
-        stderr = to_string(stderr)
-        return p.returncode, stdout, stderr
 
     def get_cc_commands(self):
         return self.cc, self.cxx, self.ld
@@ -239,8 +222,7 @@ class ToolChain(object):
         cmd = ('export LC_ALL=C; echo "int main() { return 0; }" | '
                '%s -o %s -c -x %s -Werror %s -' % (
                    self.cc, obj, language, ' '.join(flag_list)))
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        unused_out, err = p.communicate()
+        returncode, _, stderr = run_command(cmd, shell=True)
 
         try:
             # In case of error, the `.o` file will be deleted by the compiler
@@ -249,13 +231,13 @@ class ToolChain(object):
             pass
         os.close(fd)
 
-        if p.returncode == 0:
+        if returncode == 0:
             return flag_list
         for flag in flag_list:
             # Example error messages:
             #   clang: warning: unknown warning option '-Wzzz' [-Wunknown-warning-option]
             #   gcc:   gcc: error: unrecognized command line option '-Wxxx'
-            if " option '%s'" % flag in err:
+            if " option '%s'" % flag in stderr:
                 unrecognized_flags.append(flag)
             else:
                 valid_flags.append(flag)

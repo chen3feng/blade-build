@@ -38,7 +38,7 @@ from blade import util
 # the messages.
 _INCLUSION_STACK_SPLITTER = (r"awk '"
     r"""/Multiple include guards may be useful for:/ {stop=1} """  # Can't exit here otherwise SIGPIPE maybe occurs.
-    r"""/^\.+ [^/]/ { print $$0} """  # Non absolute path
+    r"""/^\.+ [^\/]/ { print $$0} """  # Non absolute path
     r"""!/^\.+ / && !stop {print $$0 > "/dev/stderr"}"""  # Maybe error messages
     r"'"
 )
