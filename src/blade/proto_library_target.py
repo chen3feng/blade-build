@@ -311,15 +311,15 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.generate_build('protodescriptors', output, inputs=inputs, variables={'first': inputs[0]})
 
     def _protoc_plugin_parameters(self, language):
-        """Return a tuple of (plugin path, vars) used as parameters for ninja build."""
-        path, vars = '', {}
+        """Return a tuple of (plugin paths, vars) used as parameters for ninja build."""
+        paths, vars = [], {}
         for p in self.data['protoc_plugin_objects']:
             if language in p.code_generation:
-                path = p.path
-                flag = p.protoc_plugin_flag(self.build_dir)
-                vars = {'protoc%spluginflags' % language: flag}
-                break
-        return path, vars
+                paths.append(p.path)
+                flag_key = 'protoc%spluginflags' % language
+                flag_value = p.protoc_plugin_flag(self.build_dir)
+                vars[flag_key] = vars[flag_key] + ' ' + flag_value if flag_key in vars else flag_value
+        return paths, vars
 
     def _add_protoc_direct_dependencies(self, vars):
         """ Add a `--direct_dependencies` optiopn to protocflags.
@@ -333,11 +333,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             vars['protocflags'] = '--direct_dependencies %s' % ':'.join(dependencies)
 
     def _proto_cpp_rules(self):
-        plugin, vars = self._protoc_plugin_parameters('cpp')
+        plugin_paths, vars = self._protoc_plugin_parameters('cpp')
         self._add_protoc_direct_dependencies(vars)
         implicit_deps = self.protoc_direct_dependencies()
-        if plugin:
-            implicit_deps.append(plugin)
+        implicit_deps.extend(plugin_paths)
         cpp_sources = []
         for src in self.srcs:
             full_source, full_header = self._proto_gen_cpp_files(src)
@@ -350,10 +349,9 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self._cc_library(objs)
 
     def _proto_java_rules(self):
-        plugin, vars = self._protoc_plugin_parameters('java')
+        plugin_paths, vars = self._protoc_plugin_parameters('java')
         implicit_deps = self.protoc_direct_dependencies()
-        if plugin:
-            implicit_deps.append(plugin)
+        implicit_deps.extend(plugin_paths)
         java_sources = []
         for src in self.srcs:
             input = self._source_file_path(src)
