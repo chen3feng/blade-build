@@ -441,6 +441,7 @@ class JavaTargetMixIn(object):
                         f = os.path.join(dir, f)
                         rel_path = os.path.relpath(f, full_path)
                         results.add((f, os.path.join(jar_path, rel_path)))
+
         return sorted(results)
 
     def _java_sources_paths(self, srcs):
