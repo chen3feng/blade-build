@@ -207,13 +207,13 @@ class JavaTargetMixIn(object):
                 self.error('Invalid resource %s. Resource should be either a str or a tuple.' %
                            resource)
                 continue
-
             m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.attr['location_resources'].append((key, type, dst))
             else:
                 self.attr['resources'].append((src, dst))
+
 
     def _get_classes_dir(self):
         """Return path of classes dir."""
@@ -441,7 +441,6 @@ class JavaTargetMixIn(object):
                         f = os.path.join(dir, f)
                         rel_path = os.path.relpath(f, full_path)
                         results.add((f, os.path.join(jar_path, rel_path)))
-
         return sorted(results)
 
     def _java_sources_paths(self, srcs):
@@ -527,8 +526,7 @@ class JavaTargetMixIn(object):
             return []
         inputs, outputs = [], []
         resources_dir = self._target_file_path(self.name + '.resources')
-        resources = self._process_regular_resources(resources)
-        for src, dst in resources:
+        for src, dst in self.attr['expended_resources']:
             inputs.append(src)
             outputs.append(os.path.join(resources_dir, dst))
         targets = self.blade.get_build_targets()
@@ -635,7 +633,9 @@ class JavaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 tags=tags,
                 kwargs=kwargs)
+        # we need expand regular resources, otherwise fingerprint does not change.
         self._process_resources(resources)
+        self.attr['expended_resources'] = self._process_regular_resources(self.attr['resources'])
         self.attr['source_encoding'] = source_encoding
         self._add_tags('lang:java')
 

@@ -56,7 +56,9 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 tags=tags,
                 kwargs=kwargs)
+        # we need expand regular resources, otherwise fingerprint does not change.
         self._process_resources(resources)
+        self.attr['expended_resources'] = self._process_regular_resources(self.attr['resources'])
         if source_encoding:
             self.attr['source_encoding'] = source_encoding
         if warnings:
