@@ -56,7 +56,7 @@ class ScalaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 tags=tags,
                 kwargs=kwargs)
-        # we need expand regular resources, otherwise fingerprint does not change.
+        # we need expand resources in regular format to change ninja fingerprint.
         self._process_resources(resources)
         self.attr['expended_resources'] = self._process_regular_resources(self.attr['resources'])
         if source_encoding:

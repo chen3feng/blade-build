@@ -207,13 +207,13 @@ class JavaTargetMixIn(object):
                 self.error('Invalid resource %s. Resource should be either a str or a tuple.' %
                            resource)
                 continue
+
             m = LOCATION_RE.search(src)
             if m:
                 key, type = self._add_location_reference_target(m)
                 self.attr['location_resources'].append((key, type, dst))
             else:
                 self.attr['resources'].append((src, dst))
-
 
     def _get_classes_dir(self):
         """Return path of classes dir."""
@@ -633,7 +633,7 @@ class JavaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 tags=tags,
                 kwargs=kwargs)
-        # we need expand regular resources, otherwise fingerprint does not change.
+        # we need expand resources in regular format to change ninja fingerprint.
         self._process_resources(resources)
         self.attr['expended_resources'] = self._process_regular_resources(self.attr['resources'])
         self.attr['source_encoding'] = source_encoding
