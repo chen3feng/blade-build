@@ -634,7 +634,8 @@ class JavaTarget(Target, JavaTargetMixIn):
                 visibility=visibility,
                 tags=tags,
                 kwargs=kwargs)
-        # we need expand resources in regular format to change ninja fingerprint.
+        # If the resource is a directory, the change in resource content will not update the
+        # ninja.build cache. So we need to expand all resources in the directory ahead of time.
         self._process_resources(resources)
         self.attr['expended_resources'] = self._process_regular_resources(self.attr['resources'])
         self.attr['source_encoding'] = source_encoding
