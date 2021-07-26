@@ -435,9 +435,11 @@ cc_plugin(
 
 把数据文件编译成静态资源，可以在程序中中读取。
 
-大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
-blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
-比如poppy下的BUILD文件里用的静态资源：
+我们经常会遇到过部署一个可执行程序，还需要附带一堆辅助文件才能运行起来的情况。
+
+blade 通过 resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，这样单个可执行文件即可用于部署。
+
+比如 poppy 下的 BUILD 文件里用的静态资源：
 
 ```python
 resource_library(
@@ -454,10 +456,9 @@ resource_library(
 )
 ```
 
-生成 static_resource.h 和 libstatic_resource.a 或者 libstatic_resource.so。
-就像一样protobuf那样，编译后后生成一个库 libstatic_resource.a，和一个相应的头文件 static_resource.h，带路径包含进来即可使用。
+构建后会生成一个头文件 static_resource.h 及相应的库文件 libstatic_resource.a 或 libstatic_resource.so。
 
-在程序中需要包含static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.hpp"，
+在程序中使用时以完整路径包含进来即可使用。需要包含 static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.h"，
 用 STATIC_RESOURCE 宏来引用数据：
 
 ```c
