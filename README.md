@@ -14,7 +14,7 @@
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
 
-An easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase.
+An easy-to-use, fast and modern build system for trunk based development in large-scale monorepo codebase.
 
 Click here to read [中文文档](README-zh.md).
 
@@ -94,7 +94,7 @@ blade test -m32 -pdebug common...
 * Memory leak checking in tests(with gperftools).
 * Bash command line completion.
 * Colorful diagnostic message displaying.
-* Vim integration, includes syntax hi-light, quickfix.
+* Vim integration, includes syntax highlighting, quick fix.
 
 ## Documentation
 
@@ -106,9 +106,9 @@ blade test -m32 -pdebug common...
 * Blade is inspired by Google's public information about their build system. Here is a reference article from Google's official blog:
   [build in cloud: how build system works](http://google-engtools.blogspot.hk/2011/08/build-in-cloud-how-build-system-works.html).
 
-  Later in 2015, they opensourced it with partial written as `bazel` build system.
+  Later in 2015, they released it with partial rewritten as `bazel` open-source build system.
 
-* Blade generates [Ninja](https://ninja-build.org/) script internally, so of cause it depends on ninja.
+* Blade generates [Ninja](https://ninja-build.org/) script internally, so of course it depends on ninja.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
 * Some libraries open sourced by Google, such as [protobuf](http://code.google.com/p/protobuf/),
   [gtest](http://code.google.com/p/googletest/),
