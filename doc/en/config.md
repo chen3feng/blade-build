@@ -230,6 +230,7 @@ C/C++ library configuration
 
   - ${bit}  Target bits, such as 32，64。
   - ${arch} Target CPU architecture name, such as i386, x86_64, etc。
+  - ${profile} Build mode, can be `debug` or `release`.
 
   In this way, library files of multiple target platforms can be stored in different subdirectories
   without conflict. This attribute can also be empty string, which means no subdirectory.
