@@ -39,7 +39,7 @@ CC 目标均支持的属性为：
 `cc_library` 同时用于构建静态和动态库，默认只构建静态库，只有被设置了 `dynamic_link = True` 的 `cc_binary` 依赖时或者命令行指定 `--generate-dynamic` 才生成动态链接库。
 
 cc_library生成的动态链接库里不包含其依赖的代码，而是包含了对所依赖的库的路径。这些库主要是为了开发环境本地使用（比如运行测试），并不适合部署到生产环境。
-如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用 `cc_plugin` 构建规则，这样生成的动态库已经静态链接的方式包含了其依赖。
+如果你需要生成需要在运行时动态加载或者在其他语言中作为扩展调用的动态库，应该使用 `cc_plugin` 构建规则，这样生成的动态库已经以静态链接的方式包含了其依赖。
 
 示例：
 
@@ -406,7 +406,7 @@ lex_yacc_library(
 
 ## cc_plugin
 
-把所有依赖的库都静态链接到成的so文件，供其他语言环境动态加载。
+生成一个通过静态链接方式包含了其所有依赖的动态链接库，用于在其他语言环境中动态加载。
 
 ```python
 cc_plugin(
@@ -435,9 +435,11 @@ cc_plugin(
 
 把数据文件编译成静态资源，可以在程序中中读取。
 
-大家都遇到过部署一个可执行程序，还要附带一堆辅助文件才能运行起来的情况吧？
-blade通过resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，
-比如poppy下的BUILD文件里用的静态资源：
+我们经常会遇到过部署一个可执行程序，还需要附带一堆辅助文件才能运行起来的情况。
+
+blade 通过 resource_library，支持把程序运行所需要的数据文件也打包到可执行文件里，这样单个可执行文件即可用于部署。
+
+比如 poppy 下的 BUILD 文件里用的静态资源：
 
 ```python
 resource_library(
@@ -454,10 +456,9 @@ resource_library(
 )
 ```
 
-生成 static_resource.h 和 libstatic_resource.a 或者 libstatic_resource.so。
-就像一样protobuf那样，编译后后生成一个库 libstatic_resource.a，和一个相应的头文件 static_resource.h，带路径包含进来即可使用。
+构建后会生成一个头文件 static_resource.h 及相应的库文件 libstatic_resource.a 或 libstatic_resource.so。
 
-在程序中需要包含static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.hpp"，
+在程序中使用时以完整路径包含进来即可使用。需要包含 static_resource.h（带上相对于BLADE_ROOT的路径）和"common/base/static_resource.h"，
 用 STATIC_RESOURCE 宏来引用数据：
 
 ```c
