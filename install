@@ -25,7 +25,7 @@ echo ", Done."
 if ! echo $PATH | grep "$HOME/bin" &> /dev/null; then
     profile=~/.bash_profile
     if echo $SHELL | grep "zsh" &> /dev/null; then
-        profile=~.zshenv
+        profile=~./zshenv
     elif [ -f ~/.profile ]; then
         profile=~/.profile
     fi
