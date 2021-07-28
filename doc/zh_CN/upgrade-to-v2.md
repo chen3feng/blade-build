@@ -40,3 +40,11 @@ Blade 本身是一个"元"构建系统，它本身并不直接构建目标，而
 
 目标的[可见性](build_file.md)默认为私有，同一个 `BUILD` 文件内可见，可以通过[全局配置](config.md#global_config)关闭或者对现存的
 目标设置为 PUBLIC 而只检查将来新增的构建目标。
+
+### 预编译库的目录
+
+在 1.0 中，预编译的二进制库的搜索目录硬编码为类似 `lib64_debug`、`lib64_release` 的目录名，
+我们观察到在实际使用中对这类库极少有提供及需要区分 `debug`/`release` 版本的情况，因此在 2.0 中，默认了去掉了涉及构建模式部分。
+
+如果需要兼容原来的行为，可以设置[libpath_pattern](build_rules/cc.md#prebuilt_cc_library) 属性。
+如果需要全局兼容原来的行为，可以修改全局配置项 [cc_library_config.prebuilt_libpath_pattern](config.md#cc_library_config)。
