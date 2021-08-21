@@ -83,7 +83,7 @@ cc_library(
 
 ## 实现 hello-world 程序
 
-创建 `hello-world.c` 文件：
+创建 `hello-world.cpp` 文件：
 
 ```c
 #include "hello.h"
@@ -99,7 +99,7 @@ int main() {
 ```python
 cc_binary(
     name = 'hello-world',
-    srcs = ['hello-world.c'],
+    srcs = ['hello-world.cpp'],
     deps = [':hello'],
 )
 ```
