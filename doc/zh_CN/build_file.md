@@ -17,7 +17,6 @@ cc_library(
         'concat.cpp',
     ],
     hdrs = [
-    srcs = [
         'algorithm.h',
         'format.h',
         'concat.h',
