@@ -72,7 +72,7 @@ class Blade(object):
         self.__command = command
 
         # Source dir of current loading BUILD file
-        self.__current_source_path = self.__root_dir
+        self.__current_source_path = ''
 
         self.__blade_revision = None
 
@@ -449,6 +449,10 @@ class Blade(object):
 
     def set_current_source_path(self, current_source_path):
         """Set the current source path."""
+        if current_source_path == '.':
+            # For the workspace root dir, we should normalize it to be empty,
+            # otherwise other targets can't depend on it.
+            current_source_path = ''
         self.__current_source_path = current_source_path
 
     def get_current_source_path(self):
