@@ -228,7 +228,7 @@ C/C++ library configuration
 
   it also allow some variables which can be substituted:
 
-  - ${bit}  Target bits, such as 32，64。
+  - ${bits}  Target bits, such as 32，64。
   - ${arch} Target CPU architecture name, such as i386, x86_64, etc。
   - ${profile} Build mode, can be `debug` or `release`.
 
