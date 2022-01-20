@@ -471,6 +471,8 @@ def _expand_target_patterns(blade, target_ids, excluded_trees):
     # but without <target>), record <path> into starting_dirs.
 
     def under_excluded_trees(source_dir):
+        if source_dir.startswith('./'):
+            source_dir = source_dir[2:]
         if source_dir in excluded_trees:
             return True
         for dir in excluded_trees:
