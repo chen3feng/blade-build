@@ -217,6 +217,17 @@ class CcTarget(Target):
             result.append((src, full_path))
         return result
 
+    def _fullpath_sources(self, files):
+        """Expand source files to full_path."""
+        result = []
+        for src in files:
+            full_path = self._source_file_path(src)
+            if not os.path.exists(full_path):
+                # Assume generated
+                full_path = self._target_file_path(src)
+            result.append(full_path)
+        return result
+
     def _incs_to_fullpath(self, incs):
         """Expand incs to full path"""
         result = []
@@ -608,8 +619,8 @@ class CcTarget(Target):
         if self.attr.get('generate_dynamic'):
             self._dynamic_cc_library(objs, inclusion_check_result)
 
-    def _cc_link(self, output, rule, objs, deps, sys_libs, target_linkflags=None,
-                 implicit_deps=None, order_only_deps=None):
+    def _cc_link(self, output, rule, objs, deps, sys_libs, linker_scripts=None, version_scripts=None,
+                 target_linkflags=None, implicit_deps=None, order_only_deps=None):
         vars = {}
         linkflags = self.attr.get('linkflags')
         if linkflags is not None:
@@ -618,6 +629,14 @@ class CcTarget(Target):
             vars['target_linkflags'] = ' '.join(target_linkflags)
         extra_linkflags = ['-l%s' % lib for lib in sys_libs]
         extra_linkflags += self.attr.get('extra_linkflags')
+        if implicit_deps is None:
+            implicit_deps = []
+        if linker_scripts:
+            extra_linkflags += ['-T %s' % lds for lds in linker_scripts]
+            implicit_deps += linker_scripts
+        if version_scripts:
+            extra_linkflags += ['-Wl,--version-script=%s' % ver for ver in version_scripts]
+            implicit_deps += version_scripts
         if extra_linkflags:
             vars['extra_linkflags'] = ' '.join(extra_linkflags)
         self.generate_build(rule, output,
@@ -1233,6 +1252,8 @@ class CcBinary(CcTarget):
                  linkflags,
                  extra_cppflags,
                  extra_linkflags,
+                 linker_scripts,
+                 version_scripts,
                  export_dynamic,
                  kwargs):
         """Init method.
@@ -1259,6 +1280,8 @@ class CcBinary(CcTarget):
                 kwargs=kwargs)
         self.attr['embed_version'] = embed_version
         self.attr['dynamic_link'] = dynamic_link
+        self.attr['lds_fullpath'] = self._fullpath_sources(var_to_list(linker_scripts))
+        self.attr['vers_fullpath'] = self._fullpath_sources(var_to_list(version_scripts))
         self.attr['export_dynamic'] = export_dynamic
         self._add_tags('lang:cc', 'type:binary')
 
@@ -1322,6 +1345,8 @@ class CcBinary(CcTarget):
             order_only_deps.append(scm)
         output = self._target_file_path(self.name)
         self._cc_link(output, 'link', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                      linker_scripts=self.attr.get('lds_fullpath'),
+                      version_scripts=self.attr.get('vers_fullpath'),
                       target_linkflags=target_linkflags,
                       implicit_deps=implicit_deps,
                       order_only_deps=order_only_deps)
@@ -1353,6 +1378,8 @@ def cc_binary(name=None,
               linkflags=None,
               extra_cppflags=[],
               extra_linkflags=[],
+              linker_scripts=[],
+              version_scripts=[],
               export_dynamic=False,
               **kwargs):
     """cc_binary target."""
@@ -1371,6 +1398,8 @@ def cc_binary(name=None,
             linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
+            linker_scripts=linker_scripts,
+            version_scripts=version_scripts,
             export_dynamic=export_dynamic,
             kwargs=kwargs)
     build_manager.instance.register_target(cc_binary_target)
@@ -1412,6 +1441,8 @@ class CcPlugin(CcTarget):
                  linkflags,
                  extra_cppflags,
                  extra_linkflags,
+                 linker_scripts,
+                 version_scripts,
                  allow_undefined,
                  strip,
                  kwargs):
@@ -1440,6 +1471,8 @@ class CcPlugin(CcTarget):
         self.suffix = suffix
         self.attr['allow_undefined'] = allow_undefined
         self.attr['strip'] = strip
+        self.attr['lds_fullpath'] = self._fullpath_sources(var_to_list(linker_scripts))
+        self.attr['vers_fullpath'] = self._fullpath_sources(var_to_list(version_scripts))
         self._add_tags('lang:cc', 'type:plugin')
 
     def _before_generate(self):  # override
@@ -1467,6 +1500,8 @@ class CcPlugin(CcTarget):
             else:
                 link_output = output
             self._cc_link(link_output, 'solink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                          linker_scripts=self.attr.get('lds_fullpath'),
+                          version_scripts=self.attr.get('vers_fullpath'),
                           target_linkflags=target_linkflags,
                           implicit_deps=link_all_symbols_libs, order_only_deps=incchk_deps)
             if self.attr['strip']:
@@ -1489,6 +1524,8 @@ def cc_plugin(
         linkflags=None,
         extra_cppflags=[],
         extra_linkflags=[],
+        linker_scripts=[],
+        version_scripts=[],
         allow_undefined=True,
         strip=False,
         **kwargs):
@@ -1508,6 +1545,8 @@ def cc_plugin(
             linkflags=linkflags,
             extra_cppflags=extra_cppflags,
             extra_linkflags=extra_linkflags,
+            linker_scripts=linker_scripts,
+            version_scripts=version_scripts,
             allow_undefined=allow_undefined,
             strip=strip,
             kwargs=kwargs)
@@ -1567,6 +1606,7 @@ class CcTest(CcBinary):
                 dynamic_link=dynamic_link,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
+                linker_scripts=[],
                 export_dynamic=export_dynamic,
                 kwargs=kwargs)
         self.type = 'cc_test'

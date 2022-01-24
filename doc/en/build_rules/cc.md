@@ -458,9 +458,38 @@ Attributes:
   host process at runtime, the definition of these symbols does not exist in the link phase.
 - `strip`: bool = False, whether to remove the debugging symbol information. If enabled, the size of the generated library can be reduced, but symbolic debugging
   cannot be performed.
+- `linker_scripts`: list(string), uses linker scripts.
+  The [linker script](https://sourceware.org/binutils/docs/ld/Scripts.html) is a script used to control the linking process.
+  Its role is mainly to specify how to put the sections in the input file into the output file and to control the layout of the sections in the input file in the program address space.
+  The linker has a default built-in linking script, which can be viewed with `ld --verbose`. This option will replace the system's default linking script.
+  The linker script files usually have the extension `.ld` or `.lds`.
+  Linker scripts are usually quite complex, so if you just want to control the version or visibility of the symbols, use the `version_scripts` option below.
+- `version_scripts`: list(string), using [linker "version" script](https://sourceware.org/binutils/docs/ld/VERSION.html).
+  The linker version script is used to control the version and visibility of the symbol, if no version id is specified, it only to control the visibility of the symbol.
+  Linker version script files usually have the extension `.ver` or `.map`.
 
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
 set `prefix=''`, then it becomes `file. so`.
+
+A example version script file:
+
+```ld
+{
+global:  # globally visible
+    # Support wildcards
+    Name1;
+    _Name2*;
+    extern "C++" {  # C++ symbols
+        # Quoted symbols do not match wildcards
+        "a()";
+        "a(int)";
+        B::*;
+        "operator<<(std::ostream&, B const&)";
+    };
+local:  # The rest are local symbols, not visible
+    *;
+};
+```
 
 `cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries
 that are dynamically loaded by calling certain functions during runtime.
