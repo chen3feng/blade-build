@@ -471,7 +471,11 @@ Attributes:
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
 set `prefix=''`, then it becomes `file. so`.
 
-A example version script file:
+### Controlling the visibility of symbols in dynamic libraries
+
+To control the external visibility of symbols in the linking result, you can use [GCC extended attributes in the source code or command line options](https://gcc.gnu.org/wiki/Visibility).
+
+With the linker version file, it is possible to control or override the visibility settings in the source code when linking，eg:
 
 ```ld
 {
@@ -490,6 +494,19 @@ local:  # The rest are local symbols, not visible
     *;
 };
 ```
+
+To see the visibility of symbols in the library, you can use the `nm` command.
+
+```console
+000000000000010c t _init
+                 U puts@@GLIBC_2.2.5
+00000000000000000060 t register_tm_clones
+00000000000000f0 t hello
+00000000000000000100 t world
+```
+
+The second column is the symbol type. If lowercase, the symbol is usually local; if uppercase, the symbol is global (external).
+``U`` is the undefined external symbols that the library depends on, don't care.
 
 `cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries
 that are dynamically loaded by calling certain functions during runtime.
