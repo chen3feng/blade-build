@@ -1607,6 +1607,7 @@ class CcTest(CcBinary):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 linker_scripts=[],
+                version_scripts=[],
                 export_dynamic=export_dynamic,
                 kwargs=kwargs)
         self.type = 'cc_test'
