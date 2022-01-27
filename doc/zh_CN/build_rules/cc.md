@@ -323,6 +323,8 @@ cc_binary(
 )
 ```
 
+属性：
+
 - `dynamic_link`: bool= True
 
   cc_binary 默认为静态编译以方便部署，静态链接了C++运行库和代码库中所有被依赖了的库。由于一些
@@ -425,8 +427,53 @@ cc_plugin(
 - `suffix`: str，生成的动态库的文件名后缀，默认为 `.so`
 - `allow_undefined`: bool, 链接时是否允许未定义的符号。因为很多插件库运行时依赖宿主进程提供的符号名，链接阶段并不存在这些符号的定义。
 - `strip`: bool, 是否去除调试符号信息，开启后可以减少生成的库的大小，但是无法进行符号化调试。
+- `linker_scripts`: list(string)，使用链接器脚本。
+  [链接器脚本](https://sourceware.org/binutils/docs/ld/Scripts.html)是用来控制链接过程的脚本。
+  它的作用主要是规定如何把输入文件内的 section 放入输出文件内，并控制输入文件内各部分在程序地址空间内的布局。
+  链接器有个默认的内置链接脚本，可用 `ld --verbose` 查看。此选项将会替换系统的默认链接脚本。
+  链接器脚本文件的扩展名一般为 `.ld` 或者 `.lds`。
+  链接器脚本通常相当复杂，如果只是想控制符号的版本和可见性，请使用下面的 `version_script` 选项。
+- `version_scripts`: list(string)，使用[链接器“版本”脚本](https://sourceware.org/binutils/docs/ld/VERSION.html)。
+  链接器版本脚本用来控制符号的版本及可见性，内容仅限于完整的链接脚本里 `VERSION {};` 内的部分，如果不指定版本号，那么可以只用来控制符号的可见性。
+  链接器版本脚本文件的扩展名一般为 `.ver` 或者 `.map`。
 
 `prefix` 和 `suffix` 控制生成的动态库的文件名，假设 `name='file'`，默认生成的库为 `libfile.so`，设置`prefix=''`，则变为 `file.so`。
+
+### 控制动态库中符号的可见性
+
+要控制链接结果中符号是否对外可见，可以通过[源代码中的GCC 扩展属性或者命令行选项](https://gcc.gnu.org/wiki/Visibility)来进行。
+
+用链接器版本文件，则可以在链接时控制或者覆盖源代码中的可见性设置：
+
+```ld
+{
+global:  # 全局可见
+    # 支持通配符
+    Name1;
+    _Name2*;
+    extern "C++" {  # C++ 符号
+        # 引号内的表示不匹配通配符
+        "a()";
+        "a(int)";
+        B::*;
+        "operator<<(std::ostream&, B const&)";
+    };
+local:  # 其余为局部符号，对外不可见
+    *;
+};
+```
+
+要查看库中的符号的可见性，可以用 nm 命令：
+
+```console
+000000000000010c t _init
+                 U puts@@GLIBC_2.2.5
+0000000000000060 t register_tm_clones
+00000000000000f0 T hello
+0000000000000100 t world
+```
+
+第二列为符号的类别，大写字母为全局符号，小写字母为局部符号。`U` 为库依赖的未定义的外部符号，不用关心。
 
 `cc_plugin` 主要是为 `JNI`，python 扩展等需要运行期间通过调用某些函数动态加载的场合而设计的，不应该用于其他目的。
 即使它出现在其他 cc 目标的 `deps` 里，链接时也会被忽略。

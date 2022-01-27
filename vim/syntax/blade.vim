@@ -52,7 +52,7 @@ syn keyword bladeArg heap_check heap_check_debug
 syn keyword bladeTarget cc_benchmark
 
 syn keyword bladeTarget cc_plugin
-syn keyword bladeArg prefix strip suffix
+syn keyword bladeArg prefix strip suffix linker_scripts version_scripts
 
 syn keyword bladeTarget lex_yacc_library
 syn keyword bladeTarget resource_library
