@@ -458,9 +458,55 @@ Attributes:
   host process at runtime, the definition of these symbols does not exist in the link phase.
 - `strip`: bool = False, whether to remove the debugging symbol information. If enabled, the size of the generated library can be reduced, but symbolic debugging
   cannot be performed.
+- `linker_scripts`: list(string), uses linker scripts.
+  The [linker script](https://sourceware.org/binutils/docs/ld/Scripts.html) is a script used to control the linking process.
+  Its role is mainly to specify how to put the sections in the input file into the output file and to control the layout of the sections in the input file in the program address space.
+  The linker has a default built-in linking script, which can be viewed with `ld --verbose`. This option will replace the system's default linking script.
+  The linker script files usually have the extension `.ld` or `.lds`.
+  Linker scripts are usually quite complex, so if you just want to control the version or visibility of the symbols, use the `version_scripts` option below.
+- `version_scripts`: list(string), using [linker "version" script](https://sourceware.org/binutils/docs/ld/VERSION.html).
+  The linker version script is used to control the version and visibility of the symbol, if no version id is specified, it only to control the visibility of the symbol.
+  Linker version script files usually have the extension `.ver` or `.map`.
 
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
 set `prefix=''`, then it becomes `file. so`.
+
+### Controlling the visibility of symbols in dynamic libraries
+
+To control the external visibility of symbols in the linking result, you can use [GCC extended attributes in the source code or command line options](https://gcc.gnu.org/wiki/Visibility).
+
+With the linker version file, it is possible to control or override the visibility settings in the source code when linking，eg:
+
+```ld
+{
+global:  # globally visible
+    # Support wildcards
+    Name1;
+    _Name2*;
+    extern "C++" {  # C++ symbols
+        # Quoted symbols do not match wildcards
+        "a()";
+        "a(int)";
+        B::*;
+        "operator<<(std::ostream&, B const&)";
+    };
+local:  # The rest are local symbols, not visible
+    *;
+};
+```
+
+To see the visibility of symbols in the library, you can use the `nm` command.
+
+```console
+000000000000010c t _init
+                 U puts@@GLIBC_2.2.5
+00000000000000000060 t register_tm_clones
+00000000000000f0 t hello
+00000000000000000100 t world
+```
+
+The second column is the symbol type. If lowercase, the symbol is usually local; if uppercase, the symbol is global (external).
+``U`` is the undefined external symbols that the library depends on, don't care.
 
 `cc_plugin` is mainly used to create various extensions, such as JNI, python extension and other dynamic libraries
 that are dynamically loaded by calling certain functions during runtime.

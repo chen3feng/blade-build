@@ -32,6 +32,7 @@ from resource_library_test import TestResourceLibrary
 from swig_library_test import TestSwigLibrary
 from target_dependency_test import TestDepsAnalyzing
 from target_pattern_test import TargetPatternTest
+from linker_scripts_test import LinkerScriptsTest
 
 from html_test_runner import HTMLTestRunner
 from test_target_test import TestTestRunner
@@ -60,6 +61,7 @@ def _main():
         unittest.defaultTestLoader.loadTestsFromTestCase(TestQuery),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestTestRunner),
         unittest.defaultTestLoader.loadTestsFromTestCase(TestPrebuildCcLibrary),
+        unittest.defaultTestLoader.loadTestsFromTestCase(LinkerScriptsTest),
         ])
 
     generate_html = len(sys.argv) > 1 and sys.argv[1].startswith('html')
