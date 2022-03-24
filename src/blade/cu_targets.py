@@ -20,6 +20,10 @@ from blade.cc_targets import CcTarget
 from blade.util import var_to_list
 
 
+# See https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#supported-input-file-suffixes
+_SOURCE_FILE_EXTS = {'cu', 'c', 'cc', 'cxx', 'cpp', 'ptx'}
+
+
 class CuTarget(CcTarget):
     """This class is derived from CcTarget and is the base class
     of cu_library, cu_binary etc.
@@ -59,7 +63,8 @@ class CuTarget(CcTarget):
                 linkflags=None,
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
-                kwargs=kwargs)
+                kwargs=kwargs,
+                src_exts=_SOURCE_FILE_EXTS)
         self._add_tags('lang:cu')
 
     def _get_cu_flags(self):
