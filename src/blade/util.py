@@ -350,6 +350,6 @@ def open_zip_file_for_write(filename, compression_level):
     if sys.version_info.major < 3 or sys.version_info.major == 3 and sys.version_info.minor < 7:
         if compression_level == "0":
             compression = zipfile.ZIP_STORED
-        return zipfile.ZipFile(filename, 'w', compression)
+        return zipfile.ZipFile(filename, 'w', compression, allowZip64=True)
     # pylint: disable=unexpected-keyword-arg
-    return zipfile.ZipFile(filename, 'w', compression, compresslevel=int(compression_level))
+    return zipfile.ZipFile(filename, 'w', compression, compresslevel=int(compression_level), allowZip64=True)
