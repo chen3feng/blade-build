@@ -137,7 +137,7 @@ def archive_package_sources(package, sources, destinations):
 
 
 def generate_zip_package(path, sources, destinations):
-    zip = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+    zip = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
     manifest = archive_package_sources(zip.write, sources, destinations)
     zip.writestr(_PACKAGE_MANIFEST, '\n'.join(manifest) + '\n')
     zip.close()
@@ -350,7 +350,7 @@ def generate_one_jar(onejar, main_class, bootjar, args):
     main_jar = args[0]
     jars = args[1:]
     path = onejar
-    onejar = zipfile.ZipFile(path, 'w')
+    onejar = zipfile.ZipFile(path, 'w', allowZip64=True)
     jar_path_set = set()
     # Copy files from one-jar-boot.jar to the target jar
     zip_file = zipfile.ZipFile(bootjar, 'r')
@@ -540,7 +540,7 @@ def _pybin_add_whl(pybin, libname, exclusions, dirs, dirs_with_init_py):
 
 def generate_python_binary(pybin, basedir, exclusions, mainentry, args):
     _declare_outputs(pybin)
-    pybin_zip = zipfile.ZipFile(pybin, 'w', zipfile.ZIP_DEFLATED)
+    pybin_zip = zipfile.ZipFile(pybin, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
     exclusions = exclusions.split(',')
     dirs, dirs_with_init_py = set(), set()
     for arg in args:
