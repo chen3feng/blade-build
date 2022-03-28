@@ -654,6 +654,19 @@ class _NinjaFileHeaderGenerator(object):
                   cxx_warnings =
                 ''') % (scm + '.o', scm))
 
+    def generate_cuda_rules(self):
+        nvcc_cmd = os.environ.get("NVCC", "nvcc")
+        self.generate_rule(
+            name='cudalibrary',
+            command='%s -ccbin g++ ${includes} ${cppflags} -o ${out}  -c ${in}' % (
+                nvcc_cmd),
+            description='CUDA LIBRARY ${out}')
+
+        self.generate_rule(
+            name='cudalink',
+            command='%s ${includes} ${cppflags} -o ${out} ${in}' % nvcc_cmd,
+            description='CUDA BINARY ${out}')
+
     def _builtin_command(self, builder, args=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
@@ -679,6 +692,7 @@ class _NinjaFileHeaderGenerator(object):
         self.generate_lex_yacc_rules()
         self.generate_package_rules()
         self.generate_version_rules()
+        self.generate_cuda_rules()
         return self.rules_buf
 
 
