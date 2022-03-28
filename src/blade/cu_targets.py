@@ -137,13 +137,29 @@ class CuTarget(CcTarget):
         objs = []
         for src, full_src in expanded_srcs:
             obj = os.path.join(objs_dir, src + '.o')
-            self.generate_build("cudalibrary", obj, inputs=full_src,
+            self.generate_build("cudacc", obj, inputs=full_src,
                                 implicit_deps=implicit_deps,
                                 order_only_deps=order_only_deps,
                                 variables=vars, clean=[])
             objs.append(obj)
         # self._remove_on_clean(objs_dir)
         return objs, None
+
+    def _cuda_library(self, objs, inclusion_check_result=None):
+        # TODO ar command flag is different with cc, such as rcs
+        self._static_cc_library(objs, inclusion_check_result)
+        if self.attr.get('generate_dynamic'):
+            self._dynamic_cuda_library(objs, inclusion_check_result)
+
+    def _dynamic_cuda_library(self, objs, inclusion_check_result):
+        output = self._target_file_path('lib%s.so' % self.name)
+        target_linkflags = self._generate_link_flags()
+        sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
+        if inclusion_check_result:
+            incchk_deps.append(inclusion_check_result)
+        self._cc_link(output, 'cudasolink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                      order_only_deps=incchk_deps, target_linkflags=target_linkflags)
+        self._add_target_file('so', output)
 
 
 class CuLibrary(CuTarget):
@@ -183,11 +199,10 @@ class CuLibrary(CuTarget):
 
     def generate(self):
         self._check_deprecated_deps()
-        # console.info("attr[expanded_srcs] %s" % self.attr['expanded_srcs'])
         objs, inclusion_check_result = self._cuda_objects(self.attr['expanded_srcs'])
         # Don't generate library file for header only library.
         if objs:
-            self._cc_library(objs, inclusion_check_result)
+            self._cuda_library(objs, inclusion_check_result)
 
 
 def cu_library(name=None,
@@ -261,6 +276,7 @@ class CuBinary(CuTarget):
         self._cuda_binary(objs, inclusion_check_result, self.attr.get('dynamic_link', False))
 
     def _generate_cuda_binary_link_flags(self, dynamic_link):
+        # TODO to be implemented
         return []
 
     def _static_dependencies(self):

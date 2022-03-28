@@ -656,16 +656,30 @@ class _NinjaFileHeaderGenerator(object):
 
     def generate_cuda_rules(self):
         nvcc_cmd = os.environ.get("NVCC", "nvcc")
+
+        cc_config = config.get_section('cc_config')
+        includes = cc_config['extra_incs']
+        includes = includes + ['.', self.build_dir]
+        includes = ' '.join(['-I%s' % inc for inc in includes])
+
+        _, cxx, _ = self.build_accelerator.get_cc_commands()
         self.generate_rule(
-            name='cudalibrary',
-            command='%s -ccbin g++ ${includes} ${cppflags} -o ${out}  -c ${in}' % (
-                nvcc_cmd),
+            name='cudacc',
+            command='%s -ccbin %s -o ${out} -MMD -MF ${out}.d -Xcompiler -fPIC '
+            '${optimize} %s ${includes} ${cppflags} -c ${in}' % (
+                nvcc_cmd, cxx, includes),
             description='CUDA LIBRARY ${out}')
 
+        link_args = '-o ${out} ${includes} ${cppflags} ${target_linkflags} ${extra_linkflags} ${in}'
         self.generate_rule(
             name='cudalink',
-            command='%s ${includes} ${cppflags} -o ${out} ${in}' % nvcc_cmd,
-            description='CUDA BINARY ${out}')
+            command=nvcc_cmd + ' ' + link_args,
+            description='CUDA LINK BINARY ${out}')
+
+        self.generate_rule(
+            name='cudasolink',
+            command=nvcc_cmd + ' -shared ' + link_args,
+            description='CUDA LINK SHARED ${out}')
 
     def _builtin_command(self, builder, args=''):
         cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
