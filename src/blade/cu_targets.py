@@ -28,10 +28,6 @@ from blade.util import run_command
 _SOURCE_FILE_EXTS = {'cu', 'c', 'cc', 'cxx', 'cpp', 'ptx'}
 
 
-# See https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#supported-input-file-suffixes
-_SOURCE_FILE_EXTS = {'cu', 'c', 'cc', 'cxx', 'cpp', 'ptx'}
-
-
 class CuTarget(CcTarget):
     """This class is derived from CcTarget and is the base class
     of cu_library, cu_binary etc.
