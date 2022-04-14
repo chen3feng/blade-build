@@ -291,7 +291,7 @@ class CuBinary(CuTarget):
             order_only_deps.append(inclusion_check_result)
 
         output = self._target_file_path(self.name)
-        self._cuda_link(output, 'cudalink', objs=objs, deps=usr_libs,
+        self._cc_link(output, 'cudalink', objs=objs, deps=usr_libs,
                         sys_libs=sys_libs,
                         linker_scripts=self.attr.get('lds_fullpath'),
                         version_scripts=self.attr.get('vers_fullpath'),
@@ -300,33 +300,6 @@ class CuBinary(CuTarget):
                         order_only_deps=order_only_deps)
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
-
-    def _cuda_link(self, output, rule, objs, deps, sys_libs, linker_scripts=None, version_scripts=None,
-                   target_linkflags=None, implicit_deps=None, order_only_deps=None):
-        vars = {}
-        linkflags = self.attr.get('linkflags')
-        if linkflags is not None:
-            vars['linkflags'] = ' '.join(linkflags)
-        if target_linkflags:
-            vars['target_linkflags'] = ' '.join(target_linkflags)
-        extra_linkflags = ['-l%s' % lib for lib in sys_libs]
-        extra_linkflags += self.attr.get('extra_linkflags')
-        if implicit_deps is None:
-            implicit_deps = []
-        if linker_scripts:
-            extra_linkflags += ['-T %s' % lds for lds in linker_scripts]
-            implicit_deps += linker_scripts
-        if version_scripts:
-            extra_linkflags += ['-Wl,--version-script=%s' % ver for ver in version_scripts]
-            implicit_deps += version_scripts
-        if extra_linkflags:
-            vars['extra_linkflags'] = ' '.join(extra_linkflags)
-        self.generate_build(rule, output,
-                            inputs=objs + deps,
-                            implicit_deps=implicit_deps,
-                            order_only_deps=order_only_deps,
-                            variables=vars)
-
 
 def cu_binary(name=None,
               srcs=[],
