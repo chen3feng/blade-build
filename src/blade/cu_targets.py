@@ -18,7 +18,6 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade import config
-from blade import console
 from blade.cc_targets import CcTarget
 from blade.util import var_to_list
 from blade.util import run_command
@@ -274,37 +273,6 @@ class CuBinary(CuTarget):
     def _generate_cuda_binary_link_flags(self, dynamic_link):
         # TODO to be implemented
         return []
-
-    def _static_dependencies(self):
-        """
-        Find static dependencies for ninja build, including system libraries
-        and user libraries.
-        User libraries consist of normal libraries and libraries which should
-        be linked all symbols within them using whole-archive option of gnu linker.
-        """
-        targets = self.blade.get_build_targets()
-        sys_libs, usr_libs, link_all_symbols_libs = [], [], []
-        incchk_deps = []
-        for key in self.expanded_deps:
-            dep = targets[key]
-            if dep.path == '#':
-                sys_libs.append(dep.name)
-                continue
-
-            lib = dep._get_target_file('a')
-            if lib:
-                if dep.attr.get('link_all_symbols'):
-                    link_all_symbols_libs.append(lib)
-                else:
-                    usr_libs.append(lib)
-                continue
-
-            # '.a' file is not generated for header only libraries, use this file as implicit dep.
-            incchk_result = dep._get_target_file('incchk.result')
-            if incchk_result:
-                incchk_deps.append(incchk_result)
-
-        return sys_libs, usr_libs, link_all_symbols_libs, incchk_deps
 
     def _cuda_binary(self, objs, inclusion_check_result, dynamic_link):
         implicit_deps = None
