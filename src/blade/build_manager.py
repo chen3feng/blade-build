@@ -363,7 +363,7 @@ class Blade(object):
             if id not in self.__target_database:
                 console.fatal('Invalid argument: "--path-to=%s", target "%s" does not exist' % (
                         self.__options.query_path_to, id))
-                result.add(id)
+            result.add(id)
         return result
 
     def _query_dependency_tree(self, key, level, query_attr, path_to, output_file):
