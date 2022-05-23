@@ -556,9 +556,9 @@ There is a little drawback for static resource, it can;t be updated at the runti
 
 ## cu_library
 
-build a C++ library target containing CUDA device code using nvcc
+build a C++ library target containing CUDA device code using nvcc.
 
-Rules are similar to `cc_library` . Environment variable `NVCC` is pointed to the path of `nvcc binary`，such as `NVCC=/usr/local/cuda/bin/nvcc blade build`
+Rules are similar to `cc_library` . Environment variable `NVCC` is pointed to the path of `nvcc binary`，such as `NVCC=/usr/local/cuda/bin/nvcc blade build`.
 
 Example:
 
@@ -572,9 +572,9 @@ cu_library(
 
 ## cu_binary
 
-build a C++ executable target containing CUDA device code using nvcc
+build a C++ executable target containing CUDA device code using nvcc.
 
-Rules are similar to `cc_binary` . Use environment variables reference to `cu_library`
+Rules are similar to `cc_binary` . Use environment variables reference to `cu_library`.
 
 Example:
 
@@ -588,9 +588,9 @@ cu_binary(
 
 ## cu_test
 
-build a C++ ut target containing CUDA device code using nvcc
+build a C++ ut target containing CUDA device code using nvcc.
 
-Rules are similar to `cc_test` ，Use environment variables reference to `cu_library`
+Rules are similar to `cc_test` . Use environment variables reference to `cu_library`.
 
 Example:
 
@@ -601,4 +601,3 @@ cu_test(
     deps = [':template_cpu'],
 )
 ```
-
