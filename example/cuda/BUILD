@@ -4,7 +4,6 @@ cc_library(
     hdrs = [],
 )
 
-"""
 cu_binary(
     name = 'template',
     srcs = ['template.cu'],
@@ -16,4 +15,3 @@ cu_test(
     srcs = ['cu_test.cu'],
     deps = [':template_cpu'],
 )
-"""
