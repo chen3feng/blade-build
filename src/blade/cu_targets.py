@@ -177,18 +177,18 @@ class CuLibrary(CuTarget):
                  extra_linkflags,
                  kwargs):
         super(CuLibrary, self).__init__(
-            name=name,
-            type='cu_library',
-            srcs=srcs,
-            deps=deps,
-            visibility=visibility,
-            tags=tags,
-            warning=warning,
-            defs=defs,
-            incs=incs,
-            extra_cppflags=extra_cppflags,
-            extra_linkflags=extra_linkflags,
-            kwargs=kwargs)
+                name=name,
+                type='cu_library',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                tags=tags,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
         self.attr['link_all_symbols'] = link_all_symbols
         self._add_tags('type:library')
 
@@ -213,18 +213,18 @@ def cu_library(name=None,
                extra_linkflags=[],
                **kwargs):
     target = CuLibrary(
-        name,
-        srcs=srcs,
-        deps=deps,
-        visibility=visibility,
-        tags=tags,
-        warning=warning,
-        defs=defs,
-        incs=incs,
-        link_all_symbols=link_all_symbols,
-        extra_cppflags=extra_cppflags,
-        extra_linkflags=extra_linkflags,
-        kwargs=kwargs)
+            name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            tags=tags,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            link_all_symbols=link_all_symbols,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -250,18 +250,18 @@ class CuBinary(CuTarget):
                  extra_linkflags,
                  kwargs):
         super(CuBinary, self).__init__(
-            name=name,
-            type='cu_binary',
-            srcs=srcs,
-            deps=deps,
-            visibility=visibility,
-            tags=tags,
-            warning=warning,
-            defs=defs,
-            incs=incs,
-            extra_cppflags=extra_cppflags,
-            extra_linkflags=extra_linkflags,
-            kwargs=kwargs)
+                name=name,
+                type='cu_binary',
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                tags=tags,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
         self._add_tags('type:binary')
 
     def generate(self):
@@ -313,17 +313,17 @@ def cu_binary(name=None,
               extra_linkflags=[],
               **kwargs):
     target = CuBinary(
-        name=name,
-        srcs=srcs,
-        deps=deps,
-        visibility=visibility,
-        tags=tags,
-        warning=warning,
-        defs=defs,
-        incs=incs,
-        extra_cppflags=extra_cppflags,
-        extra_linkflags=extra_linkflags,
-        kwargs=kwargs)
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            tags=tags,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
@@ -353,17 +353,17 @@ class CuTest(CuBinary):
                  kwargs):
         # pylint: disable=too-many-locals
         super(CuTest, self).__init__(
-            name=name,
-            srcs=srcs,
-            deps=deps,
-            visibility=visibility,
-            tags=tags,
-            warning=warning,
-            defs=defs,
-            incs=incs,
-            extra_cppflags=extra_cppflags,
-            extra_linkflags=extra_linkflags,
-            kwargs=kwargs)
+                name=name,
+                srcs=srcs,
+                deps=deps,
+                visibility=visibility,
+                tags=tags,
+                warning=warning,
+                defs=defs,
+                incs=incs,
+                extra_cppflags=extra_cppflags,
+                extra_linkflags=extra_linkflags,
+                kwargs=kwargs)
         self._add_tags('lang:cu')
         self.type = 'cu_test'
         self.attr['testdata'] = var_to_list(testdata)
@@ -395,20 +395,20 @@ def cu_test(
         exclusive=False,
         **kwargs):
     target = CuTest(
-        name=name,
-        srcs=srcs,
-        deps=deps,
-        visibility=visibility,
-        tags=tags,
-        warning=warning,
-        defs=defs,
-        incs=incs,
-        extra_cppflags=extra_cppflags,
-        extra_linkflags=extra_linkflags,
-        testdata=testdata,
-        always_run=always_run,
-        exclusive=exclusive,
-        kwargs=kwargs)
+            name=name,
+            srcs=srcs,
+            deps=deps,
+            visibility=visibility,
+            tags=tags,
+            warning=warning,
+            defs=defs,
+            incs=incs,
+            extra_cppflags=extra_cppflags,
+            extra_linkflags=extra_linkflags,
+            testdata=testdata,
+            always_run=always_run,
+            exclusive=exclusive,
+            kwargs=kwargs)
     build_manager.instance.register_target(target)
 
 
