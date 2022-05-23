@@ -32,10 +32,3 @@ computeGold(float *reference, float *idata, const unsigned int len)
     }
 }
 
-extern "C" {
-extern void __cudaUnregisterFatBinary(void **fatCubinHandle) {}
-void __cudaRegisterFatBinary() {}
-void __cudaRegisterFunction() {}
-void cudaSetupArgument() {}
-void cudaLaunch() {}
-}

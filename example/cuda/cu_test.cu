@@ -17,7 +17,7 @@ void hello(char *a, int *b)
     a[threadIdx.x] += b[threadIdx.x];
 }
 
-TEST(Cuda, Test)
+int main()
 {
     char a[N] = "Hello \0\0\0\0\0\0";
     int b[N] = {15, 10, 6, 0, -11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
