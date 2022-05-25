@@ -2,6 +2,7 @@ cc_library(
     name = 'common',
     srcs = ['common.cpp'],
     hdrs = ['common.h'],
+    visibility = ['PUBLIC'],
 )
 
 cc_test(

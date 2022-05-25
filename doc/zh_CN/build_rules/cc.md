@@ -517,3 +517,46 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 得到的 data 在程序运行期间一直存在，只可读取，不可写入。
 
 用 static resource 在某些情况下也有一点不方便：就是不能在运行期间更新，因此是否使用，需要根据具体场景自己权衡。
+
+## cu_library
+
+使用nvcc编译器编译包含CUDA代码的C++ library
+
+语法同 `cc_library` ,编译cu_library需要使用 `NVCC` 环境变量指向 `nvcc binary`，例如 `NVCC=/usr/local/cuda/bin/nvcc blade build`
+
+```python
+cu_library(
+    name = 'template_gpu',
+    srcs = ['template_gpu.cu'],
+    hdrs = [],
+)
+```
+
+## cu_binary
+
+使用nvcc编译器编译包含CUDA代码的C++ binary
+
+语法同 `cc_binary` ，命令环境变量参考 `cu_library`
+
+```python
+cu_binary(
+    name = 'template',
+    srcs = ['template.cu'],
+    deps = [':template_cpu'],
+)
+```
+
+## cu_test
+
+使用nvcc编译器编译包含CUDA代码的C++ UT
+
+语法同 `cc_test` ，命令环境变量参考 `cu_library`
+
+```python
+cu_test(
+    name = 'cu_test',
+    srcs = ['cu_test.cu'],
+    deps = [':template_cpu'],
+)
+```
+

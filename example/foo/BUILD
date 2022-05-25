@@ -3,6 +3,6 @@ cc_library(
     srcs = ['foo.cpp'],
     hdrs = ['foo.h'],
     deps = '//common:common',
-    optimize = 'O3',
+    optimize = ['-O3'],
     always_optimize = True,
 )

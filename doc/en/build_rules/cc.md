@@ -553,3 +553,51 @@ The data is readonly static storage. can be accessed in any time.
 
 NOTE:
 There is a little drawback for static resource, it can;t be updated at the runtime, so consider it before using.
+
+## cu_library
+
+build a C++ library target containing CUDA device code using nvcc.
+
+Rules are similar to `cc_library` . Environment variable `NVCC` is pointed to the path of `nvcc binary`，such as `NVCC=/usr/local/cuda/bin/nvcc blade build`.
+
+Example:
+
+```python
+cu_library(
+    name = 'template_gpu',
+    srcs = ['template_gpu.cu'],
+    hdrs = [],
+)
+```
+
+## cu_binary
+
+build a C++ executable target containing CUDA device code using nvcc.
+
+Rules are similar to `cc_binary` . Use environment variables reference to `cu_library`.
+
+Example:
+
+```python
+cu_binary(
+    name = 'template',
+    srcs = ['template.cu'],
+    deps = [':template_cpu'],
+)
+```
+
+## cu_test
+
+build a C++ ut target containing CUDA device code using nvcc.
+
+Rules are similar to `cc_test` . Use environment variables reference to `cu_library`.
+
+Example:
+
+```python
+cu_test(
+    name = 'cu_test',
+    srcs = ['cu_test.cu'],
+    deps = [':template_cpu'],
+)
+```

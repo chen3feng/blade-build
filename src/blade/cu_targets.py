@@ -13,11 +13,14 @@ for cuda development.
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+
 from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade.cc_targets import CcTarget
 from blade.util import var_to_list
+from blade.util import run_command
 
 
 # See https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#supported-input-file-suffixes
@@ -91,6 +94,68 @@ class CuTarget(CcTarget):
 
         return nvcc_flags, incs
 
+    @staticmethod
+    def _get_cuda_include():
+        include_list = []
+        cuda_path = os.environ.get('CUDA_PATH')
+        if cuda_path:
+            include_list.append('%s/include' % cuda_path)
+            include_list.append('%s/samples/common/inc' % cuda_path)
+            return include_list
+        returncode, stdout, _ = run_command('nvcc --version', shell=True)
+        if returncode == 0:
+            version_line = stdout.splitlines(True)[-2]
+            version = version_line.split()[4]
+            version = version.replace(',', '')
+            if os.path.isdir('/usr/local/cuda-%s' % version):
+                include_list.append('/usr/local/cuda-%s/include' % version)
+                include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
+                return include_list
+        return []
+
+    def _get_cu_vars(self):
+        vars = self._get_cc_vars()
+        cuda_incs = self._get_cuda_include()
+        vars["includes"] = vars.get("includes", "") \
+            + ' ' + ' '.join(['-I%s' % inc for inc in cuda_incs])
+        return vars
+
+    def _cuda_objects(self, expanded_srcs, generated_headers=None):
+        vars = self._get_cu_vars()
+        order_only_deps = []
+        order_only_deps += self._cc_compile_deps()
+        if generated_headers and len(generated_headers) > 1:
+            order_only_deps += generated_headers
+        implicit_deps = []
+
+        objs_dir = self._target_file_path(self.name + '.objs')
+        objs = []
+        for src, full_src in expanded_srcs:
+            obj = os.path.join(objs_dir, src + '.o')
+            self.generate_build("cudacc", obj, inputs=full_src,
+                                implicit_deps=implicit_deps,
+                                order_only_deps=order_only_deps,
+                                variables=vars, clean=[])
+            objs.append(obj)
+        # self._remove_on_clean(objs_dir)
+        return objs, None
+
+    def _cuda_library(self, objs, inclusion_check_result=None):
+        # TODO ar command flag is different with cc, such as rcs
+        self._static_cc_library(objs, inclusion_check_result)
+        if self.attr.get('generate_dynamic'):
+            self._dynamic_cuda_library(objs, inclusion_check_result)
+
+    def _dynamic_cuda_library(self, objs, inclusion_check_result):
+        output = self._target_file_path('lib%s.so' % self.name)
+        target_linkflags = self._generate_link_flags()
+        sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
+        if inclusion_check_result:
+            incchk_deps.append(inclusion_check_result)
+        self._cc_link(output, 'cudasolink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
+                      order_only_deps=incchk_deps, target_linkflags=target_linkflags)
+        self._add_target_file('so', output)
+
 
 class CuLibrary(CuTarget):
     """This class is derived from CuTarget and generates the cu_library
@@ -128,7 +193,11 @@ class CuLibrary(CuTarget):
         self._add_tags('type:library')
 
     def generate(self):
-        self.error('To be implemented')
+        self._check_deprecated_deps()
+        objs, inclusion_check_result = self._cuda_objects(self.attr['expanded_srcs'])
+        # Don't generate library file for header only library.
+        if objs:
+            self._cuda_library(objs, inclusion_check_result)
 
 
 def cu_library(name=None,
@@ -196,8 +265,41 @@ class CuBinary(CuTarget):
         self._add_tags('type:binary')
 
     def generate(self):
-        self.error('To be implemented')
+        self._check_deprecated_deps()
+        objs, inclusion_check_result = self._cuda_objects(self.attr['expanded_srcs'])
+        # Don't generate library file for header only library.
+        self._cuda_binary(objs, inclusion_check_result, self.attr.get('dynamic_link', False))
 
+    def _generate_cuda_binary_link_flags(self, dynamic_link):
+        # TODO to be implemented
+        return []
+
+    def _cuda_binary(self, objs, inclusion_check_result, dynamic_link):
+        implicit_deps = None
+        target_linkflags = self._generate_cuda_binary_link_flags(dynamic_link)
+        if dynamic_link:
+            sys_libs, usr_libs, incchk_deps = self._dynamic_dependencies()
+        else:
+            sys_libs, usr_libs, link_all_symbols_libs, incchk_deps = self._static_dependencies()
+            if link_all_symbols_libs:
+                target_linkflags += self._generate_link_all_symbols_link_flags(link_all_symbols_libs)
+                implicit_deps = link_all_symbols_libs
+
+        # Using incchk as order_only_deps to avoid relink when only inclusion check is done.
+        order_only_deps = incchk_deps
+        if inclusion_check_result:
+            order_only_deps.append(inclusion_check_result)
+
+        output = self._target_file_path(self.name)
+        self._cc_link(output, 'cudalink', objs=objs, deps=usr_libs,
+                        sys_libs=sys_libs,
+                        linker_scripts=self.attr.get('lds_fullpath'),
+                        version_scripts=self.attr.get('vers_fullpath'),
+                        target_linkflags=target_linkflags,
+                        implicit_deps=implicit_deps,
+                        order_only_deps=order_only_deps)
+        self._add_default_target_file('bin', output)
+        self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
 def cu_binary(name=None,
               srcs=[],

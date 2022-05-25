@@ -57,7 +57,7 @@ syn keyword bladeArg prefix strip suffix linker_scripts version_scripts
 syn keyword bladeTarget lex_yacc_library
 syn keyword bladeTarget resource_library
 
-syn keyword bladeTarget cu_binary cu_library
+syn keyword bladeTarget cu_binary cu_library cu_test
 
 " Java targets
 
