@@ -94,6 +94,7 @@ def find_libs_by_header(hdr):
     cache[hdr] = result
     return result
 
+
 find_libs_by_header.cache = {}
 
 
@@ -164,7 +165,8 @@ class CcTarget(Target):
                  extra_cppflags,
                  extra_linkflags,
                  kwargs,
-                 src_exts=_SOURCE_FILE_EXTS):
+                 src_exts=_SOURCE_FILE_EXTS,
+                 cmd=''):
         """Init method.
 
         Init the cc target.
@@ -175,6 +177,7 @@ class CcTarget(Target):
         private_hdrs = [src for src in srcs if is_header_file(src)]
         srcs = [src for src in srcs if not is_header_file(src)]
         deps = var_to_list(deps)
+        self.cmd = cmd
 
         super(CcTarget, self).__init__(
                 name=name,
@@ -620,13 +623,16 @@ class CcTarget(Target):
             self._dynamic_cc_library(objs, inclusion_check_result)
 
     def _cc_link(self, output, rule, objs, deps, sys_libs, linker_scripts=None, version_scripts=None,
-                 target_linkflags=None, implicit_deps=None, order_only_deps=None):
+                 target_linkflags=None, implicit_deps=None,
+                 order_only_deps=None, cmd=None):
         vars = {}
         linkflags = self.attr.get('linkflags')
         if linkflags is not None:
             vars['linkflags'] = ' '.join(linkflags)
         if target_linkflags:
             vars['target_linkflags'] = ' '.join(target_linkflags)
+        if cmd:
+            vars['cmd'] = cmd
         extra_linkflags = ['-l%s' % lib for lib in sys_libs]
         extra_linkflags += self.attr.get('extra_linkflags')
         if implicit_deps is None:
@@ -657,6 +663,7 @@ class CcTarget(Target):
         target_check_info = {
             'type': self.type,
             'name': self.name,
+            'cmd': self.cmd,
             'path': self.path,
             'key': self.key,
             'deps': self.deps,

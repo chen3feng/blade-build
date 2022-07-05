@@ -20,7 +20,6 @@ from blade import build_rules
 from blade import config
 from blade.cc_targets import CcTarget
 from blade.util import var_to_list
-from blade.util import run_command
 
 
 # See https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#supported-input-file-suffixes
@@ -37,6 +36,7 @@ class CuTarget(CcTarget):
                  name,
                  type,
                  srcs,
+                 cuda_path,
                  deps,
                  visibility,
                  tags,
@@ -44,11 +44,13 @@ class CuTarget(CcTarget):
                  defs,
                  incs,
                  extra_cppflags,
+                 extra_cuflags,
                  extra_linkflags,
                  kwargs):
         srcs = var_to_list(srcs)
         deps = var_to_list(deps)
         extra_cppflags = var_to_list(extra_cppflags)
+        extra_cuflags = var_to_list(extra_cuflags)
         extra_linkflags = var_to_list(extra_linkflags)
 
         super(CuTarget, self).__init__(
@@ -67,57 +69,41 @@ class CuTarget(CcTarget):
                 extra_cppflags=extra_cppflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs,
-                src_exts=_SOURCE_FILE_EXTS)
+                src_exts=_SOURCE_FILE_EXTS,
+                cmd='')
+        self.cuda_path = cuda_path
+        self.attr['extra_cuflags'] = extra_cuflags
+        cmd = os.environ.get('NVCC')
+        if not cmd:
+            if cuda_path:
+                cmd = os.path.join(cuda_path, 'bin/nvcc')
+            else:
+                cmd = 'nvcc'
+        self.cmd = cmd
         self._add_tags('lang:cu')
 
     def _get_cu_flags(self):
         """Return the nvcc flags according to the BUILD file and other configs."""
-        nvcc_flags = []
+        nvcc_flags = self.attr.get('extra_cuflags', [])
+        return nvcc_flags
 
-        # Warnings
-        if self.attr.get('warning', '') == 'no':
-            nvcc_flags.append('-w')
-
-        # Defs
-        defs = self.attr.get('defs', [])
-        nvcc_flags += [('-D' + macro) for macro in defs]
-
-        # Optimize flags
-        if (self.blade.get_options().profile == 'release' or
-                self.attr.get('always_optimize')):
-            nvcc_flags += self._get_optimize_flags()
-
-        nvcc_flags += self.attr.get('extra_cppflags', [])
-
-        # Incs
-        incs = self._get_incs_list()
-
-        return nvcc_flags, incs
-
-    @staticmethod
-    def _get_cuda_include():
+    def _get_cuda_include(self):
         include_list = []
         cuda_path = os.environ.get('CUDA_PATH')
         if cuda_path:
             include_list.append('%s/include' % cuda_path)
             include_list.append('%s/samples/common/inc' % cuda_path)
-            return include_list
-        returncode, stdout, _ = run_command('nvcc --version', shell=True)
-        if returncode == 0:
-            version_line = stdout.splitlines(True)[-2]
-            version = version_line.split()[4]
-            version = version.replace(',', '')
-            if os.path.isdir('/usr/local/cuda-%s' % version):
-                include_list.append('/usr/local/cuda-%s/include' % version)
-                include_list.append('/usr/local/cuda-%s/samples/common/inc' % version)
-                return include_list
-        return []
+        if self.cuda_path:
+            include_list.append('%s/include' % self.cuda_path)
+        return include_list
 
     def _get_cu_vars(self):
         vars = self._get_cc_vars()
         cuda_incs = self._get_cuda_include()
         vars["includes"] = vars.get("includes", "") \
             + ' ' + ' '.join(['-I%s' % inc for inc in cuda_incs])
+        vars['cmd'] = self.cmd
+        vars['cuflags'] = ' '.join(self._get_cu_flags())
         return vars
 
     def _cuda_objects(self, expanded_srcs, generated_headers=None):
@@ -135,9 +121,15 @@ class CuTarget(CcTarget):
             self.generate_build("cudacc", obj, inputs=full_src,
                                 implicit_deps=implicit_deps,
                                 order_only_deps=order_only_deps,
-                                variables=vars, clean=[])
+                                variables=vars, clean=[],
+                                )
             objs.append(obj)
-        # self._remove_on_clean(objs_dir)
+        self._remove_on_clean(objs_dir)
+
+        # If cuda_path is in this repository, the {cuda_path}/include will throw
+        # inclusion check error if header not in any target.
+        if 'inclusion_check_info_file' in self.data:
+            return objs, self._generate_inclusion_check(objs_dir, objs, vars, order_only_deps)
         return objs, None
 
     def _cuda_library(self, objs, inclusion_check_result=None):
@@ -153,7 +145,9 @@ class CuTarget(CcTarget):
         if inclusion_check_result:
             incchk_deps.append(inclusion_check_result)
         self._cc_link(output, 'cudasolink', objs=objs, deps=usr_libs, sys_libs=sys_libs,
-                      order_only_deps=incchk_deps, target_linkflags=target_linkflags)
+                      order_only_deps=incchk_deps,
+                      target_linkflags=target_linkflags,
+                      cmd=self.cmd)
         self._add_target_file('so', output)
 
 
@@ -166,6 +160,8 @@ class CuLibrary(CuTarget):
     def __init__(self,
                  name,
                  srcs,
+                 hdrs,
+                 cuda_path,
                  deps,
                  visibility,
                  tags,
@@ -174,12 +170,14 @@ class CuLibrary(CuTarget):
                  incs,
                  link_all_symbols,
                  extra_cppflags,
+                 extra_cuflags,
                  extra_linkflags,
                  kwargs):
         super(CuLibrary, self).__init__(
                 name=name,
                 type='cu_library',
                 srcs=srcs,
+                cuda_path=cuda_path,
                 deps=deps,
                 visibility=visibility,
                 tags=tags,
@@ -187,10 +185,17 @@ class CuLibrary(CuTarget):
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
+                extra_cuflags=extra_cuflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
         self.attr['link_all_symbols'] = link_all_symbols
         self._add_tags('type:library')
+        self._set_hdrs(hdrs)
+
+    def _before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
+        self._check_binary_link_only()
 
     def generate(self):
         self._check_deprecated_deps()
@@ -202,6 +207,8 @@ class CuLibrary(CuTarget):
 
 def cu_library(name=None,
                srcs=[],
+               hdrs=None,
+               cuda_path=None,
                deps=[],
                visibility=None,
                tags=[],
@@ -210,11 +217,14 @@ def cu_library(name=None,
                incs=[],
                link_all_symbols=False,
                extra_cppflags=[],
+               extra_cuflags=[],
                extra_linkflags=[],
                **kwargs):
     target = CuLibrary(
             name,
             srcs=srcs,
+            hdrs=hdrs,
+            cuda_path=cuda_path,
             deps=deps,
             visibility=visibility,
             tags=tags,
@@ -223,6 +233,7 @@ def cu_library(name=None,
             incs=incs,
             link_all_symbols=link_all_symbols,
             extra_cppflags=extra_cppflags,
+            extra_cuflags=extra_cuflags,
             extra_linkflags=extra_linkflags,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
@@ -240,6 +251,7 @@ class CuBinary(CuTarget):
     def __init__(self,
                  name,
                  srcs,
+                 cuda_path,
                  deps,
                  visibility,
                  tags,
@@ -247,12 +259,14 @@ class CuBinary(CuTarget):
                  defs,
                  incs,
                  extra_cppflags,
+                 extra_cuflags,
                  extra_linkflags,
                  kwargs):
         super(CuBinary, self).__init__(
                 name=name,
                 type='cu_binary',
                 srcs=srcs,
+                cuda_path=cuda_path,
                 deps=deps,
                 visibility=visibility,
                 tags=tags,
@@ -260,6 +274,7 @@ class CuBinary(CuTarget):
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
+                extra_cuflags=extra_cuflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
         self._add_tags('type:binary')
@@ -292,17 +307,24 @@ class CuBinary(CuTarget):
 
         output = self._target_file_path(self.name)
         self._cc_link(output, 'cudalink', objs=objs, deps=usr_libs,
-                        sys_libs=sys_libs,
-                        linker_scripts=self.attr.get('lds_fullpath'),
-                        version_scripts=self.attr.get('vers_fullpath'),
-                        target_linkflags=target_linkflags,
-                        implicit_deps=implicit_deps,
-                        order_only_deps=order_only_deps)
+                      sys_libs=sys_libs,
+                      linker_scripts=self.attr.get('lds_fullpath'),
+                      version_scripts=self.attr.get('vers_fullpath'),
+                      target_linkflags=target_linkflags,
+                      implicit_deps=implicit_deps,
+                      order_only_deps=order_only_deps,
+                      cmd=self.cmd)
         self._add_default_target_file('bin', output)
         self._remove_on_clean(self._target_file_path(self.name + '.runfiles'))
 
+    def _before_generate(self):  # override
+        """Override"""
+        self._write_inclusion_check_info()
+
+
 def cu_binary(name=None,
               srcs=[],
+              cuda_path=None,
               deps=[],
               visibility=None,
               tags=[],
@@ -310,11 +332,13 @@ def cu_binary(name=None,
               defs=[],
               incs=[],
               extra_cppflags=[],
+              extra_cuflags=[],
               extra_linkflags=[],
               **kwargs):
     target = CuBinary(
             name=name,
             srcs=srcs,
+            cuda_path=cuda_path,
             deps=deps,
             visibility=visibility,
             tags=tags,
@@ -322,6 +346,7 @@ def cu_binary(name=None,
             defs=defs,
             incs=incs,
             extra_cppflags=extra_cppflags,
+            extra_cuflags=extra_cuflags,
             extra_linkflags=extra_linkflags,
             kwargs=kwargs)
     build_manager.instance.register_target(target)
@@ -339,6 +364,7 @@ class CuTest(CuBinary):
     def __init__(self,
                  name,
                  srcs,
+                 cuda_path,
                  deps,
                  visibility,
                  tags,
@@ -346,6 +372,7 @@ class CuTest(CuBinary):
                  defs,
                  incs,
                  extra_cppflags,
+                 extra_cuflags,
                  extra_linkflags,
                  testdata,
                  always_run,
@@ -355,6 +382,7 @@ class CuTest(CuBinary):
         super(CuTest, self).__init__(
                 name=name,
                 srcs=srcs,
+                cuda_path=cuda_path,
                 deps=deps,
                 visibility=visibility,
                 tags=tags,
@@ -362,6 +390,7 @@ class CuTest(CuBinary):
                 defs=defs,
                 incs=incs,
                 extra_cppflags=extra_cppflags,
+                extra_cuflags=extra_cuflags,
                 extra_linkflags=extra_linkflags,
                 kwargs=kwargs)
         self._add_tags('lang:cu')
@@ -382,6 +411,7 @@ class CuTest(CuBinary):
 def cu_test(
         name,
         srcs=[],
+        cuda_path=None,
         deps=[],
         visibility=None,
         tags=[],
@@ -389,6 +419,7 @@ def cu_test(
         defs=[],
         incs=[],
         extra_cppflags=[],
+        extra_cuflags=[],
         extra_linkflags=[],
         testdata=[],
         always_run=False,
@@ -397,6 +428,7 @@ def cu_test(
     target = CuTest(
             name=name,
             srcs=srcs,
+            cuda_path=cuda_path,
             deps=deps,
             visibility=visibility,
             tags=tags,
@@ -404,6 +436,7 @@ def cu_test(
             defs=defs,
             incs=incs,
             extra_cppflags=extra_cppflags,
+            extra_cuflags=extra_cuflags,
             extra_linkflags=extra_linkflags,
             testdata=testdata,
             always_run=always_run,

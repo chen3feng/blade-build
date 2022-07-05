@@ -4,14 +4,33 @@ cc_library(
     hdrs = [],
 )
 
+cu_library(
+    name = 'util',
+    srcs = ['util.cc'],
+    # cuda_path = 'thirdparty/cuda/11.2',
+    hdrs = ['util.h'],
+    deps = [],
+    extra_cppflags = [
+        '-D_TEST_CPP_FLAG=1',
+    ],
+    extra_cuflags = [
+        '-gencode=arch=compute_75,code=sm_75',
+    ],
+)
+
 cu_binary(
     name = 'template',
     srcs = ['template.cu'],
-    deps = [':template_cpu'],
+    # cuda_path = 'thirdparty/cuda/11.2',
+    deps = [
+        ':template_cpu',
+        ':util',
+    ],
 )
 
 cu_test(
     name = 'cu_test',
+    # cuda_path = 'thirdparty/cuda/11.2',
     srcs = ['cu_test.cu'],
-    deps = [':template_cpu'],
+    deps = [':template_cpu', ':util'],
 )

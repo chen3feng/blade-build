@@ -318,22 +318,26 @@ class _NinjaFileHeaderGenerator(object):
                            description='LINK SHARED ${out}',
                            pool=pool)
 
-    def _cc_compile_command_wrapper_template(self, inclusion_stack_file):
+    def _cc_compile_command_wrapper_template(self, inclusion_stack_file, cuda=False):
         """Calculate the cc compile command wrapper template."""
         # When dumping compdb, a raw compile command without wrapper should be generated,
         # otherwise some tools can't handle it.
         if self.command == 'dump' and self.options.dump_compdb:
             return '%s'
 
+        print_header_option = '-H'
+        if cuda:
+            print_header_option = '-Xcompiler -H'
+
         if _shell_support_pipefail():
             # Use `pipefail` to ensure that the exit code is correct.
-            template = 'export LC_ALL=C; set -o pipefail; %%s -H 2>&1 | %s > %s' % (
-                _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
+            template = 'export LC_ALL=C; set -o pipefail; %%s %s 2>&1 | %s > %s' % (
+                print_header_option, _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
         else:
             # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('export LC_ALL=C; %%s -H 2> ${out}.err; ec=$$?; %s < ${out}.err > %s ; '
+            template = ('export LC_ALL=C; %%s %s 2> ${out}.err; ec=$$?; %s < ${out}.err > %s ; '
                         'rm -f ${out}.err; exit $$ec') % (
-                            _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
+                            print_header_option, _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
 
         return template
 
@@ -655,20 +659,34 @@ class _NinjaFileHeaderGenerator(object):
                 ''') % (scm + '.o', scm))
 
     def generate_cuda_rules(self):
-        nvcc_cmd = os.environ.get("NVCC", "nvcc")
+        nvcc_cmd = '${cmd}'
 
         cc_config = config.get_section('cc_config')
+        cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
+        cppflags, _ = self._get_intrinsic_cc_flags()
+        cppflags = cc_config['cppflags'] + cppflags
+        cflags = map(lambda flag: '-Xcompiler %s' % flag, cflags)
+        cxxflags = map(lambda flag: '-Xcompiler %s' % flag, cxxflags)
+        cppflags = map(lambda flag: '-Xcompiler %s' % flag, cppflags)
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
 
+        template = self._cc_compile_command_wrapper_template('${out}.H', cuda=True)
+
         _, cxx, _ = self.build_accelerator.get_cc_commands()
+        cu_command = '%s -ccbin %s -o ${out} -MMD -MF ${out}.d ' \
+            '-Xcompiler -fPIC %s %s ${optimize} ' \
+            '%s ${includes} ${cppflags} ${cuflags} -c ${in}' % (
+                nvcc_cmd, cxx, ' '.join(cxxflags), ' '.join(cppflags),
+                includes)
         self.generate_rule(
             name='cudacc',
-            command='%s -ccbin %s -o ${out} -MMD -MF ${out}.d -Xcompiler -fPIC '
-            '${optimize} %s ${includes} ${cppflags} -c ${in}' % (
-                nvcc_cmd, cxx, includes),
-            description='CUDA LIBRARY ${out}')
+            command=template % cu_command,
+            description='CUDA LIBRARY ${in}',
+            depfile='${out}.d',
+            deps='gcc',
+        )
 
         link_args = '-o ${out} ${includes} ${cppflags} ${target_linkflags} ${extra_linkflags} ${in}'
         self.generate_rule(
