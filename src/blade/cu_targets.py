@@ -103,7 +103,14 @@ class CuTarget(CcTarget):
         vars["includes"] = vars.get("includes", "") \
             + ' ' + ' '.join(['-I%s' % inc for inc in cuda_incs])
         vars['cmd'] = self.cmd
+
         vars['cuflags'] = ' '.join(self._get_cu_flags())
+        cppflags = vars['cppflags'].split(' ') if vars.get('cppflags') else []
+
+        vars['cuflags'] += ' ' + ' '.join(
+            map(lambda flag: '-Xcompiler ' + flag, cppflags)
+        )
+
         return vars
 
     def _cuda_objects(self, expanded_srcs, generated_headers=None):

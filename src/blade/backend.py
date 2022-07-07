@@ -200,15 +200,19 @@ class _NinjaFileHeaderGenerator(object):
         warnings, cxx_warnings, c_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
+        cu_warnings = map(lambda warning: '-Xcompiler %s' % warning,
+                          cxx_warnings)
         # optimize_flags is need for `always_optimize`
         optimize_flags = config.get_item('cc_config', 'optimize')
         optimize = '$optimize_flags' if self.options.profile == 'release' else ''
         self._add_line(textwrap.dedent('''\
                 c_warnings = %s
                 cxx_warnings = %s
+                cu_warnings = %s
                 optimize_flags = %s
                 optimize = %s
                 ''') % (' '.join(c_warnings), ' '.join(cxx_warnings),
+                        ' '.join(cu_warnings),
                         ' '.join(optimize_flags), optimize))
 
     def _generate_cc_compile_rules(self, cc, cxx, cppflags):
@@ -675,7 +679,7 @@ class _NinjaFileHeaderGenerator(object):
 
         _, cxx, _ = self.build_accelerator.get_cc_commands()
         cu_command = '%s -ccbin %s -o ${out} -MMD -MF ${out}.d ' \
-            '-Xcompiler -fPIC %s %s ${optimize} ' \
+            '-Xcompiler -fPIC %s %s ${optimize} ${cu_warnings} ' \
             '%s ${includes} ${cppflags} ${cuflags} -c ${in}' % (
                 nvcc_cmd, cxx, ' '.join(cxxflags), ' '.join(cppflags),
                 includes)

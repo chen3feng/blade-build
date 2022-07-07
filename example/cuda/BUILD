@@ -26,6 +26,9 @@ cu_binary(
         ':template_cpu',
         ':util',
     ],
+    extra_cppflags = [
+        '-std=c++14',
+    ],
 )
 
 cu_test(
@@ -33,4 +36,7 @@ cu_test(
     # cuda_path = 'thirdparty/cuda/11.2',
     srcs = ['cu_test.cu'],
     deps = [':template_cpu', ':util'],
+    extra_cppflags = [
+        '-std=c++14',
+    ],
 )
