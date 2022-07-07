@@ -522,13 +522,23 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 
 使用nvcc编译器编译包含CUDA代码的C++ library
 
-语法同 `cc_library` ,编译cu_library需要使用 `NVCC` 环境变量指向 `nvcc binary`，例如 `NVCC=/usr/local/cuda/bin/nvcc blade build`
+语法和 `cc_library` 基本一致，额外添加两个字段 `cuda_path` 和 `extra_cuflags` 。  
+`cuda_path` 指向cuda的路径，一般为当前仓库内置的cuda目录，可以摆脱对本地cuda环境的依赖。对应的cuda的binary和include目录都会自动识别，无需再通过下面的环境变量指定cuda相关路径信息。  
+`extra_cuflags` 添加仅cuda的参数，和cc通用的flag依然保存在 `extra_ccflags`。
+
+
+编译cu_library需要使用 `NVCC` 环境变量指向 `nvcc binary` ，例如 `NVCC=/usr/local/cuda/bin/nvcc blade build`。  
+使用 `CUDA_PATH` 环境变量指向本地cuda的安装路径，`CUDA_PATH/include` 会自动加到include的search path。
+
+作用优先级: `NVCC`/`CUDA_PATH` > `cuda_path`。
+
 
 ```python
 cu_library(
     name = 'template_gpu',
     srcs = ['template_gpu.cu'],
     hdrs = [],
+    # cuda_path = 'thirdparty/cuda',
 )
 ```
 
@@ -543,6 +553,7 @@ cu_binary(
     name = 'template',
     srcs = ['template.cu'],
     deps = [':template_cpu'],
+    # cuda_path = 'thirdparty/cuda',
 )
 ```
 
@@ -557,6 +568,6 @@ cu_test(
     name = 'cu_test',
     srcs = ['cu_test.cu'],
     deps = [':template_cpu'],
+    # cuda_path = 'thirdparty/cuda',
 )
 ```
-

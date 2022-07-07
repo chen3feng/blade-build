@@ -662,10 +662,9 @@ class _NinjaFileHeaderGenerator(object):
         nvcc_cmd = '${cmd}'
 
         cc_config = config.get_section('cc_config')
-        cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
+        cxxflags = cc_config['cxxflags']
         cppflags, _ = self._get_intrinsic_cc_flags()
         cppflags = cc_config['cppflags'] + cppflags
-        cflags = map(lambda flag: '-Xcompiler %s' % flag, cflags)
         cxxflags = map(lambda flag: '-Xcompiler %s' % flag, cxxflags)
         cppflags = map(lambda flag: '-Xcompiler %s' % flag, cppflags)
         includes = cc_config['extra_incs']
