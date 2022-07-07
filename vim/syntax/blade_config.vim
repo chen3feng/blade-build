@@ -78,6 +78,9 @@ syn keyword bladeArg pprof_path
 syn keyword bladeTarget link_config
 syn keyword bladeArg link_jobs
 
+syn keyword bladeTarget cuda_config
+syn keyword bladeArg cuflags
+
 " Java
 syn keyword bladeTarget java_config
 syn keyword bladeArg java_home

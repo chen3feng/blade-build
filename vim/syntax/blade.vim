@@ -34,7 +34,7 @@ syn keyword bladeArg always_run exclusive testdata
 " C/C++ targets
 
 " C/C++ general args
-syn keyword bladeArg always_optimize defs incs extra_cppflags optimize warning
+syn keyword bladeArg always_optimize defs incs extra_cppflags extra_cuflags optimize warning
 
 syn keyword bladeTarget cc_library prebuilt_cc_library
 syn keyword bladeArg allow_undefined binary_link_only export_incs hdrs

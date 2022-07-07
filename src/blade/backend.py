@@ -175,15 +175,17 @@ class _NinjaFileHeaderGenerator(object):
     def _get_warning_flags(self):
         """Get the warning flags."""
         cc_config = config.get_section('cc_config')
+        cuda_config = config.get_section('cuda_config')
         cppflags = cc_config['warnings']
         cxxflags = cc_config['cxx_warnings']
         cflags = cc_config['c_warnings']
+        cuflags = cuda_config['cu_warnings']
 
         filtered_cppflags = self.build_toolchain.filter_cc_flags(cppflags)
         filtered_cxxflags = self.build_toolchain.filter_cc_flags(cxxflags, 'c++')
         filtered_cflags = self.build_toolchain.filter_cc_flags(cflags, 'c')
 
-        return filtered_cppflags, filtered_cxxflags, filtered_cflags
+        return filtered_cppflags, filtered_cxxflags, filtered_cflags, cuflags
 
     def generate_cc_rules(self):
         cc, cxx, ld = self.build_accelerator.get_cc_commands()
@@ -197,10 +199,10 @@ class _NinjaFileHeaderGenerator(object):
                            description='STRIP ${out}')
 
     def _generate_cc_vars(self):
-        warnings, cxx_warnings, c_warnings = self._get_warning_flags()
+        warnings, cxx_warnings, c_warnings, cu_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
-        cu_warnings = map(lambda warning: '-Xcompiler %s' % warning,
+        cu_warnings += map(lambda warning: '-Xcompiler %s' % warning,
                           cxx_warnings)
         # optimize_flags is need for `always_optimize`
         optimize_flags = config.get_item('cc_config', 'optimize')
@@ -666,11 +668,13 @@ class _NinjaFileHeaderGenerator(object):
         nvcc_cmd = '${cmd}'
 
         cc_config = config.get_section('cc_config')
+        cuda_config = config.get_section('cuda_config')
         cxxflags = cc_config['cxxflags']
         cppflags, _ = self._get_intrinsic_cc_flags()
         cppflags = cc_config['cppflags'] + cppflags
         cxxflags = map(lambda flag: '-Xcompiler %s' % flag, cxxflags)
         cppflags = map(lambda flag: '-Xcompiler %s' % flag, cppflags)
+        cuflags = cuda_config['cuflags']
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
@@ -679,10 +683,10 @@ class _NinjaFileHeaderGenerator(object):
 
         _, cxx, _ = self.build_accelerator.get_cc_commands()
         cu_command = '%s -ccbin %s -o ${out} -MMD -MF ${out}.d ' \
-            '-Xcompiler -fPIC %s %s ${optimize} ${cu_warnings} ' \
+            '-Xcompiler -fPIC %s %s %s ${optimize} ${cu_warnings} ' \
             '%s ${includes} ${cppflags} ${cuflags} -c ${in}' % (
                 nvcc_cmd, cxx, ' '.join(cxxflags), ' '.join(cppflags),
-                includes)
+                ' '.join(cuflags), includes)
         self.generate_rule(
             name='cudacc',
             command=template % cu_command,
