@@ -560,15 +560,15 @@ build a C++ library target containing CUDA device code using nvcc.
 
 Rules are similar to `cc_library` .
 
-`cuda_path` and `extra_cuflags` are added as target keys.  
-`cuda_path` is pointed to cuda installed path in the local repository, with that nvcc binary and include can be found automatically. Environment variable below can be ignore if use cuda_path.  
+The attributes `cuda_path` and `extra_cuflags` are added.  
+`cuda_path` is pointed to cuda installed path in the local repository, with that nvcc binary `{cuda_path}/bin/nvcc` and include search path `{cuda_path}/include` can be found automatically. Environment variable below will be ignored if use cuda_path.  
 `extra_cuflags` support some flags which only work for cuda.
 
 
 Environment variable `NVCC` is pointed to the path of `nvcc binary`，such as `NVCC=/usr/local/cuda/bin/nvcc blade build`.  
-Environment variable `CUDA_PATH` is pointed to the installed path of cuda, which `CUDA_PATH/include` will be added to include search path.
+Environment variable `CUDA_PATH` is pointed to the installed path of cuda, with which `{CUDA_PATH}/include` and `{CUDA_PATH}/samples/common/inc` will be added to include search path.
 
-Priority: `NVCC`/`CUDA_PATH` > `cuda_path`.
+Priority:  `cuda_path` > `NVCC`/`CUDA_PATH`.
 
 Example:
 

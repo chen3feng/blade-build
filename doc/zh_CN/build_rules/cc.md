@@ -522,16 +522,15 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 
 使用nvcc编译器编译包含CUDA代码的C++ library
 
-语法和 `cc_library` 基本一致，额外添加两个字段 `cuda_path` 和 `extra_cuflags` 。  
-`cuda_path` 指向cuda的路径，一般为当前仓库内置的cuda目录，可以摆脱对本地cuda环境的依赖。对应的cuda的binary和include目录都会自动识别，无需再通过下面的环境变量指定cuda相关路径信息。  
+语法和 `cc_library` 基本一致，额外添加两个属性 `cuda_path` 和 `extra_cuflags` 。  
+`cuda_path` 指向cuda的路径，一般为当前仓库内置的cuda目录，可以摆脱对本地cuda环境的依赖。对应的cuda的binary `{cuda_path}/bin/nvcc` 和include目录 `{cuda_path}/include` 都会自动识别，下面介绍的环境变量指定cuda相关路径信息也会被直接忽略。  
 `extra_cuflags` 添加仅cuda的参数，和cc通用的flag依然保存在 `extra_ccflags`。
 
 
 编译cu_library需要使用 `NVCC` 环境变量指向 `nvcc binary` ，例如 `NVCC=/usr/local/cuda/bin/nvcc blade build`。  
-使用 `CUDA_PATH` 环境变量指向本地cuda的安装路径，`CUDA_PATH/include` 会自动加到include的search path。
+使用 `CUDA_PATH` 环境变量指向本地cuda的安装路径，`CUDA_PATH/include` 和 `{CUDA_PATH}/samples/common/inc` 会自动加到include search path。
 
-作用优先级: `NVCC`/`CUDA_PATH` > `cuda_path`。
-
+作用优先级: `cuda_path` > `NVCC`/`CUDA_PATH` 。
 
 ```python
 cu_library(

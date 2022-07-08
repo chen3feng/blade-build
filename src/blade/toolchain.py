@@ -112,7 +112,6 @@ class ToolChain(object):
         self.cxx = self._get_cc_command('CXX', 'g++')
         self.ld = self._get_cc_command('LD', 'g++')
         self.cc_version = self._get_cc_version()
-        self.cuda_inc_list = self._get_cuda_include()
 
     @staticmethod
     def _get_cc_command(env, default):
@@ -156,15 +155,6 @@ class ToolChain(object):
                         return line.split()[-1]
         return ''
 
-    def _get_cuda_include(self):
-        include_list = []
-        cuda_path = os.environ.get('CUDA_PATH')
-        if cuda_path:
-            include_list.append('%s/include' % cuda_path)
-            include_list.append('%s/samples/common/inc' % cuda_path)
-            return include_list
-        return []
-
     def get_cc_commands(self):
         return self.cc, self.cxx, self.ld
 
@@ -177,10 +167,6 @@ class ToolChain(object):
     def cc_is(self, vendor):
         """Is cc is used for C/C++ compilation match vendor."""
         return vendor in self.cc
-
-    def get_cuda_include(self):
-        """Returns a list of cuda include."""
-        return self.cuda_inc_list
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""

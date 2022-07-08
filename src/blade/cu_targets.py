@@ -74,11 +74,10 @@ class CuTarget(CcTarget):
         self.cuda_path = cuda_path
         self.attr['extra_cuflags'] = extra_cuflags
         cmd = os.environ.get('NVCC')
+        if cuda_path:
+            cmd = os.path.join(cuda_path, 'bin/nvcc')
         if not cmd:
-            if cuda_path:
-                cmd = os.path.join(cuda_path, 'bin/nvcc')
-            else:
-                cmd = 'nvcc'
+            cmd = 'nvcc'
         self.cmd = cmd
         self._add_tags('lang:cu')
 
@@ -89,12 +88,13 @@ class CuTarget(CcTarget):
 
     def _get_cuda_include(self):
         include_list = []
-        cuda_path = os.environ.get('CUDA_PATH')
-        if cuda_path:
-            include_list.append('%s/include' % cuda_path)
-            include_list.append('%s/samples/common/inc' % cuda_path)
         if self.cuda_path:
             include_list.append('%s/include' % self.cuda_path)
+        else:
+            cuda_path = os.environ.get('CUDA_PATH')
+            if cuda_path:
+                include_list.append('%s/include' % cuda_path)
+                include_list.append('%s/samples/common/inc' % cuda_path)
         return include_list
 
     def _get_cu_vars(self):
