@@ -108,7 +108,7 @@ class CuTarget(CcTarget):
         cppflags = vars['cppflags'].split(' ') if vars.get('cppflags') else []
 
         vars['cuflags'] += ' ' + ' '.join(
-            map(lambda flag: '-Xcompiler ' + flag, cppflags)
+            ['-Xcompiler %s' % flag for flag in cppflags]
         )
 
         return vars

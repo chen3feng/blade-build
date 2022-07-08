@@ -202,8 +202,7 @@ class _NinjaFileHeaderGenerator(object):
         warnings, cxx_warnings, c_warnings, cu_warnings = self._get_warning_flags()
         c_warnings += warnings
         cxx_warnings += warnings
-        cu_warnings += map(lambda warning: '-Xcompiler %s' % warning,
-                          cxx_warnings)
+        cu_warnings += ['-Xcompiler %s' % warning for warning in cxx_warnings]
         # optimize_flags is need for `always_optimize`
         optimize_flags = config.get_item('cc_config', 'optimize')
         optimize = '$optimize_flags' if self.options.profile == 'release' else ''
@@ -672,8 +671,8 @@ class _NinjaFileHeaderGenerator(object):
         cxxflags = cc_config['cxxflags']
         cppflags, _ = self._get_intrinsic_cc_flags()
         cppflags = cc_config['cppflags'] + cppflags
-        cxxflags = map(lambda flag: '-Xcompiler %s' % flag, cxxflags)
-        cppflags = map(lambda flag: '-Xcompiler %s' % flag, cppflags)
+        cxxflags = ['-Xcompiler %s' % flag for flag in cxxflags]
+        cppflags = ['-Xcompiler %s' % flag for flag in cppflags]
         cuflags = cuda_config['cuflags']
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
