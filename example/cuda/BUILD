@@ -27,7 +27,7 @@ cu_binary(
         ':util',
     ],
     extra_cppflags = [
-        '-std=c++14',
+        '-std=c++17',
     ],
 )
 
@@ -37,6 +37,6 @@ cu_test(
     srcs = ['cu_test.cu'],
     deps = [':template_cpu', ':util'],
     extra_cppflags = [
-        '-std=c++14',
+        '-std=c++17',
     ],
 )

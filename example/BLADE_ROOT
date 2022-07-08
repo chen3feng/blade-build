@@ -47,7 +47,6 @@ cc_config(
         'thirdparty/',
     ],
     cppflags = ['-DHAVE_CONFIG_H', '-D_GLIBCXX_USE_CXX11_ABI=0'],
-    # allowed_undeclared_hdrs = load_value('allowed_undeclared_hdrs.conf'),
 )
 
 cuda_config(
