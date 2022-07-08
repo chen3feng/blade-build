@@ -55,7 +55,7 @@ cuda_config(
         '--Wno-deprecated-declarations',
     ],
     cuflags = [
-        '--list-gpu-code',
+        '--display-error-number',
     ],
 )
 
