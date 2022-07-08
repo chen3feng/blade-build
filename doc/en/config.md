@@ -284,6 +284,10 @@ Note:
 
 Common configuration of all cuda targets:
 
+- `cuda_path` : string = ''
+
+  CUDA installed path.
+
 - `cu_warnings` : list = 内置
 
   CUDA only warnings.

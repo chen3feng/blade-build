@@ -50,6 +50,7 @@ cc_config(
 )
 
 cuda_config(
+    cuda_path = '',
     cu_warnings = [
         '--Wno-deprecated-declarations',
     ],

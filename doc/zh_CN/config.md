@@ -271,6 +271,10 @@ C/C++ 库的配置：
 
 所有cuda目标的公共配置：
 
+- `cuda_path` : string = ''
+
+  CUDA 库所在路径.
+
 - `cu_warnings` : list = 内置
 
   编译 CUDA 代码时的专用警告。

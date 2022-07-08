@@ -146,6 +146,7 @@ class BladeConfig(object):
 
             'cuda_config': {
                 '__help__': 'CUDA Configuration',
+                'cuda_path': '',
                 'cu_warnings': [],
                 'cuflags': [],
             },
