@@ -523,7 +523,7 @@ STATIC_RESOURCE 的参数是从BLADE_ROOT目录开始的数据文件的文件名
 使用nvcc编译器编译包含CUDA代码的C++ library
 
 语法和 `cc_library` 基本一致，额外添加两个属性 `cuda_path` 和 `extra_cuflags` 。  
-`cuda_path` 指向cuda的路径，一般为当前仓库内置的cuda目录，可以摆脱对本地cuda环境的依赖。对应的cuda的binary `{cuda_path}/bin/nvcc` 和include目录 `{cuda_path}/include` 都会自动识别，下面介绍的环境变量指定cuda相关路径信息也会被直接忽略。  
+`cuda_path` 指向cuda的工作区绝对路径，一般为当前仓库内置的cuda目录，可以摆脱对本地cuda环境的依赖。对应的cuda的binary `{cuda_path}/bin/nvcc` 和include目录 `{cuda_path}/include` 都会自动识别，下面介绍的环境变量指定cuda相关路径信息也会被直接忽略。  
 `extra_cuflags` 添加仅cuda的参数，和cc通用的flag依然保存在 `extra_ccflags`。
 
 

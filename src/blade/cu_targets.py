@@ -15,9 +15,10 @@ from __future__ import print_function
 
 import os
 
-from blade import build_manager
+from blade import build_manager, workspace_root_dir
 from blade import build_rules
 from blade import config
+from blade import console
 from blade.cc_targets import CcTarget
 from blade.util import var_to_list
 
@@ -71,8 +72,18 @@ class CuTarget(CcTarget):
                 kwargs=kwargs,
                 src_exts=_SOURCE_FILE_EXTS,
                 cmd='')
+        global_cuda_path = config.get_section('cuda_config')['cuda_path']
+        if global_cuda_path and not global_cuda_path.startswith('//'):
+            console.fatal(
+                'global cuda_path in cuda_config %s should be '
+                'empty or start with //' % global_cuda_path)
+        if cuda_path and not cuda_path.startswith('//'):
+            console.fatal('targets: %s cuda_path %s should start with //' %
+                          (self.fullname, cuda_path))
         if not cuda_path:
-            cuda_path = config.get_section('cuda_config')['cuda_path']
+            cuda_path = global_cuda_path
+        if cuda_path:
+            cuda_path = cuda_path[2:]
         self.cuda_path = cuda_path
         self.attr['extra_cuflags'] = extra_cuflags
         cmd = os.environ.get('NVCC')

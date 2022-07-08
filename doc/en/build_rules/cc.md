@@ -561,7 +561,7 @@ build a C++ library target containing CUDA device code using nvcc.
 Rules are similar to `cc_library` .
 
 The attributes `cuda_path` and `extra_cuflags` are added.  
-`cuda_path` is pointed to cuda installed path in the local repository, with that nvcc binary `{cuda_path}/bin/nvcc` and include search path `{cuda_path}/include` can be found automatically. Environment variable below will be ignored if use cuda_path.  
+`cuda_path` is pointed to cuda installed path in the local repository with prefix `//`, with that nvcc binary `{cuda_path}/bin/nvcc` and include search path `{cuda_path}/include` can be found automatically. Environment variable below will be ignored if use cuda_path.  
 `extra_cuflags` support some flags which only work for cuda.
 
 

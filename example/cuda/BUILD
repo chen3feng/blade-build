@@ -7,7 +7,7 @@ cc_library(
 cu_library(
     name = 'util',
     srcs = ['util.cc'],
-    # cuda_path = 'thirdparty/cuda/11.2',
+    # cuda_path = '//thirdparty/cuda/11.2',
     hdrs = ['util.h'],
     deps = [],
     extra_cppflags = [
@@ -21,7 +21,7 @@ cu_library(
 cu_binary(
     name = 'template',
     srcs = ['template.cu'],
-    # cuda_path = 'thirdparty/cuda/11.2',
+    # cuda_path = '//thirdparty/cuda/11.2',
     deps = [
         ':template_cpu',
         ':util',
@@ -33,7 +33,7 @@ cu_binary(
 
 cu_test(
     name = 'cu_test',
-    # cuda_path = 'thirdparty/cuda/11.2',
+    # cuda_path = '//thirdparty/cuda/11.2',
     srcs = ['cu_test.cu'],
     deps = [':template_cpu', ':util'],
     extra_cppflags = [

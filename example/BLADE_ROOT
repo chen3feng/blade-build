@@ -50,7 +50,7 @@ cc_config(
 )
 
 cuda_config(
-    cuda_path = '',
+    # cuda_path = '//thirdparty/cuda/11.2',
     cu_warnings = [
         '--Wno-deprecated-declarations',
     ],
