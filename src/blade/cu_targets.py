@@ -15,7 +15,7 @@ from __future__ import print_function
 
 import os
 
-from blade import build_manager, workspace_root_dir
+from blade import build_manager
 from blade import build_rules
 from blade import config
 from blade import console
