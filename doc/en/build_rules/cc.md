@@ -577,7 +577,7 @@ cu_library(
     name = 'template_gpu',
     srcs = ['template_gpu.cu'],
     hdrs = [],
-    # cuda_path = 'thirdparty/cuda',
+    # cuda_path = '//thirdparty/cuda',
 )
 ```
 
@@ -594,7 +594,7 @@ cu_binary(
     name = 'template',
     srcs = ['template.cu'],
     deps = [':template_cpu'],
-    # cuda_path = 'thirdparty/cuda',
+    # cuda_path = '//thirdparty/cuda',
 )
 ```
 
@@ -611,6 +611,6 @@ cu_test(
     name = 'cu_test',
     srcs = ['cu_test.cu'],
     deps = [':template_cpu'],
-    # cuda_path = 'thirdparty/cuda',
+    # cuda_path = '//thirdparty/cuda',
 )
 ```

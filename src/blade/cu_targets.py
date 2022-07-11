@@ -72,6 +72,21 @@ class CuTarget(CcTarget):
                 kwargs=kwargs,
                 src_exts=_SOURCE_FILE_EXTS,
                 cmd='')
+        self.cuda_path = self._get_cuda_path(cuda_path)
+        self.attr['extra_cuflags'] = extra_cuflags
+        cmd = os.environ.get('NVCC')
+        if self.cuda_path:
+            cmd = os.path.join(self.cuda_path, 'bin/nvcc')
+        if not cmd:
+            cmd = 'nvcc'
+        self.cmd = cmd
+        self._add_tags('lang:cu')
+
+    def _get_cuda_path(self, cuda_path):
+        """Get cuda_path with priority target's cuda_path > global cuda_path.
+
+        cuda_path should start with // and will get trimmed in this phase.
+        """
         global_cuda_path = config.get_section('cuda_config')['cuda_path']
         if global_cuda_path and not global_cuda_path.startswith('//'):
             console.fatal(
@@ -84,15 +99,7 @@ class CuTarget(CcTarget):
             cuda_path = global_cuda_path
         if cuda_path:
             cuda_path = cuda_path[2:]
-        self.cuda_path = cuda_path
-        self.attr['extra_cuflags'] = extra_cuflags
-        cmd = os.environ.get('NVCC')
-        if cuda_path:
-            cmd = os.path.join(cuda_path, 'bin/nvcc')
-        if not cmd:
-            cmd = 'nvcc'
-        self.cmd = cmd
-        self._add_tags('lang:cu')
+        return cuda_path
 
     def _get_cu_flags(self):
         """Return the nvcc flags according to the BUILD file and other configs."""
