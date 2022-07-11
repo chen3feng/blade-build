@@ -267,6 +267,22 @@ C/C++ 库的配置：
 - gtest 库还依赖 pthread，因此 gtest_libs 需要写成 `['#gtest', '#pthread']`
 - 或者把源码纳入你的源码树，比如thirdparty下，就可以写成 `gtest_libs='//thirdparty/gtest:gtest'`。
 
+### cuda_config
+
+所有cuda目标的公共配置：
+
+- `cuda_path` : string = ''
+
+  CUDA 库所在路径, 为空或者 "//" 开头的工作区绝对路径
+
+- `cu_warnings` : list = 内置
+
+  编译 CUDA 代码时的专用警告。
+
+- `cuflags` : list = []
+
+  CUDA 公用编译选项。
+
 ### java_config
 
 Java 构建相关的配置：

@@ -280,6 +280,22 @@ Note:
 - Or include the source code in your source tree, such as thirdparty, you can write
   `gtest_libs='//thirdparty/gtest:gtest'`.
 
+### cuda_config
+
+Common configuration of all cuda targets:
+
+- `cuda_path` : string = ''
+
+  CUDA installed path, it can be empty or starts with "//"
+
+- `cu_warnings` : list = builtin
+
+  CUDA only warnings.
+
+- `cuflags` : list = []
+
+  CUDA common options.
+
 ### java_config
 
 Java related configurations:

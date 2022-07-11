@@ -115,7 +115,8 @@ class Target(object):
                  deps,
                  visibility,
                  tags,
-                 kwargs):
+                 kwargs,
+                 cmd=''):
         """Init method.
 
         Init the target.
@@ -127,6 +128,7 @@ class Target(object):
 
         self.type = type
         self.name = name
+        self.cmd = cmd
 
         current_source_path = self.blade.get_current_source_path()
         self.path = current_source_path
@@ -220,6 +222,7 @@ class Target(object):
                 'srcs': self.srcs,
             }
             entropy['deps'] = [self.target_database[dep].fingerprint() for dep in self.deps]
+            entropy['cmd'] = self.cmd
 
             # Add more entropy
             entropy.update(self._fingerprint_entropy())

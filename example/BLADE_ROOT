@@ -46,7 +46,17 @@ cc_config(
     extra_incs=[
         'thirdparty/',
     ],
-    cppflags = ['-DHAVE_CONFIG_H', '-D_GLIBCXX_USE_CXX11_ABI=0']
+    cppflags = ['-DHAVE_CONFIG_H', '-D_GLIBCXX_USE_CXX11_ABI=0'],
+)
+
+cuda_config(
+    # cuda_path = '//thirdparty/cuda/11.2',
+    cu_warnings = [
+        '--Wno-deprecated-declarations',
+    ],
+    cuflags = [
+        '--display-error-number',
+    ],
 )
 
 java_test_config(

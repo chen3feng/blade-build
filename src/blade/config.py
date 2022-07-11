@@ -144,6 +144,13 @@ class BladeConfig(object):
                 'link_jobs': 0,
             },
 
+            'cuda_config': {
+                '__help__': 'CUDA Configuration',
+                'cuda_path': '',
+                'cu_warnings': [],
+                'cuflags': [],
+            },
+
             'java_config': {
                 '__help__': 'Java Configuration',
                 'version': '1.8',
@@ -534,6 +541,12 @@ def cc_config(append=None, **kwargs):
 def link_config(append=None, **kwargs):
     """link_config."""
     _blade_config.update_config('link_config', append, kwargs)
+
+
+@config_rule
+def cuda_config(append=None, **kwargs):
+    """cuda_config."""
+    _blade_config.update_config('cuda_config', append, kwargs)
 
 
 @config_rule
