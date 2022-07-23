@@ -534,6 +534,7 @@ def _load_related_build_files(blade, command_targets, processed_dirs):
     target_database = blade.get_target_database()
     related_targets = {}
     cited_targets = set(command_targets)
+
     while cited_targets:
         target_id = cited_targets.pop()
         source_dir, target_name = target_id.split(':')
