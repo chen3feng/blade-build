@@ -409,7 +409,6 @@ def load_targets(target_ids, excluded_targets, blade):
     and their direct and indirect dependencies, by loading related BUILD
     files.  Returns a map which contains all these targets.
     """
-
     _load_build_rules()
 
     filter_function = _compile_filter(blade)
@@ -465,7 +464,6 @@ def _parse_excluded_targets(excluded_targets):
 
 def _expand_target_patterns(blade, target_ids, excluded_trees):
     """Expand target patterns from command line."""
-
     # Parse command line target_ids. For those in the form of <path>:<target>,
     # record (<path>,<target>) in direct_targets; for the rest (with <path>
     # but without <target>), record <path> into starting_dirs.
@@ -485,7 +483,7 @@ def _expand_target_patterns(blade, target_ids, excluded_trees):
 
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
-        if not os.path.exists(source_dir):
+        if source_dir and not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
         skip_file = _check_under_skipped_dir(source_dir)
         if skip_file:
@@ -536,7 +534,6 @@ def _load_related_build_files(blade, command_targets, processed_dirs):
     target_database = blade.get_target_database()
     related_targets = {}
     cited_targets = set(command_targets)
-
     while cited_targets:
         target_id = cited_targets.pop()
         source_dir, target_name = target_id.split(':')

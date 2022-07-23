@@ -121,19 +121,9 @@ class ToolChain(object):
 
     def _get_cc_version(self):
         version = ''
-        if 'gcc' in self.cc:
-            returncode, stdout, stderr = run_command(self.cc + ' -dumpversion', shell=True)
-            if returncode == 0:
-                version = stdout.strip()
-        elif 'clang' in self.cc:
-            returncode, stdout, stderr = run_command(self.cc + ' --version', shell=True)
-            if returncode == 0:
-                line = stdout.splitlines()[0]
-                pos = line.find('version')
-                if pos == -1:
-                    version = line
-                else:
-                    version = line[pos + len('version') + 1:]
+        returncode, stdout, stderr = run_command(self.cc + ' -dumpversion', shell=True)
+        if returncode == 0:
+            version = stdout.strip()
         if not version:
             console.fatal('Failed to obtain cc toolchain.')
         return version
@@ -142,17 +132,9 @@ class ToolChain(object):
     def get_cc_target_arch():
         """Get the cc target architecture."""
         cc = ToolChain._get_cc_command('CC', 'gcc')
-        if 'gcc' in cc:
-            returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
-            if returncode == 0:
-                return stdout.strip()
-        elif 'clang' in cc:
-            llc = cc[:-len('clang')] + 'llc'
-            returncode, stdout, stderr = run_command('%s --version' % llc, shell=True)
-            if returncode == 0:
-                for line in stdout.splitlines():
-                    if 'Default target' in line:
-                        return line.split()[-1]
+        returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
+        if returncode == 0:
+            return stdout.strip()
         return ''
 
     def get_cc_commands(self):

@@ -34,9 +34,9 @@ function _warning() {
 
 function _fatal() {
     if [ -t 2 ]; then
-        echo -e "\033[1;31mBlade(fatal): $@\nBlade (error): Blade will exit...\033[m" >&2
+        echo -e "\033[1;31mBlade(fatal): $@\nBlade(fatal): Blade will exit...\033[m" >&2
     else
-        echo -e "Blade(fatal): $@\nBlade (fatal): Blade will exit..." >&2
+        echo -e "Blade(fatal): $@\nBlade(fatal): Blade will exit..." >&2
     fi
     exit 1
 }
@@ -65,6 +65,31 @@ function _full_real_path() {
     return 0
 }
 
+# Check the python version at first, exit blade when python
+# version is under 2.7
+function _check_python() {
+    local python
+    if command -v python &> /dev/null; then
+        python="python"
+    elif command -v python3 &> /dev/null; then
+        echo "python3"
+        return
+    elif command -v python3 &> /dev/null; then
+        python="python"
+        echo "python3"
+    else
+        _fatal "Please install python 2.7+ or 3.6+ or above in your system"
+    fi
+
+    python_ver=$($python -V 2>&1 | sed 's/Python //g')
+    if [[ "$python_ver" < "2.7" ]]; then
+        _info "Python version in your machine: $python_ver"
+        _fatal "Please upgrade your python version to 2.7 or 3.6+"
+    fi
+    echo $python
+}
+
+
 blade_path=`_full_real_path $0`
 blade_dir=$(cd $(dirname $blade_path) && pwd)
 
@@ -78,23 +103,11 @@ if [[ -e $blade_dir/blade_init ]]; then
     source $blade_dir/blade_init
 fi
 
-# Check the python version at first, exit blade when python
-# version is under 2.7
-no_python=$(which python 2>&1 | grep 'which: no')
-if [[ -n "$no_python" ]]; then
-    _fatal "Please install python 2.7 or above in your system"
-fi
-
-python_ver=$(python -V 2>&1 | sed 's/Python //g')
-if [[ "$python_ver" < "2.7" ]]; then
-    _info "Python version in your machine: $python_ver"
-    _fatal "Please upgrade your python version to 2.7 or above"
-fi
+python=$(_check_python)
 
 # Check ninja
-no_ninja=$(which ninja 2>&1 | grep 'which: no ninja in')
-if [[ -n "$no_ninja" ]]; then
-    _fatal "Please install ninja v1.8+"
+if ! command -v ninja &> /dev/null; then
+    _fatal "Please install ninja v1.8+ (https://ninja-build.org)"
 fi
 
 # Check blade file
@@ -102,4 +115,4 @@ if [[ ! -e "$blade_file" ]]; then
     _fatal "Cannot find the core file $blade_file"
 fi
 
-${BLADE_PYTHON_INTERPRETER:-python} $blade_file "$@"
+${BLADE_PYTHON_INTERPRETER:-$python} $blade_file "$@"
