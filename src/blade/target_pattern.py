@@ -30,6 +30,8 @@ def _split(target):
             path = target
             name = '*'
     path = os.path.normpath(path)
+    if path == '.':
+        path = ''
     return path, name
 
 

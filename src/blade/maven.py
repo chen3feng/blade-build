@@ -164,6 +164,7 @@ class MavenCache(object):
         if classifier:
             cmd += ' -Dclassifier=%s' % classifier
         cmd += ' -e -X'  # More detailed debug message
+        target.debug(cmd)
         if subprocess.call('%s > %s' % (cmd, log_path), shell=True) != 0:
             message = ('Error downloading maven_jar %s, see "%s" for details.' % (id, log_path))
             # Rertry without transitive
