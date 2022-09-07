@@ -14,9 +14,9 @@
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
 ```
 
-An easy-to-use, fast and modern build system for trunk based development in large-scale monorepo codebase.
+English | [简体中文](README-zh.md)
 
-Click here to read [中文文档](README-zh.md).
+An easy-to-use, fast and modern build system for trunk based development in large-scale monorepo codebase.
 
 ## Build Status
 
