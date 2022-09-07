@@ -18,7 +18,7 @@ Blade是一个方便易用高性能的现代化代码构建系统，特别适合
 
 Blade is an easy-to-use, fast and modern build system for trunk based development in large scale monorepo codebase. It supports building mulitiple programming languages.
 
-Click here to read [English README](README.md).
+[English](README.md) | 简体中文
 
 ## Build Status
 
