@@ -17,7 +17,8 @@ import os
 from blade import build_manager
 from blade import build_rules
 from blade.target import Target, LOCATION_RE
-from blade.util import var_to_list
+from blade.util import which, var_to_list
+
 
 _package_types = frozenset([
     'tar',
@@ -27,6 +28,10 @@ _package_types = frozenset([
     'tbz',
     'zip',
 ])
+
+
+# pigz: A parallel implementation of gzip
+_gzip_flag = '-I pigz' if which('pigz') else '-z'
 
 
 class PackageTarget(Target):
@@ -164,8 +169,8 @@ class PackageTarget(Target):
     def tar_flags(t):
         return {
             'tar': '',
-            'tar.gz': '-z',
-            'tgz': '-z',
+            'tar.gz': _gzip_flag,
+            'tgz': _gzip_flag,
             'tar.bz2': '-j',
             'tbz': '-j',
         }[t]
