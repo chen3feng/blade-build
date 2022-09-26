@@ -353,3 +353,10 @@ def open_zip_file_for_write(filename, compression_level):
         return zipfile.ZipFile(filename, 'w', compression, allowZip64=True)
     # pylint: disable=unexpected-keyword-arg
     return zipfile.ZipFile(filename, 'w', compression, compresslevel=int(compression_level), allowZip64=True)
+
+
+def which(cmd):
+    returncode, stdout, _ = run_command("which %s" % cmd, shell=True)
+    if returncode != 0:
+        return None
+    return stdout.strip()
