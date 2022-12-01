@@ -34,12 +34,13 @@ from blade import util
 #
 # The inclusion information is writes to stdout, other normal diagnostic message is write to stderr.
 #
-# NOTE the `$$` is required by ninja. and the `Multiple...` is the last and useless part of
-# the messages.
+# NOTE the `$$` is required by ninja. and the `Multiple...` followed by multi lines of filepath are useless part.
+# `多个防止重包含可能对其有用：` is the same as `Multiple...` in chinese.
+# After `Multiple...`, there are still some useful messages, like gcc warnings or cuda error.
 _INCLUSION_STACK_SPLITTER = (r"awk '"
-    r"""/Multiple include guards may be useful for:/ {stop=1} """  # Can't exit here otherwise SIGPIPE maybe occurs.
+    r"""/Multiple include guards may be useful for:|多个防止重包含可能对其有用：/ {stop=1} """  # Can't exit here otherwise SIGPIPE maybe occurs.
     r"""/^\.+ [^\/]/ { print $$0} """  # Non absolute path
-    r"""!/^\.+ / && !stop {print $$0 > "/dev/stderr"}"""  # Maybe error messages
+    r"""!/^\.+ / && (!stop || (!/Multiple include guards may be useful for:|多个防止重包含可能对其有用：/ && !/^[a-zA-Z0-9\.\/\+_-]+$$/ )) {print $$0 > "/dev/stderr"}"""  # Maybe error messages
     r"'"
 )
 
