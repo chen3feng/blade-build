@@ -266,6 +266,18 @@ class CommandLineParser(object):
             action='store_true', default=False,
             help=argparse.SUPPRESS)
 
+    def __add_pgo_arguments(self, parser):
+        """Add Profile-guided Optimization arguments."""
+        parser.add_argument(
+            '--profile-generate', dest='profile-generate', metavar='path',
+            action='store', type=str, nargs='?', const='',
+            help='Add build options to support profile-generate')
+
+        parser.add_argument(
+            '--profile-use', dest='profile-use', metavar='path',
+            action='store', type=str, nargs='?', const='',
+            help='Add build options to support profile-use')
+
     def _add_query_arguments(self, parser):
         """Add query arguments for parser."""
         self.__add_plat_profile_arguments(parser)
@@ -341,6 +353,7 @@ class CommandLineParser(object):
             self.__add_build_actions_arguments(parser)
             self.__add_generate_arguments(parser)
             self.__add_coverage_arguments(parser)
+            self.__add_pgo_arguments(parser)
 
     def _add_common_arguments(self, *parsers):
         for parser in parsers:
