@@ -174,7 +174,7 @@ class _NinjaFileHeaderGenerator(object):
 
         if hasattr(self.options, 'profile-generate') and not getattr(self.options, 'profile-generate') is None:
             pgo_gen_dir = getattr(self.options, 'profile-generate')
-            if len(pgo_gen_dir) == 0:
+            if not pgo_gen_dir:
                 cppflags.append('-fprofile-generate')
                 linkflags.append('-fprofile-generate')
             else:
@@ -184,7 +184,7 @@ class _NinjaFileHeaderGenerator(object):
 
         if hasattr(self.options, 'profile-use') and not getattr(self.options, 'profile-use') is None:
             pgo_use_dir = getattr(self.options, 'profile-use')
-            if len(pgo_use_dir) == 0:
+            if not pgo_use_dir:
                 cppflags.append('-fprofile-use')
             else:
                 cppflags.append('-fprofile-use=' + pgo_use_dir)
