@@ -172,6 +172,26 @@ class _NinjaFileHeaderGenerator(object):
             cppflags.append('--coverage')
             linkflags.append('--coverage')
 
+        if hasattr(self.options, 'profile-generate') and not getattr(self.options, 'profile-generate') is None:
+            pgo_gen_dir = getattr(self.options, 'profile-generate')
+            if not pgo_gen_dir:
+                cppflags.append('-fprofile-generate')
+                linkflags.append('-fprofile-generate')
+            else:
+                cppflags.append('-fprofile-generate=' + pgo_gen_dir)
+                linkflags.append('-fprofile-generate=' + pgo_gen_dir)
+            cppflags.append('-DPROFILE_GUIDED_OPTIMIZATION')
+
+        if hasattr(self.options, 'profile-use') and not getattr(self.options, 'profile-use') is None:
+            pgo_use_dir = getattr(self.options, 'profile-use')
+            if not pgo_use_dir:
+                cppflags.append('-fprofile-use')
+            else:
+                cppflags.append('-fprofile-use=' + pgo_use_dir)
+            cppflags.append('-fprofile-correction')
+            cppflags.append('-Wno-error=coverage-mismatch')
+            cppflags.append('-DPROFILE_GUIDED_OPTIMIZATION')
+
         cppflags = self.build_toolchain.filter_cc_flags(cppflags)
         return cppflags, linkflags
 
