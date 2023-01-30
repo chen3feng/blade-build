@@ -113,9 +113,10 @@ def _parse_inclusion_stacks(path, build_dir):
         return current_level, skip_level
 
     current_level = 0
+    current_line = ''
     skip_level = -1
     with open(path) as f:
-        for line in f:
+        for index, line in enumerate(f):
             line = line.rstrip()  # Strip `\n`
             if not line.startswith('.'):
                 # The remaining lines are useless for us
@@ -129,13 +130,25 @@ def _parse_inclusion_stacks(path, build_dir):
             if level > current_level:
                 if skip_level != -1 and level > skip_level:
                     continue
-                assert level == current_level + 1
+                try:
+                    assert level == current_level + 1
+                except AssertionError:
+                    console.error(
+                        'path: %s, line_number: %d\n'
+                        'level: %d, current_level: %d\n'
+                        'line: %s\ncurrent_line: %s' % (
+                            path, index+1,
+                            level, current_level,
+                            line, current_line))
+                    raise
                 current_level, skip_level = _process_hdr(level, hdr, current_level)
+                current_line = line
             else:
                 while current_level >= level:
                     current_level -= 1
                     hdrs_stack.pop()
                 current_level, skip_level = _process_hdr(level, hdr, current_level)
+                current_line = line
 
     return direct_hdrs, stacks
 
