@@ -102,6 +102,10 @@ blade test -m32 -pdebug common...
 * [Full Documentation](doc/en/README.md)
 * [FAQ](doc/en/FAQ.md)
 
+## Contributers
+
+[![Contributers](https://contrib.rocks/image?repo=chen3feng/blade-build)](https://github.com/chen3feng/blade-build/graphs/contributors)
+
 ## Credits
 
 * Blade is inspired by Google's public information about their build system. Here is a reference article from Google's official blog:
