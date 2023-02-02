@@ -116,5 +116,5 @@ blade test -m32 -pdebug common...
 * Blade generates [Ninja](https://ninja-build.org/) script internally, so of course it depends on ninja.
 * [Python](http://www.python.org) is a powerful and easy-to-used language, we like python.
 * Some libraries open sourced by Google, such as [protobuf](http://code.google.com/p/protobuf/),
-  [gtest](http://code.google.com/p/googletest/),
-  [gperftools](http://code.google.com/p/gperftools/) are handy and powerful, we have integrated these libraries.
+* [gtest](http://code.google.com/p/googletest/),
+* [gperftools](http://code.google.com/p/gperftools/) are handy and powerful, we have integrated these libraries.
