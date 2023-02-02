@@ -149,6 +149,16 @@ blade test -m32 -pdebug common...
 * 头文件更新，受影响的模块没有重新构建。
 * 被依赖的库需要更新，而构建时没有被更新，比如某子目录依
 
+## 文档
+
+看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](doc/zh_CN/README.md)，开始使用吧。
+
+如果遇到有问题，可以试试先查一下[FAQ](doc/zh_CN/FAQ.md)，也许有你需要的信息。
+
+## 贡献者
+
+[![Contributers](https://contrib.rocks/image?repo=chen3feng/blade-build)](https://github.com/chen3feng/blade-build/graphs/contributors)
+
 ## 致谢
 
 * Blade 是受 Google 官方博客发表的这篇文章启发而开发的：
@@ -165,10 +175,6 @@ blade test -m32 -pdebug common...
 
 我们的理念：解放程序员，提高生产力。用工具来解决非创造性的技术问题。
 
-欢迎使用以及帮助我们改进Blade，我们期待你的贡献。目前的[贡献者名单](AUTHORS)
+欢迎使用以及帮助我们改进Blade，我们期待你的贡献。
 
-## 文档
 
-看到这里，你应该觉得Blade是个不错的工具，那么，阅读[完整文档](doc/zh_CN/README.md)，开始使用吧。
-
-如果遇到有问题，可以试试先查一下[FAQ](doc/zh_CN/FAQ.md)，也许有你需要的信息。
