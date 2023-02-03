@@ -25,6 +25,9 @@ class BuildAccelerator(object):
         """
         cc, cxx, ld = self.__toolchain.get_cc_commands()
         return cc, cxx, ld
+    
+    def get_ar_command(self):
+        return self.__toolchain.get_ar()
 
     def adjust_jobs_num(self, cpu_core_num):
         # Calculate job numbers smartly
