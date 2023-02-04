@@ -112,6 +112,7 @@ class ToolChain(object):
         self.cxx = self._get_cc_command('CXX', 'g++')
         self.ld = self._get_cc_command('LD', 'g++')
         self.cc_version = self._get_cc_version()
+        self.ar = self._get_cc_command('AR', 'ar')
 
     @staticmethod
     def _get_cc_command(env, default):
@@ -145,6 +146,9 @@ class ToolChain(object):
 
     def get_cc_version(self):
         return self.cc_version
+
+    def get_ar(self):
+        return self.ar
 
     def cc_is(self, vendor):
         """Is cc is used for C/C++ compilation match vendor."""

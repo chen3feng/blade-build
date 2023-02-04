@@ -310,8 +310,9 @@ class _NinjaFileHeaderGenerator(object):
 
     def _generate_cc_ar_rules(self):
         arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
+        ar = self.build_accelerator.get_ar_command()
         self.generate_rule(name='ar',
-                           command='rm -f $out; ar %s $out $in' % arflags,
+                           command='rm -f $out; %s %s $out $in' % (ar, arflags),
                            description='AR ${out}')
 
     def _generate_cc_link_rules(self, ld, linkflags):
