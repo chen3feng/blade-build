@@ -32,7 +32,7 @@ java_library(
 不过需要注意，java 构建目标可以依赖 scala 库时，scala 目标中应该把 scala-library 纳入 exported_deps。
 否则编译时 javac 会发出找不到 ScalaSignature.bytes() 符号的警告。
 但是它也应该同时出现在 provided_deps 里，否则它就会被打包进 scala binary 里，和 scala 环境已经提供的冲突。
-但是对于 java_inary，则又需要显式地依赖 scala-library。
+但是对于 java_binary，则又需要显式地依赖 scala-library。
 
 ```python
 scala_library(
