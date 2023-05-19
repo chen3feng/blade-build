@@ -317,7 +317,13 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             if language in p.code_generation:
                 paths.append(p.path)
                 flag_key = 'protoc%spluginflags' % language
-                flag_value = p.protoc_plugin_flag(self.build_dir)
+                # For Java, we need to be consistent with native java output directory
+                # which is the build target directory for insertion points to be effected.
+                # See `protojava` rules for details
+                if language == 'java':
+                    flag_value = p.protoc_plugin_flag(self._target_dir())
+                else:
+                    flag_value = p.protoc_plugin_flag(self.build_dir)
                 vars[flag_key] = vars[flag_key] + ' ' + flag_value if flag_key in vars else flag_value
         return paths, vars
 
