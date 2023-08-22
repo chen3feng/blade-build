@@ -17,6 +17,8 @@ from __future__ import print_function
 import os
 from string import Template
 
+from distutils.version import LooseVersion
+
 from blade import build_manager
 from blade import build_rules
 from blade import config
@@ -1321,7 +1323,7 @@ class CcBinary(CcTarget):
     def _generate_cc_binary_link_flags(self, dynamic_link):
         linkflags = []
         toolchain = self.blade.get_build_toolchain()
-        if not dynamic_link and toolchain.cc_is('gcc') and toolchain.get_cc_version() > '4.5':
+        if not dynamic_link and toolchain.cc_is('gcc') and LooseVersion(toolchain.get_cc_version()) > LooseVersion('4.5'):
             linkflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
             linkflags.append('-rdynamic')
