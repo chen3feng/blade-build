@@ -435,7 +435,7 @@ cc_plugin(
   链接器脚本通常相当复杂，如果只是想控制符号的版本和可见性，请使用下面的 `version_script` 选项。
 - `version_scripts`: list(string)，使用[链接器“版本”脚本](https://sourceware.org/binutils/docs/ld/VERSION.html)。
   链接器版本脚本用来控制符号的版本及可见性，内容仅限于完整的链接脚本里 `VERSION {};` 内的部分，如果不指定版本号，那么可以只用来控制符号的可见性。
-  链接器版本脚本文件的扩展名一般为 `.ver` 或者 `.map`。
+  链接器版本脚本文件的扩展名一般为 `exp`、`sym`、`.ver` 或者 `.map`。
 
 `prefix` 和 `suffix` 控制生成的动态库的文件名，假设 `name='file'`，默认生成的库为 `libfile.so`，设置`prefix=''`，则变为 `file.so`。
 
@@ -455,8 +455,12 @@ global:  # 全局可见
         # 引号内的表示不匹配通配符
         "a()";
         "a(int)";
-        B::*;
         "operator<<(std::ostream&, B const&)";
+
+        # 引号外的匹配通配符
+        B::*;
+        typeinfo?for?magic::*;
+        vtable?for?magic::*;"
     };
 local:  # 其余为局部符号，对外不可见
     *;

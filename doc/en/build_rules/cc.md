@@ -466,10 +466,10 @@ Attributes:
   Linker scripts are usually quite complex, so if you just want to control the version or visibility of the symbols, use the `version_scripts` option below.
 - `version_scripts`: list(string), using [linker "version" script](https://sourceware.org/binutils/docs/ld/VERSION.html).
   The linker version script is used to control the version and visibility of the symbol, if no version id is specified, it only to control the visibility of the symbol.
-  Linker version script files usually have the extension `.ver` or `.map`.
+  Linker version script files usually have the extension `exp`, `sym`, `.ver` or `.map`.
 
 `prefix` and `suffix` control the file name of the generated dynamic library, assuming `name='file'`, the default generated library is `libfile.so`,
-set `prefix=''`, then it becomes `file. so`.
+set `prefix=''`, then it becomes `file.so`.
 
 ### Controlling the visibility of symbols in dynamic libraries
 
@@ -479,16 +479,20 @@ With the linker version file, it is possible to control or override the visibili
 
 ```ld
 {
-global:  # globally visible
+global:  # Globally visible
     # Support wildcards
     Name1;
     _Name2*;
     extern "C++" {  # C++ symbols
-        # Quoted symbols do not match wildcards
+        # Quoted strings do not match wildcards
         "a()";
         "a(int)";
-        B::*;
         "operator<<(std::ostream&, B const&)";
+
+        # Unquoted strings match wildcards
+        B::*;
+        typeinfo?for?magic::*;
+        vtable?for?magic::*;"
     };
 local:  # The rest are local symbols, not visible
     *;
@@ -501,7 +505,7 @@ To see the visibility of symbols in the library, you can use the `nm` command.
 000000000000010c t _init
                  U puts@@GLIBC_2.2.5
 00000000000000000060 t register_tm_clones
-00000000000000f0 t hello
+00000000000000f0 T hello
 00000000000000000100 t world
 ```
 
