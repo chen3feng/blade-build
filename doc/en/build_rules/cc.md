@@ -504,8 +504,8 @@ To see the visibility of symbols in the library, you can use the `nm` command.
 ```console
 000000000000010c t _init
                  U puts@@GLIBC_2.2.5
-00000000000000000060 T register_tm_clones
-00000000000000f0 t hello
+00000000000000000060 t register_tm_clones
+00000000000000f0 T hello
 00000000000000000100 t world
 ```
 
