@@ -34,7 +34,7 @@ class BuildArchitecture(object):
             'bits': '32',
         },
         'x86_64': {
-            'alias': ['amd64'],
+            'alias': ['amd64', 'x64'],
             'bits': '64',
             'models': {
                 '32': 'i386',
