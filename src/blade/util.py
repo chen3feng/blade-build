@@ -17,7 +17,6 @@ from __future__ import print_function
 
 import ast
 import errno
-import fcntl
 import hashlib
 import inspect
 import json
@@ -28,6 +27,10 @@ import subprocess
 import sys
 import zipfile
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 _IN_PY3 = sys.version_info[0] == 3
 
@@ -74,10 +77,11 @@ def md5sum(obj):
 def lock_file(filename):
     """lock file."""
     try:
-        fd = os.open(filename, os.O_CREAT | os.O_RDWR)
-        old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-        fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fd = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_EXCL)
+        if fcntl:
+            old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+            fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return fd, 0
     except IOError as ex_value:
         return -1, ex_value.errno
@@ -86,7 +90,8 @@ def lock_file(filename):
 def unlock_file(fd):
     """unlock file."""
     try:
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        if fcntl:
+            fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
     except IOError:
         pass
@@ -134,6 +139,8 @@ def get_cwd():
     So in practice we simply use system('pwd') to get current working directory.
 
     """
+    if os.name == 'nt':
+        return os.getcwd()
     p = subprocess.Popen(['pwd'], stdout=subprocess.PIPE, shell=True)
     return to_string(p.communicate()[0].strip())
 
