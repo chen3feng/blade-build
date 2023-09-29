@@ -333,4 +333,6 @@ class CcToolChainMsvc(CcToolChain):
 
 
 def default():
-    return CcToolChainMsvc()
+    if os.name == 'nt':
+        return CcToolChainMsvc()
+    return CcToolChainGcc()
