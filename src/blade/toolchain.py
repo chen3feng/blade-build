@@ -104,7 +104,47 @@ class BuildArchitecture(object):
         return None
 
 
-class ToolChain(object):
+class CcToolChain(object):
+    """The build platform handles and gets the platform information."""
+
+    def __init__(self):
+        self.cc = ''
+        self.cxx = ''
+        self.ld = ''
+        self.cc_version = ''
+        self.ar = ''
+
+    @staticmethod
+    def get_cc_target_arch():
+        """Get the cc target architecture."""
+        cc = CcToolChain._get_cc_command('CC', 'gcc')
+        returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
+        if returncode == 0:
+            return stdout.strip()
+        return ''
+
+    def get_cc_commands(self):
+        return self.cc, self.cxx, self.ld
+
+    def get_cc(self):
+        return self.cc
+
+    def get_cc_version(self):
+        return self.cc_version
+
+    def get_ar(self):
+        return self.ar
+
+    def cc_is(self, vendor):
+        """Is cc is used for C/C++ compilation match vendor."""
+        return vendor in self.cc
+
+    def filter_cc_flags(self, flag_list, language='c'):
+        """Filter out the unrecognized compilation flags."""
+        raise NotImplementedError
+
+
+class CcToolChainGcc(CcToolChain):
     """The build platform handles and gets the platform information."""
 
     def __init__(self):
@@ -132,27 +172,11 @@ class ToolChain(object):
     @staticmethod
     def get_cc_target_arch():
         """Get the cc target architecture."""
-        cc = ToolChain._get_cc_command('CC', 'gcc')
+        cc = CcToolChain._get_cc_command('CC', 'gcc')
         returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
         if returncode == 0:
             return stdout.strip()
         return ''
-
-    def get_cc_commands(self):
-        return self.cc, self.cxx, self.ld
-
-    def get_cc(self):
-        return self.cc
-
-    def get_cc_version(self):
-        return self.cc_version
-
-    def get_ar(self):
-        return self.ar
-
-    def cc_is(self, vendor):
-        """Is cc is used for C/C++ compilation match vendor."""
-        return vendor in self.cc
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
@@ -192,3 +216,94 @@ class ToolChain(object):
                     language, ', '.join(unrecognized_flags)))
 
         return valid_flags
+
+
+class CcToolChainMsvc(CcToolChain):
+    """The build platform handles and gets the platform information."""
+
+    def __init__(self):
+        self.cc = 'cl.exe'
+        self.cxx = 'cl.exe'
+        self.ld = 'link.exe'
+        self.ar = 'lib.exe'
+        self.rc = 'rc.exe'
+        self.cc_version = self._get_cc_version()
+
+    def _get_cc_version(self):
+        version = ''
+        returncode, stdout, stderr = run_command(self.cc, shell=True)
+        if returncode == 0:
+            m = re.search('Compiler Version ([\d.]+)', stderr.strip())
+            if m:
+                version = m.group(1)
+        if not version:
+            console.fatal('Failed to obtain cc toolchain.')
+        return version
+
+    @staticmethod
+    def get_cc_target_arch():
+        """Get the cc target architecture."""
+        cc = CcToolChain._get_cc_command('CC', 'gcc')
+        returncode, stdout, stderr = run_command(cc + ' -dumpmachine', shell=True)
+        if returncode == 0:
+            return stdout.strip()
+        return ''
+
+    def get_cc_commands(self):
+        return self.cc, self.cxx, self.ld
+
+    def get_cc(self):
+        return self.cc
+
+    def get_cc_version(self):
+        return self.cc_version
+
+    def get_ar(self):
+        return self.ar
+
+    def cc_is(self, vendor):
+        """Is cc is used for C/C++ compilation match vendor."""
+        return vendor in self.cc
+
+    def filter_cc_flags(self, flag_list, language='c'):
+        """Filter out the unrecognized compilation flags."""
+        flag_list = var_to_list(flag_list)
+        valid_flags, unrecognized_flags = [], []
+
+        # Put compilation output into test.o instead of /dev/null
+        # because the command line with '--coverage' below exit
+        # with status 1 which makes '--coverage' unsupported
+        # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
+        suffix = language
+        if suffix == 'c++':
+            suffix = 'cpp'
+        fd, src = tempfile.mkstemp('.' + suffix, 'filter_cc_flags_test')
+        os.write(fd, b"int main() { return 0; }\n")
+        os.close(fd)
+
+        for flag in flag_list:
+            # Example error messages:
+            #   clang: warning: unknown warning option '-Wzzz' [-Wunknown-warning-option]
+            #   gcc:   gcc: error: unrecognized command line option '-Wxxx'
+            cmd = ('"%s" /nologo /FoNUL /c /WX %s "%s"' % (self.cc, flag, src))
+            returncode, stdout, stderr = run_command(cmd, shell=True)
+            message = stdout + stderr
+            if "'%s'" % flag in message:
+                unrecognized_flags.append(flag)
+            else:
+                valid_flags.append(flag)
+        try:
+            # In case of error, the `.o` file will be deleted by the compiler
+            os.remove(src)
+        except OSError:
+            pass
+
+        if unrecognized_flags:
+            console.warning('config: Unrecognized %s flags: %s' % (
+                    language, ', '.join(unrecognized_flags)))
+
+        return valid_flags
+
+
+def default():
+    return CcToolChainMsvc()

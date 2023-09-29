@@ -32,6 +32,11 @@ try:
 except ImportError:
     fcntl = None
 
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
+
 _IN_PY3 = sys.version_info[0] == 3
 
 
@@ -77,13 +82,17 @@ def md5sum(obj):
 def lock_file(filename):
     """lock file."""
     try:
-        fd = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_EXCL)
+        fd = os.open(filename, os.O_CREAT | os.O_RDWR)
         if fcntl:
             old_fd_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
             fcntl.fcntl(fd, fcntl.F_SETFD, old_fd_flags | fcntl.FD_CLOEXEC)
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        elif msvcrt:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, os.stat(fd).st_size)
         return fd, 0
     except IOError as ex_value:
+        if msvcrt: # msvcrt did't set errno correctly
+            return -1, errno.EAGAIN
         return -1, ex_value.errno
 
 
@@ -92,6 +101,8 @@ def unlock_file(fd):
     try:
         if fcntl:
             fcntl.flock(fd, fcntl.LOCK_UN)
+        elif msvcrt:
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, os.stat(fd).st_size)
         os.close(fd)
     except IOError:
         pass
