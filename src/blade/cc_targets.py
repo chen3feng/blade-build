@@ -550,6 +550,7 @@ class CcTarget(Target):
         if secret:
             implicit_deps.append(self._source_file_path(self.attr['secret_revision_file']))
 
+        toolchain = self.blade.get_cc_toolchain()
         objs_dir = self._target_file_path(self.name + '.objs')
         objs = []
         for src, full_src in expanded_srcs:
@@ -557,7 +558,7 @@ class CcTarget(Target):
             # to avoid file missing error
             if secret and path_under_dir(full_src, self.build_dir):
                 self.generate_build('phony', full_src, inputs=[], clean=[])
-            obj = os.path.join(objs_dir, src + '.o')
+            obj = os.path.join(objs_dir, toolchain.object_file_of(src))
             rule = self._get_rule_from_suffix(src, secret)
             self.generate_build(rule, obj, inputs=full_src,
                                 implicit_deps=implicit_deps,
@@ -1326,7 +1327,7 @@ class CcBinary(CcTarget):
 
     def _generate_cc_binary_link_flags(self, dynamic_link):
         linkflags = []
-        toolchain = self.blade.get_build_toolchain()
+        toolchain = self.blade.get_cc_toolchain()
         if not dynamic_link and toolchain.cc_is('gcc') and version_parse(toolchain.get_cc_version()) > version_parse('4.5'):
             linkflags += ['-static-libgcc', '-static-libstdc++']
         if self.attr.get('export_dynamic'):
@@ -1353,7 +1354,8 @@ class CcBinary(CcTarget):
             order_only_deps.append(inclusion_check_result)
 
         if self.attr['embed_version']:
-            scm = os.path.join(self.build_dir, 'scm.cc.o')
+            toolchain = self.blade.get_cc_toolchain()
+            scm = os.path.join(self.build_dir, toolchain.object_file_of('scm.cc'))
             objs.append(scm)
             order_only_deps.append(scm)
         output = self._target_file_path(self.name)

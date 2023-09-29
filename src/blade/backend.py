@@ -73,14 +73,14 @@ class _NinjaFileHeaderGenerator(object):
     for the underlying build system.
     """
     # pylint: disable=too-many-public-methods
-    def __init__(self, command, options, build_dir, blade_path, build_toolchain, blade):
+    def __init__(self, command, options, build_dir, blade_path, cc_toolchain, blade):
         self.command = command
         self.options = options
-        self.build_dir = build_dir
-        self.blade_path = blade_path
-        self.build_toolchain = build_toolchain
         self.build_accelerator = blade.build_accelerator
+        self.build_dir = build_dir
         self.blade = blade
+        self.blade_path = blade_path
+        self.cc_toolchain = cc_toolchain
 
         self.rules_buf = []
         self.__all_rule_names = set()
@@ -193,7 +193,7 @@ class _NinjaFileHeaderGenerator(object):
             cppflags.append('-Wno-error=coverage-mismatch')
             cppflags.append('-DPROFILE_GUIDED_OPTIMIZATION')
 
-        cppflags = self.build_toolchain.filter_cc_flags(cppflags)
+        cppflags = self.cc_toolchain.filter_cc_flags(cppflags)
         return cppflags, linkflags
 
     def _get_warning_flags(self):
@@ -205,9 +205,9 @@ class _NinjaFileHeaderGenerator(object):
         cflags = cc_config['c_warnings']
         cuflags = cuda_config['cu_warnings']
 
-        filtered_cppflags = self.build_toolchain.filter_cc_flags(cppflags)
-        filtered_cxxflags = self.build_toolchain.filter_cc_flags(cxxflags, 'c++')
-        filtered_cflags = self.build_toolchain.filter_cc_flags(cflags, 'c')
+        filtered_cppflags = self.cc_toolchain.filter_cc_flags(cppflags)
+        filtered_cxxflags = self.cc_toolchain.filter_cc_flags(cxxflags, 'c++')
+        filtered_cflags = self.cc_toolchain.filter_cc_flags(cflags, 'c')
 
         return filtered_cppflags, filtered_cxxflags, filtered_cflags, cuflags
 
@@ -312,9 +312,11 @@ class _NinjaFileHeaderGenerator(object):
     def _generate_cc_ar_rules(self):
         arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
         ar = self.build_accelerator.get_ar_command()
-        self.generate_rule(name='ar',
-                           command='rm -f $out; %s %s $out $in' % (ar, arflags),
-                           description='AR ${out}')
+        if self.cc_toolchain.is_kind_of('msvc'):
+            command = '%s %s /OUT:$out $in' % (ar, arflags)
+        else:
+            command = 'rm -f $out; %s %s $out $in' % (ar, arflags)
+        self.generate_rule(name='ar', command=command, description='AR ${out}')
 
     def _generate_cc_link_rules(self, ld, linkflags):
         self._add_line('linkflags = %s' % ' '.join(config.get_item('cc_config', 'linkflags')))
@@ -666,8 +668,8 @@ class _NinjaFileHeaderGenerator(object):
                            description='ZIP ${out}')
 
     def generate_version_rules(self):
-        cc = self.build_toolchain.get_cc()
-        cc_version = self.build_toolchain.get_cc_version()
+        cc = self.cc_toolchain.get_cc()
+        cc_version = self.cc_toolchain.get_cc_version()
 
         revision, url = util.load_scm(self.build_dir)
         args = '--scm=${out} --revision=${revision} --url=${url} --profile=${profile} --compiler="${compiler}"'
@@ -686,7 +688,7 @@ class _NinjaFileHeaderGenerator(object):
                 build %s: cxx %s
                   cppflags = -w -O2
                   cxx_warnings =
-                ''') % (scm + '.o', scm))
+                ''') % (self.cc_toolchain.object_file_of(scm), scm))
 
     def generate_cuda_rules(self):
         nvcc_cmd = '${cmd}'
@@ -769,7 +771,7 @@ class NinjaFileGenerator(object):
         self.script_path = ninja_path
         self.blade_path = blade_path
         self.blade = blade
-        self.build_toolchain = blade.get_build_toolchain()
+        self.cc_toolchain = blade.get_cc_toolchain()
         self.build_dir = blade.get_build_dir()
         self.__all_rule_names = []
 
@@ -783,7 +785,7 @@ class NinjaFileGenerator(object):
             self.blade.get_options(),
             self.build_dir,
             self.blade_path,
-            self.build_toolchain,
+            self.cc_toolchain,
             self.blade)
         code = ninja_script_header_generator.generate()
         code += self.blade.generate_targets_build_code()
