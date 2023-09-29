@@ -135,12 +135,18 @@ class CcToolChain(object):
     def get_ar(self):
         return self.ar
 
-    def cc_is(self, vendor):
+    def is_kind_of(self, vendor):
         """Is cc is used for C/C++ compilation match vendor."""
-        return vendor in self.cc
+        raise NotImplementedError
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
+        raise NotImplementedError
+
+    def object_file_of(self, source_file):
+        """
+        Get the object file name from the source file.
+        """
         raise NotImplementedError
 
 
@@ -177,6 +183,17 @@ class CcToolChainGcc(CcToolChain):
         if returncode == 0:
             return stdout.strip()
         return ''
+
+    def is_kind_of(self, vendor):
+        """Is cc is used for C/C++ compilation match vendor."""
+        return vendor in ('gcc', 'clang', 'gcc')
+
+    def object_file_of(self, source_file):
+        """
+        Get the object file name from the source file.
+        """
+        return source_file + '.o'
+
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
@@ -261,9 +278,16 @@ class CcToolChainMsvc(CcToolChain):
     def get_ar(self):
         return self.ar
 
-    def cc_is(self, vendor):
+    def is_kind_of(self, vendor):
         """Is cc is used for C/C++ compilation match vendor."""
-        return vendor in self.cc
+        return vendor in ('msvc')
+
+    def object_file_of(self, source_file):
+        """
+        Get the object file name from the source file.
+        """
+        return source_file + '.obj'
+
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
@@ -283,12 +307,15 @@ class CcToolChainMsvc(CcToolChain):
 
         for flag in flag_list:
             # Example error messages:
-            #   clang: warning: unknown warning option '-Wzzz' [-Wunknown-warning-option]
-            #   gcc:   gcc: error: unrecognized command line option '-Wxxx'
-            cmd = ('"%s" /nologo /FoNUL /c /WX %s "%s"' % (self.cc, flag, src))
+            #   Command line error D8021 : invalid numeric argument '/Wzzz'
+            if flag.startswith('-'):
+                testflag = '/' + flag[1:]
+            else:
+                testflag = flag
+            cmd = ('"%s" /nologo /FoNUL /c /WX %s "%s"' % (self.cc, testflag, src))
             returncode, stdout, stderr = run_command(cmd, shell=True)
             message = stdout + stderr
-            if "'%s'" % flag in message:
+            if "'%s'" % testflag in message:
                 unrecognized_flags.append(flag)
             else:
                 valid_flags.append(flag)

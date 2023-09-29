@@ -167,9 +167,10 @@ def find_file_bottom_up(name, from_dir=None):
         path = os.path.join(finding_dir, name)
         if os.path.exists(path):
             return path
-        if finding_dir == '/':
+        new_finding_dir = os.path.dirname(finding_dir)
+        if new_finding_dir != finding_dir:
             break
-        finding_dir = os.path.dirname(finding_dir)
+        finding_dir = new_finding_dir
     return ''
 
 

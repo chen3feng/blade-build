@@ -101,8 +101,8 @@ class Blade(object):
         # Indicate whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
-        self.__build_toolchain = toolchain.default()
-        self.build_accelerator = BuildAccelerator(self.__build_toolchain)
+        self.__cc_toolchain = toolchain.default()
+        self.build_accelerator = BuildAccelerator(self.__cc_toolchain)
         self.__build_jobs_num = 0
 
         self.__build_script = os.path.join(self.__build_dir, 'build.ninja')
@@ -556,9 +556,9 @@ class Blade(object):
         # code.append('default %s\n' % (_ALL_COMMAND_TARGETS))
         return code
 
-    def get_build_toolchain(self):
-        """Return build toolchain instance."""
-        return self.__build_toolchain
+    def get_cc_toolchain(self):
+        """Return cc build toolchain instance."""
+        return self.__cc_toolchain
 
     def get_sources_keyword_list(self):
         """This keywords list is used to check the source files path.
