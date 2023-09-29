@@ -24,8 +24,8 @@ from blade import console
 from blade import maven
 from blade import ninja_runner
 from blade import target_pattern
+from blade import toolchain
 from blade.binary_runner import BinaryRunner
-from blade.toolchain import ToolChain
 from blade.build_accelerator import BuildAccelerator
 from blade.dependency_analyzer import analyze_deps
 from blade.load_build_files import load_targets
@@ -101,7 +101,7 @@ class Blade(object):
         # Indicate whether the deps list is expanded by expander or not
         self.__targets_expanded = False
 
-        self.__build_toolchain = ToolChain()
+        self.__build_toolchain = toolchain.default()
         self.build_accelerator = BuildAccelerator(self.__build_toolchain)
         self.__build_jobs_num = 0
 

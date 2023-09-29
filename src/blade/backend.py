@@ -17,6 +17,7 @@ objects to generate build rules.
 from __future__ import absolute_import
 from __future__ import print_function
 
+import codecs
 import os
 import subprocess
 import sys
@@ -730,9 +731,12 @@ class _NinjaFileHeaderGenerator(object):
             description='CUDA LINK SHARED ${out}')
 
     def _builtin_command(self, builder, args=''):
-        cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
+        if os.name == 'nt':
+            cmd = ['cmd /c set PYTHONPATH=%s:%%PYTHONPATH%%;' % self.blade_path]
+        else:
+            cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
         python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
-        cmd.append('%s -m blade.builtin_tools %s' % (python, builder))
+        cmd.append('"%s" -m blade.builtin_tools %s' % (python, builder))
         if args:
             cmd.append(args)
         else:
@@ -789,6 +793,6 @@ class NinjaFileGenerator(object):
     def generate_build_script(self):
         """Generate build script for underlying build system."""
         code = self.generate_build_code()
-        script = open(self.script_path, 'w')
+        script = codecs.open(self.script_path, 'w', 'utf-8')
         script.writelines(code)
         script.close()
