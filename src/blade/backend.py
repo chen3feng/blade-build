@@ -28,25 +28,6 @@ from blade import console
 from blade import util
 
 
-# To verify whether a header file is included without depends on the library it belongs to,
-# we use the gcc's `-H` option to generate the inclusion stack information, see
-# https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-# But this information is output to stderr mixed with diagnostic messages.
-# So we use this awk script to split them.
-#
-# The inclusion information is writes to stdout, other normal diagnostic message is write to stderr.
-#
-# NOTE the `$$` is required by ninja. and the `Multiple...` followed by multi lines of filepath are useless part.
-# `多个防止重包含可能对其有用：` is the same as `Multiple...` in Chinese.
-# After `Multiple...`, maybe there are still some useful messages, such as cuda error.
-_INCLUSION_STACK_SPLITTER = (r"awk '"
-    r"""/Multiple include guards may be useful for:|多个防止重包含可能对其有用：/ {stop=1} """  # Can't exit here otherwise SIGPIPE maybe occurs.
-    r"""/^\.+ [^\/]/ && !end { started=1 ; print $$0} """  # Non absolute path, neither header list after error message.
-    r"""!/^\.+ / && started {end=1} """  # mark the error message when polling header list
-    r"""!/^\.+ / && (!stop || (!/Multiple include guards may be useful for:|多个防止重包含可能对其有用：/ && !/^[a-zA-Z0-9\.\/\+_-]+$$/ )) {print $$0 > "/dev/stderr"}"""  # Maybe error messages
-    r"'"
-)
-
 def _incs_list_to_string(incs):
     """Convert incs list to string.
 
@@ -58,11 +39,6 @@ def _incs_list_to_string(incs):
 
 def protoc_import_path_option(incs):
     return ' '.join(['-I=%s' % inc for inc in incs])
-
-
-def _shell_support_pipefail():
-    """Whether current shell support the `pipefail` option."""
-    return subprocess.call('set -o pipefail 2>/dev/null', shell=True) == 0
 
 
 class _NinjaFileHeaderGenerator(object):
@@ -243,66 +219,35 @@ class _NinjaFileHeaderGenerator(object):
     def _generate_cc_compile_rules(self, cc, cxx, cppflags):
         self._generate_cc_vars()
 
-        cc_config = config.get_section('cc_config')
-        cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
-        cppflags = cc_config['cppflags'] + cppflags
-        includes = cc_config['extra_incs']
-        includes = includes + ['.', self.build_dir]
-        includes = ' '.join(['-I%s' % inc for inc in includes])
-
-        template = self._cc_compile_command_wrapper_template('${out}.H')
-
-        cc_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
-                      '${c_warnings} ${cppflags} %s ${includes} ${in}') % (
-                              cc, ' '.join(cflags), ' '.join(cppflags), includes)
+        cc_command, cxx_command, securecc_command, hdrs_command = self.cc_toolchain.get_compile_commands(
+            build_dir=self.build_dir, cppflags=cppflags, is_dump=self.command == 'dump' and self.options.dump_compdb)
+        if self.cc_toolchain.is_kind_of('msvc'):
+            deps = 'msvc'
+            depfile = None
+        else:
+            deps = 'gcc'
+            depfile = '${out}.d'
         self.generate_rule(name='cc',
-                           command=template % cc_command,
+                           command=cc_command,
                            description='CC ${in}',
-                           depfile='${out}.d',
-                           deps='gcc')
-
-        cxx_command = ('%s -o ${out} -MMD -MF ${out}.d -c -fPIC %s %s ${optimize} '
-                       '${cxx_warnings} ${cppflags} %s ${includes} ${in}') % (
-                               cxx, ' '.join(cxxflags), ' '.join(cppflags), includes)
+                           depfile=depfile,
+                           deps=deps)
         self.generate_rule(name='cxx',
-                           command=template % cxx_command,
+                           command=cxx_command,
                            description='CXX ${in}',
-                           depfile='${out}.d',
-                           deps='gcc')
+                           depfile=depfile,
+                           deps=deps)
 
         self.generate_rule(name='secretcc',
-                           command=template % (cc_config['secretcc'] + ' ' + cxx_command),
+                           command=securecc_command,
                            description='SECRET CC ${in}',
-                           depfile='${out}.d')
+                           depfile=depfile,
+                           deps=deps)
 
-        self._generate_cc_hdrs_rule(cc, cxx, cppflags, cflags, cxxflags, includes)
-
-    def _generate_cc_hdrs_rule(self, cc, cxx, cppflags, cflags, cxxflags, includes):
-        """
-        Generate inclusion stack file for header file to check dependency missing.
-        See the '-H' in https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html for details.
-        """
         self.generate_rule(name='cxxhdrs',
-                           command=self._hdrs_command(cxx, cxxflags, cppflags, includes),
-                           depfile='${out}.d', deps='gcc',
+                           command=hdrs_command,
+                           depfile=depfile, deps=deps,
                            description='CXX HDRS ${in}')
-
-    def _hdrs_command(self, cc, flags, cppflags, includes):
-        """Command to generate cc inclusion information file"""
-        args = (' -o /dev/null -E -MMD -MF ${out}.d %s %s -w ${cppflags} %s ${includes} ${in} '
-                '2> ${out}.err' % (' '.join(flags), ' '.join(cppflags), includes))
-
-        # The `-fdirectives-only` option can significantly increase the speed of preprocessing,
-        # but errors may occur under certain boundary conditions (for example,
-        # `#if __COUNTER__ == __COUNTER__ + 1`),
-        # try the command again without it on error.
-        cmd1 = cc + ' -fdirectives-only' + args
-        cmd2 = cc + args
-
-        # If the first cpp command fails, the second cpp command will be executed.
-        # The error message of the first command should be completely ignored.
-        return ('export LC_ALL=C; %s || %s; ec=$$?; %s ${out}.err > ${out}; '
-                'rm -f ${out}.err; exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
 
     def _generate_cc_inclusion_check_rule(self):
         self.generate_rule(name='ccincchk',
@@ -336,42 +281,18 @@ class _NinjaFileHeaderGenerator(object):
         # Linking might have a lot of object files exceeding maximal length of a bash command line.
         # Using response file can resolve this problem.
         # Refer to: https://ninja-build.org/manual.html
-        link_args = '-o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rsp ${extra_linkflags}'
         self.generate_rule(name='link',
-                           command=ld + ' ' + link_args,
+                           command=self.cc_toolchain.get_link_command(),
                            rspfile='${out}.rsp',
                            rspfile_content='${in}',
                            description='LINK BINARY ${out}',
                            pool=pool)
         self.generate_rule(name='solink',
-                           command=ld + ' -shared ' + link_args,
+                           command=self.cc_toolchain.get_shared_link_command(),
                            rspfile='${out}.rsp',
                            rspfile_content='${in}',
                            description='LINK SHARED ${out}',
                            pool=pool)
-
-    def _cc_compile_command_wrapper_template(self, inclusion_stack_file, cuda=False):
-        """Calculate the cc compile command wrapper template."""
-        # When dumping compdb, a raw compile command without wrapper should be generated,
-        # otherwise some tools can't handle it.
-        if self.command == 'dump' and self.options.dump_compdb:
-            return '%s'
-
-        print_header_option = '-H'
-        if cuda:
-            print_header_option = '-Xcompiler -H'
-
-        if _shell_support_pipefail():
-            # Use `pipefail` to ensure that the exit code is correct.
-            template = 'export LC_ALL=C; set -o pipefail; %%s %s 2>&1 | %s > %s' % (
-                print_header_option, _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
-        else:
-            # Some shell such as Ubuntu's `dash` doesn't support pipefail, make a workaround.
-            template = ('export LC_ALL=C; %%s %s 2> ${out}.err; ec=$$?; %s < ${out}.err > %s ; '
-                        'rm -f ${out}.err; exit $$ec') % (
-                            print_header_option, _INCLUSION_STACK_SPLITTER, inclusion_stack_file)
-
-        return template
 
     def generate_proto_rules(self):
         proto_config = config.get_section('proto_library_config')
@@ -691,6 +612,7 @@ class _NinjaFileHeaderGenerator(object):
                 ''') % (self.cc_toolchain.object_file_of(scm), scm))
 
     def generate_cuda_rules(self):
+        return
         nvcc_cmd = '${cmd}'
 
         cc_config = config.get_section('cc_config')
@@ -704,8 +626,6 @@ class _NinjaFileHeaderGenerator(object):
         includes = cc_config['extra_incs']
         includes = includes + ['.', self.build_dir]
         includes = ' '.join(['-I%s' % inc for inc in includes])
-
-        template = self._cc_compile_command_wrapper_template('${out}.H', cuda=True)
 
         _, cxx, _ = self.build_accelerator.get_cc_commands()
         cu_command = '%s -ccbin %s -o ${out} -MMD -MF ${out}.d ' \
@@ -736,7 +656,7 @@ class _NinjaFileHeaderGenerator(object):
         if os.name == 'nt':
             cmd = ['cmd /c set PYTHONPATH=%s:%%PYTHONPATH%%;' % self.blade_path]
         else:
-            cmd = ['PYTHONPATH=%s:$$PYTHONPATH' % self.blade_path]
+            cmd = ['PYTHONPATH="%s":$$PYTHONPATH' % self.blade_path]
         python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
         cmd.append('"%s" -m blade.builtin_tools %s' % (python, builder))
         if args:
