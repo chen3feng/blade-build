@@ -20,7 +20,7 @@ import tempfile
 
 from blade import config
 from blade import console
-from blade.util import var_to_list, iteritems, run_command
+from blade.util import var_to_list, iteritems, override, run_command
 
 # example: Cuda compilation tools, release 11.0, V11.0.194
 _nvcc_version_re = re.compile(r'V(\d+\.\d+\.\d+)')
@@ -166,12 +166,23 @@ class CcToolChain(object):
         """
         raise NotImplementedError
 
-    def library_file_name(self, name):
+    def static_library_name(self, name):
+        """
+        Get the static library file name from the name.
+        """
+        raise NotImplementedError
+
+    def dynamic_library_name(self, name):
         """
         Get the library file name from the name.
         """
         raise NotImplementedError
 
+    def executable_file_name(self, name):
+        """
+        Get the executable file name from the name.
+        """
+        raise NotImplementedError
 
 # To verify whether a header file is included without depends on the library it belongs to,
 # we use the gcc's `-H` option to generate the inclusion stack information, see
@@ -227,15 +238,19 @@ class CcToolChainGcc(CcToolChain):
             return stdout.strip()
         return ''
 
+    @override
     def is_kind_of(self, vendor):
-        """Is cc is used for C/C++ compilation match vendor."""
         return vendor in ('gcc', 'clang', 'gcc')
 
+    @override
     def object_file_of(self, source_file):
-        """
-        Get the object file name from the source file.
-        """
         return source_file + '.o'
+
+    @override
+    def executable_file_name(self, name):
+        if os.name == 'nt':
+            return name + '.exe'
+        return name
 
     def _cc_compile_command_wrapper_template(self, inclusion_stack_file, cuda=False):
         """Calculate the cc compile command wrapper template."""
@@ -380,28 +395,17 @@ class CcToolChainMsvc(CcToolChain):
             return stdout.strip()
         return ''
 
-    def get_cc_commands(self):
-        return self.cc, self.cxx, self.ld
-
-    def get_cc(self):
-        return self.cc
-
-    def get_cc_version(self):
-        return self.cc_version
-
-    def get_ar(self):
-        return self.ar
-
+    @override
     def is_kind_of(self, vendor):
-        """Is cc is used for C/C++ compilation match vendor."""
         return vendor in ('msvc')
 
+    @override
     def object_file_of(self, source_file):
-        """
-        Get the object file name from the source file.
-        """
         return source_file + '.obj'
 
+    @override
+    def executable_file_name(self, name):
+        return name + '.exe'
 
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
@@ -493,6 +497,7 @@ class CcToolChainMsvc(CcToolChain):
 
     def _get_link_args(self):
         return ' /nologo /OUT:${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rsp ${extra_linkflags}'
+
 
 def default(bits):
     if os.name == 'nt':

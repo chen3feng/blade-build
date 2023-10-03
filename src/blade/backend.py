@@ -666,7 +666,7 @@ class _NinjaFileHeaderGenerator(object):
                 with open(builtin_tools_file, 'w') as f:
                     print('@echo off', file=f)
                     print('set "PYTHONPATH={};%PYTHONPATH%"'.format(self.blade_path), file=f)
-                    print('{} %*'.format(python), file=f)
+                    print('"{}" %*'.format(python), file=f)
                 self.__builtin_tools_prefix = builtin_tools_file
             else:
                 # On posix system, a simply environment prefix is enough to do it.
