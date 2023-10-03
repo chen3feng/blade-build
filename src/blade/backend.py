@@ -57,6 +57,7 @@ class _NinjaFileHeaderGenerator(object):
         self.blade = blade
         self.blade_path = blade_path
         self.cc_toolchain = cc_toolchain
+        self.__builtin_tools_prefix = ''
 
         self.rules_buf = []
         self.__all_rule_names = set()
@@ -652,13 +653,32 @@ class _NinjaFileHeaderGenerator(object):
             command=nvcc_cmd + ' -shared ' + link_args,
             description='CUDA LINK SHARED ${out}')
 
-    def _builtin_command(self, builder, args=''):
-        if os.name == 'nt':
-            cmd = ['cmd /c set PYTHONPATH=%s:%%PYTHONPATH%%;' % self.blade_path]
-        else:
-            cmd = ['PYTHONPATH="%s":$$PYTHONPATH' % self.blade_path]
+    def _builtin_tools_prefix(self):
+        """
+        Get the command prefix to run the builtin tools.
+        """
         python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
-        cmd.append('"%s" -m blade.builtin_tools %s' % (python, builder))
+        if not self.__builtin_tools_prefix:
+            # we need to set the PYTHONPATH to the path of the blade directory before run python.
+            if os.name == 'nt':
+                # On Windows, we generate a batch file to set the PYTHONPATH.
+                builtin_tools_file = os.path.join(self.build_dir, 'builtin_tools.bat')
+                with open(builtin_tools_file, 'w') as f:
+                    print('@echo off', file=f)
+                    print('set "PYTHONPATH={};%PYTHONPATH%"'.format(self.blade_path), file=f)
+                    print('{} %*'.format(python), file=f)
+                self.__builtin_tools_prefix = builtin_tools_file
+            else:
+                # On posix system, a simply environment prefix is enough to do it.
+                self.__builtin_tools_prefix = 'PYTHONPATH="%s":$$PYTHONPATH %s' % (self.blade_path, python)
+        return self.__builtin_tools_prefix
+
+    def _builtin_command(self, builder, args=''):
+        """
+        Generate blade builtin command line
+        """
+        cmd = [self._builtin_tools_prefix()]
+        cmd.append('-m blade.builtin_tools %s' % builder)
         if args:
             cmd.append(args)
         else:
