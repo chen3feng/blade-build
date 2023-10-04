@@ -482,12 +482,13 @@ class CcToolChainMsvc(CcToolChain):
         Command to generate cc inclusion information file for header file to check dependency missing.
         See https://learn.microsoft.com/en-us/cpp/build/reference/showincludes-list-include-files for details.
         """
-        args = (' -Fonul /Zs %s %s /w ${cppflags} %s ${includes} ${in} '
-                '2> ${out}.err' % (' '.join(flags), ' '.join(cppflags), includes))
+        cmd = ('cmd.exe /c %s /nologo /c /E /Zs /TP /showIncludes %s %s /w ${cppflags} %s ${includes} ${in} 2>&1 >nul |'
+               ' findstr "Note: including file" >${out} && type ${out}'% (
+            self.cc, ' '.join(flags), ' '.join(cppflags), includes))
 
         # If the first cpp command fails, the second cpp command will be executed.
         # The error message of the first command should be completely ignored.
-        return self.cc + args
+        return cmd
 
     def get_link_command(self):
         return self.ld + self._get_link_args()
