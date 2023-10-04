@@ -252,7 +252,12 @@ class Blade(object):
     def _remove_paths(paths):
         # The rm command can delete a large number of files at once, which is much faster than
         # using python's own remove functions (only supports deleting a single path at a time).
-        subprocess.call(['rm', '-fr'] + paths)
+        if os.name == 'posix':
+            subprocess.call(['rm', '-fr'] + paths)
+            return
+        import shutil
+        for path in paths:
+            shutil.rmtree(path, ignore_errors=True)
 
     def clean(self):
         """Clean specific generated target files or directories"""

@@ -412,36 +412,26 @@ class CcToolChainMsvc(CcToolChain):
         flag_list = var_to_list(flag_list)
         valid_flags, unrecognized_flags = [], []
 
-        # Put compilation output into test.o instead of /dev/null
-        # because the command line with '--coverage' below exit
-        # with status 1 which makes '--coverage' unsupported
-        # echo "int main() { return 0; }" | gcc -o /dev/null -c -x c --coverage - > /dev/null 2>&1
-        suffix = language
-        if suffix == 'c++':
-            suffix = 'cpp'
-        fd, src = tempfile.mkstemp('.' + suffix, 'filter_cc_flags_test')
-        os.write(fd, b"int main() { return 0; }\n")
-        os.close(fd)
-
+        # cl.exe only report the first error option, so we must test flags one by one.
         for flag in flag_list:
-            # Example error messages:
-            #   Command line error D8021 : invalid numeric argument '/Wzzz'
             if flag.startswith('-'):
                 testflag = '/' + flag[1:]
             else:
                 testflag = flag
-            cmd = ('"%s" /nologo /FoNUL /c /WX %s "%s"' % (self.cc, testflag, src))
-            returncode, stdout, stderr = run_command(cmd, shell=True)
-            message = stdout + stderr
-            if "'%s'" % testflag in message:
-                unrecognized_flags.append(flag)
-            else:
-                valid_flags.append(flag)
-        try:
-            # In case of error, the `.o` file will be deleted by the compiler
-            os.remove(src)
-        except OSError:
-            pass
+            cmd = ('"%s" /nologo /E /Zs /c /WX %s' % (self.cc, testflag))
+            try:
+                returncode, stdout, stderr = run_command(cmd, shell=False)
+                if returncode == 0:
+                    continue
+                output = stdout + stderr
+                # Example error messages:
+                #   Command line error D8021 : invalid numeric argument '/Wzzz'
+                if "'%s'" % testflag in output:
+                    unrecognized_flags.append(flag)
+                else:
+                    valid_flags.append(flag)
+            except OSError as e:
+                console.fatal("filter_cc_flags error, cmd='%s', error='%s'" % (cmd, e))
 
         if unrecognized_flags:
             console.warning('config: Unrecognized %s flags: %s' % (

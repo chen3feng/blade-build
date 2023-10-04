@@ -367,7 +367,10 @@ def _check_under_skipped_dir(dirname):
         if os.path.exists(filepath):
             cache[dirname] = filepath
             return filepath
-    result = _check_under_skipped_dir(os.path.dirname(dirname))
+    parent = os.path.dirname(dirname)
+    if parent == dirname:
+        return ''
+    result = _check_under_skipped_dir(parent)
     cache[dirname] = result
     return result
 
