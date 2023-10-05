@@ -31,6 +31,7 @@ def find_libs_by_header(hdr, hdr_targets_map, hdr_dir_targets_map):
 
 class GlobalDeclaration(object):
     """Global inclusion dependenct relationship declaration."""
+
     def __init__(self, declaration_file):
         self._declaration_file = declaration_file
         self._initialized = False
@@ -118,7 +119,7 @@ def _parse_inclusion_stacks(path, build_dir):
     stacks, hdrs_stack = [], []
 
     def _process_hdr(level, hdr, current_level):
-        if hdr.startswith('/'):
+        if os.path.isabs(hdr):
             skip_level = level
         elif hdr.startswith(build_dir):
             skip_level = level
@@ -142,7 +143,8 @@ def _parse_inclusion_stacks(path, build_dir):
             if level == -1:
                 console.log('%s: Unrecognized line %s' % (path, line))
                 break
-            if level == 1 and not hdr.startswith('/'):
+
+            if level == 1 and not os.path.isabs(hdr):
                 direct_hdrs.append(_remove_build_dir_prefix(os.path.normpath(hdr), build_dir))
             if level > current_level:
                 if skip_level != -1 and level > skip_level:
@@ -194,6 +196,9 @@ def _parse_msvc_hdr_level_line(line):
     line = line.removeprefix(_MSVC_INCUSION_PREFIX)
     hdr = line.lstrip()
     level = len(line) - len(hdr)
+    cwd = os.getcwd().lower()
+    if hdr.lower().startswith(cwd):
+        hdr = hdr[len(cwd)+1:]
     return level, hdr
 
 
@@ -233,7 +238,6 @@ class Checker(object):
 
         inclusion_declaration_file = os.path.join(self.build_dir, 'inclusion_declaration.data')
         self.global_declaration = GlobalDeclaration(inclusion_declaration_file)
-
 
     def _find_inclusion_file(self, src, is_header):
         """Find the '.H' file for the given src.
@@ -276,9 +280,10 @@ class Checker(object):
                 libs = self.find_targets_by_private_hdr(hdr)
                 if libs and self.key not in libs:
                     msg.append('    "%s" is a private header file of %s' % (
-                            hdr, self._or_joined_libs(libs)))
+                        hdr, self._or_joined_libs(libs)))
                     continue
-                console.diagnose(self.source_location, 'debug', '"%s" is an undeclared header' % hdr)
+                console.diagnose(self.source_location, 'debug',
+                                 '"%s" is an undeclared header' % hdr)
                 undeclared_hdrs.add(hdr)
                 # We need also check suppressd_hdrs because target maybe not loaded in partial build
                 if hdr not in suppressd_hdrs and not self.is_allowed_undeclared_hdr(hdr):
@@ -316,7 +321,7 @@ class Checker(object):
         return self.global_declaration.is_allowed_undeclared_hdr(hdr)
 
     def _header_undeclared_message(self, hdr):
-        msg = '"%s" is not declared in any cc target. ' % hdr
+        msg = '"%s" is not declared in any cc target. ' % util.to_unix_path(hdr)
         if util.path_under_dir(hdr, self.path):
             msg += 'If it belongs to this target, it should be declared in "src"'
             if self.type.endswith('_library'):
@@ -359,7 +364,7 @@ class Checker(object):
                 continue
             msg.append('  For %s' % self._hdr_declaration_message(generated_hdr))
             if not stack:
-                msg.append('    In file included from "%s"' % full_src)
+                msg.append('    In file included from "%s"' % util.to_unix_path(full_src))
             else:
                 stack.reverse()
                 msg.append('    In file included from %s' % self._hdr_declaration_message(stack[0]))
@@ -395,16 +400,16 @@ class Checker(object):
             all_direct_hdrs.update(direct_hdrs)
             missing_dep_hdrs = set()
             self._check_direct_headers(
-                    full_src, direct_hdrs, self.suppress.get(src, []),
-                    missing_dep_hdrs, undeclared_hdrs, direct_check_msg)
+                full_src, direct_hdrs, self.suppress.get(src, []),
+                missing_dep_hdrs, undeclared_hdrs, direct_check_msg)
 
             for stack in stacks:
                 all_generated_hdrs.add(stack[-1])
             # But direct headers can not cover all, so it is still useful
             self._check_generated_headers(
-                    full_src, stacks, direct_hdrs,
-                    self.suppress.get(src, []),
-                    missing_dep_hdrs, generated_check_msg)
+                full_src, stacks, direct_hdrs,
+                self.suppress.get(src, []),
+                missing_dep_hdrs, generated_check_msg)
 
             if missing_dep_hdrs:
                 missing_details[src] = list(missing_dep_hdrs)
@@ -418,10 +423,10 @@ class Checker(object):
         severity = self.severity
         if direct_check_msg:
             console.diagnose(self.source_location, severity,
-                '%s: Missing dependency declaration:\n%s' % (self.name, '\n'.join(direct_check_msg)))
+                             '%s: Missing dependency declaration:\n%s' % (self.name, '\n'.join(direct_check_msg)))
         if generated_check_msg:
             console.diagnose(self.source_location, severity,
-                '%s: Missing indirect dependency declaration:\n%s' % (self.name, '\n'.join(generated_check_msg)))
+                             '%s: Missing indirect dependency declaration:\n%s' % (self.name, '\n'.join(generated_check_msg)))
 
         ok = (severity != 'error' or not direct_check_msg and not generated_check_msg)
 
