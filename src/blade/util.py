@@ -92,7 +92,7 @@ def lock_file(filename):
             msvcrt.locking(fd, msvcrt.LK_NBLCK, os.stat(fd).st_size)
         return fd, 0
     except IOError as ex_value:
-        if msvcrt: # msvcrt did't set errno correctly
+        if msvcrt:  # msvcrt did't set errno correctly
             return -1, errno.EAGAIN
         return -1, ex_value.errno
 
@@ -181,6 +181,12 @@ def path_under_dir(path, dir):
     Both path and dir must be normalized, and they must be both relative or relative path.
     """
     return dir == '.' or path == dir or path.startswith(dir) and path[len(dir)] == os.path.sep
+
+
+def to_unix_path(path):
+    """Convert path to unix format
+    """
+    return path.replace('\\', '/')
 
 
 def mkdir_p(path):
@@ -274,15 +280,18 @@ def regular_variable_name(name):
     """convert some name to a valid identifier name"""
     return name.translate(_TRANS_TABLE)
 
+
 # Some python 2/3 compatibility helpers.
 if _IN_PY3:
     def iteritems(d):
         return d.items()
+
     def itervalues(d):
         return d.values()
 else:
     def iteritems(d):
         return d.iteritems()
+
     def itervalues(d):
         return d.itervalues()
 
@@ -394,7 +403,7 @@ def override(method):
     # TODO: check signature
     # sig = inspect.signature(method)
     error = "methid '%s' doesn't override any base class method" % method.__name__
-    assert( any( hasattr(cls, method.__name__) for cls in base_classes ) ), error
+    assert (any(hasattr(cls, method.__name__) for cls in base_classes)), error
     return method
 
 
@@ -421,7 +430,7 @@ def _get_bass_classes(stack):
             obj = derived_class_locals[components[0]]
 
             for c in components[1:]:
-                assert(inspect.ismodule(obj) or inspect.isclass(obj))
+                assert (inspect.ismodule(obj) or inspect.isclass(obj))
                 obj = getattr(obj, c)
 
             base_classes[i] = obj
