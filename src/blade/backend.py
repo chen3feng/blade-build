@@ -256,12 +256,7 @@ class _NinjaFileHeaderGenerator(object):
                            description='CC INCLUSION CHECK ${in}')
 
     def _generate_cc_ar_rules(self):
-        arflags = ''.join(config.get_item('cc_library_config', 'arflags'))
-        ar = self.build_accelerator.get_ar_command()
-        if self.cc_toolchain.is_kind_of('msvc'):
-            command = '%s %s /OUT:$out $in' % (ar, arflags)
-        else:
-            command = 'rm -f $out; %s %s $out $in' % (ar, arflags)
+        command = self.cc_toolchain.get_static_library_command()
         self.generate_rule(name='ar', command=command, description='AR ${out}')
 
     def _generate_cc_link_rules(self, ld, linkflags):
@@ -660,25 +655,26 @@ class _NinjaFileHeaderGenerator(object):
         python = os.environ.get('BLADE_PYTHON_INTERPRETER') or sys.executable
         if not self.__builtin_tools_prefix:
             # we need to set the PYTHONPATH to the path of the blade directory before run python.
+            python_args = '-m blade.builtin_tools'
             if os.name == 'nt':
                 # On Windows, we generate a batch file to set the PYTHONPATH.
                 builtin_tools_file = os.path.join(self.build_dir, 'builtin_tools.bat')
                 with open(builtin_tools_file, 'w') as f:
                     print('@echo off', file=f)
                     print('set "PYTHONPATH={};%PYTHONPATH%"'.format(self.blade_path), file=f)
-                    print('"{}" %*'.format(python), file=f)
+                    print('"{}" {} %*'.format(python, python_args), file=f)
                 self.__builtin_tools_prefix = builtin_tools_file
             else:
                 # On posix system, a simply environment prefix is enough to do it.
-                self.__builtin_tools_prefix = 'PYTHONPATH="%s":$$PYTHONPATH %s' % (self.blade_path, python)
+                self.__builtin_tools_prefix = 'PYTHONPATH="%s":$$PYTHONPATH "%s" %s' % (
+                    self.blade_path, python, python_args)
         return self.__builtin_tools_prefix
 
     def _builtin_command(self, builder, args=''):
         """
         Generate blade builtin command line
         """
-        cmd = [self._builtin_tools_prefix()]
-        cmd.append('-m blade.builtin_tools %s' % builder)
+        cmd = [self._builtin_tools_prefix(), builder]
         if args:
             cmd.append(args)
         else:

@@ -183,6 +183,30 @@ class CcToolChain(object):
         Get the executable file name from the name.
         """
         raise NotImplementedError
+    
+    def get_compile_commands(self, build_dir, cppflags, is_dump):
+        """
+        Get the compile commands for the specified source file.
+        """
+        raise NotImplementedError
+    
+    def get_link_command(self):
+        """
+        Get the link command.
+        """
+        raise NotImplementedError
+    
+    def get_shared_link_command(self):
+        """
+        Get the link command for dynamic library.
+        """
+        raise NotImplementedError
+    
+    def get_static_library_command(self):
+        """
+        Get the static library command.
+        """
+        raise NotImplementedError
 
 # To verify whether a header file is included without depends on the library it belongs to,
 # we use the gcc's `-H` option to generate the inclusion stack information, see
@@ -270,6 +294,7 @@ class CcToolChainGcc(CcToolChain):
 
         return template
 
+    @override
     def get_compile_commands(self, build_dir, cppflags, is_dump):
         cc_config = config.get_section('cc_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
@@ -315,15 +340,23 @@ class CcToolChainGcc(CcToolChain):
         return ('export LC_ALL=C; %s || %s; ec=$$?; %s ${out}.err > ${out}; '
                 'rm -f ${out}.err; exit $$ec') % (cmd1, cmd2, _INCLUSION_STACK_SPLITTER)
 
+    @override
     def get_link_command(self):
         return self.ld + self._get_link_args()
 
+    @override
     def get_shared_link_command(self):
         return self.ld + '-shared ' + self._get_link_args()
+
+    @override
+    def get_static_library_command(self):
+        flags = ''.join(config.get_item('cc_library_config', 'arflags'))
+        return 'rm -f $out; %s %s $out $in' % (self.ar, flags)
 
     def _get_link_args(self):
         return ' -o ${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rsp ${extra_linkflags}'
 
+    @override
     def filter_cc_flags(self, flag_list, language='c'):
         """Filter out the unrecognized compilation flags."""
         flag_list = var_to_list(flag_list)
@@ -439,6 +472,7 @@ class CcToolChainMsvc(CcToolChain):
 
         return valid_flags
 
+    @override
     def get_compile_commands(self, build_dir, cppflags, is_dump):
         cc_config = config.get_section('cc_config')
         cflags, cxxflags = cc_config['cflags'], cc_config['cxxflags']
@@ -480,11 +514,18 @@ class CcToolChainMsvc(CcToolChain):
         # The error message of the first command should be completely ignored.
         return cmd
 
+    @override
     def get_link_command(self):
         return self.ld + self._get_link_args()
 
+    @override
     def get_shared_link_command(self):
         return self.ld + ' /DLL ' + self._get_link_args()
+
+    @override
+    def get_static_library_command(self):
+        flags = ''.join(config.get_item('cc_library_config', 'arflags'))
+        return '%s /nologo %s /OUT:$out $in' % (self.ar, flags)
 
     def _get_link_args(self):
         return ' /nologo /OUT:${out} ${intrinsic_linkflags} ${linkflags} ${target_linkflags} @${out}.rsp ${extra_linkflags}'
