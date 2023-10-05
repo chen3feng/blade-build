@@ -61,6 +61,23 @@ class GlobalDeclaration(object):
         return hdr in self._allowed_undeclared_hdrs
 
 
+_MSVC_INCUSION_PREFIX = 'Note: including file:'
+
+
+def _is_inclusion_line(line):
+    """Return True if the line is a header inclusion line."""
+    return _is_msvc_inclusion_line(line)
+
+
+def _is_msvc_inclusion_line(line):
+    return line.startswith(_MSVC_INCUSION_PREFIX)
+
+
+def _is_gcc_inclusion_line(line):
+    """Return True if the line is a header inclusion line."""
+    return line.startswith('#include')
+
+
 def _parse_inclusion_stacks(path, build_dir):
     """Parae headers inclusion stacks from file.
 
@@ -118,7 +135,7 @@ def _parse_inclusion_stacks(path, build_dir):
     with open(path) as f:
         for index, line in enumerate(f):
             line = line.rstrip()  # Strip `\n`
-            if not line.startswith('.'):
+            if not _is_inclusion_line(line):
                 # The remaining lines are useless for us
                 break
             level, hdr = _parse_hdr_level_line(line)
@@ -159,6 +176,10 @@ def _parse_hdr_level_line(line):
     Example:
         . ./common/rpc/rpc_client.h
     """
+    return _parse_msvc_hdr_level_line(line)
+
+
+def _parse_gcc_hdr_level_line(line):
     pos = line.find(' ')
     if pos == -1:
         return -1, ''
@@ -166,6 +187,13 @@ def _parse_hdr_level_line(line):
     hdr = line[pos + 1:]
     if hdr.startswith('./'):
         hdr = hdr[2:]
+    return level, hdr
+
+
+def _parse_msvc_hdr_level_line(line):
+    line = line.removeprefix(_MSVC_INCUSION_PREFIX)
+    hdr = line.lstrip()
+    level = len(line) - len(hdr)
     return level, hdr
 
 
@@ -362,6 +390,7 @@ class Checker(object):
             if not path:
                 console.warning('No inclusion file found for %s' % full_src)
                 return
+            console.debug('Find inclusuon file %s for %s' % (path, full_src))
             direct_hdrs, stacks = _parse_inclusion_stacks(path, self.build_dir)
             all_direct_hdrs.update(direct_hdrs)
             missing_dep_hdrs = set()
