@@ -412,7 +412,7 @@ class CcToolChainMsvc(CcToolChain):
         version = ''
         returncode, stdout, stderr = run_command(self.cc, shell=True)
         if returncode == 0:
-            m = re.search('Compiler Version ([\d.]+)', stderr.strip())
+            m = re.search(r'Compiler Version ([\d.]+)', stderr.strip())
             if m:
                 version = m.group(1)
         if not version:
