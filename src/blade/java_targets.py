@@ -16,7 +16,6 @@ from __future__ import print_function
 import collections
 import os
 import re
-from distutils.version import LooseVersion
 
 from blade import build_manager
 from blade import build_rules
@@ -25,6 +24,7 @@ from blade import maven
 from blade.target import Target, LOCATION_RE
 from blade.util import var_to_list
 from blade.util import iteritems
+from blade.version import LooseVersion
 
 
 class MavenJar(Target):

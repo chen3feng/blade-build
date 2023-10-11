@@ -17,12 +17,6 @@ from __future__ import print_function
 import os
 from string import Template
 
-try:
-    from packaging.version import parse as version_parse
-except ImportError:
-    from distutils.version import LooseVersion as version_parse
-
-
 from blade import build_manager
 from blade import build_rules
 from blade import config
@@ -37,6 +31,7 @@ from blade.util import (
     stable_unique,
     var_to_list,
     var_to_list_or_none)
+from blade.version import LooseVersion as version_parse
 
 
 # See https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
