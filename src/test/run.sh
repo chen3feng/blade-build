@@ -22,7 +22,10 @@ rm -f $ROOT/.coverage*
 cat > $ROOT/.coveragerc << EOF
 [run]
 data_file = $ROOT/.coverage
-omit = */src/blade/pathlib.py
+omit =
+    */src/blade/pathlib.py
+    */src/blade/version.py
+
 parallel = true
 EOF
 
