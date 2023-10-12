@@ -113,7 +113,7 @@ class Workspace(object):
             os.mkdir(build_dir)
         try:
             os.remove('blade-bin')
-        except:
+        except OSError:
             pass
         try:
             os.symlink(os.path.abspath(build_dir), 'blade-bin')
