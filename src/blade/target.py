@@ -90,7 +90,7 @@ def _parse_target(dep):
         result = ('', '', msgs)
     else:
         if path:
-            path = os.path.normpath(path)
+            path = os.path.normpath(path).replace('\\', '/') # windows
         result = (path, name, None)
     _parse_target.cache[dep] = result
     return result
@@ -440,6 +440,7 @@ class Target(object):
     def _unify_dep(self, dep):
         """Unify dep to key."""
         (path, name, msgs) = _parse_target(dep)
+        console.warning(f'uni: dep={dep}, path={path}')
 
         if msgs:
             for msg in msgs:
@@ -463,7 +464,7 @@ class Target(object):
             else:
                 # Depend on library in current directory
                 path = self.path
-
+        console.warning(f'_unify_dep: dep={dep}, path={path}')
         return '%s:%s' % (path, name)
 
     def _init_target_deps(self, deps):
@@ -480,6 +481,7 @@ class Target(object):
         """
         for d in deps:
             dkey = self._unify_dep(d)
+            console.warning(f'deps={deps}, dkey={dkey}')
             if dkey and dkey not in self.deps:
                 self.deps.append(dkey)
 
