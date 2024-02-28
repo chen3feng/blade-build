@@ -506,8 +506,10 @@ class CcToolChainMsvc(CcToolChain):
         Command to generate cc inclusion information file for header file to check dependency missing.
         See https://learn.microsoft.com/en-us/cpp/build/reference/showincludes-list-include-files for details.
         """
+        # If there is not #include in the file, findstr will fail, use "|| ver>nul" to ignore the error.
+        # https://stackoverflow.com/questions/22046780/whats-the-windows-command-shell-equivalent-of-bashs-true-command
         cmd = ('cmd.exe /c %s /nologo /c /E /Zs /TP /showIncludes %s %s /w ${cppflags} %s ${includes} ${in} 2>&1 >nul |'
-               ' findstr "Note: including file" >${out} && type ${out}'% (
+               ' findstr "Note: including file" >${out} || ver>nul'% (
             self.cc, ' '.join(flags), ' '.join(cppflags), includes))
 
         # If the first cpp command fails, the second cpp command will be executed.
