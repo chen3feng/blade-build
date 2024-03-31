@@ -421,7 +421,6 @@ def load_targets(target_ids, excluded_targets, blade):
     # starting dirs mentioned in command line
     direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids, excluded_trees)
     starting_dirs -= excluded_dirs
-
     # to prevent duplicated loading of BUILD files
     processed_dirs = {}
 
