@@ -421,7 +421,6 @@ def load_targets(target_ids, excluded_targets, blade):
     # starting dirs mentioned in command line
     direct_targets, starting_dirs = _expand_target_patterns(blade, target_ids, excluded_trees)
     starting_dirs -= excluded_dirs
-
     # to prevent duplicated loading of BUILD files
     processed_dirs = {}
 
@@ -486,12 +485,17 @@ def _expand_target_patterns(blade, target_ids, excluded_trees):
 
     for target_id in target_ids:
         source_dir, target_name = target_id.rsplit(':', 1)
-        if source_dir and not os.path.exists(source_dir):
+
+        if source_dir == '':
+            source_dir = '.'
+        elif not os.path.exists(source_dir):
             _report_not_exist('Directory', source_dir, source_dir, blade)
+
         skip_file = _check_under_skipped_dir(source_dir)
         if skip_file:
             console.warning('"%s" is under skipped directory due to "%s", ignored' % (target_id, skip_file))
             continue
+
         if target_name == '...':
             for root, dirs, files in os.walk(source_dir):
                 # Note the dirs[:] = slice assignment; we are replacing the

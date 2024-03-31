@@ -1354,6 +1354,8 @@ class CcBinary(CcTarget):
             objs.append(scm)
             order_only_deps.append(scm)
         output = self._target_file_path(self.name)
+        if os.name == 'nt':
+            output += '.exe'
         self._cc_link(output, 'link', objs=objs, deps=usr_libs, sys_libs=sys_libs,
                       linker_scripts=self.attr.get('lds_fullpath'),
                       version_scripts=self.attr.get('vers_fullpath'),
