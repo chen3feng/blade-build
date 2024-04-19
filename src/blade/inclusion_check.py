@@ -408,5 +408,9 @@ class Checker(object):
 
 def check(target_check_info_file):
     target = pickle.load(open(target_check_info_file, 'rb'))
+    extra_file = target_check_info_file + '.extra'
+    if os.path.exists(extra_file):
+        extra_target = pickle.load(open(extra_file, 'rb'))
+        target.update(extra_target)
     checker = Checker(target)
     return checker.check()
