@@ -49,7 +49,7 @@ function make_blade_zip() {
 
     cd $src_dir
 
-    echo "BLADE_VERSION = r'''$version'''" > blade/blade_version.py
+    echo "VERSION = r'''$version'''" > blade/blade_version.py
     zip blade.zip __main__.py blade/*.py
     rm blade/blade_version.py
     mv ./blade.zip ${dist_file_path}
