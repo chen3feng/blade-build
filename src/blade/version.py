@@ -29,7 +29,6 @@ Every version number class implements the following interface:
 """
 
 import re
-import sys
 import warnings
 import contextlib
 
@@ -150,12 +149,8 @@ class StrictVersion(Version):
     in the distutils documentation.
     """
 
-    if sys.version_info[0] == 2:
-        char_flags = re.UNICODE
-    else:
-        char_flags = re.ASCII
     version_re = re.compile(
-        r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$', re.VERBOSE | char_flags
+        r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$', re.VERBOSE
     )
 
     def parse(self, vstring):
