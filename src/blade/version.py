@@ -33,8 +33,6 @@ import sys
 import warnings
 import contextlib
 
-_IN_PY2 = sys.version_info[0] == 2
-
 
 @contextlib.contextmanager
 def suppress_known_deprecation():
@@ -152,7 +150,7 @@ class StrictVersion(Version):
     in the distutils documentation.
     """
 
-    if _IN_PY2:
+    if sys.version_info[0] == 2:
         char_flags = re.UNICODE
     else:
         char_flags = re.ASCII
