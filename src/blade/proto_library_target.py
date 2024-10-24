@@ -60,9 +60,12 @@ class ProtocPlugin(object):
                     deps.append(dep)
             self.code_generation[language]['deps'] = deps
 
-    def protoc_plugin_flag(self, out):
-        return '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
+    def protoc_plugin_flag(self, out, plugin_opts):
+        flag_value = '--plugin=protoc-gen-%s=%s --%s_out=%s' % (
             self.name, self.path, self.name, out)
+        for opt in plugin_opts:
+            flag_value += ' --%s_opt=%s' % (self.name, opt)
+        return flag_value
 
     def __repr__(self):
         # This object is a member of proto target's data, provide a textual repr here to make
@@ -87,6 +90,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                  target_languages,
                  plugins,
                  source_encoding,
+                 cpp_outs,
+                 plugin_opts,
                  kwargs):
         """Init method.
 
@@ -137,6 +142,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         self.attr['exported_deps'] += self._unify_deps(protobuf_java_libs)
 
         self._set_protoc_plugins(plugins)
+        self.attr['cpp_outs'] = cpp_outs
+        self.attr['plugin_opts'] = plugin_opts
 
         # Link all the symbols by default
         self.attr['link_all_symbols'] = True
@@ -156,10 +163,10 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         full_cpp_headers = []
         cpp_headers = []
         for src in self.srcs:
-            full_source, full_header = self._proto_gen_cpp_files(src)
-            full_cpp_headers.append(full_header)
-            source, header = self._proto_gen_cpp_file_names(src)
-            cpp_headers.append(header)
+            full_sources, full_headers = self._proto_gen_cpp_files(src)
+            full_cpp_headers.extend(full_headers)
+            sources, headers = self._proto_gen_cpp_file_names(src)
+            cpp_headers.extend(headers)
         self.attr['generated_hdrs'] = full_cpp_headers
         self._set_hdrs(cpp_headers)
 
@@ -219,8 +226,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _proto_gen_cpp_files(self, src):
         """_proto_gen_cpp_files."""
         proto_name = src[:-6]
-        return (self._target_file_path('%s.pb.cc' % proto_name),
-                self._target_file_path('%s.pb.h' % proto_name))
+        sources = []
+        headers = []
+        for cpp_out in self.attr['cpp_outs']:
+            sources.append(self._target_file_path('%s%s.cc' % (proto_name, cpp_out)))
+            headers.append(self._target_file_path('%s%s.h' % (proto_name, cpp_out)))
+        return (sources, headers)
 
     def _proto_gen_php_file(self, src):
         """Generate the php file name."""
@@ -320,10 +331,11 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 # For Java, we need to be consistent with native java output directory
                 # which is the build target directory for insertion points to be effected.
                 # See `protojava` rules for details
+                plugin_opts = self.attr["plugin_opts"].get(p.name, [])
                 if language == 'java':
-                    flag_value = p.protoc_plugin_flag(self._target_dir())
+                    flag_value = p.protoc_plugin_flag(self._target_dir(), plugin_opts)
                 else:
-                    flag_value = p.protoc_plugin_flag(self.build_dir)
+                    flag_value = p.protoc_plugin_flag(self.build_dir, plugin_opts)
                 vars[flag_key] = vars[flag_key] + ' ' + flag_value if flag_key in vars else flag_value
         return paths, vars
 
@@ -345,12 +357,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         implicit_deps.extend(plugin_paths)
         cpp_sources = []
         for src in self.srcs:
-            full_source, full_header = self._proto_gen_cpp_files(src)
-            self.generate_build('proto', [full_source, full_header],
+            full_sources, full_headers = self._proto_gen_cpp_files(src)
+            self.generate_build('proto', full_sources + full_headers,
                                 inputs=self._source_file_path(src),
                                 implicit_deps=implicit_deps, variables=vars)
-            source, header = self._proto_gen_cpp_file_names(src)
-            cpp_sources.append(source)
+            sources, headers = self._proto_gen_cpp_file_names(src)
+            cpp_sources.extend(sources)
         objs = self._generated_cc_objects(cpp_sources, generated_headers=self.attr['generated_hdrs'])
         self._cc_library(objs)
 
@@ -421,7 +433,12 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
     def _proto_gen_cpp_file_names(self, source):
         """Return just file names"""
         base = source[:-6]
-        return ['%s.pb.cc' % base, '%s.pb.h' % base]
+        sources = []
+        headers = []
+        for cpp_out in self.attr['cpp_outs']:
+            sources.append('%s%s.cc' % (base, cpp_out))
+            headers.append('%s%s.h' % (base, cpp_out))
+        return [sources, headers]
 
     def generate(self):
         """Generate build code for proto files."""
@@ -445,6 +462,10 @@ def proto_library(
         target_languages=None,
         plugins=[],
         source_encoding='iso-8859-1',
+        # [".trpc.pb", ".flare.pb"]
+        cpp_outs=[".pb"],
+        # {"adtable":["fast_mode", "sharding_size=4"]}
+        plugin_opts={},
         **kwargs):
     """proto_library target.
     Args:
@@ -465,6 +486,8 @@ def proto_library(
             target_languages=target_languages,
             plugins=plugins,
             source_encoding=source_encoding,
+            cpp_outs=cpp_outs,
+            plugin_opts=plugin_opts,
             kwargs=kwargs)
     build_manager.instance.register_target(proto_library_target)
 
