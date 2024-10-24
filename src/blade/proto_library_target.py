@@ -462,9 +462,7 @@ def proto_library(
         target_languages=None,
         plugins=[],
         source_encoding='iso-8859-1',
-        # [".trpc.pb", ".flare.pb"]
         cpp_outs=[".pb"],
-        # {"adtable":["fast_mode", "sharding_size=4"]}
         plugin_opts={},
         **kwargs):
     """proto_library target.
