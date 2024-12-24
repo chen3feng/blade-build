@@ -100,6 +100,8 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         """
         # pylint: disable=too-many-locals
         srcs = var_to_list(srcs)
+        proto_config = config.get_section('proto_library_config')
+
         super(ProtoLibrary, self).__init__(
                 name=name,
                 type='proto_library',
@@ -108,7 +110,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
                 deps=deps,
                 visibility=visibility,
                 tags=tags,
-                warning='',
+                warning=proto_config['protobuf_cc_warning'],
                 defs=[],
                 incs=[],
                 export_incs=[],
@@ -123,7 +125,6 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             self.attr['public_protos'] = [self._source_file_path(s) for s in srcs]
         self._add_tags('lang:proto', 'type:library')
 
-        proto_config = config.get_section('proto_library_config')
         protobuf_libs = var_to_list(proto_config['protobuf_libs'])
         protobuf_java_libs = var_to_list(proto_config['protobuf_java_libs'])
         protobuf_python_libs = var_to_list(proto_config['protobuf_python_libs'])

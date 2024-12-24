@@ -230,6 +230,7 @@ class BladeConfig(object):
                 'protobuf_libs': [],
                 'protobuf_path': '',
                 'protobuf_incs': [],
+                'protobuf_cc_warning': '',
                 'protobuf_java_incs': [],
                 'protobuf_php_path': '',
                 'protoc_php_plugin': '',
