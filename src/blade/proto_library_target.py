@@ -311,11 +311,16 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
             return self.data[key][:]
         self_protos = self.attr.get('public_protos')
         protos = self_protos[:] if len(self_protos) > 1 else []
+        genrule_outputs = []
         for key in self.deps:
             dep = self.target_database[key]
-            protos += dep.attr.get('public_protos', [])
+            public_protos = dep.attr.get('public_protos', [])
+            if len(public_protos) > 0:
+                protos += public_protos
+            if dep.type == 'gen_rule':
+                genrule_outputs += dep.attr.get('outputs', [])
         self.data[key] = protos
-        return protos[:]
+        return protos + genrule_outputs
 
     def _proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
