@@ -314,9 +314,7 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
         genrule_outputs = []
         for key in self.deps:
             dep = self.target_database[key]
-            public_protos = dep.attr.get('public_protos', [])
-            if len(public_protos) > 0:
-                protos += public_protos
+            protos += dep.attr.get('public_protos', [])
             if dep.type == 'gen_rule':
                 genrule_outputs += dep.attr.get('outputs', [])
         self.data[key] = protos
