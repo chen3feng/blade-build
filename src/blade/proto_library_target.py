@@ -306,16 +306,19 @@ class ProtoLibrary(CcTarget, java_targets.JavaTargetMixIn):
 
         # Including self's proto files because if there are multiple proto files in this target,
         # there may be import relationships between these files.
-        key = 'protoc_direct_dependencies'  # Cache the result
-        if key in self.data:
-            return self.data[key][:]
+        cache_key = 'protoc_direct_dependencies'  # Cache the result
+        if cache_key in self.data:
+            return self.data[cache_key][:]
         self_protos = self.attr.get('public_protos')
         protos = self_protos[:] if len(self_protos) > 1 else []
+        genrule_outputs = []
         for key in self.deps:
             dep = self.target_database[key]
             protos += dep.attr.get('public_protos', [])
-        self.data[key] = protos
-        return protos[:]
+            if dep.type == 'gen_rule':
+                genrule_outputs += dep.attr.get('outputs', [])
+        self.data[cache_key] = protos + genrule_outputs
+        return self.data[cache_key][:]
 
     def _proto_descriptor_rules(self):
         inputs = [self._source_file_path(s) for s in self.srcs]
